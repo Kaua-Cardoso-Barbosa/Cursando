@@ -1,0 +1,24 @@
+.banner {
+    min-height: 420px;
+    display: grid;
+    align-items: center;
+    padding: 64px clamp(20px, 10vw, 160px);
+    text-align: left; color: #fff;
+    background: url('/imagens_assets/banner.png');
+    background-size: cover;
+}
+.bannerTextos {
+    max-width: 60%;
+}
+.span {
+    margin-bottom: 15px;
+    font-size: .85rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+.banner h1 {
+    margin: 0 0 15px; color: inherit;
+    font-size: 4rem;
+    line-height: 1.1;
+}

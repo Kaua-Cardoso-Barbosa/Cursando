@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+passlib
+bcrypt
+PyJWT
+pydantic
+email-validator
+python-multipart
+validate-docbr
+requests
+sqlalchemy-firebird
+fdb

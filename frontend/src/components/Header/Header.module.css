@@ -1,0 +1,25 @@
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px; padding: 18px clamp(20px, 5vw, 72px);
+    background: #fff;
+    border-bottom: 1px solid #ececf1;
+}
+.brand {
+    display: inline-flex;
+    align-items: center; gap: 10px;
+    color: #272343; font-size: 1.25rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+.logo {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+}
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}

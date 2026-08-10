@@ -1,0 +1,22 @@
+.page {
+  min-height: calc(100svh - 84px);
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+}
+
+.page h1 {
+  margin: 0;
+}
+
+.link {
+  display: inline-flex;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: var(--text-h);
+  color: #fff;
+  text-decoration: none;
+}
