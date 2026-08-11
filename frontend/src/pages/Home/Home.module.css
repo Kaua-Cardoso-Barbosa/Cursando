@@ -1,14 +1,21 @@
 .banner {
     min-height: 420px;
-    display: grid;
-    align-items: center;
-    padding: 64px clamp(20px, 10vw, 160px);
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    padding: 30px;
     text-align: left; color: #fff;
     background: url('/imagens_assets/banner.png');
     background-size: cover;
+    background-position: center center;
+    gap: 50px;
 }
 .bannerTextos {
+    display: flex;
+    flex-direction: column;
     max-width: 60%;
+    color: var(--verde_escuro);
 }
 .span {
     margin-bottom: 15px;

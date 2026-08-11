@@ -7,9 +7,9 @@ return <main>
     <div className={css.bannerTextos}>
       <span className={css.span}>Sua jornada começa aqui</span>
       <h1>Um espaço para aprender e evoluir.</h1>
-      <p>Encontre conteúdos e ferramentas para deixar seus estudos mais simples.</p>
-      <Button tamanho={"grande"} texto={"Começe hoje"} />
+      <p>Encontre conteúdos que deixam seus estudos mais simples.</p>
     </div>
+    <Button tamanho={"grande"} fundoCor={"verde"} texto={"Começe hoje"} />
   </section>
   <section className={css.about}>
     <div>

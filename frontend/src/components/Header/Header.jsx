@@ -10,8 +10,8 @@ export default function Header() {
         <span>Cursando</span>
       </Link>
       <nav className={css.actions}>
-          <Button rota={"/cadastro"} tamanho={"medio"} fundoCor={"branco"} borda={"redondo"} texto={"Cadastro"} />
-          <Link className={css.login} to={'/login'}>Login</Link>
+          <Button rota={"/cadastro"} tamanho={"pequeno"} fundoCor={"branco"} borda={"redondo"} texto={"Cadastro"} />
+          <Button rota={"/login"} tamanho={"pequeno"} fundoCor={"verde"} borda={"redondo"} texto={"Login"} />
       </nav>
     </header>
   );
