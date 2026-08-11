@@ -1,17 +1,18 @@
 .header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 24px; padding: 18px clamp(20px, 5vw, 72px);
-    background: #fff;
-    border-bottom: 1px solid #ececf1;
+    padding: 10px;
+    background-color: var(--verde_escuro);
 }
-.brand {
-    display: inline-flex;
-    align-items: center; gap: 10px;
-    color: #272343; font-size: 1.25rem;
+.logoLink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--branco);
+    font-size: 1.25rem;
     font-weight: 700;
     text-decoration: none;
+    justify-content: center;
 }
 .logo {
     width: 38px;

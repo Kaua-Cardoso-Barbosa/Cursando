@@ -4,10 +4,11 @@ import css from './Button.module.css';
 export default function Button({
                                   rota,
                                   state,
-                                  background,
+                                  fundoCor,
                                   tamanho,
                                   texto,
                                   efeito,
+                                  borda,
                                   classe,
                                   onClick,
                                   tipo
@@ -27,7 +28,8 @@ export default function Button({
                     type={tipo}
                     className={
                         css.botao + " " +
-                        css[background] + " " +
+                        css[fundoCor] + " " +
+                        css[borda] + " " +
                         css[tamanho] + " " +
                         css[efeito] + " " +
                         css[classe]
@@ -49,7 +51,8 @@ export default function Button({
                 type={tipo}
                 className={
                     css.botao + " " +
-                    css[background] + " " +
+                    css[fundoCor] + " " +
+                    css[borda] + " " +
                     css[tamanho] + " " +
                     css[efeito] + " " +
                     css[classe]
