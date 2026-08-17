@@ -1,6 +1,21 @@
 import css from "./Cadastro.module.css";
+import { useState } from "react";
+import Input from "../../components/Input/Input";
+import Button from "../../components/Button/Button";
+import {Link} from "react-router-dom";
 
 export default function Cadastro() {
+    const [nome, setNome] = useState("");
+    const [email, setEmail] = useState("");
+    const [senha, setSenha] = useState("");
+    const [confirmarSenha, setConfirmarSenha] = useState("");
+    const [cpf, setCpf] = useState("");
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // Lógica de cadastro aqui
+    };
+
     return (
         <main className={css.cadastro}>
 
@@ -8,42 +23,63 @@ export default function Cadastro() {
 
                 <h1>Cadastro</h1>
 
-                <div className={css.campo}>
-                    <label>Nome:</label>
-                    <input type="text" />
-                </div>
+                <form onSubmit={handleSubmit}>
+                    <Input
+                        tipoInp="text"
+                        label="Nome:"
+                        htmlFor="nome"
+                        placeholder="Digite seu nome"
+                        value={nome}
+                        funcao={(evento) => setNome(evento.target.value)}
+                    />
 
-                <div className={css.campo}>
-                    <label>Email:</label>
-                    <input type="email" />
-                </div>
+                    <Input
+                        tipoInp="email"
+                        label="Email:"
+                        htmlFor="email"
+                        placeholder="Digite seu email"
+                        value={email}
+                        funcao={(evento) => setEmail(evento.target.value)}
+                    />
 
-                <div className={css.linha}>
+                    <Input
+                        tipoInp="password"
+                        label="Senha:"
+                        htmlFor="senha"
+                        placeholder="Digite sua senha"
+                        value={senha}
+                        funcao={(evento) => setSenha(evento.target.value)}
+                    />
 
-                    <div className={css.campo}>
-                        <label>Senha:</label>
-                        <input type="password" />
-                    </div>
+                    <Input
+                        tipoInp="password"
+                        label="Confirmar Senha:"
+                        htmlFor="confirmarSenha"
+                        placeholder="Confirme sua senha"
+                        value={confirmarSenha}
+                        funcao={(evento) => setConfirmarSenha(evento.target.value)}
+                    />
 
-                    <div className={css.campo}>
-                        <label>Confirmar Senha:</label>
-                        <input type="password" />
-                    </div>
+                    <Input
+                        tipoInp="text"
+                        label="CPF:"
+                        htmlFor="cpf"
+                        placeholder="Digite seu CPF"
+                        value={cpf}
+                        funcao={(evento) => setCpf(evento.target.value)}
+                        mask="cpf"
+                    />
 
-                </div>
-
-                <div className={css.campo}>
-                    <label>CPF:</label>
-                    <input type="text" />
-                </div>
-
-                <button className={css.botao}>
-                    Assinar
-                </button>
+                    <Button
+                        tipo="submit"
+                        texto="Cadastrar-se"
+                        fundoCor="verde"
+                        tamanho="medio"
+                    />
+                </form>
 
                 <p className={css.login}>
-                    Já tem cadastro?{" "}
-                    <a href="/login">Faça login</a>
+                    Já tem cadastro?<Link to={`/login`}> Faça Login</Link>
                 </p>
 
             </section>

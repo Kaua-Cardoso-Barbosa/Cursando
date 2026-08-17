@@ -4,6 +4,8 @@ import Home from "./pages/Home/Home.jsx";
 import Pagina404 from "./pages/Pagina404/Pagina404.jsx";
 import Login from "./pages/Login/Login.jsx";
 import Cadastro from "./pages/Cadastro/Cadastro.jsx";
+import DashboardAluno from "./pages/DashboardAluno/DashboardAluno.jsx";
+import DashboardAdm from "./pages/DashboardAdm/DashboardAdm.jsx";
 
 export default function App() {
   return (
@@ -14,6 +16,9 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<Pagina404 />} />
           <Route path="/cadastro" element={<Cadastro />} />
+          <Route path="/DashboardAluno" element={<DashboardAluno/>} />
+
+          <Route path="/DashboardAdm" element={<DashboardAdm/>} />
       </Routes>
     </BrowserRouter>
   );

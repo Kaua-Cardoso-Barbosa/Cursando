@@ -1,12 +1,12 @@
 .cadastro {
     width: 100%;
-    min-height: 100vh;
+    min-height: 130vh;
 
     display: flex;
     flex-direction: column;
     align-items: center;
 
-    padding-top: 90px;
+    padding-top: 50px;
 
     background: linear-gradient(
             135deg,
@@ -20,7 +20,7 @@
 /* TÍTULO */
 
 .cadastro h1 {
-    margin: 0 3 34px;
+    margin-top: 10px;
     color: #000000;
     font-size: 40px;
     font-weight: 700;
@@ -31,8 +31,7 @@
 /* FORMULÁRIO */
 
 .formulario {
-    width: 440px;
-    min-height: 360px;
+    width: 540px;
     padding: 17px 26px 10px;
     background-color: white;
     border-radius: 6px;
@@ -40,53 +39,10 @@
 }
 
 
-/* CAMPOS */
-
-.campo {
-    width: 100%;
-
-    display: flex;
-    flex-direction: column;
-
-    margin-bottom: 17px;
-}
-
-.campo label {
-    margin-bottom: 8px;
-
-    color: #777;
-
-    font-size: 13px;
-}
-
-.campo input {
-    width: 100%;
-    height: 27px;
-
-    padding: 4px 8px;
-
-    box-sizing: border-box;
-
-    background-color: #f1f1f1;
-
-    border: 1px solid #00a86b;
-    border-radius: 5px;
-
-    outline: none;
-
-    font-size: 13px;
-}
-
-.campo input:focus {
-    border-color: #008f5b;
-}
-
-
 /* SENHA + CONFIRMAR SENHA */
 
 .linha {
     width: 100%;
-
     display: flex;
     gap: 30px;
 }
@@ -100,21 +56,14 @@
 
 .botao {
     display: block;
-
-    width: 85px;
-    height: 22px;
-
+    width: 90px;
+    height: 30px;
     margin: 5px auto 0;
-
     border: none;
     border-radius: 4px;
-
     background-color: #00a86b;
-
     color: white;
-
-    font-size: 14px;
-
+    font-size: 20px;
     cursor: pointer;
 }
 
@@ -127,19 +76,14 @@
 
 .login {
     margin-top: 22px;
-
     text-align: center;
-
     color: #999;
-
-    font-size: 9px;
+    font-size: 12px;
 }
 
 .login a {
     color: #008f5b;
-
     font-weight: 600;
-
     text-decoration: none;
 }
 
