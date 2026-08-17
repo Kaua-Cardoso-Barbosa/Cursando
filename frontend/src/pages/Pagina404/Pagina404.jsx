@@ -5,7 +5,7 @@ export default function Pagina404() {
   return (
     <main className={styles.page}>
       <h1>Erro 404</h1>
-      <p>Pagina nao encontrada.</p>
+      <p>Pagina não encontrada.</p>
       <Link className={styles.link} to="/">
         Voltar para a home
       </Link>

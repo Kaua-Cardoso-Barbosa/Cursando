@@ -1,0 +1,82 @@
+.fundo {
+    min-height: 100vh;
+    background-color: #3fc380;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+}
+
+.loginBox {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 40px 48px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+.loginBox h1 {
+    color: #000000;
+    background-color: transparent;
+    margin-bottom: 24px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: left;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.campo label {
+    font-size: 14px;
+    color: #555555;
+}
+
+.campo input {
+    padding: 10px 12px;
+    border: 1px solid #3fc380;
+    border-radius: 8px;
+    background-color: #eeeeee;
+    font-size: 14px;
+}
+
+.campo input:focus {
+    outline: none;
+    border-color: #2fa86a;
+}
+
+.botaoEntrar {
+    background-color: #3fc380;
+    color: #ffffff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.botaoEntrar:hover {
+    background-color: #2fa86a;
+}
+
+.cadastroTexto {
+    text-align: center;
+    font-size: 13px;
+    color: #555555;
+}
+
+.cadastroTexto a {
+    color: #2fa86a;
+    font-weight: bold;
+    text-decoration: none;
+}

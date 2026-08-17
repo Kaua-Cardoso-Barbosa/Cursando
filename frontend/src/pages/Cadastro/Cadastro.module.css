@@ -1,0 +1,189 @@
+.cadastro {
+    width: 100%;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding-top: 90px;
+
+    background: linear-gradient(
+            135deg,
+            #20b879,
+            #3ac98f,
+            #20b879
+    );
+}
+
+
+/* TÍTULO */
+
+.cadastro h1 {
+    margin: 0 3 34px;
+    color: #000000;
+    font-size: 40px;
+    font-weight: 700;
+    text-align: center;
+}
+
+
+/* FORMULÁRIO */
+
+.formulario {
+    width: 440px;
+    min-height: 360px;
+    padding: 17px 26px 10px;
+    background-color: white;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+
+/* CAMPOS */
+
+.campo {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    margin-bottom: 17px;
+}
+
+.campo label {
+    margin-bottom: 8px;
+
+    color: #777;
+
+    font-size: 13px;
+}
+
+.campo input {
+    width: 100%;
+    height: 27px;
+
+    padding: 4px 8px;
+
+    box-sizing: border-box;
+
+    background-color: #f1f1f1;
+
+    border: 1px solid #00a86b;
+    border-radius: 5px;
+
+    outline: none;
+
+    font-size: 13px;
+}
+
+.campo input:focus {
+    border-color: #008f5b;
+}
+
+
+/* SENHA + CONFIRMAR SENHA */
+
+.linha {
+    width: 100%;
+
+    display: flex;
+    gap: 30px;
+}
+
+.linha .campo {
+    width: 50%;
+}
+
+
+/* BOTÃO */
+
+.botao {
+    display: block;
+
+    width: 85px;
+    height: 22px;
+
+    margin: 5px auto 0;
+
+    border: none;
+    border-radius: 4px;
+
+    background-color: #00a86b;
+
+    color: white;
+
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+.botao:hover {
+    background-color: #008f5b;
+}
+
+
+/* LOGIN */
+
+.login {
+    margin-top: 22px;
+
+    text-align: center;
+
+    color: #999;
+
+    font-size: 9px;
+}
+
+.login a {
+    color: #008f5b;
+
+    font-weight: 600;
+
+    text-decoration: none;
+}
+
+.login a:hover {
+    text-decoration: underline;
+}
+
+
+/* RESPONSIVIDADE */
+
+@media (max-width: 600px) {
+
+    .cadastro {
+        padding-top: 50px;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .cadastro h1 {
+        font-size: 27px;
+        margin-bottom: 25px;
+    }
+
+    .formulario {
+        width: 100%;
+        max-width: 440px;
+
+        padding: 17px 22px 10px;
+    }
+
+    .linha {
+        gap: 15px;
+    }
+}
+
+
+@media (max-width: 400px) {
+
+    .linha {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .linha .campo {
+        width: 100%;
+    }
+}
