@@ -1,16 +1,29 @@
 import os
 
-class Settings:
-    PROJECT_NAME: str = "Cursando"
-    PROJECT_VERSION: str = "1.0.0"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "firebird+fdb://SYSDBA:masterkey@localhost:3050/C:/caminho/do/seu/banco/cursando.fdb"
-    )
 
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "chave_secreta_super_segura")
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+def env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "on")
 
-settings = Settings()
+
+SECRET_KEY = os.getenv("SECRET_KEY", "WebCar@123")
+
+DEBUG = env_bool("FLASK_DEBUG", False)
+
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "5000"))
+
+DB_HOST = os.getenv("DB_HOST", "127.0.0.1").strip()
+DB_PORT = int(os.getenv("DB_PORT", "3050"))
+DB_NAME = os.getenv("DB_NAME", os.path.join(BASE_DIR, "Cursando.FDB"))
+DB_USER = os.getenv("DB_USER", "sysdba")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "masterkey")
+DB_CHARSET = os.getenv("DB_CHARSET", "").strip()
+DB_CONNECT_RETRIES = int(os.getenv("DB_CONNECT_RETRIES", "30"))
+DB_CONNECT_RETRY_DELAY = float(os.getenv("DB_CONNECT_RETRY_DELAY", "2"))
+
+WAITRESS_THREADS = int(os.getenv("WAITRESS_THREADS", "8"))

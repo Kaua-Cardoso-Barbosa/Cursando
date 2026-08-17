@@ -1,0 +1,30 @@
+# Ambiente Virtual
+.venv/
+venv/
+env/
+
+# Cache e binários do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de configuração e segredos (credenciais do Firebird)
+.env
+*.env
+
+# Configurações de IDEs (PyCharm e VS Code)
+.idea/
+.vscode/
+
+# Bancos de dados locais (Firebird)
+*.fdb
+*.gdb
+
+# Arquivos de upload temporários (mantém a pasta, mas ignora o conteúdo)
+uploads/*
+!uploads/.gitkeep
+
+# Logs e arquivos do sistema
+*.log
+.DS_Store
+Thumbs.db
