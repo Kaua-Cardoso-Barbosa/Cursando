@@ -1,82 +1,71 @@
-.fundo {
-    min-height: 100vh;
-    background-color: #3fc380;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 40px 20px;
-}
-
-.loginBox {
-    background-color: #ffffff;
-    border-radius: 16px;
-    padding: 40px 48px;
+.login {
     width: 100%;
-    max-width: 420px;
-    text-align: center;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding-top: 50px;
+
+    background: linear-gradient(
+            135deg,
+            #20b879,
+            #3ac98f,
+            #20b879
+    );
 }
 
-.loginBox h1 {
+.login h1 {
+    margin-top: 10px;
     color: #000000;
-    background-color: transparent;
-    margin-bottom: 24px;
-}
-
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    text-align: left;
-}
-
-.campo {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.campo label {
-    font-size: 14px;
-    color: #555555;
-}
-
-.campo input {
-    padding: 10px 12px;
-    border: 1px solid #3fc380;
-    border-radius: 8px;
-    background-color: #eeeeee;
-    font-size: 14px;
-}
-
-.campo input:focus {
-    outline: none;
-    border-color: #2fa86a;
-}
-
-.botaoEntrar {
-    background-color: #3fc380;
-    color: #ffffff;
-    border: none;
-    border-radius: 999px;
-    padding: 12px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 8px;
-}
-
-.botaoEntrar:hover {
-    background-color: #2fa86a;
-}
-
-.cadastroTexto {
+    font-size: 40px;
+    font-weight: 700;
     text-align: center;
-    font-size: 13px;
-    color: #555555;
 }
 
-.cadastroTexto a {
-    color: #2fa86a;
-    font-weight: bold;
+.formulario {
+    width: 540px;
+    padding: 17px 26px 10px;
+    background-color: white;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.cadastro {
+    margin-top: 22px;
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+}
+
+.cadastro a {
+    color: #008f5b;
+    font-weight: 600;
     text-decoration: none;
+}
+
+.cadastro a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+
+    .login {
+        padding-top: 50px;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .login h1 {
+        font-size: 27px;
+        margin-bottom: 25px;
+    }
+
+    .formulario {
+        width: 100%;
+        max-width: 440px;
+
+        padding: 17px 22px 10px;
+    }
 }

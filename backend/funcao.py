@@ -1,9 +1,10 @@
 import jwt
 import datetime
 from main import app, con
-from flask import request
+from flask import request, render_template, jsonify
 import random
 import smtplib
+import threading
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask_bcrypt import check_password_hash
@@ -38,10 +39,13 @@ def validar_senha(senha):
 def gerar_token(id_usuario, tipo):
     payload = {
         'id_usuario': int(id_usuario),
-        'tipo': int(tipo),
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=120)
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=90)
     }
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
+
+    if isinstance(token, bytes):
+        token = token.decode('utf-8')
+
     return token
 
 def pegar_token_requisicao():
@@ -81,18 +85,6 @@ def decodificar_token_requisicao():
         return None
 
 
-def descobre_tipo_usuario():
-    payload = decodificar_token_requisicao()
-
-    if not payload:
-        return None
-
-    try:
-        return int(payload['tipo'])
-    except:
-        return None
-
-
 def descobre_id_usuario():
     payload = decodificar_token_requisicao()
 
@@ -110,7 +102,7 @@ def email_verificacao(destinatario, assunto, mensagem, mensagem_secundaria=""):
     cur = con.cursor()
 
     cur.execute("""SELECT id_usuario, nome
-                   FROM USUARIO
+                   FROM USUARIOS
                    WHERE email = ?""", (destinatario,))
     usuario = cur.fetchone()
     if usuario:
@@ -119,7 +111,7 @@ def email_verificacao(destinatario, assunto, mensagem, mensagem_secundaria=""):
             nome = usuario[1]
             assunto_email = f"{assunto}"
             codigo = random.randint(100000, 999999)
-            cur.execute("""UPDATE USUARIO SET codigo = ? WHERE id_usuario = ?""", (codigo, id_usuario))
+            cur.execute("""UPDATE USUARIOS SET codigo = ? WHERE id_usuario = ?""", (codigo, id_usuario))
             con.commit()
 
             mensagem_email = f"{mensagem}:"
@@ -140,7 +132,7 @@ def email_verificacao(destinatario, assunto, mensagem, mensagem_secundaria=""):
 def verificar_codigo(email, codigo):
     cur = con.cursor()
 
-    cur.execute("""SELECT codigo from USUARIO where email = ?""", (email,))
+    cur.execute("""SELECT codigo from USUARIOS where email = ?""", (email,))
     codigo_real = cur.fetchone()
 
     if not codigo_real:
@@ -159,7 +151,7 @@ def enviando_email(destinatario, assunto, mensagem, codigo, nome, mensagem_secun
     senha = "ucqs orwa wmdu zgse"
     try:
         with app.app_context():
-            html = render_template("email.html", mensagem=mensagem, codigo=codigo, nome=nome, mensagem_secundaria=mensagem_secundaria)
+            html = render_template("codigo_verificacao.html", mensagem=mensagem, codigo=codigo, nome=nome, mensagem_secundaria=mensagem_secundaria)
 
         msg = MIMEText(html, "html", "utf-8")
         msg["Subject"] = assunto

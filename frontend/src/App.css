@@ -17,6 +17,11 @@
   }
 }
 
+.mensagem {
+  color: var(--preto);
+  position: fixed;
+}
+
 .hero {
   position: relative;
 

@@ -5,7 +5,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-.painelAluno {
+.painelAdmin {
     display: flex;
     min-height: 100vh;
     background-color: #ffffff;
@@ -28,7 +28,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 36px;
+    margin-bottom: 32px;
 }
 
 .dadosUsuario {
@@ -81,148 +81,150 @@
     color: #222222;
 }
 
-.secaoMetricas {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    margin: 0 auto 40px auto;
+.secaoLista {
+    margin-bottom: 28px;
     width: 100%;
-    flex-wrap: wrap;
 }
 
-.linhaMetricas {
-    display: contents;
-}
-
-.cardMetrica {
-    flex: 1;
-    min-width: 240px;
-    max-width: 320px;
-    background: #fafafa;
-    border: 1.5px solid #666666;
-    border-radius: 16px;
-    padding: 18px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.metricaTopo {
-    width: 100%;
+.topoSecao {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
 }
 
-.metricaTopo h2 {
+.topoSecao h2 {
     font-size: 1.25rem;
-    color: #1a1a1a;
     font-weight: 400;
+    color: #1a1a1a;
 }
 
-.iconeBadge {
-    background-color: #9fe0c3;
-    width: 42px;
-    height: 38px;
-    border-radius: 10px;
+.tituloComAdd {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    color: #004727;
+    gap: 8px;
 }
 
-.metricaVariacao {
-    color: #32b978;
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 12px;
-}
-
-.metricaNumero {
-    font-size: 2.4rem;
-    font-weight: 400;
+.btnIconeAdicionar {
+    background: none;
+    border: none;
     color: #111111;
-}
-
-.secaoAulas {
-    margin-bottom: 24px;
-}
-
-.secaoAulas h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    color: #1a1a1a;
-    margin-bottom: 16px;
-}
-
-.carrosselAulas {
-    display: flex;
-    gap: 20px;
-    overflow-x: auto;
-    padding-bottom: 16px;
-    scroll-behavior: smooth;
-}
-
-.carrosselAulas::-webkit-scrollbar {
-    height: 6px;
-}
-
-.carrosselAulas::-webkit-scrollbar-track {
-    background: #f0f0f0;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
     border-radius: 4px;
+    transition: transform 0.15s ease, color 0.15s ease;
 }
 
-.carrosselAulas::-webkit-scrollbar-thumb {
+.btnIconeAdicionar:hover {
+    color: #006338;
+    transform: scale(1.2);
+}
+
+.btnIconeAdicionar:active {
+    transform: scale(0.9);
+}
+
+.campoBusca {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #006338;
+    border-radius: 10px;
+    padding: 4px 12px;
+    width: 280px;
+    background-color: #ffffff;
+}
+
+.iconeBusca {
+    font-size: 0.85rem;
+    margin-right: 8px;
+    color: #666666;
+}
+
+.campoBusca input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 0.9rem;
+    color: #333333;
+}
+
+.campoBusca input::placeholder {
+    color: #999999;
+}
+
+.caixaTabela {
+    border: 2px solid #006338;
+    border-radius: 12px;
+    background-color: #ffffff;
+    max-height: 190px;
+    overflow-y: auto;
+    padding: 0 16px;
+}
+
+.caixaTabela::-webkit-scrollbar {
+    width: 6px;
+}
+
+.caixaTabela::-webkit-scrollbar-thumb {
     background: #006338;
     border-radius: 4px;
 }
 
-.cardAula {
-    flex: 0 0 290px;
-    border: 1.5px solid #666666;
-    border-radius: 18px;
-    overflow: hidden;
-    background-color: #ffffff;
+.linhaUsuario {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1.5px solid #006338;
 }
 
-.containerImagem {
-    width: 100%;
-    height: 145px;
-    background-color: #333333;
+.linhaUsuario:last-child {
+    border-bottom: none;
 }
 
-.imagemAula {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+.nomeUsuario {
+    font-size: 1.05rem;
+    color: #222222;
 }
 
-.placeholderImagem {
-    width: 100%;
-    height: 100%;
-    background-color: #cccccc;
+.grupoBotoes {
+    display: flex;
+    gap: 8px;
 }
 
-.infoAula {
-    padding: 12px 16px;
-    background-color: #ffffff;
-}
-
-.infoAula h3 {
-    font-size: 1.2rem;
-    color: #111111;
-    font-weight: 400;
-    margin-bottom: 4px;
-}
-
-.infoAula p {
+.grupoBotoes button {
+    border: none;
+    color: #ffffff;
+    padding: 4px 18px;
+    border-radius: 10px;
     font-size: 0.85rem;
-    color: #555555;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.grupoBotoes button:hover {
+    opacity: 0.9;
+}
+
+.btnBloquear {
+    background-color: #888888;
+}
+
+.btnDesbloquear {
+    background-color: #f1b238;
+}
+
+.btnExcluir {
+    background-color: #c90000;
+}
+
+.btnEditar {
+    background-color: #00875a;
 }
 
 .rodapePagina {

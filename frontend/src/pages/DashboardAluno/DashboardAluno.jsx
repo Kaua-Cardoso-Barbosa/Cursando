@@ -1,4 +1,12 @@
 import React from 'react';
+import {
+    FaGraduationCap,
+    FaUser,
+    FaGooglePlay,
+    FaLinux,
+    FaWindows
+} from 'react-icons/fa';
+import MenuLateralAluno from '/src/components/MenuLateral/MenuLateralAluno.jsx';
 import css from './DashboardAluno.module.css';
 
 export default function DashboardAluno({
@@ -37,34 +45,11 @@ export default function DashboardAluno({
                                        }) {
     return (
         <div className={css.painelAluno}>
-            {/* Menu Lateral */}
-            <aside className={css.menuLateral}>
-                <div className={css.menuTopo}>
-                    <div className={css.logoBox}>
-                        <div className={css.logoIcone}>🎓</div>
-                        <span className={css.logoTexto}>Cursando</span>
-                    </div>
+            <MenuLateralAluno itemAtivo="inicio" />
 
-                    <nav className={css.linksNavegacao}>
-                        <a href="#inicio" className={`${css.linkItem} ${css.ativo}`}>Início</a>
-                        <a href="#meus-cursos" className={css.linkItem}>Meus cursos</a>
-                        <a href="#descobrir" className={css.linkItem}>Descobrir</a>
-                    </nav>
-                </div>
-
-                <div className={css.menuRodape}>
-                    <div className={css.logoBox}>
-                        <div className={css.logoIcone}>🎓</div>
-                        <span className={css.logoTexto}>Cursando</span>
-                    </div>
-                </div>
-            </aside>
-
-            {/* Conteúdo Principal */}
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
 
-                    {/* Cabeçalho */}
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
                             <h1>Olá {usuario.nome}</h1>
@@ -74,18 +59,19 @@ export default function DashboardAluno({
                         <div className={css.acoesUsuario}>
                             <button className={css.botaoSair}>Sair</button>
                             <div className={css.fotoPerfil}>
-                                <span>👤</span>
+                                <FaUser />
                             </div>
                         </div>
                     </header>
 
-                    {/* Métricas (Layout escalonado da imagem) */}
                     <section className={css.secaoMetricas}>
                         <div className={css.linhaMetricas}>
                             <div className={css.cardMetrica}>
                                 <div className={css.metricaTopo}>
                                     <h2>Cursos inscritos</h2>
-                                    <div className={css.iconeBadge}>🎓</div>
+                                    <div className={css.iconeBadge}>
+                                        <FaGraduationCap />
+                                    </div>
                                 </div>
                                 <span className={css.metricaVariacao}>{metricas.inscritos.textoMes}</span>
                                 <div className={css.metricaNumero}>{metricas.inscritos.quantidade}</div>
@@ -94,7 +80,9 @@ export default function DashboardAluno({
                             <div className={css.cardMetrica}>
                                 <div className={css.metricaTopo}>
                                     <h2>Cursos finalizados</h2>
-                                    <div className={css.iconeBadge}>🎓</div>
+                                    <div className={css.iconeBadge}>
+                                        <FaGraduationCap />
+                                    </div>
                                 </div>
                                 <span className={css.metricaVariacao}>{metricas.finalizados.textoMes}</span>
                                 <div className={css.metricaNumero}>{metricas.finalizados.quantidade}</div>
@@ -105,7 +93,9 @@ export default function DashboardAluno({
                             <div className={css.cardMetrica}>
                                 <div className={css.metricaTopo}>
                                     <h2>Cursos iniciados</h2>
-                                    <div className={css.iconeBadge}>🎓</div>
+                                    <div className={css.iconeBadge}>
+                                        <FaGraduationCap />
+                                    </div>
                                 </div>
                                 <span className={css.metricaVariacao}>{metricas.iniciados.textoMes}</span>
                                 <div className={css.metricaNumero}>{metricas.iniciados.quantidade}</div>
@@ -113,9 +103,8 @@ export default function DashboardAluno({
                         </div>
                     </section>
 
-                    {/* Últimas Aulas com Rolagem Horizontal */}
                     <section className={css.secaoAulas}>
-                        <h2>Ultimas aulas vistas:</h2>
+                        <h2>Últimas aulas vistas:</h2>
                         <div className={css.carrosselAulas}>
                             {aulasRecentes.map((aula) => (
                                 <div key={aula.id} className={css.cardAula}>
@@ -137,7 +126,6 @@ export default function DashboardAluno({
 
                 </main>
 
-                {/* Rodapé */}
                 <footer className={css.rodapePagina}>
                     <div className={css.colunaRodape}>
                         <h4>Contato</h4>
@@ -156,9 +144,9 @@ export default function DashboardAluno({
                     <div className={css.colunaRodape}>
                         <h4>Baixe nosso aplicativo</h4>
                         <ul className={css.listaApps}>
-                            <li>▶ Playstore</li>
-                            <li>🐧 Linux</li>
-                            <li>🪟 Windows</li>
+                            <li><FaGooglePlay /> Playstore</li>
+                            <li><FaLinux /> Linux</li>
+                            <li><FaWindows /> Windows</li>
                         </ul>
                     </div>
                 </footer>

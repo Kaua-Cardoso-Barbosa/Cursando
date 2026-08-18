@@ -108,7 +108,8 @@ export default function Input({tipoInp, label, htmlFor, placeholder, classe = ''
                        onChange={funcao}
                        maxLength={maxlength}
                        minLength={minLength}
-                       disabled={disabled}/>
+                       disabled={disabled}
+                       required={required}/>
             )}
         </div>
     )
