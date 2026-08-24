@@ -9,12 +9,13 @@ app.config.from_pyfile('config.py')
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 
-CORS(app, supports_credentials=True, origins=["http://10.92.11.30:5173"])
+CORS(app, supports_credentials=True, origins=["http://10.92.11.31:5173"])
 
 host = app.config['DB_HOST']
 data_base = app.config['DB_NAME']
 user = app.config['DB_USER']
 password = app.config['DB_PASSWORD']
+
 
 con = fdb.connect(
     host=host,

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, } from 'react-router-dom';
 import {
     FaGraduationCap,
     FaUser,
@@ -10,9 +11,12 @@ import {
 } from 'react-icons/fa';
 import MenuLateralAdm from '/src/components/MenuLateral/MenuLateralAdm.jsx';
 import css from './DashboardAdm.module.css';
+import Button from "../../components/Button/Button.jsx";
 
 export default function DashboardAdm({
-                                         usuario = { nome: "Diogo Lopes", tipo: "Administrador" },
+                                         api,
+                                         sair,
+                                         usuario,
                                          metricas = [
                                              { id: 1, titulo: "Total de professores", textoMes: "+6 cadastros nesse mês", quantidade: 15, icone: <FaGraduationCap /> },
                                              { id: 2, titulo: "Total de alunos", textoMes: "+18 cadastros esse mês", quantidade: 38, icone: <FaUser /> },
@@ -20,6 +24,9 @@ export default function DashboardAdm({
                                              { id: 4, titulo: "Cursos", textoMes: "+6 cursos criados esse mês", quantidade: 10, icone: <FaFolder /> }
                                          ]
                                      }) {
+
+    const navigate = useNavigate();
+
     return (
         <div className={css.painelAdm}>
             <MenuLateralAdm itemAtivo="inicio" />
@@ -29,11 +36,20 @@ export default function DashboardAdm({
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
                             <h1>Olá {usuario.nome}</h1>
-                            <span className={css.cargoUsuario}>{usuario.tipo}</span>
+                            <span className={css.cargoUsuario}>
+                                {Number(usuario.tipo) === 0 && "Administrador"}
+                                {Number(usuario.tipo) === 1 && "Professor"}
+                                {Number(usuario.tipo) === 2 && "Aluno"}
+                            </span>
                         </div>
 
                         <div className={css.acoesUsuario}>
-                            <button className={css.botaoSair}>Sair</button>
+                            <Button
+                                texto="Sair"
+                                fundoCor={"vermelho"}
+                                tamanho={"pequeno"}
+                                onClick={sair}
+                            />
                             <div className={css.fotoPerfil}>
                                 <FaUser />
                             </div>

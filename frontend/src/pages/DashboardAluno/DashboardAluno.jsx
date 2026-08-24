@@ -8,8 +8,11 @@ import {
 } from 'react-icons/fa';
 import MenuLateralAluno from '/src/components/MenuLateral/MenuLateralAluno.jsx';
 import css from './DashboardAluno.module.css';
+import Button from "../../components/Button/Button.jsx";
 
 export default function DashboardAluno({
+                                           sair,
+                                           app,
                                            usuario = { nome: "Gabriel Belinelo", tipo: "Aluno" },
                                            metricas = {
                                                inscritos: { quantidade: 6, textoMes: "+1 nesse mês" },
@@ -53,11 +56,20 @@ export default function DashboardAluno({
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
                             <h1>Olá {usuario.nome}</h1>
-                            <span className={css.cargoUsuario}>{usuario.tipo}</span>
+                            <span className={css.cargoUsuario}>
+                                {Number(usuario.tipo) === 0 && "Administrador"}
+                                {Number(usuario.tipo) === 1 && "Professor"}
+                                {Number(usuario.tipo) === 2 && "Aluno"}
+                            </span>
                         </div>
 
                         <div className={css.acoesUsuario}>
-                            <button className={css.botaoSair}>Sair</button>
+                            <Button
+                                texto="Sair"
+                                fundoCor={"vermelho"}
+                                tamanho={"pequeno"}
+                                onClick={sair}
+                            />
                             <div className={css.fotoPerfil}>
                                 <FaUser />
                             </div>

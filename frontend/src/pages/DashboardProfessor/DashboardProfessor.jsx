@@ -11,8 +11,11 @@ import {
 } from 'react-icons/fa';
 import MenuLateralProf from '/src/components/MenuLateral/MenuLateralProf.jsx';
 import css from './DashboardProfessor.module.css';
+import Button from "../../components/Button/Button.jsx";
 
 export default function DashboardProfessor({
+                                               sair,
+                                               app,
                                                usuario = { nome: "Alicia Buzeli", tipo: "Professor(a)" },
                                                metricas = {
                                                    cursosCadastrados: { quantidade: 4, textoMes: "+1 nesse mês" },
@@ -51,11 +54,20 @@ export default function DashboardProfessor({
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
                             <h1>Olá {usuario.nome}</h1>
-                            <span className={css.cargoUsuario}>{usuario.tipo}</span>
+                            <span className={css.cargoUsuario}>
+                                {Number(usuario.tipo) === 0 && "Administrador"}
+                                {Number(usuario.tipo) === 1 && "Professor"}
+                                {Number(usuario.tipo) === 2 && "Aluno"}
+                            </span>
                         </div>
 
                         <div className={css.acoesUsuario}>
-                            <button className={css.botaoSair}>Sair</button>
+                            <Button
+                                texto="Sair"
+                                fundoCor={"vermelho"}
+                                tamanho={"pequeno"}
+                                onClick={sair}
+                            />
                             <div className={css.fotoPerfil}>
                                 <FaUser />
                             </div>

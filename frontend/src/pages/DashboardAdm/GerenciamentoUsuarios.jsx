@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import {
-    FaGraduationCap,
     FaUser,
-    FaPlay,
-    FaFolder,
     FaGooglePlay,
     FaLinux,
-    FaWindows
+    FaWindows,
+    FaSearch,
+    FaPlus
 } from 'react-icons/fa';
 import MenuLateralAdm from '/src/components/MenuLateral/MenuLateralAdm.jsx';
 import css from './GerenciamentoUsuarios.module.css';
+import Button from "../../components/Button/Button.jsx";
+import CadastroColaborador from "../../components/CadastroColaborador/CadastroColaborador.jsx";
 
-const API_BASE_URL = 'https://sua-api.com/api';
-
-export default function GerenciamentoUsuarios() {
-    const [usuarioAtual] = useState({ nome: "Diogo Lopes", tipo: "Administrador" });
+export default function GerenciamentoUsuarios({
+                                                  api,
+                                                  sair,
+                                                  usuario,
+                                                  setMensagem
+                                              }) {
 
     const [alunos, setAlunos] = useState([]);
     const [professores, setProfessores] = useState([]);
@@ -27,9 +30,27 @@ export default function GerenciamentoUsuarios() {
     const [buscaProfessor, setBuscaProfessor] = useState('');
     const [buscaAdmin, setBuscaAdmin] = useState('');
 
+    const [popupCadastro, setPopupCadastro] = useState(null);
+
     useEffect(() => {
         carregarTodosUsuarios();
     }, []);
+
+    function nomeTipoUsuario(tipo) {
+        switch (Number(tipo)) {
+            case 0:
+                return "Administrador";
+
+            case 1:
+                return "Professor";
+
+            case 2:
+                return "Aluno";
+
+            default:
+                return "Usuário";
+        }
+    }
 
     const carregarTodosUsuarios = async () => {
         setLoading(true);
@@ -37,9 +58,9 @@ export default function GerenciamentoUsuarios() {
 
         try {
             const [resAlunos, resProfessores, resAdmins] = await Promise.all([
-                fetch(`${API_BASE_URL}/alunos`),
-                fetch(`${API_BASE_URL}/professores`),
-                fetch(`${API_BASE_URL}/administradores`)
+                fetch(`${api}/alunos`),
+                fetch(`${api}/professores`),
+                fetch(`${api}/administradores`)
             ]);
 
             if (!resAlunos.ok || !resProfessores.ok || !resAdmins.ok) {
@@ -82,10 +103,15 @@ export default function GerenciamentoUsuarios() {
 
     const handleAlternarStatus = async (id, tipo, statusAtual) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/${tipo}/${id}/status`, {
+            const response = await fetch(`${api}/${tipo}/${id}/status`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bloqueado: !statusAtual }),
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    bloqueado: !statusAtual
+                }),
             });
 
             if (!response.ok) throw new Error('Erro ao atualizar status');
@@ -110,8 +136,9 @@ export default function GerenciamentoUsuarios() {
         if (!window.confirm('Tem certeza que deseja excluir este usuário?')) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/${tipo}/${id}`, {
+            const response = await fetch(`${api}/${tipo}/${id}`, {
                 method: 'DELETE',
+                credentials: 'include'
             });
 
             if (!response.ok) throw new Error('Erro ao excluir usuário');
@@ -135,7 +162,13 @@ export default function GerenciamentoUsuarios() {
     };
 
     const handleAdicionar = (tipo) => {
-        console.log(`Adicionar novo ${tipo}`);
+        if (tipo === "professores") {
+            setPopupCadastro(1);
+        }
+
+        if (tipo === "administradores") {
+            setPopupCadastro(0);
+        }
     };
 
     const alunosFiltrados = alunos.filter((u) =>
@@ -150,6 +183,15 @@ export default function GerenciamentoUsuarios() {
 
     return (
         <div className={css.painelAdmin}>
+            {popupCadastro !== null && (
+                <CadastroColaborador
+                    api={api}
+                    tipo={popupCadastro}
+                    fechar={() => setPopupCadastro(null)}
+                    setMensagem={setMensagem}
+                    aoCadastrar={carregarTodosUsuarios}
+                />
+            )}
             <MenuLateralAdm itemAtivo="usuarios" />
 
             <div className={css.conteudoPrincipal}>
@@ -157,12 +199,21 @@ export default function GerenciamentoUsuarios() {
 
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
-                            <h1>Olá {usuarioAtual.nome}</h1>
-                            <span className={css.cargoUsuario}>{usuarioAtual.tipo}</span>
+                            <h1>Olá {usuario.nome}</h1>
+
+                            <span className={css.cargoUsuario}>
+                                {nomeTipoUsuario(usuario.tipo)}
+                            </span>
                         </div>
 
                         <div className={css.acoesUsuario}>
-                            <button className={css.botaoSair}>Sair</button>
+                            <Button
+                                texto="Sair"
+                                fundoCor="vermelho"
+                                tamanho="pequeno"
+                                onClick={sair}
+                            />
+
                             <div className={css.fotoPerfil}>
                                 <FaUser />
                             </div>

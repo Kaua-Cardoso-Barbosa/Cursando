@@ -10,6 +10,15 @@ from email.mime.text import MIMEText
 from flask_bcrypt import check_password_hash
 import qrcode
 import os
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    verify_jwt_in_request,
+    get_jwt_identity,
+    get_jwt,
+    set_access_cookies,
+    unset_jwt_cookies
+)
 
 senha_secreta = app.config['SECRET_KEY']
 
@@ -39,6 +48,7 @@ def validar_senha(senha):
 def gerar_token(id_usuario, tipo):
     payload = {
         'id_usuario': int(id_usuario),
+        'tipo': int(tipo),
         'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=90)
     }
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
@@ -64,37 +74,44 @@ def pegar_token_requisicao():
 
     return None
 
-
-def decodificar_token_requisicao():
-    token = pegar_token_requisicao()
-
-    if not token:
-        return None
-
+@app.route('/verificar_token', methods=['GET'])
+def verificar_token():
     try:
-        payload = jwt.decode(
-            token,
-            app.config['SECRET_KEY'],
-            algorithms=['HS256']
-        )
+        verify_jwt_in_request()
 
-        return payload
+        id_usuario = get_jwt_identity()
+        tipo = get_jwt().get('tipo')
+
+        cursor = con.cursor()
+
+        cursor.execute("""
+            SELECT NOME
+            FROM USUARIOS
+            WHERE ID_USUARIO = ?
+        """, (id_usuario,))
+
+        usuario = cursor.fetchone()
+
+        cursor.close()
+
+        if not usuario:
+            return jsonify({
+                'autenticado': False
+            }), 200
+
+        return jsonify({
+            'autenticado': True,
+            'id_usuario': id_usuario,
+            'nome': usuario[0],
+            'tipo': tipo
+        }), 200
 
     except Exception as e:
-        print("ERRO TOKEN:", e)
-        return None
+        print("ERRO AO VERIFICAR JWT:", repr(e))
 
-
-def descobre_id_usuario():
-    payload = decodificar_token_requisicao()
-
-    if not payload:
-        return None
-
-    try:
-        return int(payload['id_usuario'])
-    except:
-        return None
+        return jsonify({
+            'autenticado': False
+        }), 200
 
 
 

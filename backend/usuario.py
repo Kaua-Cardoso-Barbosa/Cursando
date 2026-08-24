@@ -7,7 +7,9 @@ from flask_jwt_extended import (
     create_access_token,
     jwt_required,
     get_jwt,
-    unset_jwt_cookies
+    get_jwt_identity,
+    unset_jwt_cookies,
+    set_access_cookies
 )
 import fdb
 
@@ -53,20 +55,20 @@ def cadastrar():
     confirmar_senha = dados.get('confirmar_senha')
 
     if not nome or not nome.strip():
-        return resposta_mensagem('Nome é obrigatório', 400)
+        return resposta_mensagem('Nome é obrigatório', 200)
     if not email:
-        return resposta_mensagem('E-mail é obrigatório', 400)
+        return resposta_mensagem('E-mail é obrigatório', 200)
     if not cpf:
-        return resposta_mensagem('CPF é obrigatório', 400)
+        return resposta_mensagem('CPF é obrigatório', 200)
     if not senha or not confirmar_senha:
-        return resposta_mensagem('Senha e confirmação são obrigatórias', 400)
+        return resposta_mensagem('Senha e confirmação são obrigatórias', 200)
 
     if senha != confirmar_senha:
-        return resposta_mensagem('As senhas não coincidem', 400)
+        return resposta_mensagem('As senhas não coincidem', 200)
 
     senha_valida, msg_erro = validar_senha_forte(senha)
     if not senha_valida:
-        return resposta_mensagem(msg_erro, 400)
+        return resposta_mensagem(msg_erro, 200)
 
     con = get_db()
     cursor = con.cursor()
@@ -74,11 +76,11 @@ def cadastrar():
     try:
         cursor.execute("SELECT 1 FROM USUARIOS WHERE EMAIL = ?", (email,))
         if cursor.fetchone():
-            return resposta_mensagem('E-mail já cadastrado', 400)
+            return resposta_mensagem('E-mail já cadastrado', 200)
 
         cursor.execute("SELECT 1 FROM USUARIOS WHERE CPF = ?", (cpf,))
         if cursor.fetchone():
-            return resposta_mensagem('CPF já cadastrado', 400)
+            return resposta_mensagem('CPF já cadastrado', 200)
 
         senha_hash = generate_password_hash(senha)
 
@@ -113,7 +115,7 @@ def login():
     senha = dados.get('senha')
 
     if not email or not senha:
-        return resposta_mensagem('E-mail e senha são obrigatórios', 400)
+        return resposta_mensagem('E-mail e senha são obrigatórios', 200)
 
     con = get_db()
     cursor = con.cursor()
@@ -175,15 +177,7 @@ def login():
             'token': token
         }), 200)
 
-        resposta.set_cookie(
-            'access_token',
-            token,
-            httponly=True,
-            secure=False,
-            samesite='Lax',
-            path="/",
-            max_age=7200
-        )
+        set_access_cookies(resposta, token)
 
         return resposta
 
@@ -194,7 +188,7 @@ def login():
         con.close()
 
 
-@app.route('/cadastrar-colaborador', methods=['POST'])
+@app.route('/cadastrar_colaborador', methods=['POST'])
 @jwt_required()
 def cadastrar_colaborador():
     claims = get_jwt()
@@ -210,16 +204,16 @@ def cadastrar_colaborador():
     tipo = dados.get('tipo')
 
     if not nome or not nome.strip():
-        return resposta_mensagem('Nome é obrigatório', 400)
+        return resposta_mensagem('Nome é obrigatório', 200)
     if not email:
-        return resposta_mensagem('E-mail é obrigatório', 400)
+        return resposta_mensagem('E-mail é obrigatório', 200)
     if not cpf:
-        return resposta_mensagem('CPF é obrigatório', 400)
+        return resposta_mensagem('CPF é obrigatório', 200)
     if not senha or not confirmar_senha:
-        return resposta_mensagem('Senha e confirmação são obrigatórias', 400)
+        return resposta_mensagem('Senha e confirmação são obrigatórias', 200)
 
     if senha != confirmar_senha:
-        return resposta_mensagem('As senhas não coincidem', 400)
+        return resposta_mensagem('As senhas não coincidem', 200)
 
     senha_valida, msg_erro = validar_senha_forte(senha)
     if not senha_valida:
@@ -228,9 +222,9 @@ def cadastrar_colaborador():
     try:
         tipo = int(tipo)
         if tipo not in [0, 1]:
-            return resposta_mensagem('Tipo inválido. Use 0 para ADM ou 1 para Professor.', 400)
+            return resposta_mensagem('Tipo inválido de usuário.', 200)
     except (TypeError, ValueError):
-        return resposta_mensagem('O campo tipo é obrigatório e deve ser 0 ou 1.', 400)
+        return resposta_mensagem('O campo tipo é obrigatório.', 200)
 
     con = get_db()
     cursor = con.cursor()
@@ -238,11 +232,11 @@ def cadastrar_colaborador():
     try:
         cursor.execute("SELECT 1 FROM USUARIOS WHERE EMAIL = ?", (email,))
         if cursor.fetchone():
-            return resposta_mensagem('E-mail já cadastrado', 400)
+            return resposta_mensagem('E-mail já cadastrado', 200)
 
         cursor.execute("SELECT 1 FROM USUARIOS WHERE CPF = ?", (cpf,))
         if cursor.fetchone():
-            return resposta_mensagem('CPF já cadastrado', 400)
+            return resposta_mensagem('CPF já cadastrado', 200)
 
         senha_hash = generate_password_hash(senha)
 
@@ -273,9 +267,18 @@ def cadastrar_colaborador():
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    resposta = make_response(jsonify({'mensagem': criar_mensagem('Logout realizado com sucesso', 'sucesso')}), 200)
+    resposta = make_response(
+        jsonify({
+            'mensagem': criar_mensagem(
+                'Logout realizado com sucesso',
+                'sucesso'
+            )
+        }),
+        200
+    )
+
     unset_jwt_cookies(resposta)
-    resposta.set_cookie('access_token', '', expires=0, httponly=True, samesite='Lax', path="/")
+
     return resposta
 
 @app.route('/esqueci_minha_senha', methods=['POST'])
@@ -326,7 +329,7 @@ def alterar_senha():
                 return resposta_mensagem(mensagem, 201, 'sucesso')
         else:
             if not email or not codigo or not nova_senha or not confirmar_nova_senha:
-                return resposta_mensagem("Email, código e nova senha são obrigatórios", 400)
+                return resposta_mensagem("Email, código e nova senha são obrigatórios", 200)
 
             cur.execute("""select 1
                            FROM USUARIOS
@@ -357,7 +360,7 @@ def alterar_senha():
 
             mensagem, senha_criptografada = valida_nova_senha(nova_senha, usuario[0], cur)
             if mensagem is not None:
-                return resposta_mensagem(mensagem, 400)
+                return resposta_mensagem(mensagem, 200)
 
             mensagem_validacao = validar_senha(nova_senha, confirmar_nova_senha)
             if mensagem_validacao is not None:

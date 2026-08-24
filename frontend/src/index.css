@@ -4,6 +4,7 @@
   --verde: #06A663;
   --verde_escuro: #02693E;
   --verde_muito_escuro: #075132;
+  --vermelho: #ff0000;
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
@@ -64,6 +65,11 @@ h2 {
 }
 p {
   margin: 0;
+}
+
+a:hover {
+  color: inherit;
+  text-decoration: none;
 }
 
 code,

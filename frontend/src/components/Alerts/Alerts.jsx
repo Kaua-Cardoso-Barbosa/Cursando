@@ -1,35 +1,56 @@
 import { useState, useEffect } from "react";
-import css from './Alerts.module.css';
+import css from "./Alerts.module.css";
 
 export default function Alerts({
-                                   titulo,
-                                   descricao,
+                                   titulo = "Aviso",
+                                   descricao = "",
                                    imagem,
-                                   tipo,
-                                   duracao,
+                                   tipo = "info",
+                                   duracao = 5000,
                                    fechar
                                }) {
     const [visivel, setVisivel] = useState(true);
+    const [saindo, setSaindo] = useState(false);
+
+    function fecharAlerta() {
+        setSaindo(true);
+
+        // Espera a animação terminar
+        setTimeout(() => {
+            setVisivel(false);
+
+            if (fechar) {
+                fechar();
+            }
+        }, 250);
+    }
 
     useEffect(() => {
+        if (!duracao) return;
+
         const timer = setTimeout(() => {
-            setVisivel(false);
-            fechar();
+            fecharAlerta();
         }, duracao);
 
         return () => clearTimeout(timer);
-    }, [duracao, fechar]);
+    }, [duracao]);
 
-    if (!visivel) return null;
-
-    function fecharAlerta() {
-        setVisivel(false);
-        fechar();
+    if (!visivel) {
+        return null;
     }
 
     return (
-        <div className={`${css.alert} ${css[tipo]}`}>
-            <img src={imagem} alt="icone alerta" />
+        <div
+            className={`${css.alert} ${css[tipo]} ${saindo ? css.saindo : ""}`}
+            role="alert"
+        >
+            {imagem && (
+                <img
+                    src={imagem}
+                    alt=""
+                    className={css.imagem}
+                />
+            )}
 
             <div className={css.conteudo}>
                 <h4>{titulo}</h4>
@@ -37,10 +58,12 @@ export default function Alerts({
             </div>
 
             <button
-                className={`${css.fechar} ${css[`fechar_${tipo}`]} d-flex h-100 align-items-center`}
+                type="button"
+                className={`${css.fechar} ${css[`fechar_${tipo}`] || ""}`}
                 onClick={fecharAlerta}
+                aria-label="Fechar alerta"
             >
-                ✕
+                ×
             </button>
         </div>
     );
