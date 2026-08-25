@@ -34,17 +34,6 @@ def resposta_mensagem(descricao, status=200, tipo='erro', **extra):
     payload.update(extra)
     return jsonify(payload), status
 
-def validar_senha_forte(senha):
-    if len(senha) < 8:
-        return False, 'A senha deve conter no mínimo 8 caracteres.'
-    if not re.search(r'[A-Z]', senha):
-        return False, 'A senha deve conter pelo menos uma letra maiúscula.'
-    if not re.search(r'[0-9]', senha):
-        return False, 'A senha deve conter pelo menos um número.'
-    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', senha):
-        return False, 'A senha deve conter pelo menos um caractere especial.'
-    return True, ''
-
 @app.route('/cadastrar', methods=['POST'])
 def cadastrar():
     dados = request.get_json() or {}
@@ -66,9 +55,9 @@ def cadastrar():
     if senha != confirmar_senha:
         return resposta_mensagem('As senhas não coincidem', 200)
 
-    senha_valida, msg_erro = validar_senha_forte(senha)
+    senha_valida = validar_senha(senha)
     if not senha_valida:
-        return resposta_mensagem(msg_erro, 200)
+        return resposta_mensagem("A senha deve conter no mínimo 8 caracteres, pelo menos uma letra maiúscula e uma minúscula, um número e um caractere especial.", 200)
 
     con = get_db()
     cursor = con.cursor()

@@ -1,5 +1,48 @@
 import css from "./Home.module.css";
 import Button from "../../components/Button/Button.jsx";
+import CursoCard from "../../components/CursoCard/CursoCard.jsx";
+
+const cursosDestaque = [
+    {
+        imagem: "/imagens_banner_curso/fotografia.png",
+        alt: "Fotografia digital",
+        titulo: "Fotografia digital",
+        descricao: "Domine técnicas de luz e composição",
+    },
+    {
+        imagem: "/imagens_banner_curso/marketing.png",
+        alt: "Marketing de Conteúdo",
+        titulo: "Marketing de Conteúdo",
+        descricao: "Estratégias para engajar seu público",
+    },
+    {
+        imagem: "/imagens_banner_curso/design.png",
+        alt: "Design",
+        titulo: "Design",
+        descricao: "Crie experiências visuais marcantes",
+    },
+];
+
+const cursosAssinados = [
+    {
+        imagem: "/imagens_banner_curso/inteligenciaartificial.png",
+        alt: "Inteligência Artificial",
+        titulo: "Inteligência Artificial",
+        descricao: "Aprenda fundamentos de IA aplicada",
+    },
+    {
+        imagem: "/imagens_banner_curso/ingles.png",
+        alt: "Inglês Avançado",
+        titulo: "Inglês Avançado",
+        descricao: "Fluência para o mercado global",
+    },
+    {
+        imagem: "/imagens_banner_curso/fotografia.png",
+        alt: "Fotografia digital",
+        titulo: "Fotografia digital",
+        descricao: "Domine técnicas de luz e composição",
+    },
+];
 
 export default function Home() {
   return (
@@ -10,7 +53,7 @@ export default function Home() {
                     <h1>Um espaço para aprender e evoluir.</h1>
                     <p>Encontre conteúdos que deixam seus estudos mais simples.</p>
             </div>
-            <Button tamanho={"grande"} fundoCor={"verde"} texto={"Começe hoje"} rota={"/cadastro"} />  {/* Botão */}
+            <Button tamanho={"grande"} fundoCor={"verde"} texto={"Comece hoje"} rota={"/cadastro"} />
           </section>
           <section className={css.about}>
               <div>
@@ -19,7 +62,6 @@ export default function Home() {
               </div>
           </section>
 
-          {/* DESTAQUES */}
           <section className={css.destaques}>
 
               <h1>Os Cursos que Estão Transformando Carreiras</h1>
@@ -30,49 +72,13 @@ export default function Home() {
               </div>
 
               <div className={css.cursos}>
-
-                  <div className={css.card}>
-                      <img
-                          src="./public/imagens_banner_curso/fotografia.png"
-                          alt="Fotografia digital"
-                      />
-
-                      <div className={css.cardTexto}>
-                          <h3>Fotografia digital</h3>
-                          <p>Domine técnicas de luz e composição</p>
-                      </div>
-                  </div>
-
-                  <div className={css.card}>
-                      <img
-                          src="/imagens/marketing.jpg"
-                          alt="Marketing de Conteúdo"
-                      />
-
-                      <div className={css.cardTexto}>
-                          <h3>Marketing de Conteúdo</h3>
-                          <p>Estratégias para engajar seu público</p>
-                      </div>
-                  </div>
-
-                  <div className={css.card}>
-                      <img
-                          src="/imagens/design.jpg"
-                          alt="Fotografia digital"
-                      />
-
-                      <div className={css.cardTexto}>
-                          <h3>Fotografia digital</h3>
-                          <p>Domine técnicas de luz e composição</p>
-                      </div>
-                  </div>
-
+                  {cursosDestaque.map((curso) => (
+                      <CursoCard key={curso.titulo} {...curso} />
+                  ))}
               </div>
 
           </section>
 
-
-          {/* POR QUE ESCOLHER A CURSANDO */}
           <section className={css.porque}>
 
               <div className={css.porqueTexto}>
@@ -100,8 +106,6 @@ export default function Home() {
 
           </section>
 
-
-          {/* MAIS ASSINADOS */}
           <section className={css.assinados}>
 
               <h2>Seu futuro começa agora. Assine!</h2>
@@ -112,43 +116,9 @@ export default function Home() {
               </div>
 
               <div className={css.cursos}>
-
-                  <div className={css.card}>
-                      <img
-                          src="/imagens/cerebro.jpg"
-                          alt="Fotografia digital"
-                      />
-
-                      <div className={css.cardTexto}>
-                          <h3>Fotografia digital</h3>
-                          <p>Domine técnicas de luz e composição</p>
-                      </div>
-                  </div>
-
-                  <div className={css.card}>
-                      <img
-                          src="/imagens/ingles.jpg"
-                          alt="Inglês Avançado"
-                      />
-
-                      <div className={css.cardTexto}>
-                          <h3>Inglês Avançado</h3>
-                          <p>Fluência para o mercado global</p>
-                      </div>
-                  </div>
-
-                  <div className={css.card}>
-                      <img
-                          src="/imagens/fotografia.jpg"
-                          alt="Fotografia digital"
-                      />
-
-                      <div className={css.cardTexto}>
-                          <h3>Fotografia digital</h3>
-                          <p>Domine técnicas de luz e composição</p>
-                      </div>
-                  </div>
-
+                  {cursosAssinados.map((curso) => (
+                      <CursoCard key={curso.titulo} {...curso} />
+                  ))}
               </div>
 
           </section>

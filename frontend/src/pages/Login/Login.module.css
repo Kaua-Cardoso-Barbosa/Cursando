@@ -69,3 +69,10 @@
         padding: 17px 22px 10px;
     }
 }
+
+.carregando {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}

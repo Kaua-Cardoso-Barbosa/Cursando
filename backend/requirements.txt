@@ -2,6 +2,9 @@ Flask==3.0.3
 Flask-CORS==4.0.1
 Flask-JWT-Extended==4.6.0
 python-dotenv==1.0.1
-firebird-driver==1.10.0
 PyJWT==2.8.0
 cryptography==42.0.8
+Flask-Bcrypt==1.0.1
+fdb==2.0.2
+waitress==3.0.0
+qrcode[pil]==7.4.2

@@ -22,7 +22,7 @@ export default function App() {
 
 function AppConteudo() {
 
-    const api = "http://10.92.11.31:5000"
+    const api = "http://10.92.11.58:5000"
 
     const navigate = useNavigate();
 

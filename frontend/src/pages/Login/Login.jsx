@@ -9,7 +9,6 @@ export default function Login({ api, setMensagem }) {
     const [senha, setSenha] = useState("");
     const [carregando, setCarregando] = useState(false);
     const navigate = useNavigate();
-    const [verificandoSessao, setVerificandoSessao] = useState(true);
 
     function getPayloadToken(token) {
         if (!token) {
@@ -57,33 +56,6 @@ export default function Login({ api, setMensagem }) {
         return "/DashboardAluno";
     }
 
-    useEffect(() => {
-        async function verificarSessao() {
-            try {
-                const retorno = await fetch(`${api}/verificar_token`, {
-                    method: "GET",
-                    credentials: "include"
-                });
-
-                const dados = await retorno.json();
-
-                if (!dados.autenticado) {
-                    return;
-                }
-
-                navigate(getRotaDashboard(dados), {
-                    replace: true
-                });
-
-            } catch (erro) {
-                console.error("Erro ao verificar sessão:", erro);
-            } finally {
-                setVerificandoSessao(false);
-            }
-        }
-
-        verificarSessao();
-    }, [api, navigate]);
 
     async function logar(e) {
         e.preventDefault();
@@ -125,9 +97,6 @@ export default function Login({ api, setMensagem }) {
         }
     }
 
-    if (verificandoSessao) {
-        return <p>Verificando sessão...</p>;
-    }
 
     return (
         <main className={css.login}>

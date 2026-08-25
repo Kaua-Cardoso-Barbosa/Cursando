@@ -1,0 +1,66 @@
+.card {
+    width: 100%;
+    overflow: hidden;
+    border: 1.5px solid #000;
+    border-radius: 24px;
+    background: #fff;
+}
+
+.imagem {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2.22 / 1;
+    object-fit: cover;
+    border-bottom: 1.5px solid #000;
+}
+
+.texto {
+    min-height: 102px;
+    padding: 6px 20px 22px;
+}
+
+.texto h3 {
+    margin: 0 0 2px;
+    color: #000;
+    font-size: clamp(1.6rem, 3vw, 2.25rem);
+    font-weight: 400;
+    line-height: 1.12;
+}
+
+.texto p {
+    margin: 0;
+    color: #000;
+    font-size: clamp(1rem, 1.65vw, 1.25rem);
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+@media (max-width: 900px) {
+    .card {
+        border-radius: 20px;
+    }
+
+    .texto {
+        min-height: 86px;
+        padding: 8px 14px 16px;
+    }
+}
+
+@media (max-width: 560px) {
+    .card {
+        border-radius: 18px;
+    }
+
+    .texto {
+        min-height: 74px;
+        padding: 7px 12px 14px;
+    }
+
+    .texto h3 {
+        font-size: 1.35rem;
+    }
+
+    .texto p {
+        font-size: .88rem;
+    }
+}

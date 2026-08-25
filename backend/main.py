@@ -9,7 +9,7 @@ app.config.from_pyfile('config.py')
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 
-CORS(app, supports_credentials=True, origins=["http://10.92.11.31:5173"])
+CORS(app, supports_credentials=True, origins=["http://10.92.11.31:5173", "http://10.92.11.58:5173", "http://localhost:5173"])
 
 host = app.config['DB_HOST']
 data_base = app.config['DB_NAME']

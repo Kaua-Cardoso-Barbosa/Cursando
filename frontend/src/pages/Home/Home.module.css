@@ -81,42 +81,9 @@
 
 .cursos {
     width: 100%;
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 28px;
-}
-
-.card {
-    width: 31%;
-    border: 1px solid #777;
-    border-radius: 9px;
-    overflow: hidden;
-    background-color: white;
-}
-
-.card img {
-    display: block;
-    width: 100%;
-    height: 76px;
-    object-fit: cover;
-}
-
-.cardTexto {
-    height: 32px;
-    padding: 1px 6px 3px;
-}
-
-.cardTexto h3 {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 400;
-    color: #111;
-}
-
-.cardTexto p {
-    margin: 0;
-    font-size: 7px;
-    color: #222;
 }
 
 
@@ -208,23 +175,7 @@
     }
 
     .cursos {
-        gap: 10px;
-    }
-
-    .card {
-        width: 33.33%;
-    }
-
-    .card img {
-        height: 65px;
-    }
-
-    .cardTexto h3 {
-        font-size: 11px;
-    }
-
-    .cardTexto p {
-        font-size: 6px;
+        gap: 14px;
     }
 
     .porque {
@@ -269,23 +220,8 @@
     }
 
     .cursos {
-        gap: 7px;
-    }
-
-    .card img {
-        height: 55px;
-    }
-
-    .cardTexto {
-        height: 36px;
-    }
-
-    .cardTexto h3 {
-        font-size: 9px;
-    }
-
-    .cardTexto p {
-        font-size: 5px;
+        grid-template-columns: 1fr;
+        gap: 18px;
     }
 
     .porque {
