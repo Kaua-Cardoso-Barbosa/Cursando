@@ -1,0 +1,60 @@
+.menuLateral {
+    width: 260px;
+    background-color: #006338;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 0;
+    flex-shrink: 0;
+    min-height: 100vh;
+}
+
+.menuTopo {
+    display: flex;
+    flex-direction: column;
+}
+
+.linksNavegacao {
+    display: flex;
+    flex-direction: column;
+    margin-top: 12px;
+}
+
+.linkItem {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 1.35rem;
+    padding: 14px 24px;
+    transition: background-color 0.2s;
+}
+
+.linkItem:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.ativo {
+    background-color: #004727;
+}
+
+.menuRodape {
+    padding-top: 16px;
+}
+
+.logoBox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 24px;
+}
+
+.logoIcone {
+    font-size: 1.8rem;
+    color: #ffffff;
+}
+
+.logoTexto {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+}

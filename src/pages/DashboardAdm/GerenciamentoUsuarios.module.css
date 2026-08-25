@@ -1,0 +1,275 @@
+:global(*) {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.painelAdmin {
+    display: flex;
+    min-height: 100vh;
+    background-color: #ffffff;
+}
+
+.conteudoPrincipal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-x: hidden;
+}
+
+.areaConteudo {
+    padding: 32px 48px;
+    width: 100%;
+}
+
+.cabecalhoUsuario {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+}
+
+.dadosUsuario {
+    display: inline-block;
+    border-bottom: 3px solid #139a58;
+    padding-bottom: 4px;
+    padding-right: 120px;
+}
+
+.dadosUsuario h1 {
+    font-size: 2.1rem;
+    font-weight: 400;
+    color: #111111;
+}
+
+.cargoUsuario {
+    font-size: 0.85rem;
+    color: #139a58;
+    font-weight: 600;
+    display: block;
+    margin-top: 2px;
+}
+
+.acoesUsuario {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.botaoSair {
+    background-color: #e52e18;
+    color: #ffffff;
+    border: none;
+    padding: 6px 22px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.fotoPerfil {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid #222222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #222222;
+}
+
+.secaoLista {
+    margin-bottom: 28px;
+    width: 100%;
+}
+
+.topoSecao {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.topoSecao h2 {
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: #1a1a1a;
+}
+
+.tituloComAdd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btnIconeAdicionar {
+    background: none;
+    border: none;
+    color: #111111;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.btnIconeAdicionar:hover {
+    color: #006338;
+    transform: scale(1.2);
+}
+
+.btnIconeAdicionar:active {
+    transform: scale(0.9);
+}
+
+.campoBusca {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #006338;
+    border-radius: 10px;
+    padding: 4px 12px;
+    width: 280px;
+    background-color: #ffffff;
+}
+
+.iconeBusca {
+    font-size: 0.85rem;
+    margin-right: 8px;
+    color: #666666;
+}
+
+.campoBusca input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 0.9rem;
+    color: #333333;
+}
+
+.campoBusca input::placeholder {
+    color: #999999;
+}
+
+.caixaTabela {
+    border: 2px solid #006338;
+    border-radius: 12px;
+    background-color: #ffffff;
+    max-height: 190px;
+    overflow-y: auto;
+    padding: 0 16px;
+}
+
+.caixaTabela::-webkit-scrollbar {
+    width: 6px;
+}
+
+.caixaTabela::-webkit-scrollbar-thumb {
+    background: #006338;
+    border-radius: 4px;
+}
+
+.linhaUsuario {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1.5px solid #006338;
+}
+
+.linhaUsuario:last-child {
+    border-bottom: none;
+}
+
+.nomeUsuario {
+    font-size: 1.05rem;
+    color: #222222;
+}
+
+.grupoBotoes {
+    display: flex;
+    gap: 8px;
+}
+
+.grupoBotoes button {
+    border: none;
+    color: #ffffff;
+    padding: 4px 18px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.grupoBotoes button:hover {
+    opacity: 0.9;
+}
+
+.btnBloquear {
+    background-color: #888888;
+}
+
+.btnDesbloquear {
+    background-color: #f1b238;
+}
+
+.btnExcluir {
+    background-color: #c90000;
+}
+
+.btnEditar {
+    background-color: #00875a;
+}
+
+.rodapePagina {
+    background-color: #006338;
+    color: #ffffff;
+    padding: 24px 48px;
+    display: flex;
+    justify-content: space-between;
+    margin-top: auto;
+}
+
+.colunaRodape {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.colunaRodape h4 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.colunaRodape p,
+.colunaRodape a {
+    font-size: 0.85rem;
+    color: #e0e0e0;
+    text-decoration: none;
+}
+
+.colunaRodape a:hover {
+    text-decoration: underline;
+}
+
+.listaApps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.listaApps li {
+    font-size: 0.85rem;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

@@ -1,0 +1,325 @@
+.banner {
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    padding: 30px;
+    text-align: left; color: #fff;
+    background: url('/imagens_assets/banner.png');
+    background-size: cover;
+    background-position: center center;
+    gap: 50px;
+}
+.bannerTextos {
+    display: flex;
+    flex-direction: column;
+    max-width: 60%;
+    color: var(--verde_escuro);
+}
+.span {
+    margin-bottom: 15px;
+    font-size: .85rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+.banner h1 {
+    margin: 0 0 15px; color: inherit;
+    font-size: 4rem;
+    line-height: 1.1;
+}
+
+/* =========================
+   DESTAQUES
+========================= */
+
+.destaques {
+    width: 100%;
+    padding: 10px 23px 27px;
+}
+
+.destaques h1 {
+    margin: 0 0 8px;
+    text-align: center;
+    font-size: 23px;
+    font-weight: 400;
+    color: #111;
+}
+
+
+/* =========================
+   TÍTULO DAS SEÇÕES
+========================= */
+
+.tituloSecao {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.tituloSecao span {
+    font-size: 16px;
+    color: #111;
+}
+
+.tituloSecao a {
+    font-size: 9px;
+    color: #00a878;
+    text-decoration: none;
+}
+
+.tituloSecao a:hover {
+    text-decoration: underline;
+}
+
+
+/* =========================
+   CURSOS
+========================= */
+
+.cursos {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 28px;
+}
+
+.card {
+    width: 31%;
+    border: 1px solid #777;
+    border-radius: 9px;
+    overflow: hidden;
+    background-color: white;
+}
+
+.card img {
+    display: block;
+    width: 100%;
+    height: 76px;
+    object-fit: cover;
+}
+
+.cardTexto {
+    height: 32px;
+    padding: 1px 6px 3px;
+}
+
+.cardTexto h3 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    color: #111;
+}
+
+.cardTexto p {
+    margin: 0;
+    font-size: 7px;
+    color: #222;
+}
+
+
+/* =========================
+   POR QUE ESCOLHER
+========================= */
+
+.porque {
+    width: 100%;
+    min-height: 194px;
+
+    display: flex;
+
+    background: linear-gradient(
+            90deg,
+            #24b87c,
+            #38bf8d
+    );
+
+    color: white;
+}
+
+.porqueTexto {
+    width: 56%;
+    padding: 14px 25px 12px 10px;
+}
+
+.porqueTexto h2 {
+    margin: 0 0 13px;
+    font-size: 23px;
+    font-weight: 400;
+}
+
+.porqueTexto p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.porqueImagem {
+    width: 44%;
+}
+
+.porqueImagem img {
+    display: block;
+
+    width: 100%;
+    height: 194px;
+
+    object-fit: cover;
+
+    border-radius: 10px 0 0 10px;
+}
+
+
+/* =========================
+   MAIS ASSINADOS
+========================= */
+
+.assinados {
+    width: 100%;
+    padding: 40px 30px 48px;
+}
+
+.assinados > h2 {
+    margin: 0 0 14px;
+
+    text-align: center;
+
+    font-size: 22px;
+    font-weight: 400;
+
+    color: #111;
+}
+
+
+/* =========================
+   RESPONSIVIDADE
+========================= */
+
+@media (max-width: 700px) {
+
+    .destaques {
+        padding: 15px;
+    }
+
+    .destaques h1 {
+        font-size: 20px;
+    }
+
+    .cursos {
+        gap: 10px;
+    }
+
+    .card {
+        width: 33.33%;
+    }
+
+    .card img {
+        height: 65px;
+    }
+
+    .cardTexto h3 {
+        font-size: 11px;
+    }
+
+    .cardTexto p {
+        font-size: 6px;
+    }
+
+    .porque {
+        min-height: 220px;
+    }
+
+    .porqueTexto {
+        width: 58%;
+        padding: 15px 10px;
+    }
+
+    .porqueTexto h2 {
+        font-size: 20px;
+    }
+
+    .porqueTexto p {
+        font-size: 11px;
+    }
+
+    .porqueImagem {
+        width: 42%;
+    }
+
+    .porqueImagem img {
+        height: 220px;
+    }
+
+    .assinados {
+        padding: 30px 15px;
+    }
+
+    .assinados > h2 {
+        font-size: 20px;
+    }
+}
+
+
+@media (max-width: 480px) {
+
+    .destaques h1 {
+        font-size: 18px;
+    }
+
+    .cursos {
+        gap: 7px;
+    }
+
+    .card img {
+        height: 55px;
+    }
+
+    .cardTexto {
+        height: 36px;
+    }
+
+    .cardTexto h3 {
+        font-size: 9px;
+    }
+
+    .cardTexto p {
+        font-size: 5px;
+    }
+
+    .porque {
+        min-height: 250px;
+    }
+
+    .porqueTexto {
+        width: 60%;
+        padding: 12px 8px;
+    }
+
+    .porqueTexto h2 {
+        font-size: 17px;
+        margin-bottom: 8px;
+    }
+
+    .porqueTexto p {
+        font-size: 20px;
+        line-height: 1.4;
+    }
+
+    .porqueImagem {
+        width: 40%;
+    }
+
+    .porqueImagem img {
+        height: 250px;
+    }
+
+    .assinados {
+        padding: 25px 10px;
+    }
+
+    .assinados > h2 {
+        font-size: 18px;
+    }
+}
