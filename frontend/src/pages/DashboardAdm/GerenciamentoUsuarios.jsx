@@ -7,7 +7,7 @@ import {
     FaSearch,
     FaPlus
 } from 'react-icons/fa';
-import MenuLateralAdm from '/src/components/MenuLateral/MenuLateralAdm.jsx';
+import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm.jsx";
 import css from './GerenciamentoUsuarios.module.css';
 import Button from "../../components/Button/Button.jsx";
 import CadastroColaborador from "../../components/CadastroColaborador/CadastroColaborador.jsx";

@@ -9,8 +9,8 @@ import {
     FaLinux,
     FaWindows
 } from 'react-icons/fa';
-import MenuLateralProf from '/src/components/MenuLateral/MenuLateralProf.jsx';
-import css from './DashboardProfessor.module.css';
+import MenuLateralProf from "../../components/MenuLateral/MenuLateralProf.jsx";
+import css from "./DashboardProfessor.module.css";
 import Button from "../../components/Button/Button.jsx";
 
 export default function DashboardProfessor({
