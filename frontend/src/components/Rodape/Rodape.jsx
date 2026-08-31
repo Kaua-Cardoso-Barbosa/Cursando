@@ -5,7 +5,11 @@ const Rodape = () => {
     return (
         <footer className={css['rodape-container']}>
             <div className={css['marca-rodape']}>
-                <img src="" alt="Logo Cursando" />
+                <img
+                    src="/imagens_assets/logo.png"
+                    alt="Logo Cursando"
+                    className={css['logo-rodape']}
+                />
                 <span>Cursando</span>
             </div>
 
@@ -25,9 +29,9 @@ const Rodape = () => {
 
             <div className={css['coluna-rodape']}>
                 <h4>Baixe nosso aplicativo</h4>
-                <a href="#">► Playstore</a>
-                <a href="#">Δ Linux</a>
-                <a href="#">■ Windows</a>
+                <a href="#">Playstore</a>
+                <a href="#">Linux</a>
+                <a href="#">Windows</a>
             </div>
         </footer>
     );

@@ -303,29 +303,45 @@ body {
 
 .rodape-container {
     background-color: #0b452e;
-    color: white;
-    padding: 40px 50px;
+    color: #ffffff;
+    padding: 40px 60px;
     display: flex;
     justify-content: space-between;
-}
-
-.coluna-rodape h4 {
-    font-size: 18px;
-    margin-bottom: 15px;
-}
-
-.coluna-rodape p, .coluna-rodape a {
-    color: white;
-    text-decoration: none;
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
+    align-items: flex-start;
+    width: 100%;
 }
 
 .marca-rodape {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 20px;
-    font-weight: bold;
+    gap: 12px;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.logo-rodape {
+    width: 40px;
+    height: auto;
+    object-fit: contain;
+}
+
+.coluna-rodape h4 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #ffffff;
+}
+
+.coluna-rodape p,
+.coluna-rodape a {
+    color: #ffffff;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.coluna-rodape a:hover {
+    text-decoration: underline;
 }
