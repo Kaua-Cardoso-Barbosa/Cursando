@@ -98,6 +98,8 @@ export default function Cadastro({api, setMensagem}) {
                         obrigatorio={"Sim"}
                     />
 
+                    <p className={"campoObrigatorio"}>* Obrigatório</p>
+
                     <Button
                         tipo="submit"
                         texto="Cadastrar-se"

@@ -4,7 +4,7 @@
 
 .campoObrigatorio {
     color: var(--vermelho) !important;
-    font-size: 10px;
+    font-size: 16px;
 }
 
 textarea{

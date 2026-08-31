@@ -15,20 +15,24 @@ export default function Input({tipoInp, label, htmlFor, placeholder, classe = ''
         }
         return (
             <div className={"d-flex flex-column my-3 " + css.metade}>
-                {obrigatorio == "Sim" && (
-                    <span className={css.campoObrigatorio}>* Campo Obrigatório</span>
-                )}
-                <label htmlFor={htmlFor}>{label}</label>
+                <div className={"d-flex"}>
+                    <label htmlFor={htmlFor}>{label} </label>
+                    {obrigatorio == "Sim" && (
+                        <span className={css.campoObrigatorio}>*</span>
+                    )}
+                </div>
                 <input type={tipoInp} placeholder={placeholder} id={htmlFor} name={htmlFor} className={"d-block w-100 rounded px-2 py-1 " + css.input} value={value} onChange={funcao} required={required}/>
             </div>
         )
     } else if (tipoInp == 'select') {
         return (
             <div className={`d-flex w-75 m-auto my-3 flex-column`}>
-                {obrigatorio == "Sim" && (
-                    <span className={css.campoObrigatorio}>* Campo Obrigatório</span>
-                )}
-                <label htmlFor={htmlFor}>{label}</label>
+                <div className={"d-flex"}>
+                    <label htmlFor={htmlFor}>{label} </label>
+                    {obrigatorio == "Sim" && (
+                        <span className={css.campoObrigatorio}>*</span>
+                    )}
+                </div>
                 <select
                     id={htmlFor}
                     onChange={funcao}
@@ -56,10 +60,12 @@ export default function Input({tipoInp, label, htmlFor, placeholder, classe = ''
     } else if (tipoInp == 'textarea') {
         return (
             <div className={`d-flex flex-column w-75 m-auto my-3`} >
-                {obrigatorio == "Sim" && (
-                    <span className={css.campoObrigatorio}>* Campo Obrigatório</span>
-                )}
-                <label htmlFor={htmlFor}>{label}</label>
+                <div className={"d-flex"}>
+                    <label htmlFor={htmlFor}>{label} </label>
+                    {obrigatorio == "Sim" && (
+                        <span className={css.campoObrigatorio}>*</span>
+                    )}
+                </div>
                 <textarea id={htmlFor} name={htmlFor} value={value} onChange={funcao} placeholder={placeholder} className={"d-block w-100 rounded px-2 py-1 " + css.input}/>
             </div>
         )
@@ -67,10 +73,12 @@ export default function Input({tipoInp, label, htmlFor, placeholder, classe = ''
 
     return (
         <div className={`d-flex flex-column w-100 ${margin === "auto" && "m-auto my-3 "} `} >
-            {obrigatorio == "Sim" && (
-                <span className={css.campoObrigatorio}>* Campo Obrigatório</span>
-            )}
-            <label htmlFor={htmlFor}>{label} </label>
+            <div className={"d-flex"}>
+                <label htmlFor={htmlFor}>{label} </label>
+                {obrigatorio == "Sim" && (
+                    <span className={css.campoObrigatorio}>*</span>
+                )}
+            </div>
 
             {mask === "cnpj" ? (
                 <IMaskInput
