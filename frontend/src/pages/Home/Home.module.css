@@ -54,24 +54,38 @@
 
 .tituloSecao {
     display: flex;
+    margin-bottom: 6px;
+    font-size: 30px;
+    font-weight: 600;
+    justify-self: center;
+}
+
+.subtituloSecao {
+    display: flex;
+    font-size: 22px;
     align-items: center;
     gap: 8px;
     margin-bottom: 6px;
+    font-weight: 400;
 }
 
-.tituloSecao span {
-    font-size: 16px;
-    color: #111;
+.subtituloContainer {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
 }
 
-.tituloSecao a {
-    font-size: 9px;
-    color: #00a878;
-    text-decoration: none;
-}
-
-.tituloSecao a:hover {
-    text-decoration: underline;
+.verMais {
+    color: #2E7D32;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: 0.2s;
 }
 
 
@@ -81,9 +95,10 @@
 
 .cursos {
     width: 100%;
-    display: grid;
+    display: flex;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 28px;
+    justify-content: center;
 }
 
 

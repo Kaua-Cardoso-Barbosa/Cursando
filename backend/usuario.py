@@ -104,7 +104,7 @@ def login():
     senha = dados.get('senha')
 
     if not email or not senha:
-        return resposta_mensagem('E-mail e senha são obrigatórios', 200)
+        return resposta_mensagem('E-mail e senha são obrigatórios', 400)
 
     con = get_db()
     cursor = con.cursor()

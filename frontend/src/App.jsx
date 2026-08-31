@@ -22,7 +22,7 @@ export default function App() {
 
 function AppConteudo() {
 
-    const api = "http://10.92.11.58:5000"
+    const api = "http://10.92.11.27:5000"
 
     const navigate = useNavigate();
 
@@ -52,7 +52,7 @@ function AppConteudo() {
     return (
         <>
             <Header/>
-            {mensagem && <Alerts key={mensagem.id} tipo={mensagem.tipo} imagem={`./public/imagens_assets/${mensagem.tipo}.png`} duracao={'8000'} descricao={mensagem.descricao} fechar={() => setMensagem(null)} />}
+            {mensagem && <Alerts key={mensagem.id} tipo={mensagem.tipo} imagem={`/imagens_assets/${mensagem.tipo}.png`} duracao={'8000'} descricao={mensagem.descricao} fechar={() => setMensagem(null)} />}
             <Routes>
                 <Route path="/" element={<Home/>}/>
                 <Route path="/login" element={<Login api={api} setMensagem={setMensagem}/>}/>

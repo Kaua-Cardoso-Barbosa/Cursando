@@ -1,14 +1,24 @@
 import css from "./CursoCard.module.css";
 
 export default function CursoCard({ imagem, alt, titulo, descricao }) {
-  return (
-    <article className={css.card}>
-      <img className={css.imagem} src={imagem} alt={alt || titulo} />
+    return (
+        <div className={css.cardAula}>
+            <div className={css.containerImagem}>
+                {imagem ? (
+                    <img
+                        src={imagem}
+                        alt={alt}
+                        className={css.imagemAula}
+                    />
+                ) : (
+                    <div className={css.placeholderImagem} />
+                )}
+            </div>
 
-      <div className={css.texto}>
-        <h3>{titulo}</h3>
-        <p>{descricao}</p>
-      </div>
-    </article>
-  );
+            <div className={css.infoAula}>
+                <p className={css.titulo}>{titulo}</p>
+                <p className={css.descricao}>{descricao}</p>
+            </div>
+        </div>
+    );
 }

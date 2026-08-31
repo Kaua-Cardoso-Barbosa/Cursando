@@ -54,6 +54,7 @@ export default function Cadastro({api, setMensagem}) {
                         placeholder="Digite seu nome"
                         value={nome}
                         funcao={(evento) => setNome(evento.target.value)}
+                        obrigatorio={"Sim"}
                     />
 
                     <Input
@@ -63,6 +64,7 @@ export default function Cadastro({api, setMensagem}) {
                         placeholder="Digite seu email"
                         value={email}
                         funcao={(evento) => setEmail(evento.target.value)}
+                        obrigatorio={"Sim"}
                     />
 
                     <Input
@@ -72,6 +74,7 @@ export default function Cadastro({api, setMensagem}) {
                         placeholder="Digite sua senha"
                         value={senha}
                         funcao={(evento) => setSenha(evento.target.value)}
+                        obrigatorio={"Sim"}
                     />
 
                     <Input
@@ -81,6 +84,7 @@ export default function Cadastro({api, setMensagem}) {
                         placeholder="Confirme sua senha"
                         value={confirmar_senha}
                         funcao={(evento) => setConfirmar_Senha(evento.target.value)}
+                        obrigatorio={"Sim"}
                     />
 
                     <Input
@@ -91,6 +95,7 @@ export default function Cadastro({api, setMensagem}) {
                         value={cpf}
                         funcao={(evento) => setCpf(evento.target.value)}
                         mask="cpf"
+                        obrigatorio={"Sim"}
                     />
 
                     <Button

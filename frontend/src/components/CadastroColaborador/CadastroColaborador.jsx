@@ -112,7 +112,7 @@ export default function CadastroColaborador({
                         placeholder="Digite o nome"
                         value={nome}
                         funcao={(e) => setNome(e.target.value)}
-                        required
+                        obrigatorio={"Sim"}
                     />
 
                     <Input
@@ -122,7 +122,7 @@ export default function CadastroColaborador({
                         placeholder="Digite o email"
                         value={email}
                         funcao={(e) => setEmail(e.target.value)}
-                        required
+                        obrigatorio={"Sim"}
                     />
 
                     <Input
@@ -132,7 +132,7 @@ export default function CadastroColaborador({
                         placeholder="Digite a senha"
                         value={senha}
                         funcao={(e) => setSenha(e.target.value)}
-                        required
+                        obrigatorio={"Sim"}
                     />
 
                     <Input
@@ -142,7 +142,7 @@ export default function CadastroColaborador({
                         placeholder="Confirme a senha"
                         value={confirmar_Senha}
                         funcao={(e) => setConfirmar_Senha(e.target.value)}
-                        required
+                        obrigatorio={"Sim"}
                     />
 
                     <Input
@@ -153,7 +153,7 @@ export default function CadastroColaborador({
                         value={cpf}
                         funcao={(e) => setCpf(e.target.value)}
                         mask="cpf"
-                        required
+                        obrigatorio={"Sim"}
                     />
 
                     <div className={css.botoes}>

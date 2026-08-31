@@ -1,66 +1,43 @@
-.card {
-    width: 100%;
+.cardAula {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 290px;
+    border: 1.5px solid #666666;
+    border-radius: 18px;
     overflow: hidden;
-    border: 1.5px solid #000;
-    border-radius: 24px;
-    background: #fff;
+    background-color: #ffffff;
+    min-width: 350px;
 }
 
-.imagem {
-    display: block;
+.containerImagem {
     width: 100%;
-    aspect-ratio: 2.22 / 1;
+    height: 145px;
+    background-color: #333333;
+}
+
+.imagemAula {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-bottom: 1.5px solid #000;
+    display: block;
 }
 
-.texto {
-    min-height: 102px;
-    padding: 6px 20px 22px;
+.placeholderImagem {
+    width: 100%;
+    height: 100%;
+    background-color: #cccccc;
 }
 
-.texto h3 {
-    margin: 0 0 2px;
-    color: #000;
-    font-size: clamp(1.6rem, 3vw, 2.25rem);
-    font-weight: 400;
-    line-height: 1.12;
+.infoAula {
+    margin: 10px;
 }
 
-.texto p {
-    margin: 0;
-    color: #000;
-    font-size: clamp(1rem, 1.65vw, 1.25rem);
-    font-weight: 400;
-    line-height: 1.2;
+.titulo {
+    font-size: 25px;
+    font-weight: 600;
 }
 
-@media (max-width: 900px) {
-    .card {
-        border-radius: 20px;
-    }
-
-    .texto {
-        min-height: 86px;
-        padding: 8px 14px 16px;
-    }
-}
-
-@media (max-width: 560px) {
-    .card {
-        border-radius: 18px;
-    }
-
-    .texto {
-        min-height: 74px;
-        padding: 7px 12px 14px;
-    }
-
-    .texto h3 {
-        font-size: 1.35rem;
-    }
-
-    .texto p {
-        font-size: .88rem;
-    }
+.descricao {
+    margin-left: 10px;
+    font-size: 16px;
 }

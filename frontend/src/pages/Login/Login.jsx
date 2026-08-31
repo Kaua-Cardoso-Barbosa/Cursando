@@ -111,7 +111,6 @@ export default function Login({ api, setMensagem }) {
                         placeholder="Digite seu email"
                         value={email}
                         funcao={(evento) => setEmail(evento.target.value)}
-                        required
                     />
 
                     <Input
@@ -121,7 +120,6 @@ export default function Login({ api, setMensagem }) {
                         placeholder="Digite sua senha"
                         value={senha}
                         funcao={(evento) => setSenha(evento.target.value)}
-                        required
                     />
 
                     <Button

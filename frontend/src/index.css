@@ -67,7 +67,7 @@ p {
   margin: 0;
 }
 
-a:hover {
+a:hover, a {
   color: inherit;
   text-decoration: none;
 }

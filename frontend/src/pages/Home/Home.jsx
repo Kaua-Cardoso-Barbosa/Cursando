@@ -1,6 +1,7 @@
 import css from "./Home.module.css";
 import Button from "../../components/Button/Button.jsx";
 import CursoCard from "../../components/CursoCard/CursoCard.jsx";
+import {Link} from "react-router-dom";
 
 const cursosDestaque = [
     {
@@ -55,25 +56,22 @@ export default function Home() {
             </div>
             <Button tamanho={"grande"} fundoCor={"verde"} texto={"Comece hoje"} rota={"/cadastro"} />
           </section>
-          <section className={css.about}>
-              <div>
-                  <span className={css.span}>Sobre o Cursando</span>
-                  <h2>Feito para acompanhar o seu ritmo.</h2>
-              </div>
-          </section>
 
           <section className={css.destaques}>
 
-              <h1>Os Cursos que Estão Transformando Carreiras</h1>
+              <p className={css.tituloSecao}>Os Cursos que Estão Transformando Carreiras</p>
 
-              <div className={css.tituloSecao}>
-                  <span>Destaques</span>
-                  <a href="#">Ver mais</a>
+              <div className={css.subtituloContainer}>
+                  <p className={css.subtituloSecao}>Destaques</p>
+                  <Link className={css.verMais}>Ver mais</Link>
               </div>
 
               <div className={css.cursos}>
                   {cursosDestaque.map((curso) => (
-                      <CursoCard key={curso.titulo} {...curso} />
+                      <CursoCard
+                          key={curso.titulo}
+                          {...curso}
+                      />
                   ))}
               </div>
 
@@ -108,11 +106,10 @@ export default function Home() {
 
           <section className={css.assinados}>
 
-              <h2>Seu futuro começa agora. Assine!</h2>
+              <p className={css.tituloSecao}>Seu futuro começa agora. Assine!</p>
 
-              <div className={css.tituloSecao}>
+              <div className={css.subtituloSecao}>
                   <span>Mais Assinados</span>
-                  <a href="#">Ver mais</a>
               </div>
 
               <div className={css.cursos}>

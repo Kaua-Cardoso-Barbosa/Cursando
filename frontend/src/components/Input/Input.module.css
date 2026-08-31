@@ -4,7 +4,6 @@
 
 .campoObrigatorio {
     color: var(--vermelho) !important;
-    padding: 10px;
     font-size: 10px;
 }
 
