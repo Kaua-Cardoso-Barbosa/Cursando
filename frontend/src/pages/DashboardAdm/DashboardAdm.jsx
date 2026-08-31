@@ -9,7 +9,7 @@ import {
     FaLinux,
     FaWindows
 } from 'react-icons/fa';
-import MenuLateralAdm from '/src/components/MenuLateral/MenuLateralAdm.jsx';
+import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm.jsx";
 import css from './DashboardAdm.module.css';
 import Button from "../../components/Button/Button.jsx";
 

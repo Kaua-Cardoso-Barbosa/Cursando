@@ -6,7 +6,7 @@ import {
     FaLinux,
     FaWindows
 } from 'react-icons/fa';
-import MenuLateralAluno from '/src/components/MenuLateral/MenuLateralAluno.jsx';
+import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno.jsx";
 import css from './DashboardAluno.module.css';
 import Button from "../../components/Button/Button.jsx";
 
