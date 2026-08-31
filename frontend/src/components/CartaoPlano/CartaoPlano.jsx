@@ -14,11 +14,11 @@ const CartaoPlano = ({ titulo, popular, precoAntigo, precoAtual, descricao, bene
                 <p className={css['preco-atual']}>{precoAtual}</p>
             </div>
             <p className={css['descricao-plano']}>{descricao}</p>
-            <ul className={css['lista-beneficios']}>
+            <div className={css['lista-beneficios']}>
                 {beneficios.map((beneficio, index) => (
                     <li key={index}>{beneficio}</li>
                 ))}
-            </ul>
+            </div>
             <div style={{ textAlign: 'center' }}>
                 <Botao texto="Assinar Plano" tipo="primario" estiloAdicional="botao-largo" />
             </div>

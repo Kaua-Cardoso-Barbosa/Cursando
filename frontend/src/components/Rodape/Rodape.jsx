@@ -1,5 +1,5 @@
 import React from 'react';
-import css from '../../pages/Home/Home.module.css';
+import css from './Rodape.module.css'
 
 const Rodape = () => {
     return (
@@ -10,7 +10,7 @@ const Rodape = () => {
                     alt="Logo Cursando"
                     className={css['logo-rodape']}
                 />
-                <span>Cursando</span>
+                <span className={css.logoRodapeTexto}>Cursando</span>
             </div>
 
             <div className={css['coluna-rodape']}>

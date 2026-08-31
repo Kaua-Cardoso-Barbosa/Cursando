@@ -1,0 +1,36 @@
+.rodape-container {
+    background-color: #0b452e;
+    color: white;
+    padding: 40px 30px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.logo-rodape {
+    height: 45px;
+}
+
+.logoRodapeTexto {
+    font-size: 40px;
+}
+
+.coluna-rodape h4 {
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.coluna-rodape p, .coluna-rodape a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.marca-rodape {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: bold;
+}
