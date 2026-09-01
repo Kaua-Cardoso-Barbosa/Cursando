@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     FaUser,
     FaGooglePlay,
@@ -11,6 +11,7 @@ import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm.jsx";
 import css from './GerenciamentoUsuarios.module.css';
 import Button from "../../components/Button/Button.jsx";
 import CadastroColaborador from "../../components/CadastroColaborador/CadastroColaborador.jsx";
+import ConfirmAlert from "../../components/ConfirmAlert/ConfirmAlert.jsx";
 
 export default function GerenciamentoUsuarios({
                                                   api,
@@ -31,10 +32,7 @@ export default function GerenciamentoUsuarios({
     const [buscaAdmin, setBuscaAdmin] = useState('');
 
     const [popupCadastro, setPopupCadastro] = useState(null);
-
-    useEffect(() => {
-        carregarTodosUsuarios();
-    }, []);
+    const [confirmacao, setConfirmacao] = useState(null);
 
     function nomeTipoUsuario(tipo) {
         switch (Number(tipo)) {
@@ -52,7 +50,7 @@ export default function GerenciamentoUsuarios({
         }
     }
 
-    const carregarTodosUsuarios = async () => {
+    const carregarTodosUsuarios = useCallback(async () => {
         setLoading(true);
         setErro(null);
 
@@ -99,7 +97,11 @@ export default function GerenciamentoUsuarios({
         } finally {
             setLoading(false);
         }
-    };
+    }, [api]);
+
+    useEffect(() => {
+        carregarTodosUsuarios();
+    }, [carregarTodosUsuarios]);
 
     const handleAlternarStatus = async (id, tipo, statusAtual) => {
         try {
@@ -133,8 +135,6 @@ export default function GerenciamentoUsuarios({
     };
 
     const handleExcluir = async (id, tipo) => {
-        if (!window.confirm('Tem certeza que deseja excluir este usuário?')) return;
-
         try {
             const response = await fetch(`${api}/${tipo}/${id}`, {
                 method: 'DELETE',
@@ -154,6 +154,8 @@ export default function GerenciamentoUsuarios({
             if (tipo === 'alunos') setAlunos(removerDaListaLocal);
             if (tipo === 'professores') setProfessores(removerDaListaLocal);
             if (tipo === 'administradores') setAdministradores(removerDaListaLocal);
+        } finally {
+            setConfirmacao(null);
         }
     };
 
@@ -249,7 +251,7 @@ export default function GerenciamentoUsuarios({
                                             {item.bloqueado ? 'Desbloquear' : 'Bloquear'}
                                         </button>
                                         <button
-                                            onClick={() => handleExcluir(item.id, 'alunos')}
+                                            onClick={() => setConfirmacao({ id: item.id, tipo: 'alunos', nome: item.nome })}
                                             className={css.btnExcluir}
                                         >
                                             Excluir
@@ -301,7 +303,7 @@ export default function GerenciamentoUsuarios({
                                             {item.bloqueado ? 'Desbloquear' : 'Bloquear'}
                                         </button>
                                         <button
-                                            onClick={() => handleExcluir(item.id, 'professores')}
+                                            onClick={() => setConfirmacao({ id: item.id, tipo: 'professores', nome: item.nome })}
                                             className={css.btnExcluir}
                                         >
                                             Excluir
@@ -353,7 +355,7 @@ export default function GerenciamentoUsuarios({
                                             {item.bloqueado ? 'Desbloquear' : 'Bloquear'}
                                         </button>
                                         <button
-                                            onClick={() => handleExcluir(item.id, 'administradores')}
+                                            onClick={() => setConfirmacao({ id: item.id, tipo: 'administradores', nome: item.nome })}
                                             className={css.btnExcluir}
                                         >
                                             Excluir
@@ -397,6 +399,15 @@ export default function GerenciamentoUsuarios({
                     </div>
                 </footer>
             </div>
+
+            <ConfirmAlert
+                aberto={Boolean(confirmacao)}
+                titulo="Realmente deseja apagar esse usuário?"
+                descricao={confirmacao?.nome}
+                textoConfirmar="Sim, excluir usuário"
+                aoCancelar={() => setConfirmacao(null)}
+                aoConfirmar={() => handleExcluir(confirmacao.id, confirmacao.tipo)}
+            />
         </div>
     );
 }

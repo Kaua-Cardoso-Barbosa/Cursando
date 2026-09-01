@@ -1,26 +1,24 @@
 :global(*) {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .painelProfessor {
     display: flex;
     min-height: 100vh;
-    background-color: #ffffff;
+    background: #ffffff;
+    color: #101010;
 }
 
 .conteudoPrincipal {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    overflow-x: hidden;
+    min-width: 0;
 }
 
 .areaConteudo {
-    padding: 32px 48px;
+    flex: 1;
+    padding: 30px 42px 42px;
     width: 100%;
 }
 
@@ -28,27 +26,30 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 36px;
+    gap: 24px;
+    margin-bottom: 28px;
 }
 
 .dadosUsuario {
-    display: inline-block;
-    border-bottom: 3px solid #139a58;
-    padding-bottom: 4px;
-    padding-right: 120px;
+    border-bottom: 4px solid #06a663;
+    min-width: min(430px, 100%);
+    padding-bottom: 6px;
 }
 
 .dadosUsuario h1 {
-    font-size: 2.1rem;
-    font-weight: 400;
     color: #111111;
+    font-size: 2.1rem;
+    line-height: 1.08;
+    font-weight: 400;
+    margin: 0;
+    letter-spacing: 0;
 }
 
 .cargoUsuario {
-    font-size: 0.85rem;
-    color: #139a58;
-    font-weight: 600;
+    color: #02693e;
     display: block;
+    font-size: 0.95rem;
+    line-height: 1.1;
     margin-top: 2px;
 }
 
@@ -58,210 +59,546 @@
     gap: 16px;
 }
 
-.botaoSair {
-    background-color: #e52e18;
-    color: #ffffff;
-    border: none;
-    padding: 6px 22px;
-    border-radius: 10px;
-    font-weight: bold;
-    font-size: 0.95rem;
-    cursor: pointer;
-}
-
 .fotoPerfil {
-    width: 48px;
-    height: 48px;
+    width: 54px;
+    height: 54px;
+    border: 1.8px solid #000000;
     border-radius: 50%;
-    border: 2px solid #222222;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    color: #222222;
-}
-
-.secaoMetricas {
-    margin-bottom: 40px;
-    width: 100%;
+    font-size: 1.65rem;
 }
 
 .gridMetricas {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 34px 76px;
+    margin: 54px 0 48px;
 }
 
 .cardMetrica {
-    background: #fafafa;
-    border: 1.5px solid #666666;
-    border-radius: 16px;
-    padding: 18px 20px;
+    min-height: 150px;
+    border: 1.5px solid #111111;
+    border-radius: 8px;
+    background: #f8f8f8;
+    padding: 22px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
 }
 
 .metricaTopo {
     width: 100%;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 18px;
+    position: relative;
 }
 
 .metricaTopo h2 {
-    font-size: 1.15rem;
-    color: #1a1a1a;
+    color: #111111;
+    font-size: 2rem;
+    line-height: 1.1;
     font-weight: 400;
+    margin: 0;
+    text-align: center;
+    letter-spacing: 0;
 }
 
 .iconeBadge {
-    background-color: #9fe0c3;
-    width: 42px;
-    height: 38px;
-    border-radius: 10px;
+    width: 52px;
+    height: 48px;
+    border-radius: 8px;
+    background: #9fe0c3;
+    color: #000000;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    color: #004727;
+    font-size: 1.45rem;
+    flex: 0 0 auto;
 }
 
 .metricaVariacao {
-    color: #32b978;
-    font-size: 0.95rem;
+    color: #56c991;
     font-weight: 600;
-    margin-bottom: 12px;
+    font-size: 1.05rem;
     text-align: center;
 }
 
 .metricaNumero {
-    font-size: 2.4rem;
+    color: #000000;
+    font-size: 2.65rem;
+    line-height: 1;
     font-weight: 400;
+}
+
+.secaoAcessos,
+.secaoCursos {
+    width: 100%;
+}
+
+.topoSecao,
+.barraTitulo {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    flex-wrap: wrap;
+    margin-bottom: 26px;
+}
+
+.topoSecao h2,
+.barraTitulo h2 {
+    color: #111111;
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 400;
+    letter-spacing: 0;
+    margin: 0;
+}
+
+.botaoPrimario,
+.botaoSecundario,
+.filtros button,
+.linkVoltar {
+    min-height: 40px;
+    border-radius: 7px;
+    border: 1.4px solid #111111;
+    background: #ffffff;
+    color: #111111;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 18px;
+}
+
+.botaoPrimario {
+    background: #06a663;
+    color: #ffffff;
+    border-color: #06a663;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.22);
+}
+
+.botaoPrimario:disabled {
+    opacity: 0.68;
+    cursor: not-allowed;
+}
+
+.botaoSecundario {
+    background: #ffffff;
     color: #111111;
 }
 
-.secaoAcessos {
-    margin-bottom: 24px;
+.linkVoltar {
+    border: none;
+    color: #02693e;
+    background: transparent;
+    padding: 0;
+    min-height: auto;
+    margin-bottom: 10px;
 }
 
-.secaoAcessos h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    color: #1a1a1a;
-    margin-bottom: 16px;
+.filtros {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filtros span {
+    font-size: 1.05rem;
+}
+
+.filtros .filtroAtivo {
+    background: #075132;
+    border-color: #075132;
+    color: #ffffff;
 }
 
 .carrosselCursos {
     display: flex;
-    gap: 20px;
+    gap: 28px;
     overflow-x: auto;
-    padding-bottom: 16px;
-    scroll-behavior: smooth;
+    padding: 0 0 18px;
 }
 
-.carrosselCursos::-webkit-scrollbar {
-    height: 6px;
+.gridCursos,
+.gridAulas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(260px, 1fr));
+    gap: 38px 24px;
 }
 
-.carrosselCursos::-webkit-scrollbar-track {
-    background: #f0f0f0;
-    border-radius: 4px;
-}
-
-.carrosselCursos::-webkit-scrollbar-thumb {
-    background: #006338;
-    border-radius: 4px;
-}
-
-.cardCurso {
-    flex: 0 0 290px;
-    border: 1.5px solid #666666;
-    border-radius: 18px;
+.cardCurso,
+.cardAula {
+    border: 1.5px solid #111111;
+    border-radius: 8px;
+    background: #ffffff;
     overflow: hidden;
-    background-color: #ffffff;
+    min-width: 0;
 }
 
-.containerImagem {
+.carrosselCursos .cardCurso {
+    flex: 0 0 360px;
+}
+
+.areaCardClicavel {
     width: 100%;
-    height: 145px;
-    background-color: #333333;
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 0;
+    cursor: pointer;
+    display: block;
 }
 
 .imagemCurso {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: 150px;
     display: block;
+    object-fit: cover;
+    background: #d9d9d9;
 }
 
-.placeholderImagem {
+.infoCurso,
+.infoAula {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px 12px;
+}
+
+.infoCurso h3,
+.infoAula h3 {
+    color: #111111;
+    font-size: 1.28rem;
+    line-height: 1.1;
+    font-weight: 400;
+    letter-spacing: 0;
+    margin: 0 0 4px;
+    overflow-wrap: anywhere;
+}
+
+.infoCurso p,
+.infoAula p,
+.textoApoio {
+    color: #202020;
+    font-size: 0.88rem;
+    line-height: 1.28;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.statusBadge {
+    border: 1px solid #06a663;
+    border-radius: 100px;
+    color: #02693e;
+    font-size: 0.72rem;
+    line-height: 1;
+    padding: 5px 9px;
+    white-space: nowrap;
+    text-transform: capitalize;
+}
+
+.acoesCard {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px 12px;
+    flex-wrap: wrap;
+}
+
+.infoAula .acoesCard {
+    padding: 0;
+    flex: 0 0 auto;
+}
+
+.acoesCard button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    color: #111111;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.acoesCard .botaoExcluir {
+    color: #e21d0b;
+}
+
+.cardAula {
+    min-height: 220px;
+}
+
+.videoPreview {
+    height: 150px;
+    background: #ececec;
+    border-bottom: 1.5px solid #111111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    font-size: 3.6rem;
+}
+
+.videoPreview video {
     width: 100%;
     height: 100%;
-    background-color: #cccccc;
+    display: block;
+    object-fit: cover;
 }
 
-.infoCurso {
-    padding: 12px 16px;
-    background-color: #ffffff;
-}
-
-.infoCurso h3 {
-    font-size: 1.2rem;
-    color: #111111;
-    font-weight: 400;
-    margin-bottom: 4px;
-}
-
-.infoCurso p {
-    font-size: 0.85rem;
+.estadoVazio {
+    min-height: 128px;
+    border: 1.5px dashed #9d9d9d;
+    border-radius: 8px;
     color: #555555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    width: 100%;
+    font-size: 1.1rem;
+}
+
+.estadoVazio svg {
+    color: #02693e;
+    font-size: 1.5rem;
+}
+
+.overlayModal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background:
+        linear-gradient(rgba(6, 166, 99, 0.88), rgba(2, 105, 62, 0.88)),
+        url("/imagens_assets/banner.png") center / cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+}
+
+.modalFormulario {
+    width: min(710px, 100%);
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 34px 44px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.modalFormulario h2 {
+    color: #ffffff;
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.4rem;
+    line-height: 1.1;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+    letter-spacing: 0;
+}
+
+.modalFormulario label {
+    color: #7a7a7a;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modalFormulario input,
+.modalFormulario textarea {
+    min-height: 42px;
+    border: 2px solid #06a663;
+    border-radius: 7px;
+    background: #eeeeee;
+    color: #111111;
+    font: inherit;
+    padding: 8px 12px;
+    resize: vertical;
+}
+
+.modalFormulario textarea {
+    min-height: 76px;
+}
+
+.uploadBox {
+    min-height: 170px;
+    border: 2px solid #06a663;
+    border-radius: 10px;
+    background: #f7f7f7;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-align: center;
+}
+
+.uploadBox svg {
+    color: #111111;
+    font-size: 2.6rem;
+}
+
+.uploadBox input {
+    display: none;
+}
+
+.acoesModal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+}
+
+.avisoModal {
+    color: #111111;
+    font-size: 0.85rem;
+    text-align: center;
 }
 
 .rodapePagina {
-    background-color: #006338;
+    background: #02693e;
     color: #ffffff;
-    padding: 24px 48px;
-    display: flex;
-    justify-content: space-between;
-    margin-top: auto;
+    padding: 24px 42px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
 }
 
 .colunaRodape {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
 }
 
 .colunaRodape h4 {
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin-bottom: 4px;
+    color: #ffffff;
+    font-size: 1.25rem;
+    line-height: 1.1;
+    margin: 0 0 8px;
 }
 
 .colunaRodape p,
-.colunaRodape a {
-    font-size: 0.85rem;
-    color: #e0e0e0;
-    text-decoration: none;
-}
-
-.colunaRodape a:hover {
-    text-decoration: underline;
+.colunaRodape a,
+.listaApps li {
+    color: #ffffff;
+    font-size: 0.92rem;
+    line-height: 1.35;
 }
 
 .listaApps {
     list-style: none;
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 7px;
 }
 
 .listaApps li {
-    font-size: 0.85rem;
-    color: #e0e0e0;
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+@media (max-width: 1180px) {
+    .gridMetricas,
+    .gridCursos,
+    .gridAulas {
+        grid-template-columns: repeat(2, minmax(240px, 1fr));
+    }
+
+    .filtros {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 860px) {
+    .painelProfessor {
+        flex-direction: column;
+    }
+
+    .areaConteudo {
+        padding: 24px 18px 32px;
+    }
+
+    .cabecalhoUsuario,
+    .topoSecao,
+    .barraTitulo {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .acoesUsuario {
+        justify-content: space-between;
+    }
+
+    .dadosUsuario {
+        min-width: 0;
+    }
+
+    .dadosUsuario h1,
+    .topoSecao h2,
+    .barraTitulo h2 {
+        font-size: 1.75rem;
+    }
+
+    .gridMetricas,
+    .gridCursos,
+    .gridAulas,
+    .rodapePagina {
+        grid-template-columns: 1fr;
+    }
+
+    .metricaTopo h2 {
+        font-size: 1.5rem;
+    }
+
+    .carrosselCursos .cardCurso {
+        flex-basis: 290px;
+    }
+
+    .filtros {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .modalFormulario {
+        padding: 28px 22px 24px;
+        margin-top: 68px;
+    }
+
+    .modalFormulario h2 {
+        top: 38px;
+        width: calc(100% - 40px);
+        font-size: 2rem;
+    }
+
+    .acoesModal {
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .acoesModal button {
+        width: 100%;
+    }
 }

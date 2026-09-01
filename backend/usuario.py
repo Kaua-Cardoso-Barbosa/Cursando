@@ -44,20 +44,20 @@ def cadastrar():
     confirmar_senha = dados.get('confirmar_senha')
 
     if not nome or not nome.strip():
-        return resposta_mensagem('Nome é obrigatório', 200)
+        return resposta_mensagem('Nome é obrigatório', 400)
     if not email:
-        return resposta_mensagem('E-mail é obrigatório', 200)
+        return resposta_mensagem('E-mail é obrigatório', 400)
     if not cpf:
-        return resposta_mensagem('CPF é obrigatório', 200)
+        return resposta_mensagem('CPF é obrigatório', 400)
     if not senha or not confirmar_senha:
-        return resposta_mensagem('Senha e confirmação são obrigatórias', 200)
+        return resposta_mensagem('Senha e confirmação são obrigatórias', 400)
 
     if senha != confirmar_senha:
-        return resposta_mensagem('As senhas não coincidem', 200)
+        return resposta_mensagem('As senhas não coincidem', 400)
 
     senha_valida = validar_senha(senha)
     if not senha_valida:
-        return resposta_mensagem("A senha deve conter no mínimo 8 caracteres, pelo menos uma letra maiúscula e uma minúscula, um número e um caractere especial.", 200)
+        return resposta_mensagem("A senha deve conter no mínimo 8 caracteres, pelo menos uma letra maiúscula e uma minúscula, um número e um caractere especial.", 400)
 
     con = get_db()
     cursor = con.cursor()
@@ -65,11 +65,11 @@ def cadastrar():
     try:
         cursor.execute("SELECT 1 FROM USUARIOS WHERE EMAIL = ?", (email,))
         if cursor.fetchone():
-            return resposta_mensagem('E-mail já cadastrado', 200)
+            return resposta_mensagem('E-mail já cadastrado', 400)
 
         cursor.execute("SELECT 1 FROM USUARIOS WHERE CPF = ?", (cpf,))
         if cursor.fetchone():
-            return resposta_mensagem('CPF já cadastrado', 200)
+            return resposta_mensagem('CPF já cadastrado', 400)
 
         senha_hash = generate_password_hash(senha)
 
@@ -193,27 +193,27 @@ def cadastrar_colaborador():
     tipo = dados.get('tipo')
 
     if not nome or not nome.strip():
-        return resposta_mensagem('Nome é obrigatório', 200)
+        return resposta_mensagem('Nome é obrigatório', 400)
     if not email:
-        return resposta_mensagem('E-mail é obrigatório', 200)
+        return resposta_mensagem('E-mail é obrigatório', 400)
     if not cpf:
-        return resposta_mensagem('CPF é obrigatório', 200)
+        return resposta_mensagem('CPF é obrigatório', 400)
     if not senha or not confirmar_senha:
-        return resposta_mensagem('Senha e confirmação são obrigatórias', 200)
+        return resposta_mensagem('Senha e confirmação são obrigatórias', 400)
 
     if senha != confirmar_senha:
-        return resposta_mensagem('As senhas não coincidem', 200)
+        return resposta_mensagem('As senhas não coincidem', 400)
 
-    senha_valida, msg_erro = validar_senha_forte(senha)
+    senha_valida = validar_senha(senha)
     if not senha_valida:
-        return resposta_mensagem(msg_erro, 400)
+        return resposta_mensagem("A senha deve conter no mÃ­nimo 8 caracteres, pelo menos uma letra maiÃºscula e uma minÃºscula, um nÃºmero e um caractere especial.", 400)
 
     try:
         tipo = int(tipo)
         if tipo not in [0, 1]:
-            return resposta_mensagem('Tipo inválido de usuário.', 200)
+            return resposta_mensagem('Tipo inválido de usuário.', 400)
     except (TypeError, ValueError):
-        return resposta_mensagem('O campo tipo é obrigatório.', 200)
+        return resposta_mensagem('O campo tipo é obrigatório.', 400)
 
     con = get_db()
     cursor = con.cursor()
@@ -221,11 +221,11 @@ def cadastrar_colaborador():
     try:
         cursor.execute("SELECT 1 FROM USUARIOS WHERE EMAIL = ?", (email,))
         if cursor.fetchone():
-            return resposta_mensagem('E-mail já cadastrado', 200)
+            return resposta_mensagem('E-mail já cadastrado', 400)
 
         cursor.execute("SELECT 1 FROM USUARIOS WHERE CPF = ?", (cpf,))
         if cursor.fetchone():
-            return resposta_mensagem('CPF já cadastrado', 200)
+            return resposta_mensagem('CPF já cadastrado', 400)
 
         senha_hash = generate_password_hash(senha)
 
@@ -318,7 +318,7 @@ def alterar_senha():
                 return resposta_mensagem(mensagem, 201, 'sucesso')
         else:
             if not email or not codigo or not nova_senha or not confirmar_nova_senha:
-                return resposta_mensagem("Email, código e nova senha são obrigatórios", 200)
+                return resposta_mensagem("Email, código e nova senha são obrigatórios", 400)
 
             cur.execute("""select 1
                            FROM USUARIOS

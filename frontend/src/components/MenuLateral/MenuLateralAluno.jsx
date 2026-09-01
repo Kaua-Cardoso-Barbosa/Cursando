@@ -1,30 +1,31 @@
-import React from 'react';
-import { FaGraduationCap } from 'react-icons/fa';
-import css from './MenuLateralAluno.module.css';
+import React from "react";
+import { Link } from "react-router-dom";
+import { FaGraduationCap } from "react-icons/fa";
+import css from "./MenuLateralAluno.module.css";
 
-export default function MenuLateralAluno({ itemAtivo = 'inicio' }) {
+export default function MenuLateralAluno({ itemAtivo = "inicio" }) {
     return (
         <aside className={css.menuLateral}>
             <div className={css.menuTopo}>
                 <nav className={css.linksNavegacao}>
-                    <a
-                        href="#inicio"
-                        className={`${css.linkItem} ${itemAtivo === 'inicio' ? css.ativo : ''}`}
+                    <Link
+                        to="/DashboardAluno"
+                        className={`${css.linkItem} ${itemAtivo === "inicio" ? css.ativo : ""}`}
                     >
                         Início
-                    </a>
-                    <a
-                        href="#meus-cursos"
-                        className={`${css.linkItem} ${itemAtivo === 'meus-cursos' ? css.ativo : ''}`}
+                    </Link>
+                    <Link
+                        to="/DashboardAluno/cursos"
+                        className={`${css.linkItem} ${itemAtivo === "meus-cursos" ? css.ativo : ""}`}
                     >
                         Meus cursos
-                    </a>
-                    <a
-                        href="#descobrir"
-                        className={`${css.linkItem} ${itemAtivo === 'descobrir' ? css.ativo : ''}`}
+                    </Link>
+                    <Link
+                        to="/DashboardAluno/descobrir"
+                        className={`${css.linkItem} ${itemAtivo === "descobrir" ? css.ativo : ""}`}
                     >
                         Descobrir
-                    </a>
+                    </Link>
                 </nav>
             </div>
 

@@ -12,7 +12,6 @@ import Button from "../../components/Button/Button.jsx";
 
 export default function DashboardAluno({
                                            sair,
-                                           app,
                                            usuario = { nome: "Gabriel Belinelo", tipo: "Aluno" },
                                            metricas = {
                                                inscritos: { quantidade: 6, textoMes: "+1 nesse mês" },

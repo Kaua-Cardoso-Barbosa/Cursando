@@ -9,7 +9,13 @@ app.config.from_pyfile('config.py')
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 
-CORS(app, supports_credentials=True, origins=["http://10.92.11.31:5173", "http://10.92.11.58:5173", "http://localhost:5173", "http://10.92.11.27:5173"])
+CORS(
+    app,
+    supports_credentials=True,
+    origins="*",
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+)
 
 host = app.config['DB_HOST']
 data_base = app.config['DB_NAME']
@@ -26,6 +32,7 @@ con = fdb.connect(
 )
 
 from usuario import *
+from professor import *
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)

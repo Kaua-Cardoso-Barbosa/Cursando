@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import css from "./Alerts.module.css";
 
 export default function Alerts({
@@ -12,7 +12,7 @@ export default function Alerts({
     const [visivel, setVisivel] = useState(true);
     const [saindo, setSaindo] = useState(false);
 
-    function fecharAlerta() {
+    const fecharAlerta = useCallback(() => {
         setSaindo(true);
 
         // Espera a animação terminar
@@ -23,7 +23,7 @@ export default function Alerts({
                 fechar();
             }
         }, 250);
-    }
+    }, [fechar]);
 
     useEffect(() => {
         if (!duracao) return;
@@ -33,7 +33,7 @@ export default function Alerts({
         }, duracao);
 
         return () => clearTimeout(timer);
-    }, [duracao]);
+    }, [duracao, fecharAlerta]);
 
     if (!visivel) {
         return null;

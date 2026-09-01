@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate, } from 'react-router-dom';
 import {
     FaGraduationCap,
     FaUser,
@@ -14,7 +13,6 @@ import css from './DashboardAdm.module.css';
 import Button from "../../components/Button/Button.jsx";
 
 export default function DashboardAdm({
-                                         api,
                                          sair,
                                          usuario,
                                          metricas = [
@@ -24,8 +22,6 @@ export default function DashboardAdm({
                                              { id: 4, titulo: "Cursos", textoMes: "+6 cursos criados esse mês", quantidade: 10, icone: <FaFolder /> }
                                          ]
                                      }) {
-
-    const navigate = useNavigate();
 
     return (
         <div className={css.painelAdm}>

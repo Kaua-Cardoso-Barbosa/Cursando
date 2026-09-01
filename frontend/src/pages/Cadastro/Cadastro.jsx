@@ -2,7 +2,7 @@ import css from "./Cadastro.module.css";
 import { useState } from "react";
 import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 
 export default function Cadastro({api, setMensagem}) {
     const [nome, setNome] = useState("");
@@ -11,34 +11,53 @@ export default function Cadastro({api, setMensagem}) {
     const [confirmar_senha, setConfirmar_Senha] = useState("");
     const [cpf, setCpf] = useState("");
 
+    const navigate = useNavigate();
+
     async function cadastrar(e) {
         e.preventDefault();
 
-        const retorno = await fetch(`${api}/cadastrar`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                nome: nome,
-                email: email,
-                senha: senha,
-                confirmar_senha: confirmar_senha,
-                cpf: cpf
-            })
-        });
+        try {
+            const retorno = await fetch(`${api}/cadastrar`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    nome,
+                    email,
+                    senha,
+                    confirmar_senha,
+                    cpf
+                })
+            });
 
-        const dados = await retorno.json();
+            const dados = await retorno.json();
 
-        if (!retorno) {
-            console.log("Erro do servidor:", dados);
-            alert("DEU RUIM DE MAIIIISSSS!!! APAGA, SOCORRO DEUS")
+            if (!retorno.ok) {
+                console.log("Erro do servidor:", dados);
+
+                setMensagem(
+                    dados.mensagem || "Erro ao realizar o cadastro."
+                );
+
+                return;
+            }
+
+            setMensagem(
+                dados.mensagem || "Cadastro realizado com sucesso!"
+            );
+
+            navigate("/login");
+
+        } catch (erro) {
+            console.error("Erro ao conectar com o servidor:", erro);
+
+            setMensagem(
+                "Não foi possível conectar ao servidor."
+            );
         }
-        if (dados.mensagem){
-            setMensagem(dados.mensagem);
-        }
-    };
+    }
 
     return (
         <main className={css.cadastro}>

@@ -1,15 +1,25 @@
-import React from 'react';
-import { FaGraduationCap } from 'react-icons/fa';
-import css from './MenuLateralAdm.module.css';
-import {Link} from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
+import { FaGraduationCap } from "react-icons/fa";
+import css from "./MenuLateralAdm.module.css";
 
-export default function MenuLateralAdm({ itemAtivo = 'inicio' }) {
+export default function MenuLateralAdm({ itemAtivo = "inicio" }) {
     return (
         <aside className={css.menuLateral}>
             <div className={css.menuTopo}>
                 <nav className={css.linksNavegacao}>
-                    <Link to={"/DashboardAdm/"} className={`${css.linkItem} ${itemAtivo === 'inicio' ? css.ativo : ''}`}>Início</Link>
-                    <Link to={"/DashboardAdm/GerenciamentoUsuarios"} className={`${css.linkItem} ${itemAtivo === 'usuarios' ? css.ativo : ''}`}>Gerenciar Usuários</Link>
+                    <Link
+                        to="/DashboardAdm"
+                        className={`${css.linkItem} ${itemAtivo === "inicio" ? css.ativo : ""}`}
+                    >
+                        Início
+                    </Link>
+                    <Link
+                        to="/DashboardAdm/GerenciamentoUsuarios"
+                        className={`${css.linkItem} ${itemAtivo === "usuarios" ? css.ativo : ""}`}
+                    >
+                        Gerenciar Usuários
+                    </Link>
                 </nav>
             </div>
 
