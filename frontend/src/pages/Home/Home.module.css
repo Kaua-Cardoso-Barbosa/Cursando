@@ -32,10 +32,11 @@
     font-weight: 700;
     letter-spacing: .05em;
     text-transform: uppercase;
+    padding-left: 50px;
 }
 .banner h1 {
     margin: 0 0 15px; color: inherit;
-    font-size: 4rem;
+    font-size: 70px;
     line-height: 1.1;
 }
 
