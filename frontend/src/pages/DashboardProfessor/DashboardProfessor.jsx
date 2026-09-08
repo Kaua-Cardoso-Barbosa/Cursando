@@ -1,57 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-    FaArchive,
     FaBookOpen,
-    FaBoxOpen,
-    FaEdit,
     FaFolderOpen,
-    FaGooglePlay,
     FaGraduationCap,
-    FaLinux,
-    FaLock,
-    FaPlay,
     FaPlayCircle,
     FaPlus,
-    FaTrash,
-    FaUnlock,
-    FaUpload,
-    FaUser,
-    FaUsers,
-    FaWindows
+    FaUsers
 } from "react-icons/fa";
 import MenuLateralProf from "../../components/MenuLateral/MenuLateralProf.jsx";
-import Button from "../../components/Button/Button.jsx";
 import ConfirmAlert from "../../components/ConfirmAlert/ConfirmAlert.jsx";
+import CabecalhoProfessor from "../../components/DashboardProfessor/CabecalhoProfessor.jsx";
+import CardMetricaProfessor from "../../components/DashboardProfessor/CardMetricaProfessor.jsx";
+import ItemCardProfessor from "../../components/DashboardProfessor/ItemCardProfessor.jsx";
+import FormularioModalProfessor from "../../components/DashboardProfessor/FormularioModalProfessor.jsx";
+import EstadoVazioProfessor from "../../components/DashboardProfessor/EstadoVazioProfessor.jsx";
+import RodapeProfessor from "../../components/DashboardProfessor/RodapeProfessor.jsx";
 import css from "./DashboardProfessor.module.css";
 
 const STATUS_PRIVADO = 0;
 const STATUS_PUBLICADO = 1;
 const STATUS_ARQUIVADO = 2;
-
-const cursoVazio = {
-    titulo: "",
-    descricao: "",
-    arquivo: null
-};
-
-const aulaVazia = {
-    titulo: "",
-    descricao: "",
-    arquivo: null
-};
-
-function resolverUrlMidia(api, caminho) {
-    if (!caminho) {
-        return "";
-    }
-
-    if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) {
-        return caminho;
-    }
-
-    return `${api}${caminho}`;
-}
 
 export default function DashboardProfessor({
                                                api,
@@ -199,8 +168,18 @@ export default function DashboardProfessor({
         dados.append("titulo", form.titulo);
         dados.append("descricao", form.descricao);
 
-        if (form.arquivo) {
-            dados.append(modal.tipo === "curso" ? "imagem" : "video", form.arquivo);
+        if (modal.tipo === "curso") {
+            if (form.arquivo) {
+                dados.append("imagem", form.arquivo);
+            }
+        } else {
+            if (form.arquivo) {
+                dados.append("video", form.arquivo);
+            }
+
+            if (form.thumb) {
+                dados.append("thumb", form.thumb);
+            }
         }
 
         return dados;
@@ -341,15 +320,15 @@ export default function DashboardProfessor({
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    <Cabecalho usuario={usuario} sair={sair} />
+                    <CabecalhoProfessor usuario={usuario} sair={sair} />
 
                     {visao === "inicio" && (
                         <>
                             <section className={css.gridMetricas}>
-                                <CardMetrica titulo="Cursos cadastrados" detalhe="Total criado por você" valor={metricas.cursos_cadastrados || 0} icone={<FaGraduationCap />} />
-                                <CardMetrica titulo="Total de alunos" detalhe="Matrículas em seus cursos" valor={metricas.total_alunos || 0} icone={<FaUsers />} />
-                                <CardMetrica titulo="Aulas publicadas" detalhe="Vídeo-aulas disponíveis" valor={metricas.aulas_publicadas || 0} icone={<FaPlayCircle />} />
-                                <CardMetrica titulo="Cursos privados" detalhe="Aguardando publicação" valor={metricas.cursos_privados || 0} icone={<FaFolderOpen />} />
+                                <CardMetricaProfessor titulo="Cursos cadastrados" detalhe="Total criado por você" valor={metricas.cursos_cadastrados || 0} icone={<FaGraduationCap />} />
+                                <CardMetricaProfessor titulo="Total de alunos" detalhe="Matrículas em seus cursos" valor={metricas.total_alunos || 0} icone={<FaUsers />} />
+                                <CardMetricaProfessor titulo="Aulas publicadas" detalhe="Vídeo-aulas disponíveis" valor={metricas.aulas_publicadas || 0} icone={<FaPlayCircle />} />
+                                <CardMetricaProfessor titulo="Cursos privados" detalhe="Aguardando publicação" valor={metricas.cursos_privados || 0} icone={<FaFolderOpen />} />
                             </section>
 
                             <section className={css.secaoAcessos}>
@@ -360,9 +339,9 @@ export default function DashboardProfessor({
                                     </button>
                                 </div>
                                 <div className={css.carrosselCursos}>
-                                    {recentes.length === 0 && <EstadoVazio texto="Nenhum curso criado ainda." />}
+                                    {recentes.length === 0 && <EstadoVazioProfessor texto="Nenhum curso criado ainda." />}
                                     {recentes.map((curso) => (
-                                        <CursoCard key={curso.id} curso={curso} api={api} onAbrir={abrirAulas} />
+                                        <ItemCardProfessor key={curso.id} tipo="curso" item={curso} api={api} usuario={usuario} onAbrir={abrirAulas} />
                                     ))}
                                 </div>
                             </section>
@@ -385,14 +364,16 @@ export default function DashboardProfessor({
                             </div>
 
                             {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
-                            {!carregando && cursos.length === 0 && <EstadoVazio texto="Nenhum curso encontrado nesse filtro." />}
+                            {!carregando && cursos.length === 0 && <EstadoVazioProfessor texto="Nenhum curso encontrado nesse filtro." />}
 
                             <div className={css.gridCursos}>
                                 {cursos.map((curso) => (
-                                    <CursoCard
+                                    <ItemCardProfessor
                                         key={curso.id}
-                                        curso={curso}
+                                        tipo="curso"
+                                        item={curso}
                                         api={api}
+                                        usuario={usuario}
                                         onAbrir={abrirAulas}
                                         onEditar={() => setModal({ tipo: "curso", item: curso })}
                                         onExcluir={() => setConfirmacao({ tipo: "curso", item: curso })}
@@ -424,14 +405,16 @@ export default function DashboardProfessor({
                             </div>
 
                             {carregando && <p className={css.textoApoio}>Carregando aulas...</p>}
-                            {!carregando && aulas.length === 0 && <EstadoVazio texto="Nenhuma aula criada para este curso." />}
+                            {!carregando && aulas.length === 0 && <EstadoVazioProfessor texto="Nenhuma aula criada para este curso." />}
 
                             <div className={css.gridAulas}>
                                 {aulas.map((aula) => (
-                                    <AulaCard
+                                    <ItemCardProfessor
                                         key={aula.id}
-                                        aula={aula}
+                                        tipo="aula"
+                                        item={aula}
                                         api={api}
+                                        usuario={usuario}
                                         onEditar={() => setModal({ tipo: "aula", item: aula })}
                                         onExcluir={() => setConfirmacao({ tipo: "aula", item: aula })}
                                         onStatus={(status) => alterarStatusAula(aula, status)}
@@ -442,11 +425,11 @@ export default function DashboardProfessor({
                     )}
                 </main>
 
-                <Rodape />
+                <RodapeProfessor />
             </div>
 
             {modal && (
-                <FormularioModal
+                <FormularioModalProfessor
                     tipo={modal.tipo}
                     item={modal.item}
                     salvando={salvando}
@@ -485,183 +468,5 @@ export default function DashboardProfessor({
                 }}
             />
         </div>
-    );
-}
-
-function Cabecalho({ usuario, sair }) {
-    return (
-        <header className={css.cabecalhoUsuario}>
-            <div className={css.dadosUsuario}>
-                <h1>Olá {usuario.nome}</h1>
-                <span className={css.cargoUsuario}>Professor(a)</span>
-            </div>
-
-            <div className={css.acoesUsuario}>
-                <Button texto="Sair" fundoCor="vermelho" tamanho="pequeno" onClick={sair} />
-                <div className={css.fotoPerfil}>
-                    <FaUser />
-                </div>
-            </div>
-        </header>
-    );
-}
-
-function CardMetrica({ titulo, detalhe, valor, icone }) {
-    return (
-        <article className={css.cardMetrica}>
-            <div className={css.metricaTopo}>
-                <h2>{titulo}</h2>
-                <div className={css.iconeBadge}>{icone}</div>
-            </div>
-            <span className={css.metricaVariacao}>{detalhe}</span>
-            <strong className={css.metricaNumero}>{valor}</strong>
-        </article>
-    );
-}
-
-function CursoCard({ curso, api, onAbrir, onEditar, onExcluir, onStatus, gerenciavel = false }) {
-    const imagem = curso.imagem ? resolverUrlMidia(api, curso.imagem) : "/imagens_banner_curso/design.png";
-
-    return (
-        <article className={css.cardCurso}>
-            <button className={css.areaCardClicavel} onClick={() => onAbrir(curso)}>
-                <img src={imagem} alt={curso.titulo} className={css.imagemCurso} />
-                <div className={css.infoCurso}>
-                    <div>
-                        <h3>{curso.titulo}</h3>
-                        <p>{curso.descricao}</p>
-                    </div>
-                    <span className={css.statusBadge}>{curso.status_nome}</span>
-                </div>
-            </button>
-
-            {gerenciavel && (
-                <div className={css.acoesCard}>
-                    <button title="Editar curso" onClick={onEditar}><FaEdit /></button>
-                    {curso.status !== STATUS_PUBLICADO && <button title="Publicar curso" onClick={() => onStatus(STATUS_PUBLICADO)}><FaUnlock /></button>}
-                    {curso.status !== STATUS_PRIVADO && <button title="Privar curso" onClick={() => onStatus(STATUS_PRIVADO)}><FaLock /></button>}
-                    {curso.status !== STATUS_ARQUIVADO && <button title="Arquivar curso" onClick={() => onStatus(STATUS_ARQUIVADO)}><FaArchive /></button>}
-                    <button title="Excluir curso" className={css.botaoExcluir} onClick={onExcluir}><FaTrash /></button>
-                </div>
-            )}
-        </article>
-    );
-}
-
-function AulaCard({ aula, api, onEditar, onExcluir, onStatus }) {
-    return (
-        <article className={css.cardAula}>
-            <div className={css.videoPreview}>
-                {aula.video ? (
-                    <video src={resolverUrlMidia(api, aula.video)} controls />
-                ) : (
-                    <FaPlay />
-                )}
-            </div>
-            <div className={css.infoAula}>
-                <div>
-                    <h3>{aula.titulo}</h3>
-                    <p>{aula.descricao}</p>
-                    <span className={css.statusBadge}>{aula.status_nome}</span>
-                </div>
-                <div className={css.acoesCard}>
-                    <button title="Editar aula" onClick={onEditar}><FaEdit /></button>
-                    {aula.status !== STATUS_PUBLICADO && <button title="Publicar aula" onClick={() => onStatus(STATUS_PUBLICADO)}><FaUnlock /></button>}
-                    {aula.status !== STATUS_PRIVADO && <button title="Privar aula" onClick={() => onStatus(STATUS_PRIVADO)}><FaLock /></button>}
-                    <button title="Excluir aula" className={css.botaoExcluir} onClick={onExcluir}><FaTrash /></button>
-                </div>
-            </div>
-        </article>
-    );
-}
-
-function FormularioModal({ tipo, item, salvando, onFechar, onSalvar }) {
-    const editando = Boolean(item);
-    const [form, setForm] = useState({
-        ...(tipo === "curso" ? cursoVazio : aulaVazia),
-        titulo: item?.titulo || "",
-        descricao: item?.descricao || ""
-    });
-
-    function enviar(evento) {
-        evento.preventDefault();
-        onSalvar(form);
-    }
-
-    const titulo = `${editando ? "Editar" : "Adicionar"} ${tipo}`;
-    const arquivoLabel = tipo === "curso" ? "Enviar imagem" : "Enviar vídeo";
-    const accept = tipo === "curso" ? "image/png,image/jpeg,image/webp" : "video/mp4,video/webm,video/ogg,video/quicktime";
-
-    return (
-        <div className={css.overlayModal}>
-            <form className={css.modalFormulario} onSubmit={enviar}>
-                <h2>{titulo}</h2>
-
-                <label>
-                    Título:
-                    <input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
-                </label>
-
-                <label>
-                    Descrição:
-                    <textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} required />
-                </label>
-
-                <label className={css.uploadBox}>
-                    <FaUpload />
-                    <span>{form.arquivo?.name || arquivoLabel}</span>
-                    <input type="file" accept={accept} onChange={(e) => setForm({ ...form, arquivo: e.target.files[0] || null })} />
-                </label>
-
-                <div className={css.acoesModal}>
-                    <button type="button" className={css.botaoSecundario} onClick={onFechar}>Cancelar</button>
-                    <button type="submit" className={css.botaoPrimario} disabled={salvando}>
-                        {salvando ? "Salvando..." : editando ? "Salvar" : "Adicionar"}
-                    </button>
-                </div>
-
-                {tipo === "curso" && !editando && (
-                    <p className={css.avisoModal}>Os cursos são cadastrados como privados. Publique quando estiver pronto.</p>
-                )}
-            </form>
-        </div>
-    );
-}
-
-function EstadoVazio({ texto }) {
-    return (
-        <div className={css.estadoVazio}>
-            <FaBoxOpen />
-            <p>{texto}</p>
-        </div>
-    );
-}
-
-function Rodape() {
-    return (
-        <footer className={css.rodapePagina}>
-            <div className={css.colunaRodape}>
-                <h4>Contato</h4>
-                <p>Birigui - SP</p>
-                <p>(18)98131-3801</p>
-                <p>cursando@gmail.com</p>
-            </div>
-
-            <div className={css.colunaRodape}>
-                <h4>Navegação</h4>
-                <a href="/">Home</a>
-                <a href="/login">Login</a>
-                <a href="/cadastro">Cadastro</a>
-            </div>
-
-            <div className={css.colunaRodape}>
-                <h4>Baixe nosso aplicativo</h4>
-                <ul className={css.listaApps}>
-                    <li><FaGooglePlay /> Playstore</li>
-                    <li><FaLinux /> Linux</li>
-                    <li><FaWindows /> Windows</li>
-                </ul>
-            </div>
-        </footer>
     );
 }

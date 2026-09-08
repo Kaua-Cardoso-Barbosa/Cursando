@@ -352,6 +352,16 @@
     justify-content: center;
     color: #000000;
     font-size: 3.6rem;
+    overflow: hidden;
+}
+
+.videoPreview img,
+.imagemAula {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    background: #d9d9d9;
 }
 
 .videoPreview video {
@@ -384,37 +394,37 @@
     position: fixed;
     inset: 0;
     z-index: 40;
-    background:
-        linear-gradient(rgba(6, 166, 99, 0.88), rgba(2, 105, 62, 0.88)),
-        url("/imagens_assets/banner.png") center / cover;
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 32px;
+    overflow-y: auto;
+}
+
+.formularioModal {
+    width: min(620px, calc(100vw - 64px));
+    max-height: min(90vh, 680px);
+    background-color: white;
+    border-radius: 6px;
+    padding: clamp(16px, 2vw, 26px) clamp(20px, 3vw, 30px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.formularioModal h1 {
+    margin: 0 0 14px;
+    color: #000000;
+    font-size: clamp(30px, 3vw, 40px);
+    font-weight: 700;
+    text-align: center;
 }
 
 .modalFormulario {
-    width: min(710px, 100%);
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 34px 44px 30px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
-}
-
-.modalFormulario h2 {
-    color: #ffffff;
-    position: absolute;
-    top: 68px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 2.4rem;
-    line-height: 1.1;
-    font-weight: 700;
-    margin: 0;
-    text-align: center;
-    letter-spacing: 0;
+    gap: 7px;
 }
 
 .modalFormulario label {
@@ -428,29 +438,34 @@
 
 .modalFormulario input,
 .modalFormulario textarea {
-    min-height: 42px;
+    min-height: 36px;
     border: 2px solid #06a663;
     border-radius: 7px;
     background: #eeeeee;
     color: #111111;
     font: inherit;
-    padding: 8px 12px;
+    padding: 7px 11px;
     resize: vertical;
 }
 
 .modalFormulario textarea {
-    min-height: 76px;
+    min-height: 70px;
 }
 
 .uploadBox {
-    min-height: 170px;
-    border: 2px solid #06a663;
+    min-height: 120px;
+    border: 2px dashed #06a663;
     border-radius: 10px;
     background: #f7f7f7;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     text-align: center;
+    color: #444444;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-weight: 600;
 }
 
 .uploadBox svg {
@@ -467,12 +482,14 @@
     align-items: center;
     justify-content: center;
     gap: 30px;
+    margin-top: 10px;
 }
 
 .avisoModal {
     color: #111111;
     font-size: 0.85rem;
     text-align: center;
+    margin: 0;
 }
 
 .rodapePagina {
@@ -594,7 +611,7 @@
     }
 
     .acoesModal {
-        flex-direction: column;
+        flex-direction: row;
         gap: 14px;
     }
 

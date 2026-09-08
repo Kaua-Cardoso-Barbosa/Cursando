@@ -165,7 +165,7 @@ def verificar_codigo(email, codigo):
 def enviando_email(destinatario, assunto, mensagem, codigo, nome, mensagem_secundaria):
 
     user = "nikola11tech@gmail.com"
-    senha = "ucqs orwa wmdu zgse"
+    senha = "crio vxuo ocwh xgjf"
     try:
         with app.app_context():
             html = render_template("codigo_verificacao.html", mensagem=mensagem, codigo=codigo, nome=nome, mensagem_secundaria=mensagem_secundaria)

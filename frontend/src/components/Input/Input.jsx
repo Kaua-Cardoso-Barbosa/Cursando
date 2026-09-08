@@ -59,7 +59,7 @@ export default function Input({tipoInp, label, htmlFor, placeholder, classe = ''
         )
     } else if (tipoInp == 'textarea') {
         return (
-            <div className={`d-flex flex-column w-75 m-auto my-3`} >
+            <div className={`d-flex flex-column w-100 m-auto my-1`} >
                 <div className={"d-flex"}>
                     <label htmlFor={htmlFor}>{label} </label>
                     {obrigatorio == "Sim" && (
@@ -72,7 +72,7 @@ export default function Input({tipoInp, label, htmlFor, placeholder, classe = ''
     }
 
     return (
-        <div className={`d-flex flex-column w-100 ${margin === "auto" && "m-auto my-3 "} `} >
+        <div className={`d-flex flex-column w-100 ${margin === "auto" && "m-auto my-2 "} `} >
             <div className={"d-flex"}>
                 <label htmlFor={htmlFor}>{label} </label>
                 {obrigatorio == "Sim" && (

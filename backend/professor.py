@@ -118,6 +118,34 @@ def salvar_upload(arquivo, subpasta, extensoes):
 
     return f"/static/uploads/{subpasta}/{nome_final}"
 
+def salvar_thumb_aula(id_aula, arquivo):
+    if not arquivo or not arquivo.filename:
+        return None
+
+    extensao = arquivo.filename.rsplit(".", 1)[-1].lower() if "." in arquivo.filename else ""
+    if extensao not in {"jpg", "jpeg", "png", "webp"}:
+        raise ValueError("Arquivo inválido. Use: jpg, jpeg, png, webp.")
+
+    pasta = os.path.join(current_app.root_path, "static", "uploads", "aulas", "thumbs")
+    os.makedirs(pasta, exist_ok=True)
+
+    nome_final = f"{id_aula}.{extensao}"
+    caminho = os.path.join(pasta, nome_final)
+    if os.path.exists(caminho):
+        os.remove(caminho)
+
+    arquivo.save(caminho)
+    return f"/static/uploads/aulas/thumbs/{nome_final}"
+
+
+def thumb_aula_por_id(id_aula):
+    pasta = os.path.join(current_app.root_path, "static", "uploads", "aulas", "thumbs")
+    for extensao in ("jpg", "jpeg", "png", "webp"):
+        caminho = os.path.join(pasta, f"{id_aula}.{extensao}")
+        if os.path.exists(caminho):
+            return f"/static/uploads/aulas/thumbs/{id_aula}.{extensao}"
+    return ""
+
 
 def curso_para_dict(row):
     return {
@@ -133,12 +161,14 @@ def curso_para_dict(row):
 
 
 def aula_para_dict(row):
+    id_aula = row[0]
     return {
-        "id": row[0],
+        "id": id_aula,
         "id_curso": row[1],
         "titulo": row[2],
         "descricao": de_blob_texto(row[3]),
         "video": row[4],
+        "thumb": thumb_aula_por_id(id_aula),
         "status": row[5],
         "status_nome": STATUS_NOMES.get(row[5], "desconhecido"),
     }
@@ -529,11 +559,6 @@ def criar_aula_professor(id_curso):
     if not titulo or not descricao:
         return resposta("Título e descrição são obrigatórios.", 400)
 
-    try:
-        video_url = salvar_upload(request.files.get("video"), "aulas", {"mp4", "webm", "ogg", "mov"})
-    except ValueError as erro:
-        return resposta(str(erro), 400)
-
     con = get_db()
     cursor = con.cursor()
 
@@ -553,6 +578,13 @@ def criar_aula_professor(id_curso):
 
         cursor.execute("SELECT GEN_ID(GEN_VIDEOS_ID, 1) FROM RDB$DATABASE")
         id_aula = cursor.fetchone()[0]
+
+        try:
+            video_url = salvar_upload(request.files.get("video"), "aulas", {"mp4", "webm", "ogg", "mov"})
+            thumb_url = salvar_thumb_aula(id_aula, request.files.get("thumb"))
+        except ValueError as erro:
+            return resposta(str(erro), 400)
+
         cursor.execute(
             """
             INSERT INTO VIDEOS (
@@ -564,7 +596,7 @@ def criar_aula_professor(id_curso):
             (id_aula, id_curso, uuid4().hex, titulo, criar_slug(titulo), para_blob_texto(descricao), video_url),
         )
         con.commit()
-        return resposta("Aula cadastrada como privada.", 201, "sucesso", id_aula=id_aula)
+        return resposta("Aula cadastrada como privada.", 201, "sucesso", id_aula=id_aula, thumb=thumb_url)
     except Exception as erro:
         con.rollback()
         return resposta(f"Erro ao cadastrar aula: {erro}", 500)
@@ -588,6 +620,7 @@ def editar_aula_professor(id_aula):
 
     try:
         novo_video = salvar_upload(request.files.get("video"), "aulas", {"mp4", "webm", "ogg", "mov"})
+        nova_thumb = salvar_thumb_aula(id_aula, request.files.get("thumb"))
     except ValueError as erro:
         return resposta(str(erro), 400)
 
@@ -617,7 +650,7 @@ def editar_aula_professor(id_aula):
             tuple(parametros),
         )
         con.commit()
-        return resposta("Aula atualizada com sucesso.", 200, "sucesso")
+        return resposta("Aula atualizada com sucesso.", 200, "sucesso", thumb=nova_thumb or thumb_aula_por_id(id_aula))
     except Exception as erro:
         con.rollback()
         return resposta(f"Erro ao atualizar aula: {erro}", 500)
