@@ -23,7 +23,7 @@ export default function App() {
 
 function AppConteudo() {
 
-    const api = `http://10.92.11.21:5000`
+    const api = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
     const navigate = useNavigate();
 
