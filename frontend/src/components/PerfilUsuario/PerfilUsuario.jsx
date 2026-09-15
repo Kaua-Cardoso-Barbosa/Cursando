@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import Input from "../Input/Input.jsx";
 import Button from "../Button/Button.jsx";
 import css from "./PerfilUsuario.module.css";
+import validarNome from "../../utils/validarNome";
 
 export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) {
     const [perfil, setPerfil] = useState({
@@ -74,6 +75,15 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
         evento.preventDefault();
         setSalvando(true);
         setErroLocal("");
+
+        if (!validarNome(perfil.nome)) {
+            avisar({
+                tipo: "erro",
+                descricao: "Informe um nome valido, usando apenas letras, espacos, hifens ou apostrofos."
+            });
+            setSalvando(false);
+            return;
+        }
 
         try {
             const resposta = await fetch(`${api}/perfil`, {

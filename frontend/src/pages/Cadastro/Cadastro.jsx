@@ -3,6 +3,7 @@ import { useState } from "react";
 import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
 import {Link, useNavigate} from "react-router-dom";
+import validarNome from "../../utils/validarNome";
 
 export default function Cadastro({api, setMensagem}) {
     const [nome, setNome] = useState("");
@@ -15,6 +16,14 @@ export default function Cadastro({api, setMensagem}) {
 
     async function cadastrar(e) {
         e.preventDefault();
+
+        if (!validarNome(nome)) {
+            setMensagem({
+                tipo: "erro",
+                descricao: "Informe um nome valido, usando apenas letras, espacos, hifens ou apostrofos."
+            });
+            return;
+        }
 
         try {
             const retorno = await fetch(`${api}/cadastrar`, {

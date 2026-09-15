@@ -23,6 +23,7 @@ export default function DashboardProfessor({
                                                api,
                                                sair,
                                                setMensagem,
+                                               onPerfilAtualizado,
                                                usuario = { nome: "Professor", tipo: 1 }
                                            }) {
     const [visao, setVisao] = useState("inicio");
@@ -507,7 +508,7 @@ export default function DashboardProfessor({
 
                     {visao === "perfil" && (
                         <section className={css.secaoPerfil}>
-                            <PerfilUsuario api={api} setMensagem={setMensagem} />
+                            <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                         </section>
                     )}
                 </main>

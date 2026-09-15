@@ -56,7 +56,17 @@ export default function RotaProtegida({
         return <Navigate to="/login" replace />;
     }
 
+    function atualizarUsuario(dadosAtualizados) {
+        setUsuario((usuarioAtual) => ({
+            ...usuarioAtual,
+            ...dadosAtualizados
+        }));
+
+        children.props.onPerfilAtualizado?.(dadosAtualizados);
+    }
+
     return cloneElement(children, {
-        usuario
+        usuario,
+        onPerfilAtualizado: atualizarUsuario
     });
 }

@@ -1,5 +1,6 @@
 import os
 import re
+import unicodedata
 
 import fdb
 from flask import current_app, jsonify, make_response, request
@@ -49,6 +50,27 @@ def cpf_valido(cpf):
     return len(re.sub(r"\D", "", cpf or "")) == 11
 
 
+def nome_valido(nome):
+    nome_normalizado = unicodedata.normalize("NFC", (nome or "").strip())
+
+    if not 2 <= len(nome_normalizado) <= 100:
+        return False
+
+    if nome_normalizado.casefold() in {"teste", "test", "nome", "asdf", "abc"}:
+        return False
+
+    partes = nome_normalizado.split()
+    if any(len(parte) < 1 for parte in partes):
+        return False
+
+    padrao_nome = r"^[^\W\d_]+(?:[ '’-][^\W\d_]+)*$"
+    if not re.fullmatch(padrao_nome, nome_normalizado, flags=re.UNICODE):
+        return False
+
+    letras = re.findall(r"[^\W\d_]", nome_normalizado, flags=re.UNICODE)
+    return len(set("".join(letras).casefold())) > 1
+
+
 def mensagem_senha_invalida():
     return "A senha deve ter de 8 a 12 caracteres, com letra maiuscula, letra minuscula, numero e caractere especial."
 
@@ -56,6 +78,8 @@ def mensagem_senha_invalida():
 def validar_dados_usuario(nome, email, cpf):
     if not nome or not nome.strip():
         return "Nome e obrigatorio"
+    if not nome_valido(nome):
+        return "Informe um nome valido, usando apenas letras, espacos, hifens ou apostrofos."
     if not email:
         return "E-mail e obrigatorio"
     if not email_valido(email):
@@ -213,6 +237,9 @@ def editar_usuario_admin(id_usuario):
     cpf_recebido = (dados.get("cpf") or "").strip()
     senha = dados.get("senha") or ""
     confirmar_senha = dados.get("confirmar_senha") or ""
+
+    if nome_recebido and not nome_valido(nome_recebido):
+        return resposta_mensagem("Informe um nome valido, usando apenas letras, espacos, hifens ou apostrofos.", 400)
 
     erro_senha = validar_campos_senha(senha, confirmar_senha, obrigatoria=False)
     if erro_senha:
@@ -461,6 +488,9 @@ def editar_perfil():
     cpf_recebido = (dados.get("cpf") or "").strip()
     senha = dados.get("senha") or ""
     confirmar_senha = dados.get("confirmar_senha") or ""
+
+    if nome_recebido and not nome_valido(nome_recebido):
+        return resposta_mensagem("Informe um nome valido, usando apenas letras, espacos, hifens ou apostrofos.", 400)
 
     erro_senha = validar_campos_senha(senha, confirmar_senha, obrigatoria=False)
     if erro_senha:

@@ -16,6 +16,7 @@ export default function DashboardAluno({
                                            api,
                                            sair,
                                            setMensagem,
+                                           onPerfilAtualizado,
                                            usuario = { nome: "Aluno", tipo: 2 },
                                            metricas = {
                                                inscritos: { quantidade: 6, textoMes: "+1 nesse mes" },
@@ -60,7 +61,7 @@ export default function DashboardAluno({
                 <main className={css.areaConteudo}>
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
-                            <h1>Ola {usuario.nome}</h1>
+                            <h1>Olá {usuario.nome}</h1>
                             <span className={css.cargoUsuario}>
                                 {Number(usuario.tipo) === 0 && "Administrador"}
                                 {Number(usuario.tipo) === 1 && "Professor"}
@@ -82,7 +83,7 @@ export default function DashboardAluno({
                     </header>
 
                     {exibindoPerfil ? (
-                        <PerfilUsuario api={api} setMensagem={setMensagem} />
+                        <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                     ) : (
                         <>
                             <section className={css.secaoMetricas}>

@@ -18,6 +18,7 @@ export default function DashboardAdm({
                                          api,
                                          sair,
                                          setMensagem,
+                                         onPerfilAtualizado,
                                          usuario,
                                          metricas = [
                                              { id: 1, titulo: "Total de professores", textoMes: "+6 cadastros nesse mes", quantidade: 15, icone: <FaGraduationCap /> },
@@ -59,7 +60,7 @@ export default function DashboardAdm({
                     </header>
 
                     {exibindoPerfil ? (
-                        <PerfilUsuario api={api} setMensagem={setMensagem} />
+                        <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                     ) : (
                         <section className={css.secaoMetricas}>
                             {metricas.map((metrica) => (

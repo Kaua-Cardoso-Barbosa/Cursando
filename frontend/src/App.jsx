@@ -10,7 +10,7 @@ import GerenciamentoUsuarios from "./pages/DashboardAdm/GerenciamentoUsuarios.js
 import DashboardProfessor from "./pages/DashboardProfessor/DashboardProfessor.jsx";
 import Alerts from "./components/Alerts/Alerts.jsx";
 import ConfirmAlert from "./components/ConfirmAlert/ConfirmAlert.jsx";
-import {useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import RotaRestrita from "./components/RotaRestrita/RotaRestrita.jsx";
 
 export default function App() {
@@ -29,6 +29,38 @@ function AppConteudo() {
 
     const [mensagem, setMensagem] = useState('');
     const [confirmarLogout, setConfirmarLogout] = useState(false);
+    const [usuario, setUsuario] = useState(null);
+
+    const atualizarSessao = useCallback(async () => {
+        try {
+            const retorno = await fetch(`${api}/verificar_token`, {
+                method: "GET",
+                credentials: "include"
+            });
+
+            if (!retorno.ok) {
+                setUsuario(null);
+                return;
+            }
+
+            const dados = await retorno.json();
+            setUsuario(dados.autenticado ? dados : null);
+        } catch (erro) {
+            console.error("Erro ao verificar sessao:", erro);
+            setUsuario(null);
+        }
+    }, [api]);
+
+    useEffect(() => {
+        atualizarSessao();
+    }, [atualizarSessao]);
+
+    function atualizarUsuario(dadosAtualizados) {
+        setUsuario((usuarioAtual) => ({
+            ...usuarioAtual,
+            ...dadosAtualizados
+        }));
+    }
 
     function sair() {
         setConfirmarLogout(true);
@@ -49,6 +81,7 @@ function AppConteudo() {
             }
 
             setConfirmarLogout(false);
+            setUsuario(null);
             navigate("/login", { replace: true });
 
         } catch (erro) {
@@ -60,7 +93,7 @@ function AppConteudo() {
 
     return (
         <>
-            <Header api={api}/>
+            <Header usuario={usuario}/>
             {mensagem && <Alerts key={mensagem.id} tipo={mensagem.tipo} imagem={`/imagens_assets/${mensagem.tipo}.png`} duracao={'8000'} descricao={mensagem.descricao} fechar={() => setMensagem(null)} />}
             <ConfirmAlert
                 aberto={confirmarLogout}
@@ -71,31 +104,31 @@ function AppConteudo() {
             />
             <Routes>
                 <Route path="/" element={<Home/>}/>
-                <Route path="/login" element={<Login api={api} setMensagem={setMensagem}/>}/>
+                <Route path="/login" element={<Login api={api} setMensagem={setMensagem} atualizarSessao={atualizarSessao}/>}/>
                 <Route path="*" element={<Pagina404/>}/>
                 <Route path="/cadastro" element={<Cadastro api={api} setMensagem={setMensagem}/>}/>
 
                 <Route path="/DashboardAluno/*" element={
                     <RotaRestrita api={api} tipoPermitido={2}>
-                        <DashboardAluno api={api} sair={sair} setMensagem={setMensagem}/>
+                        <DashboardAluno api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
                     </RotaRestrita>
                 }/>
 
                 <Route path="/DashboardProfessor/*" element={
                     <RotaRestrita api={api} tipoPermitido={1}>
-                        <DashboardProfessor api={api} sair={sair} setMensagem={setMensagem}/>
+                        <DashboardProfessor api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
                     </RotaRestrita>
                 }/>
 
                 <Route path="/DashboardAdm" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
-                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem}/>
+                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
                     </RotaRestrita>
                 }/>
 
                 <Route path="/DashboardAdm/perfil" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
-                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem}/>
+                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
                     </RotaRestrita>
                 }/>
 

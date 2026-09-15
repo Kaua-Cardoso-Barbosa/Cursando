@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
 
-export default function Login({ api, setMensagem }) {
+export default function Login({ api, setMensagem, atualizarSessao }) {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [carregando, setCarregando] = useState(false);
@@ -85,6 +85,7 @@ export default function Login({ api, setMensagem }) {
                 return;
             }
 
+            await atualizarSessao();
             navigate(getRotaDashboard(dados));
         } catch (erro) {
             console.error("Erro ao fazer login:", erro);
