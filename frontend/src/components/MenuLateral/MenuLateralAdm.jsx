@@ -12,13 +12,19 @@ export default function MenuLateralAdm({ itemAtivo = "inicio" }) {
                         to="/DashboardAdm"
                         className={`${css.linkItem} ${itemAtivo === "inicio" ? css.ativo : ""}`}
                     >
-                        Início
+                        Inicio
                     </Link>
                     <Link
                         to="/DashboardAdm/GerenciamentoUsuarios"
                         className={`${css.linkItem} ${itemAtivo === "usuarios" ? css.ativo : ""}`}
                     >
-                        Gerenciar Usuários
+                        Gerenciar Usuarios
+                    </Link>
+                    <Link
+                        to="/DashboardAdm/perfil"
+                        className={`${css.linkItem} ${itemAtivo === "perfil" ? css.ativo : ""}`}
+                    >
+                        Perfil
                     </Link>
                 </nav>
             </div>

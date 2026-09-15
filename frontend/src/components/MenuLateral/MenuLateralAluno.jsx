@@ -26,6 +26,12 @@ export default function MenuLateralAluno({ itemAtivo = "inicio" }) {
                     >
                         Descobrir
                     </Link>
+                    <Link
+                        to="/DashboardAluno/perfil"
+                        className={`${css.linkItem} ${itemAtivo === "perfil" ? css.ativo : ""}`}
+                    >
+                        Perfil
+                    </Link>
                 </nav>
             </div>
 

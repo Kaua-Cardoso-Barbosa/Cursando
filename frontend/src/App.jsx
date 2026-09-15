@@ -23,7 +23,7 @@ export default function App() {
 
 function AppConteudo() {
 
-    const api = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const api = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5000`;
 
     const navigate = useNavigate();
 
@@ -77,7 +77,7 @@ function AppConteudo() {
 
                 <Route path="/DashboardAluno/*" element={
                     <RotaRestrita api={api} tipoPermitido={2}>
-                        <DashboardAluno api={api} sair={sair}/>
+                        <DashboardAluno api={api} sair={sair} setMensagem={setMensagem}/>
                     </RotaRestrita>
                 }/>
 
@@ -89,7 +89,13 @@ function AppConteudo() {
 
                 <Route path="/DashboardAdm" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
-                        <DashboardAdm api={api} sair={sair}/>
+                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem}/>
+                    </RotaRestrita>
+                }/>
+
+                <Route path="/DashboardAdm/perfil" element={
+                    <RotaRestrita api={api} tipoPermitido={0}>
+                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem}/>
                     </RotaRestrita>
                 }/>
 

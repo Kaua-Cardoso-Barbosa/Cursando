@@ -1,0 +1,77 @@
+.perfil {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.formulario {
+    width: 540px;
+    max-width: 100%;
+    padding: 17px 26px 24px;
+    background-color: white;
+    border: 1.5px solid #111111;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.formulario form {
+    width: 100%;
+}
+
+.formulario form > div {
+    width: 100%;
+}
+
+.formulario input {
+    width: 100%;
+    min-height: 38px;
+    display: block;
+    box-sizing: border-box;
+}
+
+.formulario h1 {
+    margin-top: 10px;
+    margin-bottom: 14px;
+    color: #000000;
+    font-size: 40px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.textoApoio,
+.erro,
+.campoObrigatorio {
+    margin: 8px 0;
+    font-size: 0.9rem;
+}
+
+.textoApoio {
+    color: #555555;
+    text-align: center;
+}
+
+.erro {
+    color: #b92318;
+    text-align: center;
+}
+
+.campoObrigatorio {
+    color: #777777;
+}
+
+.botoes {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+}
+
+@media (max-width: 600px) {
+    .formulario {
+        padding: 17px 22px 24px;
+    }
+
+    .formulario h1 {
+        font-size: 27px;
+        margin-bottom: 25px;
+    }
+}

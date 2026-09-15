@@ -16,11 +16,8 @@ import ItemCardProfessor from "../../components/DashboardProfessor/ItemCardProfe
 import FormularioModalProfessor from "../../components/DashboardProfessor/FormularioModalProfessor.jsx";
 import EstadoVazioProfessor from "../../components/DashboardProfessor/EstadoVazioProfessor.jsx";
 import RodapeProfessor from "../../components/DashboardProfessor/RodapeProfessor.jsx";
+import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import css from "./DashboardProfessor.module.css";
-
-const STATUS_PRIVADO = 0;
-const STATUS_PUBLICADO = 1;
-const STATUS_ARQUIVADO = 2;
 
 export default function DashboardProfessor({
                                                api,
@@ -139,6 +136,12 @@ export default function DashboardProfessor({
 
         if (location.pathname.endsWith("/cursos")) {
             setVisao("cursos");
+            setCursoSelecionado(null);
+            return;
+        }
+
+        if (location.pathname.endsWith("/perfil")) {
+            setVisao("perfil");
             setCursoSelecionado(null);
             return;
         }
@@ -316,7 +319,7 @@ export default function DashboardProfessor({
 
     return (
         <div className={css.painelProfessor}>
-            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : "meus-cursos"} />
+            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : "meus-cursos"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
@@ -421,6 +424,12 @@ export default function DashboardProfessor({
                                     />
                                 ))}
                             </div>
+                        </section>
+                    )}
+
+                    {visao === "perfil" && (
+                        <section className={css.secaoPerfil}>
+                            <PerfilUsuario api={api} setMensagem={setMensagem} />
                         </section>
                     )}
                 </main>

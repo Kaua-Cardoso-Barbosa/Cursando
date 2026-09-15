@@ -1,4 +1,5 @@
-import React from 'react';
+import React from "react";
+import { useLocation } from "react-router-dom";
 import {
     FaGraduationCap,
     FaUser,
@@ -7,31 +8,36 @@ import {
     FaGooglePlay,
     FaLinux,
     FaWindows
-} from 'react-icons/fa';
+} from "react-icons/fa";
 import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm.jsx";
-import css from './DashboardAdm.module.css';
+import css from "./DashboardAdm.module.css";
 import Button from "../../components/Button/Button.jsx";
+import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 
 export default function DashboardAdm({
+                                         api,
                                          sair,
+                                         setMensagem,
                                          usuario,
                                          metricas = [
-                                             { id: 1, titulo: "Total de professores", textoMes: "+6 cadastros nesse mês", quantidade: 15, icone: <FaGraduationCap /> },
-                                             { id: 2, titulo: "Total de alunos", textoMes: "+18 cadastros esse mês", quantidade: 38, icone: <FaUser /> },
-                                             { id: 3, titulo: "Aulas publicadas", textoMes: "10 vídeo-aulas esse mês", quantidade: 16, icone: <FaPlay /> },
-                                             { id: 4, titulo: "Cursos", textoMes: "+6 cursos criados esse mês", quantidade: 10, icone: <FaFolder /> }
+                                             { id: 1, titulo: "Total de professores", textoMes: "+6 cadastros nesse mes", quantidade: 15, icone: <FaGraduationCap /> },
+                                             { id: 2, titulo: "Total de alunos", textoMes: "+18 cadastros esse mes", quantidade: 38, icone: <FaUser /> },
+                                             { id: 3, titulo: "Aulas publicadas", textoMes: "10 video-aulas esse mes", quantidade: 16, icone: <FaPlay /> },
+                                             { id: 4, titulo: "Cursos", textoMes: "+6 cursos criados esse mes", quantidade: 10, icone: <FaFolder /> }
                                          ]
                                      }) {
+    const location = useLocation();
+    const exibindoPerfil = location.pathname.endsWith("/perfil");
 
     return (
         <div className={css.painelAdm}>
-            <MenuLateralAdm itemAtivo="inicio" />
+            <MenuLateralAdm itemAtivo={exibindoPerfil ? "perfil" : "inicio"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
-                            <h1>Olá {usuario.nome}</h1>
+                            <h1>Ola {usuario.nome}</h1>
                             <span className={css.cargoUsuario}>
                                 {Number(usuario.tipo) === 0 && "Administrador"}
                                 {Number(usuario.tipo) === 1 && "Professor"}
@@ -42,8 +48,8 @@ export default function DashboardAdm({
                         <div className={css.acoesUsuario}>
                             <Button
                                 texto="Sair"
-                                fundoCor={"vermelho"}
-                                tamanho={"pequeno"}
+                                fundoCor="vermelho"
+                                tamanho="pequeno"
                                 onClick={sair}
                             />
                             <div className={css.fotoPerfil}>
@@ -52,18 +58,22 @@ export default function DashboardAdm({
                         </div>
                     </header>
 
-                    <section className={css.secaoMetricas}>
-                        {metricas.map((metrica) => (
-                            <div key={metrica.id} className={css.cardMetrica}>
-                                <div className={css.metricaTopo}>
-                                    <h2>{metrica.titulo}</h2>
-                                    <div className={css.iconeBadge}>{metrica.icone}</div>
+                    {exibindoPerfil ? (
+                        <PerfilUsuario api={api} setMensagem={setMensagem} />
+                    ) : (
+                        <section className={css.secaoMetricas}>
+                            {metricas.map((metrica) => (
+                                <div key={metrica.id} className={css.cardMetrica}>
+                                    <div className={css.metricaTopo}>
+                                        <h2>{metrica.titulo}</h2>
+                                        <div className={css.iconeBadge}>{metrica.icone}</div>
+                                    </div>
+                                    <span className={css.metricaVariacao}>{metrica.textoMes}</span>
+                                    <div className={css.metricaNumero}>{metrica.quantidade}</div>
                                 </div>
-                                <span className={css.metricaVariacao}>{metrica.textoMes}</span>
-                                <div className={css.metricaNumero}>{metrica.quantidade}</div>
-                            </div>
-                        ))}
-                    </section>
+                            ))}
+                        </section>
+                    )}
                 </main>
 
                 <footer className={css.rodapePagina}>
@@ -75,7 +85,7 @@ export default function DashboardAdm({
                     </div>
 
                     <div className={css.colunaRodape}>
-                        <h4>Navegação</h4>
+                        <h4>Navegacao</h4>
                         <a href="#home">Home</a>
                         <a href="#login">Login</a>
                         <a href="#cadastro">Cadastro</a>

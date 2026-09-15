@@ -2,13 +2,13 @@ import {
     FaEdit,
     FaEye,
     FaLock,
-    FaPlay,
     FaTrash
 } from "react-icons/fa";
 import css from "../../pages/DashboardProfessor/DashboardProfessor.module.css";
 
 const STATUS_PRIVADO = 0;
 const STATUS_PUBLICADO = 1;
+const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
 
 function resolverUrlMidia(api, caminho) {
     if (!caminho) {
@@ -23,16 +23,12 @@ function resolverUrlMidia(api, caminho) {
 }
 
 export default function AulaCardProfessor({ aula, api, onEditar, onExcluir, onStatus }) {
-    const imagemThumb = aula.thumb ? resolverUrlMidia(api, aula.thumb) : "";
+    const imagemThumb = aula.thumb ? resolverUrlMidia(api, aula.thumb) : PLACEHOLDER_AULA;
 
     return (
         <article className={css.cardAula}>
             <div className={css.videoPreview}>
-                {imagemThumb ? (
-                    <img src={imagemThumb} alt={aula.titulo} className={css.imagemAula} />
-                ) : (
-                    <FaPlay />
-                )}
+                <img src={imagemThumb} alt={aula.titulo} className={css.imagemAula} />
             </div>
             <div className={css.infoAula}>
                 <div>

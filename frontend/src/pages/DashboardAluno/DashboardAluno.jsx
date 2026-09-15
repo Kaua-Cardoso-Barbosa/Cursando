@@ -1,60 +1,66 @@
-import React from 'react';
+import React from "react";
+import { useLocation } from "react-router-dom";
 import {
     FaGraduationCap,
     FaUser,
     FaGooglePlay,
     FaLinux,
     FaWindows
-} from 'react-icons/fa';
+} from "react-icons/fa";
 import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno.jsx";
-import css from './DashboardAluno.module.css';
+import css from "./DashboardAluno.module.css";
 import Button from "../../components/Button/Button.jsx";
+import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 
 export default function DashboardAluno({
+                                           api,
                                            sair,
-                                           usuario = { nome: "Gabriel Belinelo", tipo: "Aluno" },
+                                           setMensagem,
+                                           usuario = { nome: "Aluno", tipo: 2 },
                                            metricas = {
-                                               inscritos: { quantidade: 6, textoMes: "+1 nesse mês" },
-                                               finalizados: { quantidade: 2, textoMes: "+2 nesse mês" },
-                                               iniciados: { quantidade: 1, textoMes: "+1 nesse mês" }
+                                               inscritos: { quantidade: 6, textoMes: "+1 nesse mes" },
+                                               finalizados: { quantidade: 2, textoMes: "+2 nesse mes" },
+                                               iniciados: { quantidade: 1, textoMes: "+1 nesse mes" }
                                            },
                                            aulasRecentes = [
                                                {
                                                    id: 1,
                                                    titulo: "Texto 1",
-                                                   descricao: "Descrição do card 1",
+                                                   descricao: "Descricao do card 1",
                                                    imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
                                                },
                                                {
                                                    id: 2,
                                                    titulo: "Texto",
-                                                   descricao: "Descrição Diferente",
+                                                   descricao: "Descricao Diferente",
                                                    imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
                                                },
                                                {
                                                    id: 3,
                                                    titulo: "Texto",
-                                                   descricao: "Descrição Diferente",
+                                                   descricao: "Descricao Diferente",
                                                    imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
                                                },
                                                {
                                                    id: 4,
                                                    titulo: "Texto",
-                                                   descricao: "Descrição Diferente",
+                                                   descricao: "Descricao Diferente",
                                                    imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
                                                }
                                            ]
                                        }) {
+    const location = useLocation();
+    const exibindoPerfil = location.pathname.endsWith("/perfil");
+
     return (
         <div className={css.painelAluno}>
-            <MenuLateralAluno itemAtivo="inicio" />
+            <MenuLateralAluno itemAtivo={exibindoPerfil ? "perfil" : "inicio"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
-                            <h1>Olá {usuario.nome}</h1>
+                            <h1>Ola {usuario.nome}</h1>
                             <span className={css.cargoUsuario}>
                                 {Number(usuario.tipo) === 0 && "Administrador"}
                                 {Number(usuario.tipo) === 1 && "Professor"}
@@ -65,8 +71,8 @@ export default function DashboardAluno({
                         <div className={css.acoesUsuario}>
                             <Button
                                 texto="Sair"
-                                fundoCor={"vermelho"}
-                                tamanho={"pequeno"}
+                                fundoCor="vermelho"
+                                tamanho="pequeno"
                                 onClick={sair}
                             />
                             <div className={css.fotoPerfil}>
@@ -75,66 +81,71 @@ export default function DashboardAluno({
                         </div>
                     </header>
 
-                    <section className={css.secaoMetricas}>
-                        <div className={css.linhaMetricas}>
-                            <div className={css.cardMetrica}>
-                                <div className={css.metricaTopo}>
-                                    <h2>Cursos inscritos</h2>
-                                    <div className={css.iconeBadge}>
-                                        <FaGraduationCap />
+                    {exibindoPerfil ? (
+                        <PerfilUsuario api={api} setMensagem={setMensagem} />
+                    ) : (
+                        <>
+                            <section className={css.secaoMetricas}>
+                                <div className={css.linhaMetricas}>
+                                    <div className={css.cardMetrica}>
+                                        <div className={css.metricaTopo}>
+                                            <h2>Cursos inscritos</h2>
+                                            <div className={css.iconeBadge}>
+                                                <FaGraduationCap />
+                                            </div>
+                                        </div>
+                                        <span className={css.metricaVariacao}>{metricas.inscritos.textoMes}</span>
+                                        <div className={css.metricaNumero}>{metricas.inscritos.quantidade}</div>
+                                    </div>
+
+                                    <div className={css.cardMetrica}>
+                                        <div className={css.metricaTopo}>
+                                            <h2>Cursos finalizados</h2>
+                                            <div className={css.iconeBadge}>
+                                                <FaGraduationCap />
+                                            </div>
+                                        </div>
+                                        <span className={css.metricaVariacao}>{metricas.finalizados.textoMes}</span>
+                                        <div className={css.metricaNumero}>{metricas.finalizados.quantidade}</div>
                                     </div>
                                 </div>
-                                <span className={css.metricaVariacao}>{metricas.inscritos.textoMes}</span>
-                                <div className={css.metricaNumero}>{metricas.inscritos.quantidade}</div>
-                            </div>
 
-                            <div className={css.cardMetrica}>
-                                <div className={css.metricaTopo}>
-                                    <h2>Cursos finalizados</h2>
-                                    <div className={css.iconeBadge}>
-                                        <FaGraduationCap />
+                                <div className={`${css.linhaMetricas} ${css.centralizado}`}>
+                                    <div className={css.cardMetrica}>
+                                        <div className={css.metricaTopo}>
+                                            <h2>Cursos iniciados</h2>
+                                            <div className={css.iconeBadge}>
+                                                <FaGraduationCap />
+                                            </div>
+                                        </div>
+                                        <span className={css.metricaVariacao}>{metricas.iniciados.textoMes}</span>
+                                        <div className={css.metricaNumero}>{metricas.iniciados.quantidade}</div>
                                     </div>
                                 </div>
-                                <span className={css.metricaVariacao}>{metricas.finalizados.textoMes}</span>
-                                <div className={css.metricaNumero}>{metricas.finalizados.quantidade}</div>
-                            </div>
-                        </div>
+                            </section>
 
-                        <div className={`${css.linhaMetricas} ${css.centralizado}`}>
-                            <div className={css.cardMetrica}>
-                                <div className={css.metricaTopo}>
-                                    <h2>Cursos iniciados</h2>
-                                    <div className={css.iconeBadge}>
-                                        <FaGraduationCap />
-                                    </div>
+                            <section className={css.secaoAulas}>
+                                <h2>Ultimas aulas vistas:</h2>
+                                <div className={css.carrosselAulas}>
+                                    {aulasRecentes.map((aula) => (
+                                        <div key={aula.id} className={css.cardAula}>
+                                            <div className={css.containerImagem}>
+                                                {aula.imagem ? (
+                                                    <img src={aula.imagem} alt={aula.titulo} className={css.imagemAula} />
+                                                ) : (
+                                                    <div className={css.placeholderImagem} />
+                                                )}
+                                            </div>
+                                            <div className={css.infoAula}>
+                                                <h3>{aula.titulo}</h3>
+                                                <p>{aula.descricao}</p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <span className={css.metricaVariacao}>{metricas.iniciados.textoMes}</span>
-                                <div className={css.metricaNumero}>{metricas.iniciados.quantidade}</div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className={css.secaoAulas}>
-                        <h2>Últimas aulas vistas:</h2>
-                        <div className={css.carrosselAulas}>
-                            {aulasRecentes.map((aula) => (
-                                <div key={aula.id} className={css.cardAula}>
-                                    <div className={css.containerImagem}>
-                                        {aula.imagem ? (
-                                            <img src={aula.imagem} alt={aula.titulo} className={css.imagemAula} />
-                                        ) : (
-                                            <div className={css.placeholderImagem} />
-                                        )}
-                                    </div>
-                                    <div className={css.infoAula}>
-                                        <h3>{aula.titulo}</h3>
-                                        <p>{aula.descricao}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
+                            </section>
+                        </>
+                    )}
                 </main>
 
                 <footer className={css.rodapePagina}>
@@ -146,7 +157,7 @@ export default function DashboardAluno({
                     </div>
 
                     <div className={css.colunaRodape}>
-                        <h4>Navegação</h4>
+                        <h4>Navegacao</h4>
                         <a href="#home">Home</a>
                         <a href="#login">Login</a>
                         <a href="#cadastro">Cadastro</a>

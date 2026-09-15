@@ -24,7 +24,7 @@ function resolverUrlMidia(api, caminho) {
 }
 
 export default function CursoCardProfessor({ curso, api, onAbrir, onEditar, onExcluir, onStatus, gerenciavel = false }) {
-    const imagem = curso.imagem ? resolverUrlMidia(api, curso.imagem) : "/imagens_banner_curso/design.png";
+    const imagem = curso.imagem ? resolverUrlMidia(api, curso.imagem) : "/imagens_banner_curso/Placholder.png";
 
     return (
         <article className={css.cardCurso}>

@@ -1,5 +1,5 @@
+import { cloneElement, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { useEffect, useState, cloneElement } from "react";
 
 export default function RotaProtegida({
                                           api,
@@ -24,9 +24,14 @@ export default function RotaProtegida({
 
                 const dados = await retorno.json();
 
+                if (!dados.autenticado) {
+                    setUsuario(null);
+                    return;
+                }
+
                 setUsuario(dados);
             } catch (erro) {
-                console.error("Erro ao verificar sessão:", erro);
+                console.error("Erro ao verificar sessao:", erro);
                 setUsuario(null);
             } finally {
                 setCarregando(false);
@@ -37,7 +42,7 @@ export default function RotaProtegida({
     }, [api]);
 
     if (carregando) {
-        return <p>Verificando sessão...</p>;
+        return <p>Verificando sessao...</p>;
     }
 
     if (!usuario) {
@@ -52,6 +57,6 @@ export default function RotaProtegida({
     }
 
     return cloneElement(children, {
-        usuario: usuario
+        usuario
     });
 }

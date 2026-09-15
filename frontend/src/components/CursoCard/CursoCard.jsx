@@ -1,18 +1,18 @@
 import css from "./CursoCard.module.css";
 
+const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
+
 export default function CursoCard({ imagem, alt, titulo, descricao }) {
+    const imagemCurso = imagem || PLACEHOLDER_CURSO;
+
     return (
         <div className={css.cardAula}>
             <div className={css.containerImagem}>
-                {imagem ? (
-                    <img
-                        src={imagem}
-                        alt={alt}
-                        className={css.imagemAula}
-                    />
-                ) : (
-                    <div className={css.placeholderImagem} />
-                )}
+                <img
+                    src={imagemCurso}
+                    alt={alt || titulo}
+                    className={css.imagemAula}
+                />
             </div>
 
             <div className={css.infoAula}>

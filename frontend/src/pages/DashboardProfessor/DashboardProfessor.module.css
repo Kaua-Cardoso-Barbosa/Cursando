@@ -136,7 +136,8 @@
 }
 
 .secaoAcessos,
-.secaoCursos {
+.secaoCursos,
+.secaoPerfil {
     width: 100%;
 }
 
@@ -492,6 +493,37 @@
     margin: 0;
 }
 
+.formularioPerfil {
+    width: min(680px, 100%);
+    border: 1.5px solid #111111;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.formularioPerfil label {
+    color: #111111;
+    font-weight: 600;
+}
+
+.formularioPerfil input {
+    min-height: 40px;
+    border: 2px solid #06a663;
+    border-radius: 7px;
+    background: #eeeeee;
+    color: #111111;
+    font: inherit;
+    padding: 8px 11px;
+}
+
+.formularioPerfil .botaoPrimario {
+    align-self: flex-start;
+    margin-top: 6px;
+}
+
 .rodapePagina {
     background: #02693e;
     color: #ffffff;
@@ -617,5 +649,9 @@
 
     .acoesModal button {
         width: 100%;
+    }
+
+    .formularioPerfil .botaoPrimario {
+        align-self: stretch;
     }
 }

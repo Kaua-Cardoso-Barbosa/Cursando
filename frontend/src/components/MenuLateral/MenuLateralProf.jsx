@@ -20,6 +20,12 @@ export default function MenuLateralProf({ itemAtivo = "inicio" }) {
                     >
                         Meus cursos
                     </Link>
+                    <Link
+                        to="/DashboardProfessor/perfil"
+                        className={`${css.linkItem} ${itemAtivo === "perfil" ? css.ativo : ""}`}
+                    >
+                        Perfil
+                    </Link>
                 </nav>
             </div>
 

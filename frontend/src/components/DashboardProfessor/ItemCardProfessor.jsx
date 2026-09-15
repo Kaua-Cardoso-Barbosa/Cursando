@@ -3,7 +3,6 @@ import {
     FaEdit,
     FaEye,
     FaLock,
-    FaPlay,
     FaTrash
 } from "react-icons/fa";
 import css from "../../pages/DashboardProfessor/DashboardProfessor.module.css";
@@ -11,6 +10,8 @@ import css from "../../pages/DashboardProfessor/DashboardProfessor.module.css";
 const STATUS_PRIVADO = 0;
 const STATUS_PUBLICADO = 1;
 const STATUS_ARQUIVADO = 2;
+const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
+const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
 
 function resolverUrlMidia(api, caminho) {
     if (!caminho) {
@@ -43,8 +44,8 @@ export default function ItemCardProfessor({
         : "";
 
     const imagem = tipo === "curso"
-        ? (item.imagem ? resolverUrlMidia(api, item.imagem) : "/imagens_banner_curso/design.png")
-        : (thumbDaAula ? resolverUrlMidia(api, thumbDaAula) : "");
+        ? (item.imagem ? resolverUrlMidia(api, item.imagem) : PLACEHOLDER_CURSO)
+        : (thumbDaAula ? resolverUrlMidia(api, thumbDaAula) : PLACEHOLDER_AULA);
 
     if (tipo === "curso") {
         return (
@@ -76,11 +77,7 @@ export default function ItemCardProfessor({
     return (
         <article className={css.cardAula}>
             <div className={css.videoPreview}>
-                {imagem ? (
-                    <img src={imagem} alt={item.titulo} className={css.imagemAula} />
-                ) : (
-                    <FaPlay />
-                )}
+                <img src={imagem} alt={item.titulo} className={css.imagemAula} />
             </div>
             <div className={css.infoAula}>
                 <div>
