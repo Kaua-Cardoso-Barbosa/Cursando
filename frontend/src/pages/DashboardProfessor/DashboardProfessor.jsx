@@ -31,6 +31,7 @@ export default function DashboardProfessor({
     const [dashboard, setDashboard] = useState(null);
     const [cursos, setCursos] = useState([]);
     const [aulas, setAulas] = useState([]);
+    const [alunos, setAlunos] = useState([]);
     const [cursoSelecionado, setCursoSelecionado] = useState(null);
     const [modal, setModal] = useState(null);
     const [confirmacao, setConfirmacao] = useState(null);
@@ -114,8 +115,43 @@ export default function DashboardProfessor({
         }
     }, [api, filtroAulas, lerResposta]);
 
+    const carregarAlunos = useCallback(async (idCurso) => {
+        setCarregando(true);
+
+        try {
+            const resposta = await fetch(`${api}/professor/cursos/${idCurso}/alunos`, {
+                credentials: "include"
+            });
+            const dados = await lerResposta(resposta);
+            setAlunos(Array.isArray(dados) ? dados : []);
+        } catch (erro) {
+            console.error("Erro ao carregar alunos do curso:", erro);
+            setAlunos([]);
+        } finally {
+            setCarregando(false);
+        }
+    }, [api, lerResposta]);
+
     useEffect(() => {
+        const matchAlunos = location.pathname.match(/\/DashboardProfessor\/cursos\/(\d+)\/alunos$/);
         const matchAulas = location.pathname.match(/\/DashboardProfessor\/cursos\/(\d+)\/aulas$/);
+
+        if (matchAlunos) {
+            setVisao("alunos");
+            const idCurso = Number(matchAlunos[1]);
+
+            if (cursoSelecionado?.id !== idCurso) {
+                const curso = cursos.find((item) => Number(item.id) === idCurso);
+
+                if (curso) {
+                    setCursoSelecionado(curso);
+                } else {
+                    carregarCursos("todos");
+                }
+            }
+
+            return;
+        }
 
         if (matchAulas) {
             setVisao("aulas");
@@ -165,6 +201,12 @@ export default function DashboardProfessor({
             carregarAulas(cursoSelecionado.id, filtroAulas);
         }
     }, [carregarAulas, filtroAulas, visao, cursoSelecionado]);
+
+    useEffect(() => {
+        if (visao === "alunos" && cursoSelecionado) {
+            carregarAlunos(cursoSelecionado.id);
+        }
+    }, [carregarAlunos, visao, cursoSelecionado]);
 
     function montarFormData(form) {
         const dados = new FormData();
@@ -309,6 +351,11 @@ export default function DashboardProfessor({
         navigate(`/DashboardProfessor/cursos/${curso.id}/aulas`);
     }
 
+    function abrirAlunos(curso) {
+        setCursoSelecionado(curso);
+        navigate(`/DashboardProfessor/cursos/${curso.id}/alunos`);
+    }
+
     const metricas = dashboard?.metricas || {};
     const recentes = dashboard?.recentes || [];
     const tituloCursos = useMemo(() => {
@@ -380,6 +427,7 @@ export default function DashboardProfessor({
                                         onAbrir={abrirAulas}
                                         onEditar={() => setModal({ tipo: "curso", item: curso })}
                                         onExcluir={() => setConfirmacao({ tipo: "curso", item: curso })}
+                                        onAlunos={() => abrirAlunos(curso)}
                                         onStatus={(status) => alterarStatusCurso(curso, status)}
                                         gerenciavel
                                     />
@@ -424,6 +472,36 @@ export default function DashboardProfessor({
                                     />
                                 ))}
                             </div>
+                        </section>
+                    )}
+
+                    {visao === "alunos" && cursoSelecionado && (
+                        <section className={css.secaoCursos}>
+                            <div className={css.barraTitulo}>
+                                <div>
+                                    <button className={css.linkVoltar} onClick={() => navigate("/DashboardProfessor/cursos")}>Voltar para cursos</button>
+                                    <h2>Alunos de {cursoSelecionado.titulo}</h2>
+                                    <p className={css.textoApoio}>Lista de alunos matriculados neste curso.</p>
+                                </div>
+                            </div>
+
+                            {carregando && <p className={css.textoApoio}>Carregando alunos...</p>}
+                            {!carregando && alunos.length === 0 && <EstadoVazioProfessor texto="Nenhum aluno matriculado neste curso." />}
+
+                            {!carregando && alunos.length > 0 && (
+                                <div className={css.listaAlunosCurso}>
+                                    <div className={css.cabecalhoListaAlunos}>
+                                        <span>Nome</span>
+                                        <span>E-mail</span>
+                                    </div>
+                                    {alunos.map((aluno) => (
+                                        <div key={aluno.id_usuario} className={css.linhaAlunoCurso}>
+                                            <span>{aluno.nome}</span>
+                                            <span>{aluno.email}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </section>
                     )}
 

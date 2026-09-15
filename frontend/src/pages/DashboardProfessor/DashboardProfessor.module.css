@@ -197,12 +197,15 @@
 }
 
 .linkVoltar {
-    border: none;
     color: #02693e;
     background: transparent;
-    padding: 0;
+    padding: 5px;
     min-height: auto;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
+    border-color: #0b452e;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 4px;
 }
 
 .filtros {
@@ -342,6 +345,37 @@
 
 .cardAula {
     min-height: 220px;
+}
+
+.listaAlunosCurso {
+    width: min(860px, 100%);
+    border: 1.5px solid #111111;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.cabecalhoListaAlunos,
+.linhaAlunoCurso {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.2fr);
+    gap: 18px;
+    padding: 14px 18px;
+}
+
+.cabecalhoListaAlunos {
+    background: #06a663;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.linhaAlunoCurso {
+    border-top: 1px solid #dddddd;
+    color: #111111;
+}
+
+.linhaAlunoCurso span {
+    overflow-wrap: anywhere;
 }
 
 .videoPreview {
@@ -616,6 +650,12 @@
     .gridAulas,
     .rodapePagina {
         grid-template-columns: 1fr;
+    }
+
+    .cabecalhoListaAlunos,
+    .linhaAlunoCurso {
+        grid-template-columns: 1fr;
+        gap: 6px;
     }
 
     .metricaTopo h2 {

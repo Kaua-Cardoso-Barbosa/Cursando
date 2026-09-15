@@ -34,6 +34,10 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
         }
 
         if (!resposta.ok) {
+            if (resposta.status === 401) {
+                throw new Error("Sessao expirada. Faca login novamente.");
+            }
+
             throw new Error(dados?.mensagem?.descricao || "Erro ao conectar com a API.");
         }
 

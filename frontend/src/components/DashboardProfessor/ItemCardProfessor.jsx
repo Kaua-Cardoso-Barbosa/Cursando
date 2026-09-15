@@ -3,7 +3,8 @@ import {
     FaEdit,
     FaEye,
     FaLock,
-    FaTrash
+    FaTrash,
+    FaUsers
 } from "react-icons/fa";
 import css from "../../pages/DashboardProfessor/DashboardProfessor.module.css";
 
@@ -33,6 +34,7 @@ export default function ItemCardProfessor({
     onAbrir,
     onEditar,
     onExcluir,
+    onAlunos,
     onStatus,
     gerenciavel = false
 }) {
@@ -67,6 +69,7 @@ export default function ItemCardProfessor({
                         {item.status !== STATUS_PUBLICADO && <button title="Publicar curso" onClick={() => onStatus?.(STATUS_PUBLICADO)}><FaEye /></button>}
                         {item.status !== STATUS_PRIVADO && <button title="Privar curso" onClick={() => onStatus?.(STATUS_PRIVADO)}><FaLock /></button>}
                         {item.status !== STATUS_ARQUIVADO && <button title="Arquivar curso" onClick={() => onStatus?.(STATUS_ARQUIVADO)}><FaArchive /></button>}
+                        <button title="Ver alunos do curso" onClick={onAlunos}><FaUsers /></button>
                         <button title="Excluir curso" className={css.botaoExcluir} onClick={onExcluir}><FaTrash /></button>
                     </div>
                 )}

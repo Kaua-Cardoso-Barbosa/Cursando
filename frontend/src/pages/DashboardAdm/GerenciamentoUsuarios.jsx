@@ -1,17 +1,35 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    FaUser,
     FaGooglePlay,
     FaLinux,
-    FaWindows,
+    FaPlus,
     FaSearch,
-    FaPlus
-} from 'react-icons/fa';
-import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm.jsx";
-import css from './GerenciamentoUsuarios.module.css';
+    FaUser,
+    FaWindows
+} from "react-icons/fa";
 import Button from "../../components/Button/Button.jsx";
 import CadastroColaborador from "../../components/CadastroColaborador/CadastroColaborador.jsx";
 import ConfirmAlert from "../../components/ConfirmAlert/ConfirmAlert.jsx";
+import Input from "../../components/Input/Input.jsx";
+import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm.jsx";
+import css from "./GerenciamentoUsuarios.module.css";
+
+const TIPOS = {
+    ALUNO: 2,
+    PROFESSOR: 1,
+    ADMIN: 0
+};
+
+function nomeTipoUsuario(tipo) {
+    if (Number(tipo) === TIPOS.ADMIN) return "Administrador";
+    if (Number(tipo) === TIPOS.PROFESSOR) return "Professor";
+    if (Number(tipo) === TIPOS.ALUNO) return "Aluno";
+    return "Usuario";
+}
+
+function normalizar(texto) {
+    return String(texto || "").toLowerCase();
+}
 
 export default function GerenciamentoUsuarios({
                                                   api,
@@ -19,169 +37,253 @@ export default function GerenciamentoUsuarios({
                                                   usuario,
                                                   setMensagem
                                               }) {
-
-    const [alunos, setAlunos] = useState([]);
-    const [professores, setProfessores] = useState([]);
-    const [administradores, setAdministradores] = useState([]);
-
+    const [usuarios, setUsuarios] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [erro, setErro] = useState(null);
-
-    const [buscaAluno, setBuscaAluno] = useState('');
-    const [buscaProfessor, setBuscaProfessor] = useState('');
-    const [buscaAdmin, setBuscaAdmin] = useState('');
-
+    const [erro, setErro] = useState("");
+    const [buscas, setBuscas] = useState({
+        alunos: "",
+        professores: "",
+        administradores: ""
+    });
     const [popupCadastro, setPopupCadastro] = useState(null);
+    const [usuarioEditando, setUsuarioEditando] = useState(null);
+    const [formEdicao, setFormEdicao] = useState({
+        nome: "",
+        email: "",
+        cpf: "",
+        senha: "",
+        confirmar_senha: ""
+    });
+    const [salvandoEdicao, setSalvandoEdicao] = useState(false);
     const [confirmacao, setConfirmacao] = useState(null);
 
-    function nomeTipoUsuario(tipo) {
-        switch (Number(tipo)) {
-            case 0:
-                return "Administrador";
-
-            case 1:
-                return "Professor";
-
-            case 2:
-                return "Aluno";
-
-            default:
-                return "Usuário";
+    const avisar = useCallback((mensagem) => {
+        if (mensagem && setMensagem) {
+            setMensagem(mensagem);
         }
-    }
+    }, [setMensagem]);
 
-    const carregarTodosUsuarios = useCallback(async () => {
+    const lerResposta = useCallback(async (resposta) => {
+        const dados = await resposta.json().catch(() => ({}));
+
+        if (dados.mensagem) {
+            avisar(dados.mensagem);
+        }
+
+        if (!resposta.ok) {
+            throw new Error(dados?.mensagem?.descricao || "Erro ao conectar com a API.");
+        }
+
+        return dados;
+    }, [avisar]);
+
+    const carregarUsuarios = useCallback(async () => {
         setLoading(true);
-        setErro(null);
+        setErro("");
 
         try {
-            const [resAlunos, resProfessores, resAdmins] = await Promise.all([
-                fetch(`${api}/alunos`),
-                fetch(`${api}/professores`),
-                fetch(`${api}/administradores`)
-            ]);
-
-            if (!resAlunos.ok || !resProfessores.ok || !resAdmins.ok) {
-                throw new Error('Falha ao carregar dados dos usuários.');
-            }
-
-            const dataAlunos = await resAlunos.json();
-            const dataProfessores = await resProfessores.json();
-            const dataAdmins = await resAdmins.json();
-
-            setAlunos(dataAlunos);
-            setProfessores(dataProfessores);
-            setAdministradores(dataAdmins);
+            const resposta = await fetch(`${api}/usuarios`, {
+                credentials: "include"
+            });
+            const dados = await lerResposta(resposta);
+            setUsuarios(Array.isArray(dados) ? dados : []);
         } catch (err) {
-            console.error(err);
-            setErro('Erro ao conectar com o servidor. Exibindo dados locais.');
-
-            setAlunos([
-                { id: 1, nome: "Gabriel Belinelo da Silva", bloqueado: false },
-                { id: 2, nome: "Cauã Barbosa", bloqueado: false },
-                { id: 3, nome: "Rafael Melin", bloqueado: true },
-                { id: 4, nome: "Henrique Figueiredo", bloqueado: false },
-                { id: 5, nome: "Alicia Buzelli Costa", bloqueado: false },
-            ]);
-            setProfessores([
-                { id: 1, nome: "Gabriel Belinelo da Silva Pops", bloqueado: false },
-                { id: 2, nome: "Kauã Babosa Divo Pop Pops", bloqueado: false },
-                { id: 3, nome: "Alicia Buzeli Costa Iconica Pops", bloqueado: false },
-                { id: 4, nome: "Enrique Figueiredo Kirk Pops", bloqueado: false },
-            ]);
-            setAdministradores([
-                { id: 1, nome: "Gabriel Belinelo Divo", bloqueado: false },
-                { id: 2, nome: "Kauã Barbosa Pop", bloqueado: true },
-                { id: 3, nome: "Diogo Lopes Nunes Iconico", bloqueado: false },
-            ]);
+            console.error("Erro ao carregar usuarios:", err);
+            setErro(err.message || "Erro ao carregar usuarios.");
+            setUsuarios([]);
         } finally {
             setLoading(false);
         }
-    }, [api]);
+    }, [api, lerResposta]);
 
     useEffect(() => {
-        carregarTodosUsuarios();
-    }, [carregarTodosUsuarios]);
+        carregarUsuarios();
+    }, [carregarUsuarios]);
 
-    const handleAlternarStatus = async (id, tipo, statusAtual) => {
+    const grupos = useMemo(() => {
+        const porTipo = {
+            alunos: usuarios.filter((item) => Number(item.tipo) === TIPOS.ALUNO),
+            professores: usuarios.filter((item) => Number(item.tipo) === TIPOS.PROFESSOR),
+            administradores: usuarios.filter((item) => Number(item.tipo) === TIPOS.ADMIN)
+        };
+
+        return {
+            alunos: porTipo.alunos.filter((item) => normalizar(item.nome).includes(normalizar(buscas.alunos))),
+            professores: porTipo.professores.filter((item) => normalizar(item.nome).includes(normalizar(buscas.professores))),
+            administradores: porTipo.administradores.filter((item) => normalizar(item.nome).includes(normalizar(buscas.administradores)))
+        };
+    }, [buscas, usuarios]);
+
+    async function alternarStatus(item) {
         try {
-            const response = await fetch(`${api}/${tipo}/${id}/status`, {
-                method: 'PATCH',
-                credentials: 'include',
+            const resposta = await fetch(`${api}/usuarios/${item.id}/status`, {
+                method: "PATCH",
+                credentials: "include",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    bloqueado: !statusAtual
-                }),
+                    bloqueado: !item.bloqueado
+                })
             });
 
-            if (!response.ok) throw new Error('Erro ao atualizar status');
-
-            const atualizarLista = (lista) =>
-                lista.map((u) => (u.id === id ? { ...u, bloqueado: !statusAtual } : u));
-
-            if (tipo === 'alunos') setAlunos(atualizarLista);
-            if (tipo === 'professores') setProfessores(atualizarLista);
-            if (tipo === 'administradores') setAdministradores(atualizarLista);
+            await lerResposta(resposta);
+            await carregarUsuarios();
         } catch (err) {
-            console.error(`Erro ao alternar status em ${tipo}:`, err);
-            const atualizarListaLocal = (lista) =>
-                lista.map((u) => (u.id === id ? { ...u, bloqueado: !statusAtual } : u));
-            if (tipo === 'alunos') setAlunos(atualizarListaLocal);
-            if (tipo === 'professores') setProfessores(atualizarListaLocal);
-            if (tipo === 'administradores') setAdministradores(atualizarListaLocal);
+            console.error("Erro ao atualizar status:", err);
+            avisar({ tipo: "erro", descricao: err.message });
         }
-    };
+    }
 
-    const handleExcluir = async (id, tipo) => {
+    async function excluirUsuario(item) {
         try {
-            const response = await fetch(`${api}/${tipo}/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
+            const resposta = await fetch(`${api}/usuarios/${item.id}`, {
+                method: "DELETE",
+                credentials: "include"
             });
 
-            if (!response.ok) throw new Error('Erro ao excluir usuário');
-
-            const removerDaLista = (lista) => lista.filter((u) => u.id !== id);
-
-            if (tipo === 'alunos') setAlunos(removerDaLista);
-            if (tipo === 'professores') setProfessores(removerDaLista);
-            if (tipo === 'administradores') setAdministradores(removerDaLista);
+            await lerResposta(resposta);
+            await carregarUsuarios();
         } catch (err) {
-            console.error(`Erro ao excluir de ${tipo}:`, err);
-            const removerDaListaLocal = (lista) => lista.filter((u) => u.id !== id);
-            if (tipo === 'alunos') setAlunos(removerDaListaLocal);
-            if (tipo === 'professores') setProfessores(removerDaListaLocal);
-            if (tipo === 'administradores') setAdministradores(removerDaListaLocal);
+            console.error("Erro ao excluir usuario:", err);
+            avisar({ tipo: "erro", descricao: err.message });
         } finally {
             setConfirmacao(null);
         }
-    };
+    }
 
-    const handleEditar = (id, tipo) => {
-        console.log(`Editar ${tipo} - ID: ${id}`);
-    };
+    function abrirEdicao(item) {
+        setUsuarioEditando(item);
+        setFormEdicao({
+            nome: item.nome || "",
+            email: item.email || "",
+            cpf: item.cpf || "",
+            senha: "",
+            confirmar_senha: ""
+        });
+    }
 
-    const handleAdicionar = (tipo) => {
-        if (tipo === "professores") {
-            setPopupCadastro(1);
+    function fecharEdicao() {
+        setUsuarioEditando(null);
+        setFormEdicao({
+            nome: "",
+            email: "",
+            cpf: "",
+            senha: "",
+            confirmar_senha: ""
+        });
+    }
+
+    async function salvarEdicao(evento) {
+        evento.preventDefault();
+        setSalvandoEdicao(true);
+
+        try {
+            const resposta = await fetch(`${api}/usuarios/${usuarioEditando.id}`, {
+                method: "PUT",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(formEdicao)
+            });
+
+            await lerResposta(resposta);
+            fecharEdicao();
+            await carregarUsuarios();
+        } catch (err) {
+            console.error("Erro ao editar usuario:", err);
+            avisar({ tipo: "erro", descricao: err.message });
+        } finally {
+            setSalvandoEdicao(false);
         }
+    }
 
-        if (tipo === "administradores") {
-            setPopupCadastro(0);
-        }
-    };
+    function abrirCadastro(tipo) {
+        setPopupCadastro(tipo);
+    }
 
-    const alunosFiltrados = alunos.filter((u) =>
-        u.nome.toLowerCase().includes(buscaAluno.toLowerCase())
-    );
-    const professoresFiltrados = professores.filter((u) =>
-        u.nome.toLowerCase().includes(buscaProfessor.toLowerCase())
-    );
-    const adminsFiltrados = administradores.filter((u) =>
-        u.nome.toLowerCase().includes(buscaAdmin.toLowerCase())
-    );
+    function atualizarBusca(chave, valor) {
+        setBuscas((atual) => ({
+            ...atual,
+            [chave]: valor
+        }));
+    }
+
+    function renderLista({ chave, titulo, placeholder, itens, podeAdicionar, tipoCadastro }) {
+        return (
+            <section className={css.secaoLista}>
+                <div className={css.topoSecao}>
+                    <div className={css.tituloComAdd}>
+                        <h2>{titulo}</h2>
+                        {podeAdicionar && (
+                            <button
+                                type="button"
+                                onClick={() => abrirCadastro(tipoCadastro)}
+                                className={css.btnIconeAdicionar}
+                                title={`Adicionar ${tipoCadastro === TIPOS.ADMIN ? "Administrador" : "Professor"}`}
+                            >
+                                <FaPlus />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className={css.campoBusca}>
+                        <FaSearch className={css.iconeBusca} />
+                        <input
+                            type="text"
+                            placeholder={placeholder}
+                            value={buscas[chave]}
+                            onChange={(e) => atualizarBusca(chave, e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div className={css.caixaTabela}>
+                    {itens.length === 0 && (
+                        <p className={css.estadoVazio}>Nenhum usuario encontrado.</p>
+                    )}
+
+                    {itens.map((item) => (
+                        <div key={item.id} className={css.linhaUsuario}>
+                            <div className={css.dadosLinhaUsuario}>
+                                <span className={css.nomeUsuario}>{item.nome}</span>
+                                <span className={css.emailUsuario}>{item.email}</span>
+                            </div>
+
+                            {Number(item.id) === Number(usuario.id_usuario) ? (
+                                <span className={css.avisoPropriaConta}>Use o Perfil para editar sua conta</span>
+                            ) : (
+                                <div className={css.grupoBotoes}>
+                                    <button
+                                        type="button"
+                                        onClick={() => alternarStatus(item)}
+                                        className={item.bloqueado ? css.btnDesbloquear : css.btnBloquear}
+                                    >
+                                        {item.bloqueado ? "Desbloquear" : "Bloquear"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfirmacao(item)}
+                                        className={css.btnExcluir}
+                                    >
+                                        Excluir
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => abrirEdicao(item)}
+                                        className={css.btnEditar}
+                                    >
+                                        Editar
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </section>
+        );
+    }
 
     return (
         <div className={css.painelAdmin}>
@@ -191,21 +293,99 @@ export default function GerenciamentoUsuarios({
                     tipo={popupCadastro}
                     fechar={() => setPopupCadastro(null)}
                     setMensagem={setMensagem}
-                    aoCadastrar={carregarTodosUsuarios}
+                    aoCadastrar={carregarUsuarios}
                 />
             )}
+
+            {usuarioEditando && (
+                <div className={css.overlayModal} onClick={fecharEdicao}>
+                    <section className={css.modalEdicao} onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className={css.fecharModal} onClick={fecharEdicao}>
+                            x
+                        </button>
+                        <h2>Editar {nomeTipoUsuario(usuarioEditando.tipo)}</h2>
+
+                        <form onSubmit={salvarEdicao}>
+                            <Input
+                                tipoInp="text"
+                                label="Nome:"
+                                htmlFor="editar_nome"
+                                placeholder="Digite o nome"
+                                value={formEdicao.nome}
+                                funcao={(e) => setFormEdicao({ ...formEdicao, nome: e.target.value })}
+                            />
+
+                            <Input
+                                tipoInp="email"
+                                label="Email:"
+                                htmlFor="editar_email"
+                                placeholder="Digite o email"
+                                value={formEdicao.email}
+                                funcao={(e) => setFormEdicao({ ...formEdicao, email: e.target.value })}
+                            />
+
+                            <Input
+                                tipoInp="text"
+                                label="CPF:"
+                                htmlFor="editar_cpf"
+                                placeholder="Digite o CPF"
+                                value={formEdicao.cpf}
+                                funcao={(e) => setFormEdicao({ ...formEdicao, cpf: e.target.value })}
+                                mask="cpf"
+                            />
+
+                            <Input
+                                tipoInp="password"
+                                label="Senha:"
+                                htmlFor="editar_senha"
+                                placeholder="Digite uma nova senha"
+                                value={formEdicao.senha}
+                                funcao={(e) => setFormEdicao({ ...formEdicao, senha: e.target.value })}
+                            />
+
+                            <Input
+                                tipoInp="password"
+                                label="Confirmar Senha:"
+                                htmlFor="editar_confirmar_senha"
+                                placeholder="Confirme a nova senha"
+                                value={formEdicao.confirmar_senha}
+                                funcao={(e) => setFormEdicao({ ...formEdicao, confirmar_senha: e.target.value })}
+                                obrigatorio={formEdicao.senha ? "Sim" : "Nao"}
+                                required={Boolean(formEdicao.senha)}
+                            />
+
+                            {formEdicao.senha && (
+                                <p className={css.avisoSenha}>* Confirmar senha e obrigatorio para alterar a senha</p>
+                            )}
+
+                            <div className={css.botoesModal}>
+                                <Button
+                                    tipo="button"
+                                    texto="Cancelar"
+                                    fundoCor="vermelho"
+                                    tamanho="medio"
+                                    onClick={fecharEdicao}
+                                />
+                                <Button
+                                    tipo="submit"
+                                    texto={salvandoEdicao ? "Salvando..." : "Salvar"}
+                                    fundoCor="verde"
+                                    tamanho="medio"
+                                />
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            )}
+
             <MenuLateralAdm itemAtivo="usuarios" />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-
                     <header className={css.cabecalhoUsuario}>
                         <div className={css.dadosUsuario}>
-                            <h1>Olá {usuario.nome}</h1>
-
-                            <span className={css.cargoUsuario}>
-                                {nomeTipoUsuario(usuario.tipo)}
-                            </span>
+                            <h1>Ola {usuario.nome}</h1>
+                            <span className={css.cargoUsuario}>{nomeTipoUsuario(usuario.tipo)}</span>
                         </div>
 
                         <div className={css.acoesUsuario}>
@@ -222,156 +402,34 @@ export default function GerenciamentoUsuarios({
                         </div>
                     </header>
 
-                    {erro && <div style={{ color: '#c90000', marginBottom: '16px' }}>{erro}</div>}
-                    {loading && <div style={{ marginBottom: '16px' }}>Carregando dados...</div>}
+                    {erro && <div className={css.erro}>{erro}</div>}
+                    {loading && <div className={css.carregando}>Carregando usuarios...</div>}
 
-                    <section className={css.secaoLista}>
-                        <div className={css.topoSecao}>
-                            <h2>Lista de Alunos:</h2>
-                            <div className={css.campoBusca}>
-                                <FaSearch className={css.iconeBusca} />
-                                <input
-                                    type="text"
-                                    placeholder="Pesquisar em Alunos"
-                                    value={buscaAluno}
-                                    onChange={(e) => setBuscaAluno(e.target.value)}
-                                />
-                            </div>
-                        </div>
+                    {renderLista({
+                        chave: "alunos",
+                        titulo: "Lista de Alunos:",
+                        placeholder: "Pesquisar em Alunos",
+                        itens: grupos.alunos,
+                        podeAdicionar: false
+                    })}
 
-                        <div className={css.caixaTabela}>
-                            {alunosFiltrados.map((item) => (
-                                <div key={item.id} className={css.linhaUsuario}>
-                                    <span className={css.nomeUsuario}>{item.nome}</span>
-                                    <div className={css.grupoBotoes}>
-                                        <button
-                                            onClick={() => handleAlternarStatus(item.id, 'alunos', item.bloqueado)}
-                                            className={item.bloqueado ? css.btnDesbloquear : css.btnBloquear}
-                                        >
-                                            {item.bloqueado ? 'Desbloquear' : 'Bloquear'}
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmacao({ id: item.id, tipo: 'alunos', nome: item.nome })}
-                                            className={css.btnExcluir}
-                                        >
-                                            Excluir
-                                        </button>
-                                        <button
-                                            onClick={() => handleEditar(item.id, 'alunos')}
-                                            className={css.btnEditar}
-                                        >
-                                            Editar
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                    {renderLista({
+                        chave: "professores",
+                        titulo: "Lista de Professores:",
+                        placeholder: "Pesquisar em Professores",
+                        itens: grupos.professores,
+                        podeAdicionar: true,
+                        tipoCadastro: TIPOS.PROFESSOR
+                    })}
 
-                    <section className={css.secaoLista}>
-                        <div className={css.topoSecao}>
-                            <div className={css.tituloComAdd}>
-                                <h2>Lista de Professores:</h2>
-                                <button
-                                    onClick={() => handleAdicionar('professores')}
-                                    className={css.btnIconeAdicionar}
-                                    title="Adicionar Professor"
-                                >
-                                    <FaPlus />
-                                </button>
-                            </div>
-                            <div className={css.campoBusca}>
-                                <FaSearch className={css.iconeBusca} />
-                                <input
-                                    type="text"
-                                    placeholder="Pesquisar em Professores"
-                                    value={buscaProfessor}
-                                    onChange={(e) => setBuscaProfessor(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className={css.caixaTabela}>
-                            {professoresFiltrados.map((item) => (
-                                <div key={item.id} className={css.linhaUsuario}>
-                                    <span className={css.nomeUsuario}>{item.nome}</span>
-                                    <div className={css.grupoBotoes}>
-                                        <button
-                                            onClick={() => handleAlternarStatus(item.id, 'professores', item.bloqueado)}
-                                            className={item.bloqueado ? css.btnDesbloquear : css.btnBloquear}
-                                        >
-                                            {item.bloqueado ? 'Desbloquear' : 'Bloquear'}
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmacao({ id: item.id, tipo: 'professores', nome: item.nome })}
-                                            className={css.btnExcluir}
-                                        >
-                                            Excluir
-                                        </button>
-                                        <button
-                                            onClick={() => handleEditar(item.id, 'professores')}
-                                            className={css.btnEditar}
-                                        >
-                                            Editar
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    <section className={css.secaoLista}>
-                        <div className={css.topoSecao}>
-                            <div className={css.tituloComAdd}>
-                                <h2>Lista de Administradores:</h2>
-                                <button
-                                    onClick={() => handleAdicionar('administradores')}
-                                    className={css.btnIconeAdicionar}
-                                    title="Adicionar Administrador"
-                                >
-                                    <FaPlus />
-                                </button>
-                            </div>
-                            <div className={css.campoBusca}>
-                                <FaSearch className={css.iconeBusca} />
-                                <input
-                                    type="text"
-                                    placeholder="Pesquisar em Administradores"
-                                    value={buscaAdmin}
-                                    onChange={(e) => setBuscaAdmin(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className={css.caixaTabela}>
-                            {adminsFiltrados.map((item) => (
-                                <div key={item.id} className={css.linhaUsuario}>
-                                    <span className={css.nomeUsuario}>{item.nome}</span>
-                                    <div className={css.grupoBotoes}>
-                                        <button
-                                            onClick={() => handleAlternarStatus(item.id, 'administradores', item.bloqueado)}
-                                            className={item.bloqueado ? css.btnDesbloquear : css.btnBloquear}
-                                        >
-                                            {item.bloqueado ? 'Desbloquear' : 'Bloquear'}
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmacao({ id: item.id, tipo: 'administradores', nome: item.nome })}
-                                            className={css.btnExcluir}
-                                        >
-                                            Excluir
-                                        </button>
-                                        <button
-                                            onClick={() => handleEditar(item.id, 'administradores')}
-                                            className={css.btnEditar}
-                                        >
-                                            Editar
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
+                    {renderLista({
+                        chave: "administradores",
+                        titulo: "Lista de Administradores:",
+                        placeholder: "Pesquisar em Administradores",
+                        itens: grupos.administradores,
+                        podeAdicionar: true,
+                        tipoCadastro: TIPOS.ADMIN
+                    })}
                 </main>
 
                 <footer className={css.rodapePagina}>
@@ -383,7 +441,7 @@ export default function GerenciamentoUsuarios({
                     </div>
 
                     <div className={css.colunaRodape}>
-                        <h4>Navegação</h4>
+                        <h4>Navegacao</h4>
                         <a href="#home">Home</a>
                         <a href="#login">Login</a>
                         <a href="#cadastro">Cadastro</a>
@@ -402,11 +460,11 @@ export default function GerenciamentoUsuarios({
 
             <ConfirmAlert
                 aberto={Boolean(confirmacao)}
-                titulo="Realmente deseja apagar esse usuário?"
+                titulo="Realmente deseja apagar esse usuario?"
                 descricao={confirmacao?.nome}
-                textoConfirmar="Sim, excluir usuário"
+                textoConfirmar="Sim, excluir usuario"
                 aoCancelar={() => setConfirmacao(null)}
-                aoConfirmar={() => handleExcluir(confirmacao.id, confirmacao.tipo)}
+                aoConfirmar={() => excluirUsuario(confirmacao)}
             />
         </div>
     );

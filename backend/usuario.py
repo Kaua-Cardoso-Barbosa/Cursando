@@ -81,6 +81,212 @@ def validar_campos_senha(senha, confirmar_senha, obrigatoria=True):
     return None
 
 
+def exigir_admin():
+    if int(get_jwt().get("tipo", -1)) != 0:
+        return resposta_mensagem("Acesso negado. Apenas administradores podem acessar este recurso.", 403)
+    return None
+
+
+def usuario_para_dict(row):
+    return {
+        "id": row[0],
+        "nome": row[1],
+        "email": row[2],
+        "cpf": row[3],
+        "tipo": row[4],
+        "bloqueado": row[5] == 1,
+    }
+
+
+@app.route("/usuarios", methods=["GET"])
+@jwt_required()
+def listar_usuarios():
+    negado = exigir_admin()
+    if negado:
+        return negado
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT ID_USUARIO, NOME, EMAIL, CPF, TIPO_USUARIO, SITUACAO
+            FROM USUARIOS
+            ORDER BY TIPO_USUARIO, NOME
+            """
+        )
+        usuarios = [usuario_para_dict(row) for row in cursor.fetchall()]
+        return jsonify(usuarios), 200
+    except Exception as erro:
+        return resposta_mensagem(f"Erro ao listar usuarios: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/usuarios/<int:id_usuario>/status", methods=["PATCH"])
+@jwt_required()
+def alterar_status_usuario(id_usuario):
+    negado = exigir_admin()
+    if negado:
+        return negado
+
+    dados = request.get_json() or {}
+    bloqueado = bool(dados.get("bloqueado"))
+    id_admin = int(get_jwt_identity())
+
+    if id_usuario == id_admin:
+        return resposta_mensagem("Voce nao pode bloquear sua propria conta.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute("SELECT 1 FROM USUARIOS WHERE ID_USUARIO = ?", (id_usuario,))
+        if not cursor.fetchone():
+            return resposta_mensagem("Usuario nao encontrado", 404)
+
+        cursor.execute(
+            "UPDATE USUARIOS SET SITUACAO = ? WHERE ID_USUARIO = ?",
+            (1 if bloqueado else 0, id_usuario),
+        )
+        con.commit()
+
+        mensagem = "Usuario bloqueado com sucesso" if bloqueado else "Usuario desbloqueado com sucesso"
+        return resposta_mensagem(mensagem, 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta_mensagem(f"Erro ao atualizar status do usuario: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/usuarios/<int:id_usuario>", methods=["DELETE"])
+@jwt_required()
+def excluir_usuario(id_usuario):
+    negado = exigir_admin()
+    if negado:
+        return negado
+
+    id_admin = int(get_jwt_identity())
+
+    if id_usuario == id_admin:
+        return resposta_mensagem("Voce nao pode excluir sua propria conta.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute("SELECT 1 FROM USUARIOS WHERE ID_USUARIO = ?", (id_usuario,))
+        if not cursor.fetchone():
+            return resposta_mensagem("Usuario nao encontrado", 404)
+
+        cursor.execute("DELETE FROM USUARIOS WHERE ID_USUARIO = ?", (id_usuario,))
+        con.commit()
+
+        return resposta_mensagem("Usuario excluido com sucesso", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta_mensagem(f"Erro ao excluir usuario: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/usuarios/<int:id_usuario>", methods=["PUT"])
+@jwt_required()
+def editar_usuario_admin(id_usuario):
+    negado = exigir_admin()
+    if negado:
+        return negado
+
+    id_admin = int(get_jwt_identity())
+
+    if id_usuario == id_admin:
+        return resposta_mensagem("Edite sua propria conta pela pagina de perfil.", 400)
+
+    dados = request.get_json() or {}
+    nome_recebido = (dados.get("nome") or "").strip()
+    email_recebido = (dados.get("email") or "").lower().strip()
+    cpf_recebido = (dados.get("cpf") or "").strip()
+    senha = dados.get("senha") or ""
+    confirmar_senha = dados.get("confirmar_senha") or ""
+
+    erro_senha = validar_campos_senha(senha, confirmar_senha, obrigatoria=False)
+    if erro_senha:
+        return resposta_mensagem(erro_senha, 400)
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT NOME, EMAIL, CPF
+            FROM USUARIOS
+            WHERE ID_USUARIO = ?
+            """,
+            (id_usuario,),
+        )
+        usuario_atual = cursor.fetchone()
+
+        if not usuario_atual:
+            return resposta_mensagem("Usuario nao encontrado", 404)
+
+        nome = nome_recebido or usuario_atual[0]
+        email = email_recebido or usuario_atual[1]
+        cpf = cpf_recebido or usuario_atual[2]
+
+        if email_recebido and not email_valido(email):
+            return resposta_mensagem("E-mail invalido", 400)
+        if cpf_recebido and not cpf_valido(cpf):
+            return resposta_mensagem("CPF invalido", 400)
+
+        cursor.execute(
+            "SELECT 1 FROM USUARIOS WHERE EMAIL = ? AND ID_USUARIO <> ?",
+            (email, id_usuario),
+        )
+        if cursor.fetchone():
+            return resposta_mensagem("E-mail ja cadastrado", 400)
+
+        cursor.execute(
+            "SELECT 1 FROM USUARIOS WHERE CPF = ? AND ID_USUARIO <> ?",
+            (cpf, id_usuario),
+        )
+        if cursor.fetchone():
+            return resposta_mensagem("CPF ja cadastrado", 400)
+
+        if senha:
+            cursor.execute(
+                """
+                UPDATE USUARIOS
+                SET NOME = ?, EMAIL = ?, CPF = ?, SENHA = ?
+                WHERE ID_USUARIO = ?
+                """,
+                (nome, email, cpf, generate_password_hash(senha), id_usuario),
+            )
+        else:
+            cursor.execute(
+                """
+                UPDATE USUARIOS
+                SET NOME = ?, EMAIL = ?, CPF = ?
+                WHERE ID_USUARIO = ?
+                """,
+                (nome, email, cpf, id_usuario),
+            )
+
+        con.commit()
+        return resposta_mensagem("Usuario atualizado com sucesso", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta_mensagem(f"Erro ao editar usuario: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
 @app.route("/cadastrar", methods=["POST"])
 def cadastrar():
     dados = request.get_json() or {}

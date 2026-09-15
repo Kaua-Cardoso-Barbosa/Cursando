@@ -546,6 +546,58 @@ def listar_aulas_professor(id_curso):
         con.close()
 
 
+@app.route("/professor/cursos/<int:id_curso>/alunos", methods=["GET"])
+@jwt_required()
+def listar_alunos_curso_professor(id_curso):
+    negado = exigir_professor()
+    if negado:
+        return negado
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT 1
+            FROM CURSOS C
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE C.ID_CURSO = ? AND PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
+            """,
+            (id_curso, get_jwt_identity()),
+        )
+
+        if not cursor.fetchone():
+            return resposta("Curso não encontrado.", 404)
+
+        cursor.execute(
+            """
+            SELECT DISTINCT U.ID_USUARIO, U.NOME, U.EMAIL
+            FROM MATRICULAS M
+            JOIN USUARIOS U ON U.ID_USUARIO = M.ID_USUARIO
+            WHERE M.ID_CURSO = ? AND M.STATUS_MATRICULA = 1
+            ORDER BY U.NOME
+            """,
+            (id_curso,),
+        )
+
+        alunos = [
+            {
+                "id_usuario": row[0],
+                "nome": row[1],
+                "email": row[2],
+            }
+            for row in cursor.fetchall()
+        ]
+
+        return jsonify(alunos)
+    except Exception as erro:
+        return resposta(f"Erro ao listar alunos do curso: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
 @app.route("/professor/cursos/<int:id_curso>/aulas", methods=["POST"])
 @jwt_required()
 def criar_aula_professor(id_curso):
