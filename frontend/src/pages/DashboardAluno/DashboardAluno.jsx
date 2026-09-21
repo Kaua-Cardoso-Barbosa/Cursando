@@ -12,6 +12,7 @@ import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno.jsx"
 import Button from "../../components/Button/Button.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import css from "./DashboardAluno.module.css";
+import PlayerVideo from "../../components/PlayerVideo/PlayerVideo.jsx";
 
 const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
 const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
@@ -454,14 +455,16 @@ export default function DashboardAluno({
 
                             {videoAula && (
                                 <>
-                                    <div className={`${css.playerSeguro} ${protegaoAtiva ? css.playerProtegido : ""}`}>
-                                        <video
-                                            controls
-                                            controlsList="nodownload noplaybackrate"
-                                            disablePictureInPicture
-                                            poster={videoAula.thumb ? resolverUrlMidia(api, videoAula.thumb) : undefined}
-                                            src={resolverUrlMidia(api, videoAula.video)}
-                                            onEnded={() => marcarAssistida(videoAula)}
+                                    <div>
+                                        <PlayerVideo
+                                            videoAula={videoAula}
+                                            videoUrl={resolverUrlMidia(api, videoAula.video)}
+                                            posterUrl={
+                                                videoAula.thumb
+                                                    ? resolverUrlMidia(api, videoAula.thumb)
+                                                    : undefined
+                                            }
+                                            marcarAssistida={marcarAssistida}
                                         />
                                         <div className={css.tituloNoVideo}>
                                             <h1>{videoAula.titulo}</h1>

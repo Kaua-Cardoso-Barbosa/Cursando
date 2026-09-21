@@ -1,0 +1,13 @@
+.shakaVideoContainer {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: black;
+    overflow: hidden;
+}
+
+.shakaVideo {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
