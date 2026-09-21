@@ -347,7 +347,8 @@ def criar_curso_professor():
         return resposta("Título e descrição são obrigatórios.", 400)
 
     try:
-        imagem_url = salvar_upload(request.files.get("imagem"), "cursos", {"jpg", "jpeg", "png", "webp"})
+        imagem = salvar_upload(request.files.get("imagem"), "cursos", {"jpg", "jpeg", "png", "webp"})
+        imagem_url = imagem["url"] if imagem else None
     except ValueError as erro:
         return resposta(str(erro), 400)
 
@@ -401,7 +402,7 @@ def editar_curso_professor(id_curso):
 
     if nova_imagem:
         campos = "TITULO = ?, DESCRICAO = ?, IMAGEM_URL = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP"
-        parametros.append(nova_imagem)
+        parametros.append(nova_imagem["url"])
 
     parametros.extend([id_curso, get_jwt_identity()])
     con = get_db()
@@ -691,7 +692,7 @@ def editar_aula_professor(id_aula):
 
     if novo_video:
         campos = "TITULO = ?, DESCRICAO = ?, VIDEO_URL = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP"
-        parametros.append(novo_video)
+        parametros.append(novo_video["url"])
 
     parametros.extend([id_aula, get_jwt_identity()])
     con = get_db()

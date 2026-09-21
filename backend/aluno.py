@@ -327,12 +327,17 @@ def inscrever_curso(id_curso):
 
         if matricula:
             cursor.execute(
-                "UPDATE MATRICULAS SET STATUS_MATRICULA = 1 WHERE ID_USUARIO = ? AND ID_CURSO = ?",
+                """
+                UPDATE MATRICULAS
+                SET STATUS_MATRICULA = 1,
+                    PROGRESSO = COALESCE(PROGRESSO, 0)
+                WHERE ID_USUARIO = ? AND ID_CURSO = ?
+                """,
                 (id_aluno, id_curso),
             )
         else:
             cursor.execute(
-                "INSERT INTO MATRICULAS (ID_USUARIO, ID_CURSO, STATUS_MATRICULA) VALUES (?, ?, 1)",
+                "INSERT INTO MATRICULAS (ID_USUARIO, ID_CURSO, STATUS_MATRICULA, PROGRESSO) VALUES (?, ?, 1, 0)",
                 (id_aluno, id_curso),
             )
 
@@ -439,6 +444,32 @@ def marcar_aula_assistida(id_aula):
             UPDATE OR INSERT INTO PROGRESSO_AULAS (ID_USUARIO, ID_VIDEO, ASSISTIDO_EM)
             VALUES (?, ?, CURRENT_TIMESTAMP)
             MATCHING (ID_USUARIO, ID_VIDEO)
+            """,
+            (id_aluno, id_aula),
+        )
+        cursor.execute(
+            """
+            UPDATE MATRICULAS M
+            SET PROGRESSO = (
+                SELECT
+                    CASE
+                        WHEN COUNT(V.ID_VIDEO) = 0 THEN 0
+                        ELSE CAST((COUNT(PA.ID_VIDEO) * 100.0 / COUNT(V.ID_VIDEO)) AS INTEGER)
+                    END
+                FROM VIDEOS V
+                LEFT JOIN PROGRESSO_AULAS PA
+                    ON PA.ID_VIDEO = V.ID_VIDEO
+                   AND PA.ID_USUARIO = M.ID_USUARIO
+                WHERE V.ID_CURSO = M.ID_CURSO
+                  AND V.EXCLUIDO = 0
+                  AND V.STATUS = 1
+            )
+            WHERE M.ID_USUARIO = ?
+              AND M.ID_CURSO = (
+                  SELECT V2.ID_CURSO
+                  FROM VIDEOS V2
+                  WHERE V2.ID_VIDEO = ?
+              )
             """,
             (id_aluno, id_aula),
         )
