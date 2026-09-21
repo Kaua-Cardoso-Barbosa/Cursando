@@ -1,178 +1,499 @@
-import React from "react";
-import { useLocation } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
+    FaCheck,
     FaGraduationCap,
-    FaUser,
-    FaGooglePlay,
-    FaLinux,
-    FaWindows
+    FaPlay,
+    FaSearch,
+    FaShieldAlt,
+    FaUser
 } from "react-icons/fa";
 import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno.jsx";
-import css from "./DashboardAluno.module.css";
 import Button from "../../components/Button/Button.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
+import css from "./DashboardAluno.module.css";
+
+const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
+const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
+
+function resolverUrlMidia(api, caminho) {
+    if (!caminho) return "";
+    if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) {
+        return caminho;
+    }
+    return `${api}${caminho}`;
+}
+
+function CabecalhoAluno({ usuario, sair }) {
+    return (
+        <header className={css.cabecalhoUsuario}>
+            <div className={css.dadosUsuario}>
+                <h1>Ola {usuario.nome}</h1>
+                <span className={css.cargoUsuario}>Aluno</span>
+            </div>
+
+            <div className={css.acoesUsuario}>
+                <Button texto="Sair" fundoCor="vermelho" tamanho="pequeno" onClick={sair} />
+                <div className={css.fotoPerfil}>
+                    <FaUser />
+                </div>
+            </div>
+        </header>
+    );
+}
+
+function RodapeAluno() {
+    return (
+        <footer className={css.rodapePagina}>
+            <div className={css.colunaRodape}>
+                <h4>Contato</h4>
+                <p>Birigui - SP</p>
+                <p>(18)98131-3801</p>
+                <p>cursando@gmail.com</p>
+            </div>
+
+            <div className={css.colunaRodape}>
+                <h4>Navegacao</h4>
+                <a href="/">Home</a>
+                <a href="/login">Login</a>
+                <a href="/cadastro">Cadastro</a>
+            </div>
+
+            <div className={css.colunaRodape}>
+                <h4>Baixe nosso aplicativo</h4>
+                <p>Playstore</p>
+                <p>Linux</p>
+                <p>Windows</p>
+            </div>
+        </footer>
+    );
+}
+
+function EstadoVazio({ texto }) {
+    return (
+        <div className={css.estadoVazio}>
+            <FaGraduationCap />
+            <span>{texto}</span>
+        </div>
+    );
+}
+
+function CardMetrica({ titulo, detalhe, valor }) {
+    return (
+        <article className={css.cardMetrica}>
+            <div className={css.metricaTopo}>
+                <h2>{titulo}</h2>
+                <div className={css.iconeBadge}>
+                    <FaGraduationCap />
+                </div>
+            </div>
+            <span className={css.metricaVariacao}>{detalhe}</span>
+            <strong className={css.metricaNumero}>{valor}</strong>
+        </article>
+    );
+}
+
+function CursoCard({ curso, api, onAbrir, mostrarProgresso = false }) {
+    const imagem = curso.imagem ? resolverUrlMidia(api, curso.imagem) : PLACEHOLDER_CURSO;
+    const progresso = Number(curso.progresso || 0);
+
+    return (
+        <article className={css.cardCurso}>
+            <button className={css.areaCardClicavel} onClick={() => onAbrir?.(curso)}>
+                <img src={imagem} alt={curso.titulo} className={css.imagemCurso} />
+                <div className={css.infoCurso}>
+                    <div>
+                        <h3>{curso.titulo}</h3>
+                        <p>{curso.descricao}</p>
+                    </div>
+                    {mostrarProgresso && (
+                        <div className={css.progressoCurso} aria-label={`${progresso}% concluido`}>
+                            <span>{progresso}%</span>
+                            <div className={css.barraProgresso}>
+                                <i style={{ width: `${progresso}%` }} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </button>
+        </article>
+    );
+}
+
+function AulaCard({ aula, api, onAbrir }) {
+    const imagem = aula.thumb ? resolverUrlMidia(api, aula.thumb) : PLACEHOLDER_AULA;
+
+    return (
+        <article className={css.cardAula}>
+            <button className={css.areaCardClicavel} onClick={() => onAbrir?.(aula)}>
+                <div className={css.previewAula}>
+                    <img src={imagem} alt={aula.titulo} />
+                    <span className={css.playBadge}><FaPlay /></span>
+                </div>
+                <div className={css.infoAula}>
+                    <div>
+                        <h3>{aula.titulo}</h3>
+                        <p>{aula.descricao}</p>
+                    </div>
+                    {aula.assistida && <FaCheck className={css.checkAula} />}
+                </div>
+            </button>
+        </article>
+    );
+}
 
 export default function DashboardAluno({
-                                           api,
-                                           sair,
-                                           setMensagem,
-                                           onPerfilAtualizado,
-                                           usuario = { nome: "Aluno", tipo: 2 },
-                                           metricas = {
-                                               inscritos: { quantidade: 6, textoMes: "+1 nesse mes" },
-                                               finalizados: { quantidade: 2, textoMes: "+2 nesse mes" },
-                                               iniciados: { quantidade: 1, textoMes: "+1 nesse mes" }
-                                           },
-                                           aulasRecentes = [
-                                               {
-                                                   id: 1,
-                                                   titulo: "Texto 1",
-                                                   descricao: "Descricao do card 1",
-                                                   imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
-                                               },
-                                               {
-                                                   id: 2,
-                                                   titulo: "Texto",
-                                                   descricao: "Descricao Diferente",
-                                                   imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
-                                               },
-                                               {
-                                                   id: 3,
-                                                   titulo: "Texto",
-                                                   descricao: "Descricao Diferente",
-                                                   imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
-                                               },
-                                               {
-                                                   id: 4,
-                                                   titulo: "Texto",
-                                                   descricao: "Descricao Diferente",
-                                                   imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
-                                               }
-                                           ]
-                                       }) {
+    api,
+    sair,
+    setMensagem,
+    onPerfilAtualizado,
+    usuario = { nome: "Aluno", tipo: 2 }
+}) {
+    const [dashboard, setDashboard] = useState(null);
+    const [meusCursos, setMeusCursos] = useState([]);
+    const [descobrir, setDescobrir] = useState([]);
+    const [busca, setBusca] = useState("");
+    const [detalheCurso, setDetalheCurso] = useState(null);
+    const [aulaAtual, setAulaAtual] = useState(null);
+    const [carregando, setCarregando] = useState(false);
+    const [protegaoAtiva, setProtecaoAtiva] = useState(false);
     const location = useLocation();
-    const exibindoPerfil = location.pathname.endsWith("/perfil");
+    const navigate = useNavigate();
+
+    const visao = useMemo(() => {
+        if (location.pathname.endsWith("/perfil")) return "perfil";
+        if (location.pathname.includes("/descobrir")) return "descobrir";
+        if (location.pathname.includes("/aulas/")) return "aula";
+        if (location.pathname.includes("/cursos")) return "meus-cursos";
+        return "inicio";
+    }, [location.pathname]);
+
+    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
+
+    const avisar = useCallback((mensagem) => {
+        if (mensagem && setMensagem) setMensagem(mensagem);
+    }, [setMensagem]);
+
+    const lerResposta = useCallback(async (resposta) => {
+        const dados = await resposta.json().catch(() => ({}));
+        if (dados.mensagem) avisar(dados.mensagem);
+        if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao conectar com a API.");
+        return dados;
+    }, [avisar]);
+
+    const carregarDashboard = useCallback(async () => {
+        try {
+            const resposta = await fetch(`${api}/aluno/dashboard`, { credentials: "include" });
+            setDashboard(await lerResposta(resposta));
+        } catch (erro) {
+            console.error("Erro ao carregar dashboard do aluno:", erro);
+            setDashboard({ metricas: { inscritos: 0, finalizados: 0, iniciados: 0 }, recentes: [] });
+        }
+    }, [api, lerResposta]);
+
+    const carregarMeusCursos = useCallback(async () => {
+        setCarregando(true);
+        try {
+            const resposta = await fetch(`${api}/aluno/cursos`, { credentials: "include" });
+            setMeusCursos(await lerResposta(resposta));
+        } catch (erro) {
+            console.error("Erro ao carregar cursos do aluno:", erro);
+            setMeusCursos([]);
+        } finally {
+            setCarregando(false);
+        }
+    }, [api, lerResposta]);
+
+    const carregarDescobrir = useCallback(async (termo = busca) => {
+        setCarregando(true);
+        try {
+            const params = termo ? `?busca=${encodeURIComponent(termo)}` : "";
+            const resposta = await fetch(`${api}/aluno/descobrir${params}`, { credentials: "include" });
+            setDescobrir(await lerResposta(resposta));
+        } catch (erro) {
+            console.error("Erro ao carregar cursos publicos:", erro);
+            setDescobrir([]);
+        } finally {
+            setCarregando(false);
+        }
+    }, [api, busca, lerResposta]);
+
+    const carregarDetalheCurso = useCallback(async (idCurso) => {
+        setCarregando(true);
+        try {
+            const resposta = await fetch(`${api}/aluno/cursos/${idCurso}`, { credentials: "include" });
+            setDetalheCurso(await lerResposta(resposta));
+        } catch (erro) {
+            console.error("Erro ao carregar curso:", erro);
+            setDetalheCurso(null);
+        } finally {
+            setCarregando(false);
+        }
+    }, [api, lerResposta]);
+
+    const carregarAula = useCallback(async (idAula) => {
+        setCarregando(true);
+        try {
+            const resposta = await fetch(`${api}/aluno/aulas/${idAula}`, { credentials: "include" });
+            setAulaAtual(await lerResposta(resposta));
+        } catch (erro) {
+            console.error("Erro ao carregar aula:", erro);
+            setAulaAtual(null);
+        } finally {
+            setCarregando(false);
+        }
+    }, [api, lerResposta]);
+
+    useEffect(() => {
+        carregarDashboard();
+    }, [carregarDashboard]);
+
+    useEffect(() => {
+        const matchAula = location.pathname.match(/\/DashboardAluno\/aulas\/(\d+)/);
+        const matchCurso = location.pathname.match(/\/DashboardAluno\/cursos\/(\d+)/);
+        const matchDescobrir = location.pathname.match(/\/DashboardAluno\/descobrir\/(\d+)/);
+
+        if (matchAula) {
+            carregarAula(matchAula[1]);
+            return;
+        }
+
+        if (matchCurso) {
+            carregarDetalheCurso(matchCurso[1]);
+            return;
+        }
+
+        if (matchDescobrir) {
+            carregarDetalheCurso(matchDescobrir[1]);
+            return;
+        }
+
+        if (location.pathname.endsWith("/cursos")) {
+            carregarMeusCursos();
+            return;
+        }
+
+        if (location.pathname.endsWith("/descobrir")) {
+            carregarDescobrir();
+        }
+    }, [carregarAula, carregarDescobrir, carregarDetalheCurso, carregarMeusCursos, location.pathname]);
+
+    useEffect(() => {
+        function ativarProtecao(evento) {
+            if (visao !== "aula") return;
+            if (evento?.key === "PrintScreen" || (evento?.ctrlKey && evento?.shiftKey) || evento?.type === "contextmenu") {
+                evento.preventDefault();
+            }
+            setProtecaoAtiva(true);
+            window.setTimeout(() => setProtecaoAtiva(false), 1800);
+        }
+
+        function aoVisibilidade() {
+            if (document.hidden && visao === "aula") setProtecaoAtiva(true);
+        }
+
+        window.addEventListener("keydown", ativarProtecao);
+        window.addEventListener("blur", ativarProtecao);
+        document.addEventListener("visibilitychange", aoVisibilidade);
+        document.addEventListener("contextmenu", ativarProtecao);
+
+        return () => {
+            window.removeEventListener("keydown", ativarProtecao);
+            window.removeEventListener("blur", ativarProtecao);
+            document.removeEventListener("visibilitychange", aoVisibilidade);
+            document.removeEventListener("contextmenu", ativarProtecao);
+        };
+    }, [visao]);
+
+    async function inscrever(curso) {
+        try {
+            const resposta = await fetch(`${api}/aluno/cursos/${curso.id}/inscrever`, {
+                method: "POST",
+                credentials: "include"
+            });
+            await lerResposta(resposta);
+            await carregarDashboard();
+            navigate(`/DashboardAluno/cursos/${curso.id}`);
+        } catch (erro) {
+            console.error("Erro ao inscrever:", erro);
+            avisar({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
+    async function marcarAssistida(aula) {
+        try {
+            const resposta = await fetch(`${api}/aluno/aulas/${aula.id}/assistir`, {
+                method: "POST",
+                credentials: "include"
+            });
+            await lerResposta(resposta);
+            await carregarDashboard();
+            setAulaAtual((atual) => atual ? { ...atual, aula: { ...atual.aula, assistida: true } } : atual);
+        } catch (erro) {
+            console.error("Erro ao marcar aula como assistida:", erro);
+        }
+    }
+
+    const metricas = dashboard?.metricas || { inscritos: 0, finalizados: 0, iniciados: 0 };
+    const recentes = dashboard?.recentes || [];
+    const cursoDetalhe = detalheCurso?.curso;
+    const aulasDetalhe = detalheCurso?.aulas || [];
+    const videoAula = aulaAtual?.aula;
+    const proximas = aulaAtual?.proximas || [];
 
     return (
         <div className={css.painelAluno}>
-            <MenuLateralAluno itemAtivo={exibindoPerfil ? "perfil" : "inicio"} />
+            <MenuLateralAluno itemAtivo={itemAtivo} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    <header className={css.cabecalhoUsuario}>
-                        <div className={css.dadosUsuario}>
-                            <h1>Olá {usuario.nome}</h1>
-                            <span className={css.cargoUsuario}>
-                                {Number(usuario.tipo) === 0 && "Administrador"}
-                                {Number(usuario.tipo) === 1 && "Professor"}
-                                {Number(usuario.tipo) === 2 && "Aluno"}
-                            </span>
-                        </div>
+                    {visao !== "aula" && <CabecalhoAluno usuario={usuario} sair={sair} />}
 
-                        <div className={css.acoesUsuario}>
-                            <Button
-                                texto="Sair"
-                                fundoCor="vermelho"
-                                tamanho="pequeno"
-                                onClick={sair}
-                            />
-                            <div className={css.fotoPerfil}>
-                                <FaUser />
-                            </div>
-                        </div>
-                    </header>
-
-                    {exibindoPerfil ? (
-                        <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
-                    ) : (
+                    {visao === "inicio" && (
                         <>
-                            <section className={css.secaoMetricas}>
-                                <div className={css.linhaMetricas}>
-                                    <div className={css.cardMetrica}>
-                                        <div className={css.metricaTopo}>
-                                            <h2>Cursos inscritos</h2>
-                                            <div className={css.iconeBadge}>
-                                                <FaGraduationCap />
-                                            </div>
-                                        </div>
-                                        <span className={css.metricaVariacao}>{metricas.inscritos.textoMes}</span>
-                                        <div className={css.metricaNumero}>{metricas.inscritos.quantidade}</div>
-                                    </div>
-
-                                    <div className={css.cardMetrica}>
-                                        <div className={css.metricaTopo}>
-                                            <h2>Cursos finalizados</h2>
-                                            <div className={css.iconeBadge}>
-                                                <FaGraduationCap />
-                                            </div>
-                                        </div>
-                                        <span className={css.metricaVariacao}>{metricas.finalizados.textoMes}</span>
-                                        <div className={css.metricaNumero}>{metricas.finalizados.quantidade}</div>
-                                    </div>
-                                </div>
-
-                                <div className={`${css.linhaMetricas} ${css.centralizado}`}>
-                                    <div className={css.cardMetrica}>
-                                        <div className={css.metricaTopo}>
-                                            <h2>Cursos iniciados</h2>
-                                            <div className={css.iconeBadge}>
-                                                <FaGraduationCap />
-                                            </div>
-                                        </div>
-                                        <span className={css.metricaVariacao}>{metricas.iniciados.textoMes}</span>
-                                        <div className={css.metricaNumero}>{metricas.iniciados.quantidade}</div>
-                                    </div>
-                                </div>
+                            <section className={css.gridMetricas}>
+                                <CardMetrica titulo="Cursos inscritos" detalhe="+0 nesse mes" valor={metricas.inscritos} />
+                                <CardMetrica titulo="Cursos finalizados" detalhe="+0 nesse mes" valor={metricas.finalizados} />
+                                <CardMetrica titulo="Cursos iniciados" detalhe="+0 nesse mes" valor={metricas.iniciados} />
                             </section>
 
-                            <section className={css.secaoAulas}>
+                            <section className={css.secaoCursos}>
                                 <h2>Ultimas aulas vistas:</h2>
-                                <div className={css.carrosselAulas}>
-                                    {aulasRecentes.map((aula) => (
-                                        <div key={aula.id} className={css.cardAula}>
-                                            <div className={css.containerImagem}>
-                                                {aula.imagem ? (
-                                                    <img src={aula.imagem} alt={aula.titulo} className={css.imagemAula} />
-                                                ) : (
-                                                    <div className={css.placeholderImagem} />
-                                                )}
-                                            </div>
-                                            <div className={css.infoAula}>
-                                                <h3>{aula.titulo}</h3>
-                                                <p>{aula.descricao}</p>
-                                            </div>
-                                        </div>
+                                {recentes.length === 0 && <EstadoVazio texto="Nenhuma aula assistida ainda." />}
+                                <div className={css.carrosselCursos}>
+                                    {recentes.map((aula) => (
+                                        <AulaCard key={aula.id} aula={aula} api={api} onAbrir={() => navigate(`/DashboardAluno/aulas/${aula.id}`)} />
                                     ))}
                                 </div>
                             </section>
                         </>
                     )}
+
+                    {visao === "meus-cursos" && !cursoDetalhe && (
+                        <section className={css.secaoCursos}>
+                            <h2>Todos os Cursos</h2>
+                            {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
+                            {!carregando && meusCursos.length === 0 && <EstadoVazio texto="Voce ainda nao se inscreveu em cursos." />}
+                            <div className={css.gridCursos}>
+                                {meusCursos.map((curso) => (
+                                    <CursoCard key={curso.id} curso={curso} api={api} mostrarProgresso onAbrir={() => navigate(`/DashboardAluno/cursos/${curso.id}`)} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {visao === "descobrir" && !cursoDetalhe && (
+                        <section className={css.secaoCursos}>
+                            <div className={css.campoBusca}>
+                                <FaSearch />
+                                <input
+                                    value={busca}
+                                    placeholder="Pesquisar em Cursos"
+                                    onChange={(evento) => setBusca(evento.target.value)}
+                                    onKeyDown={(evento) => {
+                                        if (evento.key === "Enter") carregarDescobrir(evento.currentTarget.value);
+                                    }}
+                                />
+                                <button onClick={() => carregarDescobrir(busca)}>Buscar</button>
+                            </div>
+
+                            {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
+                            {!carregando && descobrir.length === 0 && <EstadoVazio texto="Nenhum curso publico encontrado." />}
+                            <div className={css.gridCursos}>
+                                {descobrir.map((curso) => (
+                                    <CursoCard key={curso.id} curso={curso} api={api} onAbrir={() => navigate(`/DashboardAluno/descobrir/${curso.id}`)} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {(visao === "meus-cursos" || visao === "descobrir") && cursoDetalhe && (
+                        <section className={css.secaoDetalheCurso}>
+                            <button className={css.linkVoltar} onClick={() => navigate(visao === "descobrir" ? "/DashboardAluno/descobrir" : "/DashboardAluno/cursos")}>
+                                Voltar
+                            </button>
+
+                            <div className={css.heroCurso}>
+                                <img src={cursoDetalhe.imagem ? resolverUrlMidia(api, cursoDetalhe.imagem) : PLACEHOLDER_CURSO} alt={cursoDetalhe.titulo} />
+                                <div className={css.resumoCurso}>
+                                    <h2>{cursoDetalhe.titulo}</h2>
+                                    <p><strong>Professor(a):</strong> {cursoDetalhe.professor}</p>
+                                    {!cursoDetalhe.matriculado && (
+                                        <button className={css.botaoInscrever} onClick={() => inscrever(cursoDetalhe)}>
+                                            Inscrever-se
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <p className={css.descricaoCurso}>{cursoDetalhe.descricao}</p>
+                            <h2>{cursoDetalhe.matriculado ? "Todas video-aulas do curso:" : "Video-aulas disponiveis apos inscrever-se:"}</h2>
+
+                            {aulasDetalhe.length === 0 && <EstadoVazio texto="Nenhuma aula publicada neste curso." />}
+                            <div className={css.gridAulas}>
+                                {aulasDetalhe.map((aula) => (
+                                    <AulaCard
+                                        key={aula.id}
+                                        aula={aula}
+                                        api={api}
+                                        onAbrir={cursoDetalhe.matriculado ? () => navigate(`/DashboardAluno/aulas/${aula.id}`) : undefined}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {visao === "aula" && (
+                        <section className={css.secaoAulaAberta}>
+                            <button className={css.linkVoltar} onClick={() => navigate(videoAula ? `/DashboardAluno/cursos/${videoAula.id_curso}` : "/DashboardAluno/cursos")}>
+                                Voltar
+                            </button>
+
+                            {carregando && <p className={css.textoApoio}>Carregando aula...</p>}
+                            {!carregando && !videoAula && <EstadoVazio texto="Aula nao encontrada." />}
+
+                            {videoAula && (
+                                <>
+                                    <div className={`${css.playerSeguro} ${protegaoAtiva ? css.playerProtegido : ""}`}>
+                                        <video
+                                            controls
+                                            controlsList="nodownload noplaybackrate"
+                                            disablePictureInPicture
+                                            poster={videoAula.thumb ? resolverUrlMidia(api, videoAula.thumb) : undefined}
+                                            src={resolverUrlMidia(api, videoAula.video)}
+                                            onEnded={() => marcarAssistida(videoAula)}
+                                        />
+                                        <div className={css.tituloNoVideo}>
+                                            <h1>{videoAula.titulo}</h1>
+                                            <p>{videoAula.descricao}</p>
+                                        </div>
+                                        {protegaoAtiva && (
+                                            <div className={css.avisoProtecao}>
+                                                <FaShieldAlt />
+                                                <span>Conteudo protegido</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <h2>Proximas video-aulas:</h2>
+                                    <div className={css.gridAulas}>
+                                        {proximas.map((aula) => (
+                                            <AulaCard key={aula.id} aula={aula} api={api} onAbrir={() => navigate(`/DashboardAluno/aulas/${aula.id}`)} />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </section>
+                    )}
+
+                    {visao === "perfil" && (
+                        <section className={css.secaoPerfil}>
+                            <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
+                        </section>
+                    )}
                 </main>
 
-                <footer className={css.rodapePagina}>
-                    <div className={css.colunaRodape}>
-                        <h4>Contato</h4>
-                        <p>Birigui - SP</p>
-                        <p>(18)98131-3801</p>
-                        <p>cursando@gmail.com</p>
-                    </div>
-
-                    <div className={css.colunaRodape}>
-                        <h4>Navegacao</h4>
-                        <a href="#home">Home</a>
-                        <a href="#login">Login</a>
-                        <a href="#cadastro">Cadastro</a>
-                    </div>
-
-                    <div className={css.colunaRodape}>
-                        <h4>Baixe nosso aplicativo</h4>
-                        <ul className={css.listaApps}>
-                            <li><FaGooglePlay /> Playstore</li>
-                            <li><FaLinux /> Linux</li>
-                            <li><FaWindows /> Windows</li>
-                        </ul>
-                    </div>
-                </footer>
+                <RodapeAluno />
             </div>
         </div>
     );
