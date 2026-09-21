@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 from uuid import uuid4
 
 import fdb
@@ -176,6 +177,51 @@ def aula_para_dict(row):
         "status_nome": STATUS_NOMES.get(row[5], "desconhecido"),
     }
 
+def converter_video_dash(caminho_video, id_video):
+    pasta_drm = os.path.join(
+        current_app.root_path,
+        "static",
+        "uploads",
+        "drm",
+        str(id_video)
+    )
+
+    os.makedirs(pasta_drm, exist_ok=True)
+
+    caminho_mp4box = os.path.join(
+        current_app.root_path,
+        "..",
+        "ferramentas",
+        "gpac",
+        "MP4Box.exe"
+    )
+
+    caminho_mp4box = os.path.abspath(caminho_mp4box)
+
+    caminho_manifest = os.path.join(
+        pasta_drm,
+        "manifest.mpd"
+    )
+
+    resultado = subprocess.run(
+        [
+            caminho_mp4box,
+            "-dash",
+            "1000",
+            "-out",
+            caminho_manifest,
+            caminho_video
+        ],
+        capture_output=True,
+        text=True
+    )
+
+    if resultado.returncode != 0:
+        raise RuntimeError(
+            f"Erro ao converter vídeo:\n{resultado.stderr}"
+        )
+
+    return f"/static/uploads/drm/{id_video}/manifest.mpd"
 
 @app.route("/professor/dashboard", methods=["GET"])
 @jwt_required()
@@ -642,8 +688,11 @@ def criar_aula_professor(id_curso):
                 {"mp4", "webm", "ogg", "mov"}
             )
 
-            video_url = video["url"]
-            video_caminho = video["caminho"]
+            video_url = converter_video_dash(
+                                video["caminho"],
+                                id_aula
+                            )
+
             thumb_url = salvar_thumb_aula(id_aula, request.files.get("thumb"))
         except ValueError as erro:
             return resposta(str(erro), 400)

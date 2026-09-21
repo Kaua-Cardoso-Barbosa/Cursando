@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from flask_bcrypt import check_password_hash
 import qrcode
 import os
+import subprocess
 from flask_jwt_extended import (
     JWTManager,
     create_access_token,
@@ -187,3 +188,5 @@ def enviando_email(destinatario, assunto, mensagem, codigo, nome, mensagem_secun
         print("Email enviado com sucesso!")
     except Exception as e:
         print("Erro ao enviar email:", e)
+
+
