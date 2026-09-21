@@ -116,7 +116,10 @@ def salvar_upload(arquivo, subpasta, extensoes):
     caminho = os.path.join(pasta, nome_final)
     arquivo.save(caminho)
 
-    return f"/static/uploads/{subpasta}/{nome_final}"
+    return {
+        "caminho": caminho,
+        "url": f"/static/uploads/{subpasta}/{nome_final}"
+    }
 
 def salvar_thumb_aula(id_aula, arquivo):
     if not arquivo or not arquivo.filename:
@@ -135,7 +138,7 @@ def salvar_thumb_aula(id_aula, arquivo):
         os.remove(caminho)
 
     arquivo.save(caminho)
-    return f"/static/uploads/aulas/thumbs/{nome_final}"
+    return f"/static/uploads/thumbs/{nome_final}"
 
 
 def thumb_aula_por_id(id_aula):
@@ -143,7 +146,7 @@ def thumb_aula_por_id(id_aula):
     for extensao in ("jpg", "jpeg", "png", "webp"):
         caminho = os.path.join(pasta, f"{id_aula}.{extensao}")
         if os.path.exists(caminho):
-            return f"/static/uploads/aulas/thumbs/{id_aula}.{extensao}"
+            return f"/static/uploads/thumbs/{id_aula}.{extensao}"
     return ""
 
 
@@ -632,7 +635,14 @@ def criar_aula_professor(id_curso):
         id_aula = cursor.fetchone()[0]
 
         try:
-            video_url = salvar_upload(request.files.get("video"), "aulas", {"mp4", "webm", "ogg", "mov"})
+            video = salvar_upload(
+                request.files.get("video"),
+                "aulas",
+                {"mp4", "webm", "ogg", "mov"}
+            )
+
+            video_url = video["url"]
+            video_caminho = video["caminho"]
             thumb_url = salvar_thumb_aula(id_aula, request.files.get("thumb"))
         except ValueError as erro:
             return resposta(str(erro), 400)
