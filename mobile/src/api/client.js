@@ -1,47 +1,44 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { NativeModules, Platform } from "react-native";
 
 const TOKEN_KEY = "cursando_token";
 const USER_KEY = "cursando_usuario";
 
-const API_PORT = "5000";
-const REQUEST_TIMEOUT_MS = 6000;
+const API_PORT = 5000;
+const REQUEST_TIMEOUT_MS = 3000;
 
-function getMetroHost() {
-  const scriptURL = NativeModules?.SourceCode?.scriptURL;
-  const match = scriptURL?.match(/^[^:]+:\/\/([^:/]+)/);
-  return match?.[1];
-}
+const API_HOSTS = [
+  "192.168.137.1",
+  "10.92.11.45",
+];
+
+let activeApiUrl = null;
+
 
 function getApiUrlCandidates() {
-  const metroHost = getMetroHost();
+  const candidates = [];
 
-  const candidates = [
-    process.env.EXPO_PUBLIC_API_URL,
+  // URL definida manualmente no .env
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    candidates.push(process.env.EXPO_PUBLIC_API_URL);
+  }
 
-    // Celular físico: usa o mesmo IP do computador que está rodando o Metro.
-    metroHost &&
-    !["localhost", "127.0.0.1"].includes(metroHost) &&
-    `http://${metroHost}:${API_PORT}`,
+  // Endereços conhecidos da máquina
+  for (const host of API_HOSTS) {
+    candidates.push(`http://${host}:${API_PORT}`);
+  }
 
-    // Android Emulator
-    Platform.OS === "android" &&
-    `http://10.0.2.2:${API_PORT}`,
+  // Emulador Android
+  candidates.push(`http://10.0.2.2:${API_PORT}`);
 
-    // iOS Simulator
-    Platform.OS === "ios" &&
-    `http://localhost:${API_PORT}`,
-
-    `http://localhost:${API_PORT}`,
-    `http://127.0.0.1:${API_PORT}`
-  ].filter(Boolean);
+  // Desenvolvimento local
+  candidates.push(`http://localhost:${API_PORT}`);
+  candidates.push(`http://127.0.0.1:${API_PORT}`);
 
   return [...new Set(candidates)];
 }
 
-export const API_URL = "http://192.168.137.1:5000";
 
-let activeApiUrl = API_URL;
+export const API_URL = getApiUrlCandidates()[0];
 
 
 export async function salvarSessao(token, usuario) {
@@ -86,6 +83,10 @@ export function resolverUrlMidia(caminho) {
     return caminho;
   }
 
+  if (!activeApiUrl) {
+    throw new Error("API ainda não conectada.");
+  }
+
   return `${activeApiUrl}${caminho}`;
 }
 
@@ -111,7 +112,8 @@ async function fetchWithTimeout(url, options = {}) {
 function isConnectionError(error) {
   return (
       error?.name === "AbortError" ||
-      error?.message === "Network request failed"
+      error?.message === "Network request failed" ||
+      error?.message?.includes("Network request failed")
   );
 }
 
@@ -152,6 +154,10 @@ export async function apiRequest(
 
   for (const apiUrl of uniqueCandidates) {
     try {
+      console.log(
+          `[API] Tentando: ${apiUrl}${path}`
+      );
+
       const response = await fetchWithTimeout(
           `${apiUrl}${path}`,
           {
@@ -175,6 +181,10 @@ export async function apiRequest(
 
       activeApiUrl = apiUrl;
 
+      console.log(
+          `[API] Conectado: ${activeApiUrl}`
+      );
+
       return data;
 
     } catch (error) {
@@ -182,12 +192,17 @@ export async function apiRequest(
         throw error;
       }
 
+      console.log(
+          `[API] Falhou: ${apiUrl}`
+      );
+
       failedUrls.push(apiUrl);
     }
   }
 
   throw new Error(
       `Não foi possível conectar com a API.\n\n` +
-      `URLs testadas:\n${failedUrls.join("\n")}`
+      `Endereços testados:\n` +
+      failedUrls.join("\n")
   );
 }

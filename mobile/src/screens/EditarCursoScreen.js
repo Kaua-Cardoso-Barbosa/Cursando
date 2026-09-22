@@ -30,7 +30,10 @@ export default function EditarCursoScreen({ curso, onCancel, onSave, salvando })
         <View style={styles.header}>
           <BrandLogo compact />
         </View>
-        <Text style={styles.heading}>Editar curso</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.heading}>Editar curso</Text>
+          <Text style={styles.subheading}>Atualize as informacoes do curso</Text>
+        </View>
         <View style={styles.card}>
           <Pressable style={styles.upload} onPress={escolherImagem}>
             {preview ? <Image source={{ uri: preview }} style={styles.image} /> : null}
@@ -71,31 +74,44 @@ const styles = StyleSheet.create({
   },
   page: {
     flexGrow: 1,
-    paddingBottom: 28
+    paddingBottom: 32
   },
   header: {
-    height: 120,
+    height: 92,
     backgroundColor: colors.darkGreen,
     alignItems: "center",
     justifyContent: "center"
   },
+  titleBlock: {
+    paddingHorizontal: 24,
+    marginTop: 28,
+    marginBottom: 22
+  },
   heading: {
     color: colors.white,
-    fontSize: 46,
+    fontSize: 36,
+    lineHeight: 42,
     fontWeight: "800",
-    marginTop: 38,
-    marginLeft: 40,
-    marginBottom: 56
+    marginBottom: 3
+  },
+  subheading: {
+    color: colors.white,
+    fontSize: 15,
+    lineHeight: 19
   },
   card: {
-    marginHorizontal: 39,
+    marginHorizontal: 18,
+    borderWidth: 1.5,
+    borderColor: colors.black,
     borderRadius: 8,
     backgroundColor: colors.white,
-    padding: 15
+    padding: 16
   },
   upload: {
     height: 152,
-    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.black,
+    borderRadius: 8,
     overflow: "hidden",
     backgroundColor: "#d6d6d6",
     alignItems: "center",
@@ -112,7 +128,9 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   archiveButton: {
-    minHeight: 34,
+    minHeight: 40,
+    borderWidth: 1,
+    borderColor: colors.amber,
     borderRadius: 6,
     backgroundColor: colors.amber,
     alignItems: "center",
@@ -122,11 +140,12 @@ const styles = StyleSheet.create({
   },
   archiveText: {
     color: colors.black,
-    fontSize: 23
+    fontSize: 18,
+    lineHeight: 22
   },
   buttons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8
+    gap: 12
   }
 });

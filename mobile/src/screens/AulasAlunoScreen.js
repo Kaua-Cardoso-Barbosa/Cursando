@@ -14,15 +14,28 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
       contentContainerStyle={globalStyles.page}
       refreshControl={<RefreshControl refreshing={carregando} onRefresh={onRefresh} />}
     >
-      <Text style={styles.title}>Todas video-aulas{"\n"}do curso: {curso?.titulo || "Curso"}</Text>
+      <Pressable style={styles.back} onPress={onBack}>
+        <Ionicons name="arrow-back" size={19} color={colors.darkGreen} />
+        <Text style={styles.backText}>Voltar</Text>
+      </Pressable>
+
+      <View style={styles.header}>
+        <Text style={globalStyles.title}>Todas video-aulas</Text>
+        <Text style={globalStyles.eyebrow} numberOfLines={2}>
+          {curso?.titulo || "Curso"}
+        </Text>
+        <View style={globalStyles.divider} />
+      </View>
 
       <View style={styles.list}>
         {aulas.map((aula) => (
-          <Pressable key={aula.id} style={styles.card} onPress={() => onOpenLesson(aula)}>
+          <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(aula)}>
             <View style={styles.preview}>
               <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
-              <Ionicons name="play" size={78} color={colors.black} style={styles.play} />
-              {aula.assistida ? <Ionicons name="checkmark" size={38} color={colors.green} style={styles.check} /> : null}
+              <View style={styles.playBadge}>
+                <Ionicons name="play" size={48} color={colors.black} style={styles.play} />
+              </View>
+              {aula.assistida ? <Ionicons name="checkmark-circle" size={34} color={colors.green} style={styles.check} /> : null}
             </View>
             <View style={styles.info}>
               <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
@@ -32,32 +45,23 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
         ))}
         {!carregando && aulas.length === 0 ? <Text style={globalStyles.message}>Nenhuma aula publicada neste curso.</Text> : null}
       </View>
-
-      <Pressable style={styles.back} onPress={onBack}>
-        <Ionicons name="arrow-back" size={22} color={colors.black} />
-        <Text style={styles.backText}>Voltar</Text>
-      </Pressable>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    color: colors.black,
-    fontSize: 35,
-    lineHeight: 49,
-    marginBottom: 28
+  header: {
+    marginBottom: 26
   },
   list: {
-    gap: 26,
-    paddingHorizontal: 16
+    gap: 22
   },
   card: {
-    overflow: "hidden",
-    borderWidth: 1.2,
-    borderColor: colors.black,
-    borderRadius: 16,
-    backgroundColor: colors.white
+    shadowColor: colors.black,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2
   },
   preview: {
     height: 154,
@@ -70,6 +74,14 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%"
   },
+  playBadge: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    alignItems: "center",
+    justifyContent: "center"
+  },
   play: {
     opacity: 0.94
   },
@@ -79,35 +91,36 @@ const styles = StyleSheet.create({
     right: 10
   },
   info: {
-    minHeight: 66,
+    minHeight: 72,
     paddingHorizontal: 14,
-    paddingVertical: 6
+    paddingVertical: 10
   },
   lessonTitle: {
     color: colors.black,
-    fontSize: 22,
-    lineHeight: 26
+    fontSize: 21,
+    lineHeight: 25
   },
   description: {
-    color: colors.black,
-    fontSize: 13
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 18,
+    marginTop: 2
   },
   back: {
-    position: "absolute",
-    top: 12,
-    left: 8,
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
     borderWidth: 1,
-    borderColor: colors.black,
-    borderRadius: 7,
-    backgroundColor: colors.white,
-    paddingHorizontal: 8,
-    paddingVertical: 3
+    borderColor: colors.darkGreen,
+    borderRadius: 4,
+    backgroundColor: "transparent",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    marginBottom: 16
   },
   backText: {
-    color: colors.black,
-    fontSize: 20
+    color: colors.darkGreen,
+    fontSize: 16
   }
 });

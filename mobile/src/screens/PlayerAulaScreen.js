@@ -13,7 +13,7 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
   return (
     <ScrollView contentContainerStyle={globalStyles.page}>
       <Pressable style={styles.back} onPress={onBack}>
-        <Ionicons name="arrow-back" size={22} color={colors.black} />
+        <Ionicons name="arrow-back" size={19} color={colors.darkGreen} />
         <Text style={styles.backText}>Voltar</Text>
       </Pressable>
 
@@ -37,13 +37,18 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
             </View>
           </View>
 
-          <Text style={styles.nextTitle}>Proximas video-aulas:</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.nextTitle}>Proximas video-aulas</Text>
+            <View style={globalStyles.divider} />
+          </View>
           <View style={styles.list}>
             {proximas.map((proxima) => (
-              <Pressable key={proxima.id} style={styles.card} onPress={() => onOpenLesson(proxima)}>
+              <Pressable key={proxima.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(proxima)}>
                 <View style={styles.preview}>
                   <Image source={{ uri: proxima.thumb ? resolverUrlMidia(proxima.thumb) : fallbackThumb }} style={styles.image} />
-                  <Ionicons name="play" size={72} color={colors.black} />
+                  <View style={styles.playBadge}>
+                    <Ionicons name="play" size={44} color={colors.black} />
+                  </View>
                 </View>
                 <View style={styles.info}>
                   <Text style={styles.lessonTitle} numberOfLines={1}>{proxima.titulo}</Text>
@@ -65,26 +70,28 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
     borderWidth: 1,
-    borderColor: colors.black,
-    borderRadius: 7,
-    backgroundColor: colors.white,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginBottom: 8
+    borderColor: colors.darkGreen,
+    borderRadius: 4,
+    backgroundColor: "transparent",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    marginBottom: 16
   },
   backText: {
-    color: colors.black,
-    fontSize: 20
+    color: colors.darkGreen,
+    fontSize: 16
   },
   playerWrap: {
     width: "100%",
     aspectRatio: 16 / 9,
     overflow: "hidden",
-    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.black,
+    borderRadius: 8,
     backgroundColor: colors.black,
-    marginBottom: 16
+    marginBottom: 24
   },
   player: {
     width: "100%",
@@ -92,34 +99,38 @@ const styles = StyleSheet.create({
   },
   overlayTitle: {
     position: "absolute",
-    top: 8,
+    top: 12,
     left: 14,
-    right: 14
+    right: 14,
+    paddingVertical: 4
   },
   videoTitle: {
     color: colors.white,
-    fontSize: 18
+    fontSize: 18,
+    lineHeight: 22
   },
   videoDescription: {
     color: colors.white,
-    fontSize: 12
+    fontSize: 12,
+    lineHeight: 16
+  },
+  sectionHeader: {
+    marginBottom: 22
   },
   nextTitle: {
     color: colors.black,
     fontSize: 25,
-    marginBottom: 22,
-    marginLeft: 18
+    lineHeight: 30
   },
   list: {
-    gap: 22,
-    paddingHorizontal: 18
+    gap: 22
   },
   card: {
-    overflow: "hidden",
-    borderWidth: 1.2,
-    borderColor: colors.black,
-    borderRadius: 16,
-    backgroundColor: colors.white
+    shadowColor: colors.black,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2
   },
   preview: {
     height: 154,
@@ -132,18 +143,28 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%"
   },
+  playBadge: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    alignItems: "center",
+    justifyContent: "center"
+  },
   info: {
-    minHeight: 66,
+    minHeight: 72,
     paddingHorizontal: 14,
-    paddingVertical: 6
+    paddingVertical: 10
   },
   lessonTitle: {
     color: colors.black,
-    fontSize: 22,
-    lineHeight: 26
+    fontSize: 21,
+    lineHeight: 25
   },
   description: {
-    color: colors.black,
-    fontSize: 13
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 18,
+    marginTop: 2
   }
 });

@@ -5,11 +5,16 @@ export const colors = {
   darkGreen: "#02693e",
   tabGreen: "#08ad6a",
   black: "#090909",
+  ink: "#111111",
   white: "#ffffff",
-  gray: "#efefef",
+  gray: "#f8f8f8",
+  softGray: "#eeeeee",
+  border: "#111111",
   muted: "#7b7b7b",
+  textMuted: "#555555",
   red: "#e21d0b",
-  amber: "#f6b72f"
+  amber: "#f6b72f",
+  mint: "#9fe0c3"
 };
 
 export const globalStyles = StyleSheet.create({
@@ -19,56 +24,87 @@ export const globalStyles = StyleSheet.create({
   },
   page: {
     flexGrow: 1,
-    paddingHorizontal: 14,
-    paddingTop: 18,
-    paddingBottom: 96,
+    paddingHorizontal: 18,
+    paddingTop: 24,
+    paddingBottom: 112,
     backgroundColor: colors.white
   },
   title: {
-    color: colors.black,
-    fontSize: 30,
+    color: colors.ink,
+    fontSize: 31,
     lineHeight: 36,
     fontWeight: "400"
   },
+  eyebrow: {
+    color: colors.darkGreen,
+    fontSize: 15,
+    lineHeight: 19,
+    marginTop: 3
+  },
   divider: {
-    height: 2,
+    height: 4,
     backgroundColor: colors.green,
-    marginTop: 16,
-    marginHorizontal: -14
+    marginTop: 10,
+    width: "100%"
+  },
+  card: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.white,
+    overflow: "hidden"
+  },
+  metricCard: {
+    minHeight: 150,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.gray,
+    paddingHorizontal: 18,
+    paddingVertical: 20
   },
   label: {
     color: colors.muted,
-    fontSize: 22,
-    marginBottom: 6
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8
   },
   input: {
     width: "100%",
-    minHeight: 44,
+    minHeight: 46,
     borderWidth: 2,
     borderColor: colors.green,
     borderRadius: 7,
-    backgroundColor: "#eeeeee",
+    backgroundColor: colors.softGray,
     color: colors.black,
-    fontSize: 20,
-    paddingHorizontal: 10
+    fontSize: 17,
+    paddingHorizontal: 12,
+    paddingVertical: 8
   },
   field: {
     width: "100%",
-    marginBottom: 18
+    marginBottom: 16
   },
   primaryButton: {
-    minHeight: 38,
-    minWidth: 120,
+    minHeight: 44,
+    minWidth: 124,
     borderRadius: 7,
+    borderWidth: 1.4,
+    borderColor: colors.green,
     backgroundColor: colors.green,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    shadowColor: colors.black,
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2
   },
   secondaryButton: {
-    minHeight: 36,
+    minHeight: 42,
     borderRadius: 7,
-    borderWidth: 1.2,
+    borderWidth: 1.4,
     borderColor: colors.black,
     backgroundColor: colors.white,
     alignItems: "center",
@@ -76,9 +112,11 @@ export const globalStyles = StyleSheet.create({
     paddingHorizontal: 18
   },
   dangerButton: {
-    minHeight: 38,
-    minWidth: 120,
+    minHeight: 44,
+    minWidth: 124,
     borderRadius: 7,
+    borderWidth: 1.4,
+    borderColor: colors.red,
     backgroundColor: colors.red,
     alignItems: "center",
     justifyContent: "center",
@@ -86,11 +124,13 @@ export const globalStyles = StyleSheet.create({
   },
   buttonText: {
     color: colors.white,
-    fontSize: 24
+    fontSize: 20,
+    lineHeight: 24
   },
   secondaryText: {
     color: colors.black,
-    fontSize: 22
+    fontSize: 18,
+    lineHeight: 22
   },
   message: {
     color: colors.darkGreen,

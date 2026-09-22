@@ -24,14 +24,19 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
       contentContainerStyle={globalStyles.page}
       refreshControl={<RefreshControl refreshing={carregando} onRefresh={onRefresh} />}
     >
-      <Text style={globalStyles.title}>Meus cursos</Text>
-      <View style={globalStyles.divider} />
+      <View style={styles.header}>
+        <Text style={globalStyles.title}>Meus cursos</Text>
+        <Text style={globalStyles.eyebrow}>
+          {aluno ? "Cursos em andamento" : "Cursos publicados e rascunhos"}
+        </Text>
+        <View style={globalStyles.divider} />
+      </View>
 
       <View style={styles.list}>
         {cursos.map((curso, index) => {
           const imagem = curso.imagem ? resolverUrlMidia(curso.imagem) : placeholders[index % placeholders.length];
           return (
-            <View key={curso.id} style={styles.card}>
+            <View key={curso.id} style={[globalStyles.card, styles.card]}>
               <Pressable disabled={!onOpen} onPress={() => onOpen?.(curso)}>
                 <Image source={{ uri: imagem }} style={styles.image} />
               </Pressable>
@@ -49,11 +54,11 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
                   </View>
                 ) : (
                   <View style={styles.actions}>
-                    <Pressable onPress={() => onEdit(curso)} hitSlop={10}>
-                      <Ionicons name="pencil-outline" size={32} color={colors.black} />
+                    <Pressable style={styles.iconButton} onPress={() => onEdit(curso)} hitSlop={10}>
+                      <Ionicons name="pencil-outline" size={22} color={colors.black} />
                     </Pressable>
-                    <Pressable onPress={() => confirmarExclusao(curso)} hitSlop={10}>
-                      <Ionicons name="trash-outline" size={32} color={colors.red} />
+                    <Pressable style={styles.iconButton} onPress={() => confirmarExclusao(curso)} hitSlop={10}>
+                      <Ionicons name="trash-outline" size={22} color={colors.red} />
                     </Pressable>
                   </View>
                 )}
@@ -68,30 +73,31 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
 }
 
 const styles = StyleSheet.create({
+  header: {
+    marginBottom: 26
+  },
   list: {
-    gap: 18,
-    marginTop: 42,
-    paddingHorizontal: 16
+    gap: 22
   },
   card: {
-    overflow: "hidden",
-    borderWidth: 1.2,
-    borderColor: colors.black,
-    borderRadius: 16,
-    backgroundColor: colors.white
+    shadowColor: colors.black,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2
   },
   image: {
     width: "100%",
-    height: 153,
+    height: 154,
     backgroundColor: "#dddddd"
   },
   info: {
-    minHeight: 68,
+    minHeight: 78,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    paddingLeft: 13,
-    paddingRight: 12,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
     gap: 12
   },
   texts: {
@@ -99,31 +105,42 @@ const styles = StyleSheet.create({
   },
   courseTitle: {
     color: colors.black,
-    fontSize: 25,
-    lineHeight: 28
+    fontSize: 21,
+    lineHeight: 25
   },
   description: {
-    color: colors.black,
-    fontSize: 13,
-    lineHeight: 16
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 18,
+    marginTop: 2
   },
   actions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 18
+    gap: 10,
+    paddingTop: 4
+  },
+  iconButton: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 7,
+    backgroundColor: colors.gray
   },
   progressBox: {
-    width: 84,
+    width: 88,
     alignItems: "center",
     alignSelf: "flex-end",
-    marginBottom: 6
+    marginBottom: 2
   },
   progressLabel: {
     color: colors.black,
-    fontSize: 12
+    fontSize: 12,
+    marginBottom: 3
   },
   progressTrack: {
-    width: 76,
+    width: 84,
     height: 9,
     borderWidth: 1,
     borderColor: colors.black,
