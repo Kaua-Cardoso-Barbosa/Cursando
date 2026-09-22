@@ -17,6 +17,10 @@ CORS(
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 )
 
+@app.route("/health", methods=["GET"])
+def health():
+    return {"status": "ok"}, 200
+
 host = app.config['DB_HOST']
 data_base = app.config['DB_NAME']
 user = app.config['DB_USER']

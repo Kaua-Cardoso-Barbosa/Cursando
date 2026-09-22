@@ -21,12 +21,20 @@ export default function LoginScreen({ onLogin }) {
   const [carregando, setCarregando] = useState(false);
 
   async function entrar() {
+    if (carregando) return;
+
+    const emailTratado = email.trim().toLowerCase();
+    if (!emailTratado || !senha) {
+      setErro("Informe email e senha para entrar.");
+      return;
+    }
+
     setErro("");
     setCarregando(true);
     try {
       const dados = await apiRequest("/login", {
         method: "POST",
-        body: JSON.stringify({ email, senha })
+        body: JSON.stringify({ email: emailTratado, senha })
       });
 
       const payload = lerPayloadToken(dados?.token);
