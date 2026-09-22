@@ -42,6 +42,7 @@ export const globalStyles = StyleSheet.create({
     marginBottom: 6
   },
   input: {
+    width: "100%",
     minHeight: 44,
     borderWidth: 2,
     borderColor: colors.green,
@@ -52,6 +53,7 @@ export const globalStyles = StyleSheet.create({
     paddingHorizontal: 10
   },
   field: {
+    width: "100%",
     marginBottom: 18
   },
   primaryButton: {

@@ -1,12 +1,31 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
 
 const TOKEN_KEY = "cursando_token";
 const USER_KEY = "cursando_usuario";
 
-export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL ||
-  (Platform.OS === "android" ? "http://10.0.2.2:5000" : "http://localhost:5000");
+const API_PORT = "5000";
+
+function getMetroHost() {
+  const scriptURL = NativeModules?.SourceCode?.scriptURL;
+  const match = scriptURL?.match(/^[^:]+:\/\/([^:/]+)/);
+  return match?.[1];
+}
+
+function getDefaultApiUrl() {
+  if (Platform.OS === "web") return `http://localhost:${API_PORT}`;
+
+  const metroHost = getMetroHost();
+  if (metroHost && !["localhost", "127.0.0.1"].includes(metroHost)) {
+    return `http://${metroHost}:${API_PORT}`;
+  }
+
+  return Platform.OS === "android"
+    ? `http://10.0.2.2:${API_PORT}`
+    : `http://localhost:${API_PORT}`;
+}
+
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || getDefaultApiUrl();
 
 export async function salvarSessao(token, usuario) {
   await AsyncStorage.multiSet([

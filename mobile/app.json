@@ -19,11 +19,13 @@
       "jsEngine": "jsc",
       "adaptiveIcon": {
         "backgroundColor": "#06a663"
-      },
-      "usesCleartextTraffic": true
+      }
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
