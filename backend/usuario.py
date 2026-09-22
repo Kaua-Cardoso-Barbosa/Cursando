@@ -149,6 +149,78 @@ def listar_usuarios():
         con.close()
 
 
+@app.route("/admin/dashboard", methods=["GET"])
+@jwt_required()
+def admin_dashboard():
+    negado = exigir_admin()
+    if negado:
+        return negado
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                SUM(CASE WHEN TIPO_USUARIO = 1 THEN 1 ELSE 0 END),
+                SUM(CASE WHEN TIPO_USUARIO = 2 THEN 1 ELSE 0 END)
+            FROM USUARIOS
+            """
+        )
+        professores, alunos = cursor.fetchone() or (0, 0)
+
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*),
+                SUM(CASE
+                    WHEN EXTRACT(YEAR FROM CRIADO_EM) = EXTRACT(YEAR FROM CURRENT_DATE)
+                     AND EXTRACT(MONTH FROM CRIADO_EM) = EXTRACT(MONTH FROM CURRENT_DATE)
+                    THEN 1 ELSE 0
+                END)
+            FROM CURSOS
+            WHERE EXCLUIDO = 0
+            """
+        )
+        cursos_total, cursos_mes = cursor.fetchone() or (0, 0)
+
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*),
+                SUM(CASE
+                    WHEN EXTRACT(YEAR FROM DATA_UPLOAD) = EXTRACT(YEAR FROM CURRENT_DATE)
+                     AND EXTRACT(MONTH FROM DATA_UPLOAD) = EXTRACT(MONTH FROM CURRENT_DATE)
+                    THEN 1 ELSE 0
+                END)
+            FROM VIDEOS
+            WHERE EXCLUIDO = 0 AND STATUS = 1
+            """
+        )
+        aulas_total, aulas_mes = cursor.fetchone() or (0, 0)
+
+        return jsonify(
+            {
+                "metricas": {
+                    "total_professores": professores or 0,
+                    "professores_mes": 0,
+                    "total_alunos": alunos or 0,
+                    "alunos_mes": 0,
+                    "aulas_publicadas": aulas_total or 0,
+                    "aulas_mes": aulas_mes or 0,
+                    "cursos": cursos_total or 0,
+                    "cursos_mes": cursos_mes or 0,
+                }
+            }
+        ), 200
+    except Exception as erro:
+        return resposta_mensagem(f"Erro ao carregar dashboard do administrador: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
 @app.route("/usuarios/<int:id_usuario>/status", methods=["PATCH"])
 @jwt_required()
 def alterar_status_usuario(id_usuario):

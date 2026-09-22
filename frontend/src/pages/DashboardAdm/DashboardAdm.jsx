@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
     FaGraduationCap,
@@ -19,16 +19,81 @@ export default function DashboardAdm({
                                          sair,
                                          setMensagem,
                                          onPerfilAtualizado,
-                                         usuario,
-                                         metricas = [
-                                             { id: 1, titulo: "Total de professores", textoMes: "+6 cadastros nesse mes", quantidade: 15, icone: <FaGraduationCap /> },
-                                             { id: 2, titulo: "Total de alunos", textoMes: "+18 cadastros esse mes", quantidade: 38, icone: <FaUser /> },
-                                             { id: 3, titulo: "Aulas publicadas", textoMes: "10 video-aulas esse mes", quantidade: 16, icone: <FaPlay /> },
-                                             { id: 4, titulo: "Cursos", textoMes: "+6 cursos criados esse mes", quantidade: 10, icone: <FaFolder /> }
-                                         ]
+                                         usuario
                                      }) {
     const location = useLocation();
     const exibindoPerfil = location.pathname.endsWith("/perfil");
+    const [dashboard, setDashboard] = useState(null);
+
+    useEffect(() => {
+        if (exibindoPerfil) {
+            return;
+        }
+
+        async function carregarDashboard() {
+            try {
+                const resposta = await fetch(`${api}/admin/dashboard`, {
+                    credentials: "include"
+                });
+                const dados = await resposta.json().catch(() => ({}));
+
+                if (dados.mensagem && setMensagem) {
+                    setMensagem(dados.mensagem);
+                }
+
+                if (!resposta.ok) {
+                    throw new Error(dados?.mensagem?.descricao || "Erro ao carregar dashboard.");
+                }
+
+                setDashboard(dados.metricas || {});
+            } catch (erro) {
+                console.error("Erro ao carregar dashboard do administrador:", erro);
+                if (setMensagem) {
+                    setMensagem({
+                        tipo: "erro",
+                        descricao: erro.message
+                    });
+                }
+            }
+        }
+
+        carregarDashboard();
+    }, [api, exibindoPerfil, setMensagem]);
+
+    const metricas = useMemo(() => {
+        const dados = dashboard || {};
+
+        return [
+            {
+                id: 1,
+                titulo: "Total de professores",
+                textoMes: "Total real cadastrado",
+                quantidade: dados.total_professores ?? 0,
+                icone: <FaGraduationCap />
+            },
+            {
+                id: 2,
+                titulo: "Total de alunos",
+                textoMes: "Total real cadastrado",
+                quantidade: dados.total_alunos ?? 0,
+                icone: <FaUser />
+            },
+            {
+                id: 3,
+                titulo: "Aulas publicadas",
+                textoMes: `${dados.aulas_mes ?? 0} video-aulas esse mes`,
+                quantidade: dados.aulas_publicadas ?? 0,
+                icone: <FaPlay />
+            },
+            {
+                id: 4,
+                titulo: "Cursos",
+                textoMes: `+${dados.cursos_mes ?? 0} cursos criados esse mes`,
+                quantidade: dados.cursos ?? 0,
+                icone: <FaFolder />
+            }
+        ];
+    }, [dashboard]);
 
     return (
         <div className={css.painelAdm}>

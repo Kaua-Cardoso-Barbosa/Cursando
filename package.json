@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "firewall": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/open-firewall.ps1",
+    "start": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-dev.ps1"
+  },
+  "dependencies": {
+    "expo": "^57.0.24"
+  }
+}

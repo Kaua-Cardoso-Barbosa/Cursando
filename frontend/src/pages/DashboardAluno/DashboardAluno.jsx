@@ -252,6 +252,14 @@ export default function DashboardAluno({
         const matchCurso = location.pathname.match(/\/DashboardAluno\/cursos\/(\d+)/);
         const matchDescobrir = location.pathname.match(/\/DashboardAluno\/descobrir\/(\d+)/);
 
+        if (!matchAula) {
+            setAulaAtual(null);
+        }
+
+        if (!matchCurso && !matchDescobrir) {
+            setDetalheCurso(null);
+        }
+
         if (matchAula) {
             carregarAula(matchAula[1]);
             return;
@@ -268,11 +276,13 @@ export default function DashboardAluno({
         }
 
         if (location.pathname.endsWith("/cursos")) {
+            setDetalheCurso(null);
             carregarMeusCursos();
             return;
         }
 
         if (location.pathname.endsWith("/descobrir")) {
+            setDetalheCurso(null);
             carregarDescobrir();
         }
     }, [carregarAula, carregarDescobrir, carregarDetalheCurso, carregarMeusCursos, location.pathname]);
