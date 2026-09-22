@@ -139,7 +139,7 @@ def salvar_thumb_aula(id_aula, arquivo):
         os.remove(caminho)
 
     arquivo.save(caminho)
-    return f"/static/uploads/thumbs/{nome_final}"
+    return f"/static/uploads/aulas/thumbs/{nome_final}"
 
 
 def thumb_aula_por_id(id_aula):
@@ -147,7 +147,7 @@ def thumb_aula_por_id(id_aula):
     for extensao in ("jpg", "jpeg", "png", "webp"):
         caminho = os.path.join(pasta, f"{id_aula}.{extensao}")
         if os.path.exists(caminho):
-            return f"/static/uploads/thumbs/{id_aula}.{extensao}"
+            return f"/static/uploads/aulas/thumbs/{id_aula}.{extensao}"
     return ""
 
 
@@ -177,6 +177,8 @@ def aula_para_dict(row):
         "status_nome": STATUS_NOMES.get(row[5], "desconhecido"),
     }
 
+
+
 def converter_video_dash(caminho_video, id_video):
     pasta_drm = os.path.join(
         current_app.root_path,
@@ -188,40 +190,194 @@ def converter_video_dash(caminho_video, id_video):
 
     os.makedirs(pasta_drm, exist_ok=True)
 
-    caminho_mp4box = os.path.join(
+    caminho_packager = os.path.join(
         current_app.root_path,
         "..",
         "ferramentas",
-        "gpac",
-        "MP4Box.exe"
+        "shaka-packager",
+        "packager-win-x64.exe"
     )
 
-    caminho_mp4box = os.path.abspath(caminho_mp4box)
+    caminho_packager = os.path.abspath(caminho_packager)
+
+    caminho_ffprobe = os.path.join(
+        current_app.root_path,
+        "..",
+        "ferramentas",
+        "ffmpeg",
+        "bin",
+        "ffprobe.exe"
+    )
+
+    caminho_ffprobe = os.path.abspath(caminho_ffprobe)
+
+    caminho_video_saida = os.path.join(
+        pasta_drm,
+        "video.mp4"
+    )
+
+    caminho_audio_saida = os.path.join(
+        pasta_drm,
+        "audio.mp4"
+    )
 
     caminho_manifest = os.path.join(
         pasta_drm,
         "manifest.mpd"
     )
 
-    resultado = subprocess.run(
+    # Verifica se o vídeo possui áudio
+    resultado_audio = subprocess.run(
         [
-            caminho_mp4box,
-            "-dash",
-            "1000",
-            "-out",
-            caminho_manifest,
+            caminho_ffprobe,
+            "-v",
+            "error",
+            "-select_streams",
+            "a",
+            "-show_entries",
+            "stream=index",
+            "-of",
+            "csv=p=0",
             caminho_video
         ],
         capture_output=True,
         text=True
     )
 
+    possui_audio = bool(resultado_audio.stdout.strip())
+
+    # Sempre adiciona o vídeo
+    entradas = [
+        (
+            f"in={caminho_video},"
+            f"stream=video,"
+            f"drm_label=SD,"
+            f"output={caminho_video_saida}"
+        )
+    ]
+
+    # Só adiciona áudio se existir
+    if possui_audio:
+        entradas.append(
+            (
+                f"in={caminho_video},"
+                f"stream=audio,"
+                f"drm_label=AUDIO,"
+                f"output={caminho_audio_saida}"
+            )
+        )
+
+    # Chaves DRM
+    keys = (
+        "label=SD:"
+        "key_id=00112233445566778899aabbccddeeff:"
+        "key=000102030405060708090a0b0c0d0e0f"
+    )
+
+    if possui_audio:
+        keys += (
+            ",label=AUDIO:"
+            "key_id=11112222333344445555666677778888:"
+            "key=101112131415161718191a1b1c1d1e1f"
+        )
+
+    comando = [
+        caminho_packager,
+
+        *entradas,
+
+        "--enable_raw_key_encryption",
+
+        "--keys",
+        keys,
+
+        "--protection_systems",
+        "Widevine",
+
+        "--segment_duration",
+        "2",
+
+        "--mpd_output",
+        caminho_manifest
+    ]
+
+    resultado = subprocess.run(
+        comando,
+        capture_output=True,
+        text=True
+    )
+
     if resultado.returncode != 0:
         raise RuntimeError(
-            f"Erro ao converter vídeo:\n{resultado.stderr}"
+            f"Erro ao converter vídeo:\n"
+            f"{resultado.stdout}\n"
+            f"{resultado.stderr}"
         )
 
     return f"/static/uploads/drm/{id_video}/manifest.mpd"
+
+
+def empacotar_video_drm(caminho_video, id_video):
+    pasta_drm = os.path.join(
+        "static",
+        "uploads",
+        "drm",
+        str(id_video)
+    )
+
+    os.makedirs(pasta_drm, exist_ok=True)
+
+    caminho_video_saida = os.path.join(
+        pasta_drm,
+        "video.mp4"
+    )
+
+    caminho_audio_saida = os.path.join(
+        pasta_drm,
+        "audio.mp4"
+    )
+
+    caminho_manifest = os.path.join(
+        pasta_drm,
+        "manifest.mpd"
+    )
+
+    comando = [
+        CAMINHO_PACKAGER,
+
+        f"in={caminho_video},stream=video,"
+        f"drm_label=SD,"
+        f"output={caminho_video_saida}",
+
+        f"in={caminho_video},stream=audio,"
+        f"drm_label=AUDIO,"
+        f"output={caminho_audio_saida}",
+
+        "--enable_raw_key_encryption",
+
+        "--keys",
+        "label=SD:key_id=00112233445566778899aabbccddeeff:"
+        "key=000102030405060708090a0b0c0d0e0f,"
+        "label=AUDIO:key_id=11112222333344445555666677778888:"
+        "key=101112131415161718191a1b1c1d1e1f",
+
+        "--protection_systems",
+        "Widevine",
+
+        "--segment_duration",
+        "2",
+
+        "--mpd_output",
+        caminho_manifest
+    ]
+
+    subprocess.run(
+        comando,
+        check=True
+    )
+
+    return caminho_manifest
+
 
 @app.route("/professor/dashboard", methods=["GET"])
 @jwt_required()
@@ -669,8 +825,11 @@ def criar_aula_professor(id_curso):
             """
             SELECT 1
             FROM CURSOS C
-            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
-            WHERE C.ID_CURSO = ? AND PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
+            JOIN PROFESSORES_CURSO PC
+                ON PC.ID_CURSO = C.ID_CURSO
+            WHERE C.ID_CURSO = ?
+              AND PC.ID_USUARIO = ?
+              AND C.EXCLUIDO = 0
             """,
             (id_curso, get_jwt_identity()),
         )
@@ -678,7 +837,9 @@ def criar_aula_professor(id_curso):
         if not cursor.fetchone():
             return resposta("Curso não encontrado.", 404)
 
-        cursor.execute("SELECT GEN_ID(GEN_VIDEOS_ID, 1) FROM RDB$DATABASE")
+        cursor.execute(
+            "SELECT GEN_ID(GEN_VIDEOS_ID, 1) FROM RDB$DATABASE"
+        )
         id_aula = cursor.fetchone()[0]
 
         try:
@@ -689,29 +850,69 @@ def criar_aula_professor(id_curso):
             )
 
             video_url = converter_video_dash(
-                                video["caminho"],
-                                id_aula
-                            )
+                video["caminho"],
+                id_aula
+            )
 
-            thumb_url = salvar_thumb_aula(id_aula, request.files.get("thumb"))
+            thumb_url = salvar_thumb_aula(
+                id_aula,
+                request.files.get("thumb")
+            )
+
         except ValueError as erro:
             return resposta(str(erro), 400)
 
         cursor.execute(
             """
             INSERT INTO VIDEOS (
-                ID_VIDEO, ID_CURSO, ID_PUBLICO, TITULO, TITULO_SLUG, DESCRICAO,
-                POSICAO_PLAYLIST, DURACAO, DATA_UPLOAD, VIDEO_URL, STATUS, EXCLUIDO, ATUALIZADO_EM
+                ID_VIDEO,
+                ID_CURSO,
+                ID_PUBLICO,
+                TITULO,
+                TITULO_SLUG,
+                DESCRICAO,
+                POSICAO_PLAYLIST,
+                DURACAO,
+                DATA_UPLOAD,
+                VIDEO_URL,
+                STATUS,
+                EXCLUIDO,
+                ATUALIZADO_EM
             )
-            VALUES (?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP, ?, 0, 0, CURRENT_TIMESTAMP)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, 0, 0,
+                CURRENT_TIMESTAMP, ?, 0, 0,
+                CURRENT_TIMESTAMP
+            )
             """,
-            (id_aula, id_curso, uuid4().hex, titulo, criar_slug(titulo), para_blob_texto(descricao), video_url),
+            (
+                id_aula,
+                id_curso,
+                uuid4().hex,
+                titulo,
+                criar_slug(titulo),
+                para_blob_texto(descricao),
+                video_url
+            ),
         )
+
         con.commit()
-        return resposta("Aula cadastrada como privada.", 201, "sucesso", id_aula=id_aula, thumb=thumb_url)
+
+        return resposta(
+            "Aula cadastrada como privada.",
+            201,
+            "sucesso",
+            id_aula=id_aula,
+            thumb=thumb_url
+        )
+
     except Exception as erro:
         con.rollback()
-        return resposta(f"Erro ao cadastrar aula: {erro}", 500)
+        return resposta(
+            f"Erro ao cadastrar aula: {erro}",
+            500
+        )
+
     finally:
         cursor.close()
         con.close()

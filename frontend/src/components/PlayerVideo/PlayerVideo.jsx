@@ -7,7 +7,8 @@ export default function PlayerVideo({
                                         videoAula,
                                         videoUrl,
                                         posterUrl,
-                                        marcarAssistida
+                                        marcarAssistida,
+                                        drmConfig
                                     }) {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
@@ -16,7 +17,7 @@ export default function PlayerVideo({
         const video = videoRef.current;
         const container = containerRef.current;
 
-        if (!video || !container) return;
+        if (!video || !container || !videoUrl) return;
 
         const player = new shaka.Player();
 
@@ -25,6 +26,18 @@ export default function PlayerVideo({
             container,
             video
         );
+
+        player.configure({
+            drm: {
+                clearKeys: {
+                    "00112233445566778899aabbccddeeff":
+                        "000102030405060708090a0b0c0d0e0f",
+
+                    "11112222333344445555666677778888":
+                        "101112131415161718191a1b1c1d1e1f"
+                }
+            }
+        });
 
         ui.configure({
             controlPanelElements: [
@@ -62,42 +75,70 @@ export default function PlayerVideo({
         });
 
         const erroShaka = (evento) => {
-            console.error("Erro do Shaka:", evento.detail);
+            console.error("ERRO SHAKA:", evento.detail);
+            console.error(
+                "ERRO SHAKA JSON:",
+                JSON.stringify(evento.detail, null, 2)
+            );
         };
 
-        player.addEventListener("error", erroShaka);
+        player.addEventListener(
+            "error",
+            erroShaka
+        );
 
         const quandoTerminar = () => {
             marcarAssistida(videoAula);
         };
 
-        video.addEventListener("ended", quandoTerminar);
+        video.addEventListener(
+            "ended",
+            quandoTerminar
+        );
 
         const carregarVideo = async () => {
             try {
-                console.log("URL do vídeo:", videoUrl);
 
                 await player.attach(video);
 
-                console.log("Player anexado ao vídeo");
+                console.log(
+                    "Player anexado ao vídeo"
+                );
 
                 await player.load(videoUrl);
 
-                console.log("Vídeo carregado com sucesso!");
+                console.log(
+                    "Vídeo carregado com sucesso!"
+                );
+
             } catch (erro) {
                 console.error("Falha ao carregar vídeo:", erro);
+                console.error("Código:", erro?.code);
+                console.error("Categoria:", erro?.category);
+                console.error("Severidade:", erro?.severity);
+                console.error("Dados:", erro?.data);
+                console.error("Erro completo:", JSON.stringify(erro, null, 2));
             }
         };
 
         carregarVideo();
 
         return () => {
-            video.removeEventListener("ended", quandoTerminar);
-            player.removeEventListener("error", erroShaka);
+            video.removeEventListener(
+                "ended",
+                quandoTerminar
+            );
+
+            player.removeEventListener(
+                "error",
+                erroShaka
+            );
 
             ui.destroy();
+
+            player.destroy();
         };
-    }, [videoUrl, videoAula, marcarAssistida]);
+    }, [videoUrl, marcarAssistida]);
 
     return (
         <div

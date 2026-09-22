@@ -309,6 +309,13 @@
     margin-top: auto;
 }
 
+.areaBusca {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 20px;
+}
+
 .campoBusca {
     width: min(700px, 100%);
     min-height: 40px;
@@ -318,7 +325,6 @@
     align-items: center;
     gap: 10px;
     padding: 0 12px;
-    margin-bottom: 20px;
 }
 
 .campoBusca svg {
@@ -336,7 +342,7 @@
     color: #111111;
 }
 
-.campoBusca button {
+.campoBuscaButton {
     border: none;
     background: #06a663;
     color: #ffffff;
