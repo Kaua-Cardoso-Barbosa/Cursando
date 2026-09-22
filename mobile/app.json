@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Cursando",
+    "slug": "cursando-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#06a663"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "jsEngine": "jsc",
+      "adaptiveIcon": {
+        "backgroundColor": "#06a663"
+      },
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
