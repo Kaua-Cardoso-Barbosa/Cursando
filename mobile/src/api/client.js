@@ -15,10 +15,23 @@ function getMetroHost() {
 
 function getApiUrlCandidates() {
   const metroHost = getMetroHost();
+
   const candidates = [
     process.env.EXPO_PUBLIC_API_URL,
-    metroHost && !["localhost", "127.0.0.1"].includes(metroHost) && `http://${metroHost}:${API_PORT}`,
-    Platform.OS === "android" && `http://10.0.2.2:${API_PORT}`,
+
+    // Celular físico: usa o mesmo IP do computador que está rodando o Metro.
+    metroHost &&
+    !["localhost", "127.0.0.1"].includes(metroHost) &&
+    `http://${metroHost}:${API_PORT}`,
+
+    // Android Emulator
+    Platform.OS === "android" &&
+    `http://10.0.2.2:${API_PORT}`,
+
+    // iOS Simulator
+    Platform.OS === "ios" &&
+    `http://localhost:${API_PORT}`,
+
     `http://localhost:${API_PORT}`,
     `http://127.0.0.1:${API_PORT}`
   ].filter(Boolean);
@@ -26,8 +39,10 @@ function getApiUrlCandidates() {
   return [...new Set(candidates)];
 }
 
-export const API_URL = getApiUrlCandidates()[0];
+export const API_URL = "http://192.168.137.1:5000";
+
 let activeApiUrl = API_URL;
+
 
 export async function salvarSessao(token, usuario) {
   await AsyncStorage.multiSet([
@@ -36,27 +51,51 @@ export async function salvarSessao(token, usuario) {
   ]);
 }
 
+
 export async function carregarSessao() {
-  const [[, token], [, usuarioJson]] = await AsyncStorage.multiGet([TOKEN_KEY, USER_KEY]);
+  const [[, token], [, usuarioJson]] =
+      await AsyncStorage.multiGet([
+        TOKEN_KEY,
+        USER_KEY
+      ]);
+
   return {
-    token,
-    usuario: usuarioJson ? JSON.parse(usuarioJson) : null
+    token: token || null,
+    usuario: usuarioJson
+        ? JSON.parse(usuarioJson)
+        : null
   };
 }
 
+
 export async function limparSessao() {
-  await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+  await AsyncStorage.multiRemove([
+    TOKEN_KEY,
+    USER_KEY
+  ]);
 }
+
 
 export function resolverUrlMidia(caminho) {
   if (!caminho) return "";
-  if (caminho.startsWith("http://") || caminho.startsWith("https://")) return caminho;
+
+  if (
+      caminho.startsWith("http://") ||
+      caminho.startsWith("https://")
+  ) {
+    return caminho;
+  }
+
   return `${activeApiUrl}${caminho}`;
 }
 
-async function fetchWithTimeout(url, options) {
+
+async function fetchWithTimeout(url, options = {}) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
 
   try {
     return await fetch(url, {
@@ -68,15 +107,35 @@ async function fetchWithTimeout(url, options) {
   }
 }
 
+
 function isConnectionError(error) {
-  return error.name === "AbortError" || error.message === "Network request failed";
+  return (
+      error?.name === "AbortError" ||
+      error?.message === "Network request failed"
+  );
 }
 
-export async function apiRequest(path, options = {}, token) {
+
+export async function apiRequest(
+    path,
+    options = {},
+    token = null
+) {
   const headers = {
     Accept: "application/json",
-    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+    ...(options.body instanceof FormData
+        ? {}
+        : {
+          "Content-Type": "application/json"
+        }),
+
+    ...(token
+        ? {
+          Authorization: `Bearer ${token}`
+        }
+        : {}),
+
     ...(options.headers || {})
   };
 
@@ -84,23 +143,40 @@ export async function apiRequest(path, options = {}, token) {
     activeApiUrl,
     ...getApiUrlCandidates()
   ].filter(Boolean);
-  const uniqueCandidates = [...new Set(candidates)];
+
+  const uniqueCandidates = [
+    ...new Set(candidates)
+  ];
+
   const failedUrls = [];
 
   for (const apiUrl of uniqueCandidates) {
     try {
-      const response = await fetchWithTimeout(`${apiUrl}${path}`, {
-        ...options,
-        headers
-      });
-      const data = await response.json().catch(() => ({}));
+      const response = await fetchWithTimeout(
+          `${apiUrl}${path}`,
+          {
+            ...options,
+            headers
+          }
+      );
+
+      const data = await response
+          .json()
+          .catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data?.mensagem?.descricao || "Erro ao conectar com a API.");
+        throw new Error(
+            data?.mensagem?.descricao ||
+            data?.mensagem ||
+            data?.erro ||
+            "Erro ao conectar com a API."
+        );
       }
 
       activeApiUrl = apiUrl;
+
       return data;
+
     } catch (error) {
       if (!isConnectionError(error)) {
         throw error;
@@ -110,5 +186,8 @@ export async function apiRequest(path, options = {}, token) {
     }
   }
 
-  throw new Error(`Nao foi possivel conectar com a API. URLs testadas: ${failedUrls.join(", ")}.`);
+  throw new Error(
+      `Não foi possível conectar com a API.\n\n` +
+      `URLs testadas:\n${failedUrls.join("\n")}`
+  );
 }
