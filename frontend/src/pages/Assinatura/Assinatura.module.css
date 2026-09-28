@@ -1,0 +1,168 @@
+.pagina {
+    min-height: calc(100vh - 80px);
+    padding: 70px 8vw;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
+    gap: 70px;
+    align-items: center;
+    background: linear-gradient(135deg, #eef8f2 0%, #ffffff 56%, #d7f0e2 100%);
+}
+
+.introducao {
+    max-width: 620px;
+}
+
+.eyebrow,
+.rotulo {
+    color: #0c4d36;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.introducao h1 {
+    margin: 18px 0;
+    color: #123d2d;
+    font-size: clamp(2.7rem, 6vw, 5.6rem);
+    line-height: 0.98;
+}
+
+.introducao p {
+    max-width: 520px;
+    color: #496157;
+    font-size: 1.15rem;
+    line-height: 1.6;
+}
+
+.plano {
+    padding: 38px;
+    border: 1px solid #b8d8c5;
+    border-radius: 18px;
+    background: #0c4d36;
+    color: #fff;
+    box-shadow: 0 22px 60px rgba(12, 77, 54, 0.2);
+}
+
+.plano h2 {
+    margin: 10px 0 18px;
+    font-size: 2rem;
+}
+
+.plano strong {
+    display: block;
+    color: #c6f4d7;
+    font-size: 2.3rem;
+}
+
+.plano small {
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+.plano ul {
+    padding-left: 20px;
+    margin: 28px 0;
+    line-height: 2;
+}
+
+.botao,
+.botaoSecundario {
+    min-height: 48px;
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.botao {
+    background: #c6f4d7;
+    color: #0c4d36;
+}
+
+.botaoSecundario {
+    border: 1px solid #c6f4d7;
+    background: transparent;
+    color: #c6f4d7;
+    transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.codigoCopiado {
+    border-color: #9af0b9;
+    background: #9af0b9;
+    color: #0c4d36;
+    animation: confirmarCopia 420ms ease;
+}
+
+.botao:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.pagamento textarea {
+    width: 100%;
+    min-height: 130px;
+    padding: 12px;
+    border: 1px solid #b8d8c5;
+    border-radius: 8px;
+    background: #f8fffa;
+    color: #173b2a;
+    font: 0.8rem/1.4 monospace;
+    resize: vertical;
+}
+
+.instrucao {
+    line-height: 1.5;
+}
+
+.areaCodigoPix {
+    background: #ffffff;
+    padding: 16px;
+    text-align: center;
+    border-radius: 8px;
+}
+
+.codigoPix {
+    font-size: 16px;
+    color: #173b2a;
+}
+
+.acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.erro {
+    margin-bottom: 0;
+    color: #ffd2d2;
+    line-height: 1.4;
+}
+
+@keyframes confirmarCopia {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.04);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@media (max-width: 800px) {
+    .pagina {
+        grid-template-columns: 1fr;
+        gap: 34px;
+        padding: 50px 24px;
+    }
+
+    .introducao h1 {
+        font-size: 3.2rem;
+    }
+}

@@ -1,24 +1,85 @@
 import requests
+from flask import current_app
 
-from config import (
-    ARKHE_BASE_URL,
-    ARKHE_CLIENT_ID,
-    ARKHE_CLIENT_SECRET
-)
+
+def _headers():
+    return {
+        "X-Client-ID": current_app.config["ARKHE_CLIENT_ID"],
+        "X-Client-Secret": current_app.config["ARKHE_CLIENT_SECRET"],
+    }
+
+
+def criar_cobranca_pix(valor):
+    url = (
+        f'{current_app.config["ARKHE_BASE_URL"]}'
+        "/api/v1/cobrancas/pix"
+    )
+
+    resposta = requests.post(
+        url,
+        headers={
+            **_headers(),
+            "Content-Type": "application/json",
+        },
+        json={
+            "valor": valor
+        },
+        timeout=10,
+    )
+
+    dados = resposta.json()
+
+    if not resposta.ok:
+        raise Exception(
+            dados.get("mensagem", "Erro ao criar cobrança Pix")
+        )
+
+    return dados
+
+
+def consultar_cobranca_pix(id_cobranca):
+    url = (
+        f'{current_app.config["ARKHE_BASE_URL"]}'
+        f"/api/v1/cobrancas/pix/{id_cobranca}"
+    )
+
+    resposta = requests.get(
+        url,
+        headers=_headers(),
+        timeout=10,
+    )
+
+    dados = resposta.json()
+
+    if not resposta.ok:
+        raise Exception(
+            dados.get("mensagem", "Erro ao consultar cobrança Pix")
+        )
+
+    return dados
 
 
 def consultar_conta():
-    headers = {
-        "X-Client-ID": ARKHE_CLIENT_ID,
-        "X-Client-Secret": ARKHE_CLIENT_SECRET
-    }
-
-    resposta = requests.get(
-        f"{ARKHE_BASE_URL}/api/v1/conta",
-        headers=headers,
-        timeout=10
+    url = (
+        f'{current_app.config["ARKHE_BASE_URL"]}'
+        "/api/v1/conta"
     )
 
-    resposta.raise_for_status()
+    resposta = requests.get(
+        url,
+        headers=_headers(),
+        timeout=10,
+    )
 
-    return resposta.json()
+    print("URL ARKHÉ:", url)
+    print("STATUS ARKHÉ:", resposta.status_code)
+    print("RESPOSTA ARKHÉ:", repr(resposta.text))
+
+    dados = resposta.json()
+
+    if not resposta.ok:
+        raise Exception(
+            dados.get("mensagem", "Erro ao consultar conta Arkhé")
+        )
+
+    return dados

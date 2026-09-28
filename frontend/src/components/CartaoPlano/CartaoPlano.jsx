@@ -1,8 +1,10 @@
 import React from 'react';
-import Botao from '../Botao/Botao';
+import { useNavigate } from 'react-router-dom';
 import css from '../../pages/Home/Home.module.css';
 
 const CartaoPlano = ({ titulo, popular, precoAntigo, precoAtual, descricao, beneficios }) => {
+    const navigate = useNavigate();
+
     return (
         <div className={css['cartao-plano']}>
             <h3>
@@ -20,7 +22,13 @@ const CartaoPlano = ({ titulo, popular, precoAntigo, precoAtual, descricao, bene
                 ))}
             </div>
             <div style={{ textAlign: 'center' }}>
-                <Botao texto="Assinar Plano" tipo="primario" estiloAdicional="botao-largo" />
+                <button
+                    className={`${css.botao} ${css['botao-primario']} ${css['botao-largo']}`}
+                    type="button"
+                    onClick={() => navigate('/assinatura')}
+                >
+                    Assinar Plano
+                </button>
             </div>
         </div>
     );

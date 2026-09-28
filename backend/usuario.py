@@ -12,11 +12,16 @@ from flask_jwt_extended import (
     jwt_required,
     set_access_cookies,
     unset_jwt_cookies,
+    verify_jwt_in_request
 )
-
+from datetime import datetime, timedelta
 from funcao import email_verificacao, validar_senha, verificar_codigo
 from app import app
 from banco import get_db
+from functools import wraps
+import requests
+
+from servicos.arkhe import criar_cobranca_pix, consultar_cobranca_pix
 
 
 def criar_mensagem(descricao, tipo="erro"):
@@ -111,6 +116,55 @@ def usuario_para_dict(row):
         "tipo": row[4],
         "bloqueado": row[5] == 1,
     }
+
+
+def assinatura_obrigatoria(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request()
+
+        id_usuario = get_jwt_identity()
+
+        con = get_db()
+        cursor = con.cursor()
+
+        try:
+            cursor.execute(
+                """
+                SELECT STATUS, DATA_EXPIRACAO
+                FROM ASSINATURAS
+                WHERE ID_USUARIO = ?
+                ORDER BY ID_ASSINATURA DESC
+                """,
+                (id_usuario,)
+            )
+
+            assinatura = cursor.fetchone()
+
+            if not assinatura:
+                return jsonify({
+                    "mensagem": "Você precisa de uma assinatura ativa para acessar este recurso."
+                }), 403
+
+            status, data_expiracao = assinatura
+
+            if status != 1:
+                return jsonify({
+                    "mensagem": "Você precisa de uma assinatura ativa para acessar este recurso."
+                }), 403
+
+            if not data_expiracao or data_expiracao < datetime.now():
+                return jsonify({
+                    "mensagem": "Sua assinatura expirou."
+                }), 403
+
+            return func(*args, **kwargs)
+
+        finally:
+            cursor.close()
+            con.close()
+
+    return wrapper
 
 
 @app.route("/usuarios", methods=["GET"])
@@ -781,6 +835,283 @@ def alterar_senha():
     except Exception as erro:
         con.rollback()
         return resposta_mensagem(f"Erro ao alterar senha: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/pagamentos/pix", methods=["POST"])
+@jwt_required()
+def criar_pagamento_pix():
+    try:
+        dados = request.get_json() or {}
+
+        valor = dados.get("valor")
+
+        if valor is None:
+            return jsonify({
+                "mensagem": "Valor do pagamento é obrigatório"
+            }), 400
+
+        valor = float(valor)
+
+        if valor <= 0:
+            return jsonify({
+                "mensagem": "Valor do pagamento deve ser maior que zero"
+            }), 400
+
+        cobranca = criar_cobranca_pix(valor)
+
+        return jsonify({
+            "id_cobranca": cobranca["id_cobranca"],
+            "valor": cobranca["valor"],
+            "codigo_pagamento": cobranca["codigo_pagamento"],
+            "status": cobranca["status"],
+            "tipo_cobranca": cobranca["tipo_cobranca"],
+        }), 201
+
+    except requests.RequestException as erro:
+        return jsonify({
+            "mensagem": "Não foi possível comunicar com a Arkhé",
+            "detalhes": str(erro)
+        }), 502
+
+    except Exception as erro:
+        return jsonify({
+            "mensagem": str(erro)
+        }), 500
+
+
+@app.route("/assinaturas/pix", methods=["POST"])
+@jwt_required()
+def criar_pix_assinatura():
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        id_usuario = get_jwt_identity()
+
+        # Verifica se o usuário já possui uma assinatura ativa
+        cursor.execute(
+            """
+            SELECT ID_ASSINATURA
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ?
+              AND STATUS = 1
+            """,
+            (id_usuario,)
+        )
+
+        if cursor.fetchone():
+            return jsonify({
+                "mensagem": "Usuário já possui uma assinatura ativa"
+            }), 409
+
+        # Valor único da assinatura
+        valor = current_app.config["VALOR_ASSINATURA"]
+
+        # Cria cobrança na Arkhé
+        cobranca = criar_cobranca_pix(valor)
+
+        # Cria a assinatura como pendente
+        cursor.execute(
+            """
+            INSERT INTO ASSINATURAS (
+                ID_USUARIO,
+                STATUS,
+                PLANO,
+                ID_COBRANCA_ARKHE
+            )
+            VALUES (?, ?, ?, ?)
+            RETURNING ID_ASSINATURA
+            """,
+            (
+                id_usuario,
+                0,
+                1,
+                cobranca["id_cobranca"]
+            )
+        )
+
+        id_assinatura = cursor.fetchone()[0]
+
+        con.commit()
+
+        return jsonify({
+            "id_assinatura": id_assinatura,
+            "id_cobranca": cobranca["id_cobranca"],
+            "valor": cobranca["valor"],
+            "codigo_pagamento": cobranca["codigo_pagamento"],
+            "status": cobranca["status"],
+            "tipo_cobranca": cobranca["tipo_cobranca"]
+        }), 201
+
+    except requests.RequestException as erro:
+        con.rollback()
+
+        return jsonify({
+            "mensagem": "Não foi possível comunicar com a Arkhé",
+            "detalhes": str(erro)
+        }), 502
+
+    except Exception as erro:
+        con.rollback()
+
+        return jsonify({
+            "mensagem": str(erro)
+        }), 500
+
+    finally:
+        cursor.close()
+        con.close()
+
+
+
+@app.route("/assinaturas/verificar", methods=["GET"])
+@jwt_required()
+def verificar_pagamento_assinatura():
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        id_usuario = get_jwt_identity()
+
+        # Procura a assinatura pendente mais recente do usuário
+        cursor.execute(
+            """
+            SELECT
+                ID_ASSINATURA,
+                ID_COBRANCA_ARKHE,
+                STATUS,
+                DATA_INICIO,
+                DATA_EXPIRACAO
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ?
+            ORDER BY ID_ASSINATURA DESC
+            """,
+            (id_usuario,)
+        )
+
+        assinatura = cursor.fetchone()
+
+        if not assinatura:
+            return jsonify({
+                "assinatura": False,
+                "status": "sem_assinatura",
+                "mensagem": "Usuário não possui assinatura."
+            }), 403
+
+        (
+            id_assinatura,
+            id_cobranca,
+            status,
+            data_inicio,
+            data_expiracao
+        ) = assinatura
+
+        # Já existe uma assinatura ativa
+        if status == 1:
+            agora = datetime.now()
+
+            # Verifica se ela ainda está dentro da validade
+            if data_expiracao and data_expiracao >= agora:
+                return jsonify({
+                    "assinatura": True,
+                    "status": "ativa",
+                    "id_assinatura": id_assinatura,
+                    "data_inicio": data_inicio.isoformat(),
+                    "data_expiracao": data_expiracao.isoformat()
+                }), 200
+
+            # Assinatura expirou
+            cursor.execute(
+                """
+                UPDATE ASSINATURAS
+                SET STATUS = 3
+                WHERE ID_ASSINATURA = ?
+                """,
+                (id_assinatura,)
+            )
+
+            con.commit()
+
+            return jsonify({
+                "assinatura": False,
+                "status": "expirada",
+                "mensagem": "A assinatura do usuário expirou."
+            }), 403
+
+        # Se não houver cobrança vinculada, não há como verificar o pagamento
+        if not id_cobranca:
+            return jsonify({
+                "assinatura": False,
+                "status": "pendente",
+                "mensagem": "Assinatura aguardando pagamento."
+            }), 403
+
+        # Consulta o status atual da cobrança na Arkhé
+        cobranca = consultar_cobranca_pix(id_cobranca)
+
+        status_cobranca = cobranca["status"]
+
+        # Pagamento confirmado
+        if status_cobranca == 1:
+            agora = datetime.now()
+            data_expiracao = agora + timedelta(days=30)
+
+            cursor.execute(
+                """
+                UPDATE ASSINATURAS
+                SET
+                    STATUS = 1,
+                    DATA_INICIO = ?,
+                    DATA_EXPIRACAO = ?
+                WHERE ID_ASSINATURA = ?
+                """,
+                (
+                    agora,
+                    data_expiracao,
+                    id_assinatura
+                )
+            )
+
+            con.commit()
+
+            return jsonify({
+                "assinatura": True,
+                "status": "ativa",
+                "id_assinatura": id_assinatura,
+                "data_inicio": agora.isoformat(),
+                "data_expiracao": data_expiracao.isoformat()
+            }), 200
+
+        # Ainda não foi pago
+        return jsonify({
+            "assinatura": False,
+            "status": "pendente",
+            "id_assinatura": id_assinatura,
+            "id_cobranca": id_cobranca,
+            "status_cobranca": status_cobranca,
+            "mensagem": "Pagamento ainda não confirmado."
+        }), 403
+
+    except requests.RequestException as erro:
+        con.rollback()
+
+        return jsonify({
+            "assinatura": False,
+            "mensagem": "Não foi possível verificar o pagamento.",
+            "detalhes": str(erro)
+        }), 502
+
+    except Exception as erro:
+        con.rollback()
+
+        return jsonify({
+            "assinatura": False,
+            "mensagem": str(erro)
+        }), 500
+
     finally:
         cursor.close()
         con.close()

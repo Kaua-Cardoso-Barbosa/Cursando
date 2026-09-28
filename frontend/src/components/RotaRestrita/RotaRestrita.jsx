@@ -4,10 +4,12 @@ import { Navigate } from "react-router-dom";
 export default function RotaProtegida({
                                           api,
                                           tipoPermitido,
+                                          exigirAssinatura = false,
                                           children
                                       }) {
     const [carregando, setCarregando] = useState(true);
     const [usuario, setUsuario] = useState(null);
+    const [assinaturaValida, setAssinaturaValida] = useState(!exigirAssinatura);
 
     useEffect(() => {
         async function verificarSessao() {
@@ -30,6 +32,13 @@ export default function RotaProtegida({
                 }
 
                 setUsuario(dados);
+
+                if (exigirAssinatura && Number(dados.tipo) === 2) {
+                    const assinatura = await fetch(`${api}/assinaturas/verificar`, {
+                        credentials: "include"
+                    });
+                    setAssinaturaValida(assinatura.ok);
+                }
             } catch (erro) {
                 console.error("Erro ao verificar sessao:", erro);
                 setUsuario(null);
@@ -39,7 +48,7 @@ export default function RotaProtegida({
         }
 
         verificarSessao();
-    }, [api]);
+    }, [api, exigirAssinatura]);
 
     if (carregando) {
         return <p>Verificando sessao...</p>;
@@ -47,6 +56,10 @@ export default function RotaProtegida({
 
     if (!usuario) {
         return <Navigate to="/login" replace />;
+    }
+
+    if (exigirAssinatura && !assinaturaValida) {
+        return <Navigate to="/assinatura" replace />;
     }
 
     if (
