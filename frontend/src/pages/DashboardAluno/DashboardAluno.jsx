@@ -464,10 +464,6 @@ export default function DashboardAluno({
                                             }
                                             marcarAssistida={marcarAssistida}
                                         />
-                                        <div className={css.tituloNoVideo}>
-                                            <h1>{videoAula.titulo}</h1>
-                                            <p>{videoAula.descricao}</p>
-                                        </div>
                                     </div>
 
                                     <h2>Proximas video-aulas:</h2>
