@@ -1,8 +1,9 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
 import fdb
+import requests
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
 
@@ -35,9 +36,34 @@ con = fdb.connect(
     charset='UTF8'
 )
 
+
 from usuario import *
 from professor import *
 from aluno import *
+from servicos.arkhe import consultar_conta
+
+print("\nROTAS REGISTRADAS ANTES DA ROTA ARKHÉ:")
+for regra in app.url_map.iter_rules():
+    print(regra, "->", regra.endpoint)
+
+@app.route("/rodar-teste-arkhe", methods=["GET"])
+def rodar_teste_arkhe():
+    try:
+        conta = consultar_conta()
+
+        return jsonify(conta), 200
+
+    except requests.RequestException as erro:
+        return jsonify({
+            "erro": "Erro ao comunicar com a Arkhé",
+            "detalhes": str(erro)
+        }), 502
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=True,
+        use_reloader=False
+    )

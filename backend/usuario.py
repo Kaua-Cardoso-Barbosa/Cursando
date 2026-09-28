@@ -15,17 +15,8 @@ from flask_jwt_extended import (
 )
 
 from funcao import email_verificacao, validar_senha, verificar_codigo
-from main import app
-
-
-def get_db():
-    return fdb.connect(
-        host=current_app.config["DB_HOST"],
-        database=current_app.config["DB_NAME"],
-        user=current_app.config["DB_USER"],
-        password=current_app.config["DB_PASSWORD"],
-        charset="UTF8",
-    )
+from app import app
+from banco import get_db
 
 
 def criar_mensagem(descricao, tipo="erro"):

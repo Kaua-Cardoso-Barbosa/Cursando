@@ -8,7 +8,8 @@ from flask import current_app, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from werkzeug.utils import secure_filename
 
-from main import app
+from app import app
+from banco import get_db
 
 
 STATUS_PRIVADO = 0

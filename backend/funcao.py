@@ -1,6 +1,7 @@
 import jwt
 import datetime
-from main import app, con
+from app import app
+from banco import get_db
 from flask import request, render_template, jsonify
 import random
 import smtplib
@@ -83,6 +84,7 @@ def verificar_token():
         id_usuario = get_jwt_identity()
         tipo = get_jwt().get('tipo')
 
+        con = get_db()
         cursor = con.cursor()
 
         cursor.execute("""
@@ -117,6 +119,7 @@ def verificar_token():
 
 
 def email_verificacao(destinatario, assunto, mensagem, mensagem_secundaria=""):
+    con = get_db()
     cur = con.cursor()
 
     cur.execute("""SELECT id_usuario, nome
@@ -148,6 +151,7 @@ def email_verificacao(destinatario, assunto, mensagem, mensagem_secundaria=""):
 
 
 def verificar_codigo(email, codigo):
+    con = get_db()
     cur = con.cursor()
 
     cur.execute("""SELECT codigo from USUARIOS where email = ?""", (email,))

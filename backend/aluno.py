@@ -2,7 +2,8 @@ import fdb
 from flask import current_app, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
-from main import app
+from app import app
+from banco import get_db
 from professor import (
     STATUS_PUBLICADO,
     aula_para_dict,
@@ -10,16 +11,6 @@ from professor import (
     curso_para_dict,
     de_blob_texto,
 )
-
-
-def get_db():
-    return fdb.connect(
-        host=current_app.config["DB_HOST"],
-        database=current_app.config["DB_NAME"],
-        user=current_app.config["DB_USER"],
-        password=current_app.config["DB_PASSWORD"],
-        charset="UTF8",
-    )
 
 
 def resposta(descricao, status=200, tipo="erro", **extra):
