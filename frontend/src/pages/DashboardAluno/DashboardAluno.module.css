@@ -1,5 +1,8 @@
 :global(*) {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .painelAluno {
@@ -72,74 +75,66 @@
 
 .gridMetricas {
     display: grid;
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
-    gap: 34px 76px;
-    margin: 54px auto 62px;
-    max-width: 980px;
-}
-
-.gridMetricas .cardMetrica:last-child {
-    grid-column: 1 / -1;
-    justify-self: center;
-    width: min(490px, 100%);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin: 0 0 40px;
 }
 
 .cardMetrica {
-    min-height: 150px;
-    border: 1.5px solid #111111;
-    border-radius: 8px;
-    background: #f8f8f8;
-    padding: 22px 20px;
+    background: #fafafa;
+    border: 1.5px solid #666666;
+    border-radius: 16px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
 }
 
 .metricaTopo {
     width: 100%;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 18px;
-    position: relative;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
 .metricaTopo h2 {
-    color: #111111;
-    font-size: 2rem;
-    line-height: 1.1;
+    color: #1a1a1a;
+    font-size: 1.35rem;
     font-weight: 400;
     margin: 0;
-    text-align: center;
-    letter-spacing: 0;
 }
 
 .iconeBadge {
-    width: 52px;
-    height: 48px;
-    border-radius: 8px;
+    width: 42px;
+    height: 38px;
+    border-radius: 10px;
     background: #9fe0c3;
-    color: #000000;
+    color: #004727;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.45rem;
+    font-size: 1.2rem;
     flex: 0 0 auto;
 }
 
 .metricaVariacao {
-    color: #56c991;
+    color: #32b978;
+    font-size: 0.95rem;
     font-weight: 600;
-    font-size: 1.05rem;
-    text-align: center;
+    margin-bottom: 12px;
 }
 
 .metricaNumero {
-    color: #000000;
-    font-size: 2.65rem;
-    line-height: 1;
-    font-weight: 400;
+    color: #111111;
+    font-size: 2rem;
+    font-weight: 500;
+}
+
+.metricaData {
+    color: #111111;
+    font-size: 2rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
 }
 
 .secaoCursos,
@@ -147,6 +142,40 @@
 .secaoAulaAberta,
 .secaoPerfil {
     width: 100%;
+}
+
+.secaoUltimasAulas {
+    width: 100%;
+    margin-bottom: 38px;
+}
+
+.secaoMetricas {
+    width: 100%;
+}
+
+.tituloUltimasAulas {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 2px solid #06a663;
+    margin-bottom: 18px;
+    padding-bottom: 8px;
+}
+
+.tituloUltimasAulas h2 {
+    color: #111111;
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 400;
+    margin: 0;
+}
+
+.tituloUltimasAulas span {
+    color: #02693e;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 .secaoCursos h2,
@@ -178,7 +207,9 @@
     display: flex;
     gap: 28px;
     overflow-x: auto;
-    padding: 0 0 18px;
+    padding: 4px 4px 18px;
+    scrollbar-width: thin;
+    scrollbar-color: #6bc39e transparent;
 }
 
 .carrosselCursos .cardAula {
@@ -524,6 +555,7 @@
 
 @media (max-width: 1180px) {
     .gridMetricas,
+    .gridAssinatura,
     .gridCursos,
     .gridAulas {
         grid-template-columns: repeat(2, minmax(240px, 1fr));
@@ -572,14 +604,6 @@
     .gridAulas,
     .rodapePagina {
         grid-template-columns: 1fr;
-    }
-
-    .gridMetricas .cardMetrica:last-child {
-        grid-column: auto;
-    }
-
-    .metricaTopo h2 {
-        font-size: 1.5rem;
     }
 
     .carrosselCursos .cardAula {

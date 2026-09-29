@@ -157,6 +157,17 @@ def aluno_dashboard():
         )
         recentes = [aula_para_dict(row[:6]) for row in cursor.fetchall()]
 
+        cursor.execute(
+            """
+            SELECT DATA_INICIO, DATA_EXPIRACAO
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ? AND DATA_INICIO IS NOT NULL
+            ORDER BY ID_ASSINATURA DESC
+            """,
+            (id_aluno,),
+        )
+        assinatura = cursor.fetchone()
+
         return jsonify(
             {
                 "metricas": {
@@ -165,6 +176,10 @@ def aluno_dashboard():
                     "iniciados": len([curso for curso in cursos if 0 < curso["progresso"] < 100]),
                 },
                 "recentes": recentes,
+                "assinatura": {
+                    "data_inicio": assinatura[0].isoformat() if assinatura and assinatura[0] else None,
+                    "data_expiracao": assinatura[1].isoformat() if assinatura and assinatura[1] else None,
+                } if assinatura else None,
             }
         )
     except Exception as erro:

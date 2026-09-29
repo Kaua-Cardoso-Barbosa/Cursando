@@ -1,5 +1,8 @@
 :global(*) {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .painelProfessor {
@@ -72,67 +75,59 @@
 
 .gridMetricas {
     display: grid;
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
-    gap: 34px 76px;
-    margin: 54px 0 48px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin: 0 0 40px;
 }
 
 .cardMetrica {
-    min-height: 150px;
-    border: 1.5px solid #111111;
-    border-radius: 8px;
-    background: #f8f8f8;
-    padding: 22px 20px;
+    background: #fafafa;
+    border: 1.5px solid #666666;
+    border-radius: 16px;
+    padding: 20px 24px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
 }
 
 .metricaTopo {
     width: 100%;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 18px;
-    position: relative;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
 .metricaTopo h2 {
-    color: #111111;
-    font-size: 2rem;
-    line-height: 1.1;
+    color: #1a1a1a;
+    font-size: 1.35rem;
     font-weight: 400;
     margin: 0;
-    text-align: center;
-    letter-spacing: 0;
 }
 
 .iconeBadge {
-    width: 52px;
-    height: 48px;
-    border-radius: 8px;
+    width: 42px;
+    height: 38px;
+    border-radius: 10px;
     background: #9fe0c3;
-    color: #000000;
+    color: #004727;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.45rem;
+    font-size: 1.2rem;
     flex: 0 0 auto;
 }
 
 .metricaVariacao {
-    color: #56c991;
+    color: #32b978;
+    font-size: 0.95rem;
     font-weight: 600;
-    font-size: 1.05rem;
-    text-align: center;
+    margin-bottom: 12px;
 }
 
 .metricaNumero {
-    color: #000000;
-    font-size: 2.65rem;
-    line-height: 1;
-    font-weight: 400;
+    color: #111111;
+    font-size: 2rem;
+    font-weight: 500;
 }
 
 .secaoAcessos,
@@ -656,10 +651,6 @@
     .linhaAlunoCurso {
         grid-template-columns: 1fr;
         gap: 6px;
-    }
-
-    .metricaTopo h2 {
-        font-size: 1.5rem;
     }
 
     .carrosselCursos .cardCurso {

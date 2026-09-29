@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     FaCheck,
+    FaCalendarAlt,
     FaGraduationCap,
     FaPlay,
     FaSearch,
@@ -17,6 +18,17 @@ import PlayerVideo from "../../components/PlayerVideo/PlayerVideo.jsx";
 const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
 const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
 
+function formatarDataAssinatura(data) {
+    if (!data) return "Nao disponivel";
+    const valor = new Date(data);
+    if (Number.isNaN(valor.getTime())) return "Nao disponivel";
+    return new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+    }).format(valor);
+}
+
 function resolverUrlMidia(api, caminho) {
     if (!caminho) return "";
     if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) {
@@ -29,7 +41,7 @@ function CabecalhoAluno({ usuario, sair }) {
     return (
         <header className={css.cabecalhoUsuario}>
             <div className={css.dadosUsuario}>
-                <h1>Ola {usuario.nome}</h1>
+                <h1>Olá {usuario.nome}</h1>
                 <span className={css.cargoUsuario}>Aluno</span>
             </div>
 
@@ -79,17 +91,17 @@ function EstadoVazio({ texto }) {
     );
 }
 
-function CardMetrica({ titulo, detalhe, valor }) {
+function CardMetrica({ titulo, detalhe, valor, icone = <FaGraduationCap />, data = false }) {
     return (
         <article className={css.cardMetrica}>
             <div className={css.metricaTopo}>
                 <h2>{titulo}</h2>
                 <div className={css.iconeBadge}>
-                    <FaGraduationCap />
+                    {icone}
                 </div>
             </div>
             <span className={css.metricaVariacao}>{detalhe}</span>
-            <strong className={css.metricaNumero}>{valor}</strong>
+            <strong className={data ? css.metricaData : css.metricaNumero}>{valor}</strong>
         </article>
     );
 }
@@ -351,14 +363,11 @@ export default function DashboardAluno({
 
                     {visao === "inicio" && (
                         <>
-                            <section className={css.gridMetricas}>
-                                <CardMetrica titulo="Cursos inscritos" detalhe="+0 nesse mes" valor={metricas.inscritos} />
-                                <CardMetrica titulo="Cursos finalizados" detalhe="+0 nesse mes" valor={metricas.finalizados} />
-                                <CardMetrica titulo="Cursos iniciados" detalhe="+0 nesse mes" valor={metricas.iniciados} />
-                            </section>
-
-                            <section className={css.secaoCursos}>
-                                <h2>Ultimas aulas vistas:</h2>
+                            <section className={css.secaoUltimasAulas}>
+                                <div className={css.tituloUltimasAulas}>
+                                    <h2>Últimas aulas vistas:</h2>
+                                    <span>{recentes.length} {recentes.length === 1 ? "aula" : "aulas"}</span>
+                                </div>
                                 {recentes.length === 0 && <EstadoVazio texto="Nenhuma aula assistida ainda." />}
                                 <div className={css.carrosselCursos}>
                                     {recentes.map((aula) => (
@@ -366,6 +375,33 @@ export default function DashboardAluno({
                                     ))}
                                 </div>
                             </section>
+
+                            <section className={css.secaoMetricas}>
+                                <div className={css.tituloUltimasAulas}>
+                                    <h2>Métricas</h2>
+                                    <span>Resumo</span>
+                                </div>
+                                <div className={css.gridMetricas}>
+                                    <CardMetrica
+                                        titulo="Iniciada em"
+                                        detalhe="Data de início"
+                                        valor={formatarDataAssinatura(dashboard?.assinatura?.data_inicio)}
+                                        icone={<FaCalendarAlt />}
+                                        data
+                                    />
+                                    <CardMetrica
+                                        titulo="Válida até"
+                                        detalhe="Data de término"
+                                        valor={formatarDataAssinatura(dashboard?.assinatura?.data_expiracao)}
+                                        icone={<FaCalendarAlt />}
+                                        data
+                                    />
+                                    <CardMetrica titulo="Cursos inscritos" detalhe="+0 nesse mes" valor={metricas.inscritos} />
+                                    <CardMetrica titulo="Cursos finalizados" detalhe="+0 nesse mes" valor={metricas.finalizados} />
+                                    <CardMetrica titulo="Cursos iniciados" detalhe="+0 nesse mes" valor={metricas.iniciados} />
+                                </div>
+                            </section>
+
                         </>
                     )}
 
