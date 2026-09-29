@@ -53,6 +53,7 @@ export default function App() {
     }
   }
 
+  // Valida a assinatura do aluno antes de carregar a área interna do aplicativo.
   async function validarAcesso(authToken, authUser) {
     const tipo = Number(authUser?.tipo ?? 1);
 
@@ -83,6 +84,7 @@ export default function App() {
     await carregarDados(token, usuario);
   }
 
+  // Restaura a sessão persistida e revalida o acesso quando o aplicativo inicia.
   useEffect(() => {
     async function iniciar() {
       const sessao = await carregarSessao();

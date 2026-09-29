@@ -19,6 +19,16 @@ import RodapeProfessor from "../../components/DashboardProfessor/RodapeProfessor
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import css from "./DashboardProfessor.module.css";
 
+const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
+
+function resolverUrlMidia(api, caminho) {
+    if (!caminho) return "";
+    if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) {
+        return caminho;
+    }
+    return `${api}${caminho}`;
+}
+
 export default function DashboardProfessor({
                                                api,
                                                sair,
@@ -440,10 +450,22 @@ export default function DashboardProfessor({
                     {visao === "aulas" && cursoSelecionado && (
                         <section className={css.secaoCursos}>
                             <div className={css.barraTitulo}>
-                                <div>
+                                <div className={css.resumoCursoAlunos}>
+                                    <img
+                                        src={cursoSelecionado.imagem ? resolverUrlMidia(api, cursoSelecionado.imagem) : PLACEHOLDER_CURSO}
+                                        alt={cursoSelecionado.titulo}
+                                        className={css.imagemResumoCurso}
+                                    />
+                                    <div>
                                     <button className={css.linkVoltar} onClick={() => navigate("/DashboardProfessor/cursos")}>Voltar para cursos</button>
                                     <h2>{cursoSelecionado.titulo}</h2>
-                                    <p className={css.textoApoio}>{cursoSelecionado.descricao}</p>
+                                        {/* Contador de inscritos oculto temporariamente.
+                                        <p className={css.inscritosCurso}>
+                                            {cursoSelecionado.total_inscritos || 0} {cursoSelecionado.total_inscritos === 1 ? "inscrito" : "inscritos"}
+                                        </p>
+                                        */}
+                                        <p className={css.textoApoio}>{cursoSelecionado.descricao}</p>
+                                    </div>
                                 </div>
                                 <button className={css.botaoPrimario} onClick={() => setModal({ tipo: "aula", item: null })}>
                                     <FaPlus /> Adicionar aula
@@ -479,10 +501,22 @@ export default function DashboardProfessor({
                     {visao === "alunos" && cursoSelecionado && (
                         <section className={css.secaoCursos}>
                             <div className={css.barraTitulo}>
-                                <div>
+                                <div className={css.resumoCursoAlunos}>
+                                    <img
+                                        src={cursoSelecionado.imagem ? resolverUrlMidia(api, cursoSelecionado.imagem) : PLACEHOLDER_CURSO}
+                                        alt={cursoSelecionado.titulo}
+                                        className={css.imagemResumoCurso}
+                                    />
+                                    <div>
                                     <button className={css.linkVoltar} onClick={() => navigate("/DashboardProfessor/cursos")}>Voltar para cursos</button>
                                     <h2>Alunos de {cursoSelecionado.titulo}</h2>
-                                    <p className={css.textoApoio}>Lista de alunos matriculados neste curso.</p>
+                                        {/* Contador de inscritos oculto temporariamente.
+                                        <p className={css.inscritosCurso}>
+                                            {cursoSelecionado.total_inscritos || 0} {cursoSelecionado.total_inscritos === 1 ? "inscrito" : "inscritos"}
+                                        </p>
+                                        */}
+                                        <p className={css.textoApoio}>Lista de alunos matriculados neste curso.</p>
+                                    </div>
                                 </div>
                             </div>
 

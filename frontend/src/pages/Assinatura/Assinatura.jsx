@@ -11,6 +11,7 @@ export default function Assinatura({ api, sair }) {
     const [codigoCopiado, setCodigoCopiado] = useState(false);
     const [erro, setErro] = useState("");
 
+    // Consulta o backend, que confirma o estado da cobrança junto à Arkhé.
     async function consultarAssinatura() {
         const resposta = await fetch(`${api}/assinaturas/verificar`, {
             method: "GET",
@@ -30,6 +31,7 @@ export default function Assinatura({ api, sair }) {
         consultarAssinatura().catch(() => {});
     }, [api]);
 
+    // Cria a cobrança PIX da assinatura; o valor é definido pelo backend.
     async function iniciarPagamento() {
         setCarregando(true);
         setErro("");
@@ -63,6 +65,8 @@ export default function Assinatura({ api, sair }) {
         }
     }
 
+    // A confirmação é manual pelo botão "Já paguei", sem consulta automática periódica.
+    // A consulta é iniciada pelo usuário; esta tela não faz polling automático.
     async function verificarPagamento() {
         setVerificando(true);
         setErro("");

@@ -19,6 +19,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
   const [codigoCopiado, setCodigoCopiado] = useState(false);
   const [erro, setErro] = useState("");
 
+  // Cria a cobrança PIX da assinatura usando o endpoint autenticado do backend.
   async function iniciarPagamento() {
     setCarregando(true);
     setErro("");
@@ -36,6 +37,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
     }
   }
 
+  // Confere o pagamento sob demanda; a tela não consulta o status em segundo plano.
   async function verificarPagamento() {
     setVerificando(true);
     setErro("");

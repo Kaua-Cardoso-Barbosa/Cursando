@@ -161,6 +161,7 @@ def curso_para_dict(row):
         "status_nome": STATUS_NOMES.get(row[4], "desconhecido"),
         "total_aulas": row[5] or 0,
         "aulas_publicadas": row[6] or 0,
+        "total_inscritos": row[7] or 0,
     }
 
 
@@ -202,31 +203,30 @@ def converter_video_dash(caminho_video, id_video):
     audio_saida = os.path.join(pasta_drm, "audio.mp4")
     manifest_saida = os.path.join(pasta_drm, "manifest.mpd")
 
+    entrada_video = f"in={caminho_video},stream=video,drm_label=VIDEO,output={video_saida}"
+    entrada_audio = f"in={caminho_video},stream=audio,drm_label=AUDIO,output={audio_saida}"
+    chave_video = (
+        "label=VIDEO:"
+        "key_id=00112233445566778899aabbccddeeff:"
+        "key=000102030405060708090a0b0c0d0e0f"
+    )
+    chave_audio = (
+        "label=AUDIO:"
+        "key_id=11112222333344445555666677778888:"
+        "key=101112131415161718191a1b1c1d1e1f"
+    )
+
     comando = [
         caminho_packager,
-
-        f"in={caminho_video},stream=video,drm_label=VIDEO,output={video_saida}",
-
-        f"in={caminho_video},stream=audio,drm_label=AUDIO,output={audio_saida}",
-
+        entrada_video,
+        entrada_audio,
         "--enable_raw_key_encryption",
-
         "--keys",
-        (
-            "label=VIDEO:"
-            "key_id=00112233445566778899aabbccddeeff:"
-            "key=000102030405060708090a0b0c0d0e0f,"
-            "label=AUDIO:"
-            "key_id=11112222333344445555666677778888:"
-            "key=101112131415161718191a1b1c1d1e1f"
-        ),
-
+        f"{chave_video},{chave_audio}",
         "--protection_systems",
         "CommonSystem",
-
         "--segment_duration",
         "2",
-
         "--mpd_output",
         manifest_saida,
     ]
@@ -236,6 +236,20 @@ def converter_video_dash(caminho_video, id_video):
         capture_output=True,
         text=True
     )
+
+    erro_packager = f"{resultado.stdout}\n{resultado.stderr}".lower()
+    if resultado.returncode != 0 and "stream=audio not available" in erro_packager:
+        for caminho_saida in (video_saida, audio_saida, manifest_saida):
+            if os.path.isfile(caminho_saida):
+                os.remove(caminho_saida)
+
+        comando.remove(entrada_audio)
+        comando[comando.index("--keys") + 1] = chave_video
+        resultado = subprocess.run(
+            comando,
+            capture_output=True,
+            text=True
+        )
 
     if resultado.returncode != 0:
         raise RuntimeError(
@@ -308,7 +322,8 @@ def professor_dashboard():
                 C.IMAGEM_URL,
                 C.STATUS,
                 (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0),
-                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1)
+                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1),
+                (SELECT COUNT(DISTINCT M.ID_USUARIO) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1)
             FROM CURSOS C
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
             WHERE PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
@@ -384,7 +399,8 @@ def listar_cursos_professor():
                 C.IMAGEM_URL,
                 C.STATUS,
                 (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0),
-                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1)
+                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1),
+                (SELECT COUNT(DISTINCT M.ID_USUARIO) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1)
             FROM CURSOS C
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
             WHERE PC.ID_USUARIO = ? AND C.EXCLUIDO = 0 {filtro_status}

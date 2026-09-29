@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -33,6 +34,12 @@ JWT_TOKEN_LOCATION = os.getenv(
 JWT_ACCESS_COOKIE_NAME = os.getenv(
     "JWT_ACCESS_COOKIE_NAME",
     "token"
+)
+JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+    days=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_DAYS", "7"))
+)
+JWT_ADMIN_ACCESS_TOKEN_EXPIRES = timedelta(
+    minutes=int(os.getenv("JWT_ADMIN_ACCESS_TOKEN_EXPIRES_MINUTES", "15"))
 )
 
 JWT_COOKIE_SECURE = os.getenv(

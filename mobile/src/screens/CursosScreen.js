@@ -10,6 +10,7 @@ const placeholders = [
 ];
 
 export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, tipoUsuario = 1 }) {
+  // Alunos abrem detalhes e acompanham progresso; professores recebem ações de gestão.
   const aluno = Number(tipoUsuario) === 2;
 
   function confirmarExclusao(curso) {

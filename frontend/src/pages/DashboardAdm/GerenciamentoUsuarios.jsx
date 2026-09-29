@@ -100,6 +100,8 @@ export default function GerenciamentoUsuarios({
         carregarUsuarios();
     }, [carregarUsuarios]);
 
+    // Separa por perfil e filtra cada lista pelo nome informado no respectivo campo.
+    // O filtro atual considera somente o nome; e-mail, CPF e situação ainda não entram na busca.
     const grupos = useMemo(() => {
         const porTipo = {
             alunos: usuarios.filter((item) => Number(item.tipo) === TIPOS.ALUNO),
@@ -114,6 +116,7 @@ export default function GerenciamentoUsuarios({
         };
     }, [buscas, usuarios]);
 
+    // Envia o novo estado de bloqueio e recarrega a listagem após a resposta da API.
     async function alternarStatus(item) {
         try {
             const resposta = await fetch(`${api}/usuarios/${item.id}/status`, {
@@ -157,6 +160,7 @@ export default function GerenciamentoUsuarios({
         });
     }
 
+    // Persiste os dados editados e atualiza os usuários exibidos na tela.
     async function salvarEdicao(evento) {
         evento.preventDefault();
         setSalvandoEdicao(true);

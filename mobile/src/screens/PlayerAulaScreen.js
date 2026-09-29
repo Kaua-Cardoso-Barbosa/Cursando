@@ -7,6 +7,7 @@ import { colors, globalStyles } from "../styles";
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
 
 export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFinish }) {
+  // Reproduz a URL de mídia autenticada e registra a conclusão enviada pelo player nativo.
   const aula = detalhe?.aula;
   const proximas = detalhe?.proximas || [];
 

@@ -58,6 +58,11 @@ export default function ItemCardProfessor({
                         <div>
                             <h3>{item.titulo}</h3>
                             <p>{item.descricao}</p>
+                            {/* Contador do card de curso desativado temporariamente.
+                            <span className={css.infoInscritos}>
+                                <FaUsers /> {item.total_inscritos || 0} {item.total_inscritos === 1 ? "inscrito" : "inscritos"}
+                            </span>
+                            */}
                         </div>
                         <span className={css.statusBadge}>{item.status_nome}</span>
                     </div>

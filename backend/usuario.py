@@ -167,6 +167,7 @@ def assinatura_obrigatoria(func):
     return wrapper
 
 
+# Lista usuários para a tela administrativa; exigir_admin restringe o acesso ao perfil 0.
 @app.route("/usuarios", methods=["GET"])
 @jwt_required()
 def listar_usuarios():
@@ -194,6 +195,7 @@ def listar_usuarios():
         con.close()
 
 
+# Agrega os totais usados nos indicadores do dashboard administrativo.
 @app.route("/admin/dashboard", methods=["GET"])
 @jwt_required()
 def admin_dashboard():
@@ -249,6 +251,7 @@ def admin_dashboard():
             {
                 "metricas": {
                     "total_professores": professores or 0,
+                    # Indicadores mensais de cadastro ainda não são calculados.
                     "professores_mes": 0,
                     "total_alunos": alunos or 0,
                     "alunos_mes": 0,
@@ -266,6 +269,7 @@ def admin_dashboard():
         con.close()
 
 
+# Atualiza o bloqueio da conta e impede que o administrador bloqueie a própria sessão.
 @app.route("/usuarios/<int:id_usuario>/status", methods=["PATCH"])
 @jwt_required()
 def alterar_status_usuario(id_usuario):
@@ -305,6 +309,7 @@ def alterar_status_usuario(id_usuario):
 
 
 
+# Edita os dados cadastrais e troca a senha somente quando uma nova senha é enviada.
 @app.route("/usuarios/<int:id_usuario>", methods=["PUT"])
 @jwt_required()
 def editar_usuario_admin(id_usuario):
@@ -502,7 +507,16 @@ def login():
         cursor.execute("UPDATE USUARIOS SET TENTATIVAS = 0 WHERE ID_USUARIO = ?", (id_usuario,))
         con.commit()
 
-        token = create_access_token(identity=str(id_usuario), additional_claims={"tipo": tipo})
+        duracao_token = (
+            current_app.config["JWT_ADMIN_ACCESS_TOKEN_EXPIRES"]
+            if int(tipo) == 0
+            else current_app.config["JWT_ACCESS_TOKEN_EXPIRES"]
+        )
+        token = create_access_token(
+            identity=str(id_usuario),
+            expires_delta=duracao_token,
+            additional_claims={"tipo": tipo},
+        )
         resposta = make_response(
             jsonify(
                 {

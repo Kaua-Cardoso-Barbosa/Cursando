@@ -25,6 +25,7 @@ export default function DashboardAdm({
     const exibindoPerfil = location.pathname.endsWith("/perfil");
     const [dashboard, setDashboard] = useState(null);
 
+    // Busca as métricas agregadas no endpoint administrativo ao abrir o dashboard.
     useEffect(() => {
         if (exibindoPerfil) {
             return;
@@ -60,6 +61,7 @@ export default function DashboardAdm({
         carregarDashboard();
     }, [api, exibindoPerfil, setMensagem]);
 
+    // Converte a resposta da API nos indicadores apresentados nos cards.
     const metricas = useMemo(() => {
         const dados = dashboard || {};
 

@@ -270,6 +270,7 @@ def listar_cursos_aluno():
         con.close()
 
 
+# Busca cursos públicos por título, com ordenação e opção de ocultar cursos já inscritos.
 @app.route("/aluno/descobrir", methods=["GET"])
 @jwt_required()
 def descobrir_cursos():
@@ -372,6 +373,7 @@ def detalhe_curso_aluno(id_curso):
         con.close()
 
 
+# Cria ou reativa a matrícula do aluno em um curso publicado.
 @app.route("/aluno/cursos/<int:id_curso>/inscrever", methods=["POST"])
 @jwt_required()
 def inscrever_curso(id_curso):
@@ -424,6 +426,7 @@ def inscrever_curso(id_curso):
         con.close()
 
 
+# Entrega uma aula publicada somente quando o aluno tem matrícula ativa no curso.
 @app.route("/aluno/aulas/<int:id_aula>", methods=["GET"])
 @jwt_required()
 def detalhe_aula_aluno(id_aula):
@@ -484,6 +487,7 @@ def detalhe_aula_aluno(id_aula):
         con.close()
 
 
+# Registra a conclusão da aula e atualiza o progresso da matrícula.
 @app.route("/aluno/aulas/<int:id_aula>/assistir", methods=["POST"])
 @jwt_required()
 def marcar_aula_assistida(id_aula):

@@ -218,6 +218,7 @@ export default function DashboardAluno({
         }
     }, [api, lerResposta]);
 
+    // Envia busca, ordenação e filtro de não inscritos para a listagem pública de cursos.
     const carregarDescobrir = useCallback(async (termo = busca) => {
         setCarregando(true);
         try {
@@ -332,6 +333,8 @@ export default function DashboardAluno({
         };
     }, [visao]);
 
+    // Solicita a matrícula e abre o detalhe do curso após a confirmação da API.
+    // Solicita a matrícula e abre o detalhe do curso após a confirmação da API.
     async function inscrever(curso) {
         try {
             const resposta = await fetch(`${api}/aluno/cursos/${curso.id}/inscrever`, {
@@ -347,7 +350,7 @@ export default function DashboardAluno({
         }
     }
 
-    async function marcarAssistida(aula) {
+    const marcarAssistida = useCallback(async (aula) => {
         try {
             const resposta = await fetch(`${api}/aluno/aulas/${aula.id}/assistir`, {
                 method: "POST",
@@ -359,7 +362,7 @@ export default function DashboardAluno({
         } catch (erro) {
             console.error("Erro ao marcar aula como assistida:", erro);
         }
-    }
+    }, [api, carregarDashboard, lerResposta]);
 
     const metricas = dashboard?.metricas || { inscritos: 0, finalizados: 0, iniciados: 0 };
     const recentes = dashboard?.recentes || [];
@@ -411,8 +414,8 @@ export default function DashboardAluno({
                                         icone={<FaCalendarAlt />}
                                         data
                                     />
-                                    <CardMetrica titulo="Cursos inscritos" detalhe="+0 nesse mes" valor={metricas.inscritos} />
-                                    <CardMetrica titulo="Cursos finalizados" detalhe="+0 nesse mes" valor={metricas.finalizados} />
+                                    <CardMetrica titulo="Cursos inscritos" detalhe="" valor={metricas.inscritos} />
+                                    <CardMetrica titulo="Cursos finalizados" detalhe="" valor={metricas.finalizados} />
                                 </div>
                             </section>
 
@@ -518,7 +521,7 @@ export default function DashboardAluno({
                             {videoAula && (
                                 <>
                                     <div>
-
+                                        {/* O player carrega o manifesto protegido devolvido pelo backend. */}
                                         <PlayerVideo
                                             videoAula={videoAula}
                                             videoUrl={videoAula.video ? resolverUrlMidia(api, videoAula.video) : undefined}
