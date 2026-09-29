@@ -253,6 +253,14 @@ export default function DashboardAluno({
         const matchCurso = location.pathname.match(/\/DashboardAluno\/cursos\/(\d+)/);
         const matchDescobrir = location.pathname.match(/\/DashboardAluno\/descobrir\/(\d+)/);
 
+        if (!matchAula) {
+            setAulaAtual(null);
+        }
+
+        if (!matchCurso && !matchDescobrir) {
+            setDetalheCurso(null);
+        }
+
         if (matchAula) {
             carregarAula(matchAula[1]);
             return;
@@ -269,11 +277,13 @@ export default function DashboardAluno({
         }
 
         if (location.pathname.endsWith("/cursos")) {
+            setDetalheCurso(null);
             carregarMeusCursos();
             return;
         }
 
         if (location.pathname.endsWith("/descobrir")) {
+            setDetalheCurso(null);
             carregarDescobrir();
         }
     }, [carregarAula, carregarDescobrir, carregarDetalheCurso, carregarMeusCursos, location.pathname]);
@@ -394,7 +404,7 @@ export default function DashboardAluno({
                                         if (evento.key === "Enter") carregarDescobrir(evento.currentTarget.value);
                                     }}
                                 />
-                                <button onClick={() => carregarDescobrir(busca)}>Buscar</button>
+
                             </div>
 
                             {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
@@ -472,10 +482,6 @@ export default function DashboardAluno({
                                             }
                                             marcarAssistida={marcarAssistida}
                                         />
-                                        <div className={css.tituloNoVideo}>
-                                            <h1>{videoAula.titulo}</h1>
-                                            <p>{videoAula.descricao}</p>
-                                        </div>
                                     </div>
 
                                     <h2>Proximas video-aulas:</h2>
