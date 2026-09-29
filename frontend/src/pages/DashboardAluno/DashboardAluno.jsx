@@ -500,12 +500,6 @@ export default function DashboardAluno({
 
                             {videoAula && (
                                 <>
-                                    {console.log("AULA ATUAL:", videoAula)}
-                                    {console.log(
-                                            "VIDEO TESTE:",
-                                            "http://10.92.11.45:5000/static/uploads/drm/teste_drm_ondemand/manifest.mpd"
-                                        )
-                                    }
                                     <div>
 
                                         <PlayerVideo
@@ -520,7 +514,7 @@ export default function DashboardAluno({
                                         />
                                     </div>
 
-                                    <h2>Proximas video-aulas:</h2>
+                                    <h2>Próximas video-aulas:</h2>
                                     <div className={css.gridAulas}>
                                         {proximas.map((aula) => (
                                             <AulaCard key={aula.id} aula={aula} api={api} onAbrir={() => navigate(`/DashboardAluno/aulas/${aula.id}`)} />

@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 from uuid import uuid4
-
+import shutil
 import fdb
 from flask import current_app, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
@@ -188,37 +188,60 @@ def converter_video_dash(caminho_video, id_video):
 
     os.makedirs(pasta_drm, exist_ok=True)
 
-    caminho_mp4box = os.path.join(
-        current_app.root_path,
-        "..",
-        "ferramentas",
-        "gpac",
-        "MP4Box.exe"
+    caminho_packager = os.path.abspath(
+        os.path.join(
+            current_app.root_path,
+            "..",
+            "ferramentas",
+            "shaka-packager",
+            "packager-win-x64.exe"
+        )
     )
 
-    caminho_mp4box = os.path.abspath(caminho_mp4box)
+    video_saida = os.path.join(pasta_drm, "video.mp4")
+    audio_saida = os.path.join(pasta_drm, "audio.mp4")
+    manifest_saida = os.path.join(pasta_drm, "manifest.mpd")
 
-    caminho_manifest = os.path.join(
-        pasta_drm,
-        "manifest.mpd"
-    )
+    comando = [
+        caminho_packager,
+
+        f"in={caminho_video},stream=video,drm_label=VIDEO,output={video_saida}",
+
+        f"in={caminho_video},stream=audio,drm_label=AUDIO,output={audio_saida}",
+
+        "--enable_raw_key_encryption",
+
+        "--keys",
+        (
+            "label=VIDEO:"
+            "key_id=00112233445566778899aabbccddeeff:"
+            "key=000102030405060708090a0b0c0d0e0f,"
+            "label=AUDIO:"
+            "key_id=11112222333344445555666677778888:"
+            "key=101112131415161718191a1b1c1d1e1f"
+        ),
+
+        "--protection_systems",
+        "CommonSystem",
+
+        "--segment_duration",
+        "2",
+
+        "--mpd_output",
+        manifest_saida,
+    ]
 
     resultado = subprocess.run(
-        [
-            caminho_mp4box,
-            "-dash",
-            "1000",
-            "-out",
-            caminho_manifest,
-            caminho_video
-        ],
+        comando,
         capture_output=True,
         text=True
     )
 
     if resultado.returncode != 0:
         raise RuntimeError(
-            f"Erro ao converter vídeo:\n{resultado.stderr}"
+            "Erro ao gerar DRM:\n"
+            f"{resultado.stdout}\n"
+            f"{resultado.stderr}"
         )
 
     return f"/static/uploads/drm/{id_video}/manifest.mpd"
@@ -688,6 +711,9 @@ def criar_aula_professor(id_curso):
                 {"mp4", "webm", "ogg", "mov"}
             )
 
+            if not video:
+                return resposta("O vídeo da aula é obrigatório.", 400)
+
             video_url = converter_video_dash(
                                 video["caminho"],
                                 id_aula
@@ -740,8 +766,24 @@ def editar_aula_professor(id_aula):
     parametros = [titulo, para_blob_texto(descricao)]
 
     if novo_video:
+        pasta_drm = os.path.join(
+            current_app.root_path,
+            "static",
+            "uploads",
+            "drm",
+            str(id_aula)
+        )
+
+        if os.path.exists(pasta_drm):
+            shutil.rmtree(pasta_drm)
+
+        video_url = converter_video_dash(
+            novo_video["caminho"],
+            id_aula
+        )
+
         campos = "TITULO = ?, DESCRICAO = ?, VIDEO_URL = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP"
-        parametros.append(novo_video["url"])
+        parametros.append(video_url)
 
     parametros.extend([id_aula, get_jwt_identity()])
     con = get_db()

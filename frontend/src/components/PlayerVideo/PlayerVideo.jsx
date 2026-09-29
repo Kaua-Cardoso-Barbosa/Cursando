@@ -8,7 +8,6 @@ export default function PlayerVideo({
                                         videoUrl,
                                         posterUrl,
                                         marcarAssistida,
-                                        drmConfig
                                     }) {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
@@ -27,11 +26,17 @@ export default function PlayerVideo({
             video
         );
 
-        if (drmConfig) {
-            player.configure({
-                drm: drmConfig
-            });
-        }
+        player.configure({
+            drm: {
+                clearKeys: {
+                    "00112233445566778899aabbccddeeff":
+                        "000102030405060708090a0b0c0d0e0f",
+
+                    "11112222333344445555666677778888":
+                        "101112131415161718191a1b1c1d1e1f"
+                }
+            }
+        });
 
         ui.configure({
             controlPanelElements: [
