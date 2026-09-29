@@ -443,7 +443,6 @@ export default function DashboardAluno({
 
                             </div>
 
-                            {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
                             {!carregando && descobrir.length === 0 && <EstadoVazio texto="Nenhum curso publico encontrado." />}
                             <div className={css.gridCursos}>
                                 {descobrir.map((curso) => (

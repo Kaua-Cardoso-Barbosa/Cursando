@@ -1,4 +1,5 @@
 .pagina {
+    position: relative;
     min-height: calc(100vh - 80px);
     padding: 70px 8vw;
     display: grid;
@@ -6,6 +7,13 @@
     gap: 70px;
     align-items: center;
     background: linear-gradient(135deg, #eef8f2 0%, #ffffff 56%, #d7f0e2 100%);
+}
+
+.acoesTopo {
+    position: absolute;
+    top: 20px;
+    right: 8vw;
+    z-index: 1;
 }
 
 .introducao {
@@ -159,7 +167,12 @@
     .pagina {
         grid-template-columns: 1fr;
         gap: 34px;
-        padding: 50px 24px;
+        padding: 88px 24px 50px;
+    }
+
+    .acoesTopo {
+        top: 16px;
+        right: 24px;
     }
 
     .introducao h1 {

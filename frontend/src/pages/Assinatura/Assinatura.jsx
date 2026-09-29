@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../../components/Button/Button.jsx";
 import css from "./Assinatura.module.css";
 
-export default function Assinatura({ api }) {
+export default function Assinatura({ api, sair }) {
     const navigate = useNavigate();
     const [pagamento, setPagamento] = useState(null);
     const [carregando, setCarregando] = useState(false);
@@ -91,6 +92,9 @@ export default function Assinatura({ api }) {
 
     return (
         <main className={css.pagina}>
+            <div className={css.acoesTopo}>
+                <Button texto="Sair" fundoCor="vermelho" tamanho="pequeno" onClick={sair} />
+            </div>
             <section className={css.introducao}>
                 <span className={css.eyebrow}>Seu próximo passo</span>
                 <h1>Aprenda no seu ritmo com o Plus.</h1>

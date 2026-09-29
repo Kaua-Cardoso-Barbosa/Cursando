@@ -813,6 +813,8 @@ def alterar_senha():
 @jwt_required()
 def criar_pagamento_pix():
     try:
+        # Esta rota gera uma cobrança avulsa; diferente da rota de assinatura,
+        # ela não grava uma assinatura no banco.
         dados = request.get_json() or {}
 
         valor = dados.get("valor")
@@ -829,6 +831,7 @@ def criar_pagamento_pix():
                 "mensagem": "Valor do pagamento deve ser maior que zero"
             }), 400
 
+        # A Arkhé cria a cobrança e retorna o código PIX para o cliente pagar.
         cobranca = criar_cobranca_pix(valor)
 
         return jsonify({
@@ -860,7 +863,7 @@ def criar_pix_assinatura():
     try:
         id_usuario = get_jwt_identity()
 
-        # Verifica se o usuário já possui uma assinatura ativa
+        # Impede criar outra cobrança de assinatura enquanto houver uma ativa.
         cursor.execute(
             """
             SELECT ID_ASSINATURA
@@ -876,13 +879,14 @@ def criar_pix_assinatura():
                 "mensagem": "Usuário já possui uma assinatura ativa"
             }), 409
 
-        # Valor único da assinatura
+        # O preço é configurado no servidor e não aceito do navegador.
         valor = current_app.config["VALOR_ASSINATURA"]
 
-        # Cria cobrança na Arkhé
+        # Solicita à Arkhé uma cobrança PIX vinculada ao valor do plano.
         cobranca = criar_cobranca_pix(valor)
 
-        # Cria a assinatura como pendente
+        # Guarda a assinatura como pendente (STATUS 0) até confirmar o pagamento.
+        # O ID da cobrança permite consultar depois o estado do PIX na Arkhé.
         cursor.execute(
             """
             INSERT INTO ASSINATURAS (
@@ -904,6 +908,7 @@ def criar_pix_assinatura():
 
         id_assinatura = cursor.fetchone()[0]
 
+        # Persiste a assinatura pendente antes de devolver o código PIX.
         con.commit()
 
         return jsonify({
@@ -945,7 +950,7 @@ def verificar_pagamento_assinatura():
     try:
         id_usuario = get_jwt_identity()
 
-        # Procura a assinatura pendente mais recente do usuário
+        # Usa a assinatura mais recente do usuário para decidir se pode acessar.
         cursor.execute(
             """
             SELECT
@@ -978,7 +983,7 @@ def verificar_pagamento_assinatura():
             data_expiracao
         ) = assinatura
 
-        # Já existe uma assinatura ativa
+        # STATUS 1 significa ativa; ainda é preciso conferir se não venceu.
         if status == 1:
             agora = datetime.now()
 
@@ -992,7 +997,7 @@ def verificar_pagamento_assinatura():
                     "data_expiracao": data_expiracao.isoformat()
                 }), 200
 
-            # Assinatura expirou
+            # Registra STATUS 3 quando a data de validade já passou.
             cursor.execute(
                 """
                 UPDATE ASSINATURAS
@@ -1010,7 +1015,7 @@ def verificar_pagamento_assinatura():
                 "mensagem": "A assinatura do usuário expirou."
             }), 403
 
-        # Se não houver cobrança vinculada, não há como verificar o pagamento
+        # Sem o identificador da cobrança não é possível confirmar o PIX na Arkhé.
         if not id_cobranca:
             return jsonify({
                 "assinatura": False,
@@ -1018,12 +1023,13 @@ def verificar_pagamento_assinatura():
                 "mensagem": "Assinatura aguardando pagamento."
             }), 403
 
-        # Consulta o status atual da cobrança na Arkhé
+        # A confirmação é consultada na Arkhé quando esta rota é chamada.
         cobranca = consultar_cobranca_pix(id_cobranca)
 
         status_cobranca = cobranca["status"]
 
-        # Pagamento confirmado
+        # STATUS 1 da cobrança indica pagamento confirmado: ativa por 30 dias
+        # a partir do momento desta confirmação e salva as duas datas no banco.
         if status_cobranca == 1:
             agora = datetime.now()
             data_expiracao = agora + timedelta(days=30)
@@ -1054,7 +1060,7 @@ def verificar_pagamento_assinatura():
                 "data_expiracao": data_expiracao.isoformat()
             }), 200
 
-        # Ainda não foi pago
+        # Qualquer status diferente de confirmado mantém a assinatura pendente.
         return jsonify({
             "assinatura": False,
             "status": "pendente",
