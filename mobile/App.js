@@ -1,9 +1,10 @@
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { Alert, SafeAreaView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, View } from "react-native";
 import { apiRequest, carregarSessao, limparSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
+import AssinaturaScreen from "./src/screens/AssinaturaScreen";
 import CursosScreen from "./src/screens/CursosScreen";
 import EditarCursoScreen from "./src/screens/EditarCursoScreen";
 import EditarPerfilScreen from "./src/screens/EditarPerfilScreen";
@@ -16,6 +17,8 @@ import { colors, globalStyles } from "./src/styles";
 export default function App() {
   const [token, setToken] = useState("");
   const [usuario, setUsuario] = useState(null);
+  const [assinaturaAtiva, setAssinaturaAtiva] = useState(null);
+  const [validandoAssinatura, setValidandoAssinatura] = useState(false);
   const [perfil, setPerfil] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [cursos, setCursos] = useState([]);
@@ -50,13 +53,43 @@ export default function App() {
     }
   }
 
+  async function validarAcesso(authToken, authUser) {
+    const tipo = Number(authUser?.tipo ?? 1);
+
+    if (tipo !== 2) {
+      setAssinaturaAtiva(true);
+      await carregarDados(authToken, authUser);
+      return;
+    }
+
+    setValidandoAssinatura(true);
+    try {
+      const dados = await apiRequest("/assinaturas/verificar", {}, authToken);
+      const ativa = dados?.assinatura === true;
+      setAssinaturaAtiva(ativa);
+
+      if (ativa) {
+        await carregarDados(authToken, authUser);
+      }
+    } catch {
+      setAssinaturaAtiva(false);
+    } finally {
+      setValidandoAssinatura(false);
+    }
+  }
+
+  async function concluirAssinatura() {
+    setAssinaturaAtiva(true);
+    await carregarDados(token, usuario);
+  }
+
   useEffect(() => {
     async function iniciar() {
       const sessao = await carregarSessao();
       if (sessao.token) {
         setToken(sessao.token);
         setUsuario(sessao.usuario);
-        carregarDados(sessao.token, sessao.usuario);
+        validarAcesso(sessao.token, sessao.usuario);
       }
     }
     iniciar();
@@ -66,6 +99,7 @@ export default function App() {
     await limparSessao();
     setToken("");
     setUsuario(null);
+    setAssinaturaAtiva(null);
     setPerfil(null);
     setDashboard(null);
     setCursos([]);
@@ -182,8 +216,32 @@ export default function App() {
         <LoginScreen onLogin={(novoToken, novoUsuario) => {
           setToken(novoToken);
           setUsuario(novoUsuario);
-          carregarDados(novoToken, novoUsuario);
+          setAssinaturaAtiva(null);
+          validarAcesso(novoToken, novoUsuario);
         }} />
+      </SafeAreaView>
+    );
+  }
+
+  const tipoUsuario = Number(usuario?.tipo ?? perfil?.tipo ?? 1);
+
+  if (tipoUsuario === 2 && assinaturaAtiva !== true) {
+    if (assinaturaAtiva === null || validandoAssinatura) {
+      return (
+        <SafeAreaView style={[globalStyles.app, styles.loading]}>
+          <ActivityIndicator size="large" color={colors.green} />
+        </SafeAreaView>
+      );
+    }
+
+    return (
+      <SafeAreaView style={globalStyles.app}>
+        <StatusBar style="dark" />
+        <AssinaturaScreen
+          token={token}
+          onLogout={sair}
+          onAssinaturaAtiva={concluirAssinatura}
+        />
       </SafeAreaView>
     );
   }
@@ -196,8 +254,6 @@ export default function App() {
       </SafeAreaView>
     );
   }
-
-  const tipoUsuario = Number(usuario?.tipo ?? perfil?.tipo ?? 1);
 
   if (editingProfile) {
     return (

@@ -5,6 +5,7 @@ import {
     FaGraduationCap,
     FaPlay,
     FaSearch,
+    FaShieldAlt,
     FaUser
 } from "react-icons/fa";
 import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno.jsx";
@@ -252,14 +253,6 @@ export default function DashboardAluno({
         const matchCurso = location.pathname.match(/\/DashboardAluno\/cursos\/(\d+)/);
         const matchDescobrir = location.pathname.match(/\/DashboardAluno\/descobrir\/(\d+)/);
 
-        if (!matchAula) {
-            setAulaAtual(null);
-        }
-
-        if (!matchCurso && !matchDescobrir) {
-            setDetalheCurso(null);
-        }
-
         if (matchAula) {
             carregarAula(matchAula[1]);
             return;
@@ -276,16 +269,41 @@ export default function DashboardAluno({
         }
 
         if (location.pathname.endsWith("/cursos")) {
-            setDetalheCurso(null);
             carregarMeusCursos();
             return;
         }
 
         if (location.pathname.endsWith("/descobrir")) {
-            setDetalheCurso(null);
             carregarDescobrir();
         }
     }, [carregarAula, carregarDescobrir, carregarDetalheCurso, carregarMeusCursos, location.pathname]);
+
+    useEffect(() => {
+        function ativarProtecao(evento) {
+            if (visao !== "aula") return;
+            if (evento?.key === "PrintScreen" || (evento?.ctrlKey && evento?.shiftKey) || evento?.type === "contextmenu") {
+                evento.preventDefault();
+            }
+            setProtecaoAtiva(true);
+            window.setTimeout(() => setProtecaoAtiva(false), 1800);
+        }
+
+        function aoVisibilidade() {
+            if (document.hidden && visao === "aula") setProtecaoAtiva(true);
+        }
+
+        window.addEventListener("keydown", ativarProtecao);
+        window.addEventListener("blur", ativarProtecao);
+        document.addEventListener("visibilitychange", aoVisibilidade);
+        document.addEventListener("contextmenu", ativarProtecao);
+
+        return () => {
+            window.removeEventListener("keydown", ativarProtecao);
+            window.removeEventListener("blur", ativarProtecao);
+            document.removeEventListener("visibilitychange", aoVisibilidade);
+            document.removeEventListener("contextmenu", ativarProtecao);
+        };
+    }, [visao]);
 
     async function inscrever(curso) {
         try {
@@ -302,31 +320,19 @@ export default function DashboardAluno({
         }
     }
 
-    const marcarAssistida = useCallback(async (aula) => {
+    async function marcarAssistida(aula) {
         try {
             const resposta = await fetch(`${api}/aluno/aulas/${aula.id}/assistir`, {
                 method: "POST",
                 credentials: "include"
             });
-
             await lerResposta(resposta);
             await carregarDashboard();
-
-            setAulaAtual((atual) =>
-                atual
-                    ? {
-                        ...atual,
-                        aula: {
-                            ...atual.aula,
-                            assistida: true
-                        }
-                    }
-                    : atual
-            );
+            setAulaAtual((atual) => atual ? { ...atual, aula: { ...atual.aula, assistida: true } } : atual);
         } catch (erro) {
             console.error("Erro ao marcar aula como assistida:", erro);
         }
-    }, [api, lerResposta, carregarDashboard]);
+    }
 
     const metricas = dashboard?.metricas || { inscritos: 0, finalizados: 0, iniciados: 0 };
     const recentes = dashboard?.recentes || [];
@@ -366,6 +372,7 @@ export default function DashboardAluno({
                     {visao === "meus-cursos" && !cursoDetalhe && (
                         <section className={css.secaoCursos}>
                             <h2>Todos os Cursos</h2>
+                            {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
                             {!carregando && meusCursos.length === 0 && <EstadoVazio texto="Voce ainda nao se inscreveu em cursos." />}
                             <div className={css.gridCursos}>
                                 {meusCursos.map((curso) => (
@@ -377,23 +384,21 @@ export default function DashboardAluno({
 
                     {visao === "descobrir" && !cursoDetalhe && (
                         <section className={css.secaoCursos}>
-                            <div className={css.areaBusca}>
-                                <div className={css.campoBusca}>
-                                    <FaSearch />
-                                    <input
-                                        value={busca}
-                                        placeholder="Pesquisar em Cursos"
-                                        onChange={(evento) => setBusca(evento.target.value)}
-                                        onKeyDown={(evento) => {
-                                            if (evento.key === "Enter") carregarDescobrir(evento.currentTarget.value);
-                                        }}
-                                    />
-                                </div>
-                                <button className={css.campoBuscaButton} onClick={() => carregarDescobrir(busca)}>Buscar</button>
+                            <div className={css.campoBusca}>
+                                <FaSearch />
+                                <input
+                                    value={busca}
+                                    placeholder="Pesquisar em Cursos"
+                                    onChange={(evento) => setBusca(evento.target.value)}
+                                    onKeyDown={(evento) => {
+                                        if (evento.key === "Enter") carregarDescobrir(evento.currentTarget.value);
+                                    }}
+                                />
+                                <button onClick={() => carregarDescobrir(busca)}>Buscar</button>
                             </div>
 
-
-                            {!carregando && descobrir.length === 0 && <EstadoVazio texto="Nenhum curso público encontrado." />}
+                            {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
+                            {!carregando && descobrir.length === 0 && <EstadoVazio texto="Nenhum curso publico encontrado." />}
                             <div className={css.gridCursos}>
                                 {descobrir.map((curso) => (
                                     <CursoCard key={curso.id} curso={curso} api={api} onAbrir={() => navigate(`/DashboardAluno/descobrir/${curso.id}`)} />
@@ -449,14 +454,17 @@ export default function DashboardAluno({
 
                             {videoAula && (
                                 <>
+                                    {console.log("AULA ATUAL:", videoAula)}
+                                    {console.log(
+                                            "VIDEO TESTE:",
+                                            "http://10.92.11.45:5000/static/uploads/drm/teste_drm_ondemand/manifest.mpd"
+                                        )
+                                    }
                                     <div>
+
                                         <PlayerVideo
                                             videoAula={videoAula}
-                                            videoUrl={
-                                                videoAula.video
-                                                    ? resolverUrlMidia(api, videoAula.video)
-                                                    : undefined
-                                            }
+                                            videoUrl={videoAula.video ? resolverUrlMidia(api, videoAula.video) : undefined}
                                             posterUrl={
                                                 videoAula.thumb
                                                     ? resolverUrlMidia(api, videoAula.thumb)
@@ -464,6 +472,10 @@ export default function DashboardAluno({
                                             }
                                             marcarAssistida={marcarAssistida}
                                         />
+                                        <div className={css.tituloNoVideo}>
+                                            <h1>{videoAula.titulo}</h1>
+                                            <p>{videoAula.descricao}</p>
+                                        </div>
                                     </div>
 
                                     <h2>Proximas video-aulas:</h2>

@@ -27,17 +27,11 @@ export default function PlayerVideo({
             video
         );
 
-        player.configure({
-            drm: {
-                clearKeys: {
-                    "00112233445566778899aabbccddeeff":
-                        "000102030405060708090a0b0c0d0e0f",
-
-                    "11112222333344445555666677778888":
-                        "101112131415161718191a1b1c1d1e1f"
-                }
-            }
-        });
+        if (drmConfig) {
+            player.configure({
+                drm: drmConfig
+            });
+        }
 
         ui.configure({
             controlPanelElements: [
@@ -98,6 +92,10 @@ export default function PlayerVideo({
 
         const carregarVideo = async () => {
             try {
+                console.log(
+                    "Manifesto:",
+                    videoUrl
+                );
 
                 await player.attach(video);
 
@@ -135,10 +133,8 @@ export default function PlayerVideo({
             );
 
             ui.destroy();
-
-            player.destroy();
         };
-    }, [videoUrl, marcarAssistida]);
+    }, [videoUrl, videoAula, marcarAssistida]);
 
     return (
         <div
