@@ -3,7 +3,7 @@ import CartaoCurso from '../CartaoCurso/CartaoCurso';
 import css from '../../pages/Home/Home.module.css';
 import {Link} from "react-router-dom";
 
-const SecaoCursos = ({ tituloPrincipal, subtitulo, cursos }) => {
+const SecaoCursos = ({ tituloPrincipal, subtitulo, cursos, mensagemVazia }) => {
     return (
         <section className={css['secao-cursos']}>
             <h2>{tituloPrincipal}</h2>
@@ -12,9 +12,11 @@ const SecaoCursos = ({ tituloPrincipal, subtitulo, cursos }) => {
                 <Link className={css['link-ver-mais']}>Ver mais</Link>
             </div>
             <div className={css['grid-cursos']}>
-                {cursos.map((curso, index) => (
+                {cursos.length === 0 ? (
+                    <p>{mensagemVazia}</p>
+                ) : cursos.map((curso, index) => (
                     <CartaoCurso
-                        key={index}
+                        key={curso.id ?? index}
                         imagem={curso.imagem}
                         alt={curso.alt}
                         titulo={curso.titulo}

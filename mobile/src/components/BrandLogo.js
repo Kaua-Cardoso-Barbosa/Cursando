@@ -1,16 +1,15 @@
-import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../styles";
 
 export default function BrandLogo({ compact = false }) {
   return (
     <View style={[styles.logo, compact && styles.logoCompact]}>
-      <View style={styles.mark}>
-        <Ionicons name="school" size={compact ? 42 : 62} color={colors.white} />
-        <View style={styles.play}>
-          <Ionicons name="play" size={compact ? 18 : 25} color={colors.white} />
-        </View>
-      </View>
+      <Image
+        source={require("../../assets/logo.png")}
+        resizeMode="contain"
+        style={[styles.mark, compact && styles.markCompact]}
+        accessibilityLabel="Logo Cursando"
+      />
       <Text style={[styles.text, compact && styles.textCompact]}>Cursando</Text>
     </View>
   );
@@ -23,25 +22,17 @@ const styles = StyleSheet.create({
   },
   logoCompact: {
     flexDirection: "row",
-    justifyContent: "center"
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10
   },
   mark: {
-    position: "relative",
-    width: 90,
-    height: 74,
-    alignItems: "center",
-    justifyContent: "center"
+    width: 112,
+    height: 85
   },
-  play: {
-    position: "absolute",
-    bottom: 9,
-    right: 17,
-    width: 40,
-    height: 31,
-    borderRadius: 8,
-    backgroundColor: colors.green,
-    alignItems: "center",
-    justifyContent: "center"
+  markCompact: {
+    width: 82,
+    height: 62
   },
   text: {
     color: colors.white,

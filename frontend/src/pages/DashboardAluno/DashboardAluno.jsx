@@ -166,6 +166,8 @@ export default function DashboardAluno({
     const [meusCursos, setMeusCursos] = useState([]);
     const [descobrir, setDescobrir] = useState([]);
     const [busca, setBusca] = useState("");
+    const [ordemDescobrir, setOrdemDescobrir] = useState("recentes");
+    const [apenasNaoInscritos, setApenasNaoInscritos] = useState(false);
     const [detalheCurso, setDetalheCurso] = useState(null);
     const [aulaAtual, setAulaAtual] = useState(null);
     const [carregando, setCarregando] = useState(false);
@@ -219,8 +221,11 @@ export default function DashboardAluno({
     const carregarDescobrir = useCallback(async (termo = busca) => {
         setCarregando(true);
         try {
-            const params = termo ? `?busca=${encodeURIComponent(termo)}` : "";
-            const resposta = await fetch(`${api}/aluno/descobrir${params}`, { credentials: "include" });
+            const params = new URLSearchParams();
+            if (termo.trim()) params.set("busca", termo.trim());
+            params.set("ordem", ordemDescobrir);
+            if (apenasNaoInscritos) params.set("apenas_novos", "1");
+            const resposta = await fetch(`${api}/aluno/descobrir?${params.toString()}`, { credentials: "include" });
             setDescobrir(await lerResposta(resposta));
         } catch (erro) {
             console.error("Erro ao carregar cursos publicos:", erro);
@@ -228,7 +233,7 @@ export default function DashboardAluno({
         } finally {
             setCarregando(false);
         }
-    }, [api, busca, lerResposta]);
+    }, [api, apenasNaoInscritos, busca, lerResposta, ordemDescobrir]);
 
     const carregarDetalheCurso = useCallback(async (idCurso) => {
         setCarregando(true);
@@ -408,7 +413,6 @@ export default function DashboardAluno({
                                     />
                                     <CardMetrica titulo="Cursos inscritos" detalhe="+0 nesse mes" valor={metricas.inscritos} />
                                     <CardMetrica titulo="Cursos finalizados" detalhe="+0 nesse mes" valor={metricas.finalizados} />
-                                    <CardMetrica titulo="Cursos iniciados" detalhe="+0 nesse mes" valor={metricas.iniciados} />
                                 </div>
                             </section>
 
@@ -430,19 +434,33 @@ export default function DashboardAluno({
 
                     {visao === "descobrir" && !cursoDetalhe && (
                         <section className={css.secaoCursos}>
-                            <div className={css.campoBusca}>
-                                <FaSearch />
-                                <input
-                                    value={busca}
-                                    placeholder="Pesquisar em Cursos"
-                                    onChange={(evento) => setBusca(evento.target.value)}
-                                    onKeyDown={(evento) => {
-                                        if (evento.key === "Enter") carregarDescobrir(evento.currentTarget.value);
-                                    }}
-                                />
-
+                            <div className={css.filtrosDescobrir}>
+                                <label className={css.campoBusca}>
+                                    <FaSearch />
+                                    <input
+                                        value={busca}
+                                        placeholder="Pesquisar em cursos"
+                                        onChange={(evento) => setBusca(evento.target.value)}
+                                    />
+                                </label>
+                                <label className={css.filtroOrdenacao}>
+                                    <span>Ordenar por</span>
+                                    <select value={ordemDescobrir} onChange={(evento) => setOrdemDescobrir(evento.target.value)}>
+                                        <option value="recentes">Mais recentes</option>
+                                        <option value="populares">Mais populares</option>
+                                    </select>
+                                </label>
+                                <label className={css.filtroNovos}>
+                                    <input
+                                        type="checkbox"
+                                        checked={apenasNaoInscritos}
+                                        onChange={(evento) => setApenasNaoInscritos(evento.target.checked)}
+                                    />
+                                    <span>Somente não inscritos</span>
+                                </label>
                             </div>
 
+                            {carregando && <p className={css.textoApoio}>Buscando cursos...</p>}
                             {!carregando && descobrir.length === 0 && <EstadoVazio texto="Nenhum curso publico encontrado." />}
                             <div className={css.gridCursos}>
                                 {descobrir.map((curso) => (

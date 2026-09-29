@@ -17,6 +17,7 @@
     },
     "android": {
       "jsEngine": "jsc",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#06a663"
       }

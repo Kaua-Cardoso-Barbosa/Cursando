@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 
 export const colors = {
   green: "#06a663",
@@ -17,10 +17,13 @@ export const colors = {
   mint: "#9fe0c3"
 };
 
+export const systemNavigationInset = Platform.OS === "android" ? 24 : 0;
+
 export const globalStyles = StyleSheet.create({
   app: {
     flex: 1,
-    backgroundColor: colors.white
+    backgroundColor: colors.white,
+    paddingBottom: systemNavigationInset
   },
   page: {
     flexGrow: 1,

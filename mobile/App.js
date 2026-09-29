@@ -211,9 +211,11 @@ export default function App() {
 
   if (!token) {
     return (
-      <SafeAreaView style={globalStyles.app}>
+      <SafeAreaView style={[globalStyles.app, styles.loginApp]}>
         <StatusBar style="light" />
         <LoginScreen onLogin={(novoToken, novoUsuario) => {
+          // A tela de login delega ao App a autenticacao global: atualizar estes
+          // estados troca a interface para a area interna e valida o acesso do perfil.
           setToken(novoToken);
           setUsuario(novoUsuario);
           setAssinaturaAtiva(null);
@@ -325,6 +327,9 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  loginApp: {
+    paddingBottom: 0
+  },
   content: {
     flex: 1,
     backgroundColor: colors.white

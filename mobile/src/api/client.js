@@ -17,20 +17,20 @@ let activeApiUrl = null;
 function getApiUrlCandidates() {
   const candidates = [];
 
-  // URL definida manualmente no .env
+  // Uma URL configurada no ambiente tem prioridade sobre os enderecos locais.
   if (process.env.EXPO_PUBLIC_API_URL) {
     candidates.push(process.env.EXPO_PUBLIC_API_URL);
   }
 
-  // Endereços conhecidos da máquina
+  // Enderecos conhecidos permitem acessar o backend em outra maquina da rede.
   for (const host of API_HOSTS) {
     candidates.push(`http://${host}:${API_PORT}`);
   }
 
-  // Emulador Android
+  // O emulador Android usa este endereco para acessar o computador host.
   candidates.push(`http://10.0.2.2:${API_PORT}`);
 
-  // Desenvolvimento local
+  // Fallbacks para ambientes que acessam o backend por localhost.
   candidates.push(`http://localhost:${API_PORT}`);
   candidates.push(`http://127.0.0.1:${API_PORT}`);
 
@@ -42,6 +42,7 @@ export const API_URL = getApiUrlCandidates()[0];
 
 
 export async function salvarSessao(token, usuario) {
+  // AsyncStorage mantem token e perfil entre aberturas do app.
   await AsyncStorage.multiSet([
     [TOKEN_KEY, token || ""],
     [USER_KEY, JSON.stringify(usuario || {})]
@@ -123,6 +124,7 @@ export async function apiRequest(
     options = {},
     token = null
 ) {
+  // JSON e token Bearer sao enviados nos formatos esperados pela API.
   const headers = {
     Accept: "application/json",
 
@@ -152,6 +154,7 @@ export async function apiRequest(
 
   const failedUrls = [];
 
+  // Tenta os enderecos em sequencia e reutiliza o primeiro que responder.
   for (const apiUrl of uniqueCandidates) {
     try {
       console.log(

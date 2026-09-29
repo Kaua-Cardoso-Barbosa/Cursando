@@ -80,6 +80,55 @@ def calcular_progresso(total, assistidos):
     return min(100, round((assistidos / total) * 100))
 
 
+@app.route("/cursos/home", methods=["GET"])
+def cursos_home():
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT FIRST 3
+                C.ID_CURSO,
+                C.TITULO,
+                C.DESCRICAO,
+                C.IMAGEM_URL,
+                C.STATUS,
+                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0),
+                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1)
+            FROM CURSOS C
+            WHERE C.EXCLUIDO = 0 AND C.STATUS = 1
+            ORDER BY C.CRIADO_EM DESC, C.ID_CURSO DESC
+            """
+        )
+        destaques = [curso_para_dict(row) for row in cursor.fetchall()]
+
+        cursor.execute(
+            """
+            SELECT FIRST 3
+                C.ID_CURSO,
+                C.TITULO,
+                C.DESCRICAO,
+                C.IMAGEM_URL,
+                C.STATUS,
+                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0),
+                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1),
+                (SELECT COUNT(*) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1)
+            FROM CURSOS C
+            WHERE C.EXCLUIDO = 0 AND C.STATUS = 1
+            ORDER BY 8 DESC, C.CRIADO_EM DESC, C.ID_CURSO DESC
+            """
+        )
+        mais_assinados = [curso_para_dict(row[:7]) for row in cursor.fetchall()]
+
+        return jsonify({"destaques": destaques, "mais_assinados": mais_assinados})
+    except Exception as erro:
+        return resposta(f"Erro ao carregar cursos da home: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
 def query_cursos_base(filtro_extra=""):
     return f"""
         SELECT
@@ -173,7 +222,6 @@ def aluno_dashboard():
                 "metricas": {
                     "inscritos": len(cursos),
                     "finalizados": len([curso for curso in cursos if curso["progresso"] >= 100]),
-                    "iniciados": len([curso for curso in cursos if 0 < curso["progresso"] < 100]),
                 },
                 "recentes": recentes,
                 "assinatura": {
@@ -231,12 +279,31 @@ def descobrir_cursos():
 
     id_aluno = get_jwt_identity()
     busca = (request.args.get("busca") or "").strip().lower()
-    filtro = ""
+    filtros = []
     parametros = [id_aluno, id_aluno]
 
     if busca:
-        filtro = "AND LOWER(C.TITULO) LIKE ?"
+        filtros.append("AND LOWER(C.TITULO) LIKE ?")
         parametros.append(f"%{busca}%")
+
+    if request.args.get("apenas_novos") == "1":
+        filtros.append(
+            """
+            AND NOT EXISTS (
+                SELECT 1 FROM MATRICULAS M
+                WHERE M.ID_CURSO = C.ID_CURSO
+                  AND M.ID_USUARIO = ?
+                  AND M.STATUS_MATRICULA = 1
+            )
+            """
+        )
+        parametros.append(id_aluno)
+
+    ordenacoes = {
+        "recentes": "C.CRIADO_EM DESC, C.ID_CURSO DESC",
+        "populares": "(SELECT COUNT(*) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1) DESC, C.CRIADO_EM DESC, C.ID_CURSO DESC",
+    }
+    ordenacao = ordenacoes.get(request.args.get("ordem"), ordenacoes["recentes"])
 
     con = get_db()
     cursor = con.cursor()
@@ -244,7 +311,7 @@ def descobrir_cursos():
     try:
         garantir_tabela_progresso(con)
         cursor.execute(
-            query_cursos_base(f"{filtro} ORDER BY C.ATUALIZADO_EM DESC"),
+            query_cursos_base(f"{' '.join(filtros)} ORDER BY {ordenacao}"),
             tuple(parametros),
         )
         return jsonify([curso_publico_para_dict(row) for row in cursor.fetchall()])

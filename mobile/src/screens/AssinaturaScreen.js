@@ -70,10 +70,10 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
         <View style={styles.iconBadge}>
           <Ionicons name="sparkles-outline" size={28} color={colors.darkGreen} />
         </View>
-        <Text style={styles.eyebrow}>Cursando Plus</Text>
+        <Text style={styles.eyebrow}>Cursando</Text>
         <Text style={globalStyles.title}>Sua próxima etapa começa aqui.</Text>
         <Text style={styles.description}>
-          Ative sua assinatura mensal para acessar os cursos e continuar sua jornada.
+          Ative sua assinatura mensal para acessar os cursos e começar sua jornada.
         </Text>
       </View>
 

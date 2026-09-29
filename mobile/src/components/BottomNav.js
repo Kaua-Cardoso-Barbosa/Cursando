@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors } from "../styles";
+import { colors, systemNavigationInset } from "../styles";
 
 const items = [
   { key: "home", label: "In\u00edcio", icon: "home-outline" },
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 12,
     right: 12,
-    bottom: 12,
+    bottom: 12 + systemNavigationInset,
     height: 70,
     flexDirection: "row",
     backgroundColor: colors.white,

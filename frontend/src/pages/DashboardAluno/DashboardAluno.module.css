@@ -347,7 +347,16 @@
     gap: 20px;
 }
 
+.filtrosDescobrir {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
 .campoBusca {
+    flex: 1 1 300px;
     width: min(700px, 100%);
     min-height: 40px;
     border: 2px solid #02693e;
@@ -356,7 +365,7 @@
     align-items: center;
     gap: 10px;
     padding: 0 12px;
-    margin-bottom: 30px;
+    margin-bottom: 0;
 }
 
 .campoBusca svg {
@@ -381,6 +390,42 @@
     border-radius: 5px;
     padding: 7px 12px;
     cursor: pointer;
+}
+
+.filtroOrdenacao {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    color: #333333;
+    font-size: 0.9rem;
+}
+
+.filtroOrdenacao select {
+    min-height: 40px;
+    max-width: 100%;
+    border: 1px solid #8a8a8a;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #111111;
+    padding: 0 10px;
+    font: inherit;
+}
+
+.filtroNovos {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    color: #333333;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.filtroNovos input {
+    width: 17px;
+    height: 17px;
+    accent-color: #02693e;
 }
 
 .linkVoltar {
