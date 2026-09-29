@@ -43,3 +43,6 @@ ferramentas/ffmpeg/presets/libvpx-1080p.ffpreset
 ferramentas/ffmpeg/doc/ffmpeg-bitstream-filters.html
 ferramentas/ffmpeg/presets/libvpx-720p50_60.ffpreset
 ferramentas/ffmpeg/presets/libvpx-1080p50_60.ffpreset
+/node_modules
+/.expo
+/node_modules

@@ -135,23 +135,6 @@ export default function GerenciamentoUsuarios({
         }
     }
 
-    async function excluirUsuario(item) {
-        try {
-            const resposta = await fetch(`${api}/usuarios/${item.id}`, {
-                method: "DELETE",
-                credentials: "include"
-            });
-
-            await lerResposta(resposta);
-            await carregarUsuarios();
-        } catch (err) {
-            console.error("Erro ao excluir usuario:", err);
-            avisar({ tipo: "erro", descricao: err.message });
-        } finally {
-            setConfirmacao(null);
-        }
-    }
-
     function abrirEdicao(item) {
         setUsuarioEditando(item);
         setFormEdicao({
@@ -261,13 +244,6 @@ export default function GerenciamentoUsuarios({
                                         className={item.bloqueado ? css.btnDesbloquear : css.btnBloquear}
                                     >
                                         {item.bloqueado ? "Desbloquear" : "Bloquear"}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmacao(item)}
-                                        className={css.btnExcluir}
-                                    >
-                                        Excluir
                                     </button>
                                     <button
                                         type="button"
@@ -457,15 +433,6 @@ export default function GerenciamentoUsuarios({
                     </div>
                 </footer>
             </div>
-
-            <ConfirmAlert
-                aberto={Boolean(confirmacao)}
-                titulo="Realmente deseja apagar esse usuario?"
-                descricao={confirmacao?.nome}
-                textoConfirmar="Sim, excluir usuario"
-                aoCancelar={() => setConfirmacao(null)}
-                aoConfirmar={() => excluirUsuario(confirmacao)}
-            />
         </div>
     );
 }

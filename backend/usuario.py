@@ -304,37 +304,6 @@ def alterar_status_usuario(id_usuario):
         con.close()
 
 
-@app.route("/usuarios/<int:id_usuario>", methods=["DELETE"])
-@jwt_required()
-def excluir_usuario(id_usuario):
-    negado = exigir_admin()
-    if negado:
-        return negado
-
-    id_admin = int(get_jwt_identity())
-
-    if id_usuario == id_admin:
-        return resposta_mensagem("Voce nao pode excluir sua propria conta.", 400)
-
-    con = get_db()
-    cursor = con.cursor()
-
-    try:
-        cursor.execute("SELECT 1 FROM USUARIOS WHERE ID_USUARIO = ?", (id_usuario,))
-        if not cursor.fetchone():
-            return resposta_mensagem("Usuario nao encontrado", 404)
-
-        cursor.execute("DELETE FROM USUARIOS WHERE ID_USUARIO = ?", (id_usuario,))
-        con.commit()
-
-        return resposta_mensagem("Usuario excluido com sucesso", 200, "sucesso")
-    except Exception as erro:
-        con.rollback()
-        return resposta_mensagem(f"Erro ao excluir usuario: {erro}", 500)
-    finally:
-        cursor.close()
-        con.close()
-
 
 @app.route("/usuarios/<int:id_usuario>", methods=["PUT"])
 @jwt_required()
