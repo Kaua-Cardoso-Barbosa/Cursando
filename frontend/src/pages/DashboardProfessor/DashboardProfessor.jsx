@@ -597,22 +597,50 @@ export default function DashboardProfessor({
                             </div>
                             {/* Sprint itens 12, 30, 31 e 32: cards financeiros e solicitacao de saque do instrutor. */}
                             <div className={css.gridMetricas}>
-                                <CardMetricaProfessor titulo="Recebido estimado" detalhe="Pool de receita" valor={`R$ ${Number(financeiro?.recebido_estimado || 0).toFixed(2).replace(".", ",")}`} />
-                                <CardMetricaProfessor titulo="Disponivel para saque" detalhe="Saldo bruto" valor={`R$ ${Number(financeiro?.disponivel_saque || 0).toFixed(2).replace(".", ",")}`} />
-                                <CardMetricaProfessor titulo="Ja sacado" detalhe="Solicitacoes registradas" valor={`R$ ${Number(financeiro?.ja_sacado || 0).toFixed(2).replace(".", ",")}`} />
-                                <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matriculas nos seus cursos" valor={financeiro?.alunos_ativos || 0} />
+                                <CardMetricaProfessor
+                                    titulo="Recebido estimado"
+                                    detalhe="Estimativa da sua parte no pool: alunos ativos nos seus cursos x valor da assinatura x percentual de repasse."
+                                    valor={`R$ ${Number(financeiro?.recebido_estimado || 0).toFixed(2).replace(".", ",")}`}
+                                />
+                                <CardMetricaProfessor
+                                    titulo="Disponivel para saque"
+                                    detalhe="Valor estimado que ainda pode ser solicitado: recebido estimado menos saques concluidos e pendentes."
+                                    valor={`R$ ${Number(financeiro?.disponivel_saque || 0).toFixed(2).replace(".", ",")}`}
+                                />
+                                <CardMetricaProfessor
+                                    titulo="Ja sacado"
+                                    detalhe="Soma dos saques concluidos, confirmados por movimentacao real de saida na conta Arkhe."
+                                    valor={`R$ ${Number(financeiro?.ja_sacado || 0).toFixed(2).replace(".", ",")}`}
+                                />
+                                <CardMetricaProfessor
+                                    titulo="Saques pendentes"
+                                    detalhe="Pedidos registrados que ainda aguardam uma saida correspondente na movimentacao Arkhe."
+                                    valor={`R$ ${Number(financeiro?.saques_pendentes || 0).toFixed(2).replace(".", ",")}`}
+                                />
+                                <CardMetricaProfessor
+                                    titulo="Alunos ativos"
+                                    detalhe="Quantidade de alunos distintos com matricula ativa em pelo menos um dos seus cursos."
+                                    valor={financeiro?.alunos_ativos || 0}
+                                />
                             </div>
-                            <div className={css.formularioPerfil}>
-                                <label>
-                                    Valor do saque
-                                    <input
-                                        value={valorSaque}
-                                        onChange={(evento) => setValorSaque(evento.target.value)}
-                                        type="number"
-                                        min="1"
-                                        step="0.01"
-                                        placeholder="0,00"
-                                    />
+                            <div className={css.areaSaque}>
+                                <div className={css.textoSaque}>
+                                    <h3>Solicitar saque</h3>
+                                    <p>Informe o valor que deseja retirar do saldo disponivel. A solicitacao fica registrada para processamento financeiro.</p>
+                                </div>
+                                <label className={css.campoSaque}>
+                                    <span>Valor do saque</span>
+                                    <div className={css.inputMoeda}>
+                                        <span>R$</span>
+                                        <input
+                                            value={valorSaque}
+                                            onChange={(evento) => setValorSaque(evento.target.value)}
+                                            type="number"
+                                            min="1"
+                                            step="0.01"
+                                            placeholder="0,00"
+                                        />
+                                    </div>
                                 </label>
                                 <button className={css.botaoPrimario} onClick={solicitarSaque}>
                                     Solicitar saque

@@ -629,12 +629,12 @@ export default function DashboardAluno({
                             <div className={css.gridMetricas}>
                                 <CardMetrica
                                     titulo="Total gasto"
-                                    detalhe="Mensalidades registradas"
+                                    detalhe="Soma estimada das mensalidades vinculadas ao seu historico de assinaturas registradas."
                                     valor={`R$ ${Number(financeiro?.total_gasto || 0).toFixed(2).replace(".", ",")}`}
                                 />
                                 <CardMetrica
                                     titulo="Faturas"
-                                    detalhe="Historico de assinaturas"
+                                    detalhe="Quantidade de registros de assinatura usados para calcular seu historico financeiro."
                                     valor={financeiro?.faturas || 0}
                                 />
                             </div>

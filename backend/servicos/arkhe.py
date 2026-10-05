@@ -88,3 +88,55 @@ def consultar_conta():
         )
 
     return dados
+
+
+def consultar_saldo():
+    url = (
+        f'{current_app.config["ARKHE_BASE_URL"]}'
+        "/api/v1/saldo"
+    )
+
+    resposta = requests.get(
+        url,
+        headers=_headers(),
+        timeout=10,
+    )
+
+    dados = resposta.json()
+
+    if not resposta.ok:
+        raise Exception(
+            dados.get("mensagem", "Erro ao consultar saldo Arkhé")
+        )
+
+    return dados
+
+
+def consultar_movimentacoes(data_inicio=None, data_fim=None):
+    url = (
+        f'{current_app.config["ARKHE_BASE_URL"]}'
+        "/api/v1/movimentacoes"
+    )
+    params = {}
+
+    if data_inicio:
+        params["data_inicio"] = data_inicio
+
+    if data_fim:
+        params["data_fim"] = data_fim
+
+    resposta = requests.get(
+        url,
+        headers=_headers(),
+        params=params,
+        timeout=10,
+    )
+
+    dados = resposta.json()
+
+    if not resposta.ok:
+        raise Exception(
+            dados.get("mensagem", "Erro ao consultar movimentações Arkhé")
+        )
+
+    return dados
