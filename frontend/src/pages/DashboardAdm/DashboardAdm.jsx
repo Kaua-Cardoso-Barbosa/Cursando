@@ -241,17 +241,33 @@ export default function DashboardAdm({
                         <section className={css.secaoMetricas}>
                             {/* Sprint itens 13, 14, 15 e 16: cards de gestao financeira administrativa. */}
                             {[
-                                ["Total arrecadado", financeiro?.total_arrecadado],
-                                ["Total repassado", financeiro?.total_repassado_estimado],
-                                ["Custos", financeiro?.custos],
-                                ["Saldo em caixa", financeiro?.saldo_caixa]
-                            ].map(([titulo, valor]) => (
+                                {
+                                    titulo: "Total arrecadado",
+                                    valor: financeiro?.total_arrecadado,
+                                    detalhe: "Receita bruta estimada: assinaturas ativas multiplicadas pelo valor atual da assinatura."
+                                },
+                                {
+                                    titulo: "Total repassado",
+                                    valor: financeiro?.total_repassado_estimado,
+                                    detalhe: "Previsao de repasse aos instrutores, calculada como percentual da receita bruta estimada."
+                                },
+                                {
+                                    titulo: "Custos",
+                                    valor: financeiro?.custos,
+                                    detalhe: "Soma dos custos operacionais cadastrados para a plataforma no controle financeiro."
+                                },
+                                {
+                                    titulo: "Saldo em caixa",
+                                    valor: financeiro?.saldo_caixa,
+                                    detalhe: "Resultado estimado apos subtrair repasses previstos e custos cadastrados da receita bruta."
+                                }
+                            ].map(({ titulo, valor, detalhe }) => (
                                 <div key={titulo} className={css.cardMetrica}>
                                     <div className={css.metricaTopo}>
                                         <h2>{titulo}</h2>
                                         <div className={css.iconeBadge}><FaFolder /></div>
                                     </div>
-                                    <span className={css.metricaVariacao}>Resumo financeiro</span>
+                                    <span className={css.metricaVariacao}>{detalhe}</span>
                                     <div className={css.metricaNumero}>R$ {Number(valor || 0).toFixed(2).replace(".", ",")}</div>
                                 </div>
                             ))}
