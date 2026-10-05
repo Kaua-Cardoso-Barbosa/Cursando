@@ -8,7 +8,7 @@ from app import app
 from banco import get_db
 from log_banco import garantir_log_schema, get_log_db
 from professor import de_blob_texto, para_blob_texto
-from servicos.arkhe import ArkheError, criar_cobranca_pix, solicitar_saque_conta, consultar_movimentacoes, consultar_saldo
+from servicos.arkhe import ArkheError, criar_cobranca_pix, solicitar_saque_conta
 
 
 _schema_pronto = False
@@ -37,19 +37,6 @@ def _existe_relacao(cursor, nome):
     return cursor.fetchone() is not None
 
 
-def _existe_coluna(cursor, tabela, coluna):
-    cursor.execute(
-        """
-        SELECT 1
-        FROM RDB$RELATION_FIELDS
-        WHERE RDB$RELATION_NAME = ?
-          AND RDB$FIELD_NAME = ?
-        """,
-        (tabela.upper(), coluna.upper()),
-    )
-    return cursor.fetchone() is not None
-
-
 def _criar_tabela(cursor, nome, ddl):
     if not _existe_relacao(cursor, nome):
         cursor.execute(ddl)
@@ -67,14 +54,7 @@ def _existe_coluna(cursor, tabela, coluna):
     return cursor.fetchone() is not None
 
 
-def _adicionar_coluna(cursor, tabela, coluna, ddl):
-    if not _existe_coluna(cursor, tabela, coluna):
-        cursor.execute(f"ALTER TABLE {tabela} ADD {ddl}")
-
-
 def _garantir_coluna(cursor, tabela, coluna, ddl):
-    # compat wrapper retained for callers expecting _garantir_coluna
-    _adicionar_coluna(cursor, tabela, coluna, ddl)
     if not _existe_coluna(cursor, tabela, coluna):
         cursor.execute(f"ALTER TABLE {tabela} ADD {ddl}")
 
@@ -308,19 +288,6 @@ def garantir_sprint_schema():
             )
             """,
         )
-        _adicionar_coluna(
-            cursor,
-            "SAQUES_INSTRUTOR",
-            "ID_MOVIMENTACAO_ARKHE",
-            "ID_MOVIMENTACAO_ARKHE INTEGER",
-        )
-        _adicionar_coluna(
-            cursor,
-            "SAQUES_INSTRUTOR",
-            "PROCESSADO_EM",
-            "PROCESSADO_EM TIMESTAMP",
-        )
-        )
         con.commit()
         cursor.execute("SELECT COUNT(*) FROM FINANCEIRO_CONFIG")
         if int((cursor.fetchone() or (0,))[0] or 0) == 0:
@@ -353,121 +320,6 @@ def garantir_sprint_schema():
 def proximo_id(cursor, tabela, coluna):
     cursor.execute(f"SELECT COALESCE(MAX({coluna}), 0) + 1 FROM {tabela}")
     return cursor.fetchone()[0]
-
-
-def _parse_data_arkhe(valor):
-    if not valor:
-        return None
-
-    if isinstance(valor, datetime):
-        return valor
-
-    texto = str(valor).strip().replace("T", " ")
-
-    for formato in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-        try:
-            return datetime.strptime(texto[:19 if "%H" in formato else 10], formato)
-        except ValueError:
-            continue
-
-    return None
-
-
-def _centavos(valor):
-    return int(round(float(valor or 0) * 100))
-
-
-def sincronizar_saques_arkhe(cursor, id_usuario=None):
-    params = []
-    filtro_usuario = ""
-
-    if id_usuario is not None:
-        filtro_usuario = " AND ID_USUARIO = ?"
-        params.append(id_usuario)
-
-    cursor.execute(
-        f"""
-        SELECT ID_SAQUE, ID_USUARIO, CAST(VALOR AS DOUBLE PRECISION), CRIADO_EM
-        FROM SAQUES_INSTRUTOR
-        WHERE STATUS = 0
-        {filtro_usuario}
-        ORDER BY CRIADO_EM, ID_SAQUE
-        """,
-        tuple(params),
-    )
-    pendentes = cursor.fetchall()
-
-    if not pendentes:
-        return 0
-
-    data_inicio = min((linha[3] or datetime.now()).date() for linha in pendentes).isoformat()
-    data_fim = datetime.now().date().isoformat()
-    dados = consultar_movimentacoes(data_inicio=data_inicio, data_fim=data_fim)
-    movimentacoes = dados.get("movimentacoes") or []
-
-    cursor.execute(
-        """
-        SELECT ID_MOVIMENTACAO_ARKHE
-        FROM SAQUES_INSTRUTOR
-        WHERE ID_MOVIMENTACAO_ARKHE IS NOT NULL
-        """
-    )
-    usadas = {int(linha[0]) for linha in cursor.fetchall() if linha[0] is not None}
-
-    saidas = []
-    for movimentacao in movimentacoes:
-        if movimentacao.get("tipo") != "saida":
-            continue
-
-        id_movimentacao = movimentacao.get("id_movimentacao")
-        data_movimentacao = _parse_data_arkhe(movimentacao.get("data_movimentacao"))
-
-        if id_movimentacao is None or data_movimentacao is None:
-            continue
-
-        saidas.append({
-            "id": int(id_movimentacao),
-            "valor_centavos": _centavos(movimentacao.get("valor")),
-            "data": data_movimentacao,
-        })
-
-    atualizados = 0
-
-    for id_saque, _, valor, criado_em in pendentes:
-        criado_em = criado_em or datetime.now()
-        valor_centavos = _centavos(valor)
-        encontrada = None
-
-        for saida in saidas:
-            if saida["id"] in usadas:
-                continue
-
-            if saida["valor_centavos"] != valor_centavos:
-                continue
-
-            if saida["data"] < criado_em:
-                continue
-
-            encontrada = saida
-            break
-
-        if not encontrada:
-            continue
-
-        cursor.execute(
-            """
-            UPDATE SAQUES_INSTRUTOR
-            SET STATUS = 1,
-                ID_MOVIMENTACAO_ARKHE = ?,
-                PROCESSADO_EM = ?
-            WHERE ID_SAQUE = ?
-            """,
-            (encontrada["id"], encontrada["data"], id_saque),
-        )
-        usadas.add(encontrada["id"])
-        atualizados += 1
-
-    return atualizados
 
 
 def exigir_tipo(*tipos):
@@ -1748,13 +1600,6 @@ def financeiro_resumo():
         peso_total = sum(pesos_instrutores.values())
 
         if tipo == 1:
-            try:
-                saques_sincronizados = sincronizar_saques_arkhe(cursor, id_usuario)
-                if saques_sincronizados:
-                    con.commit()
-            except Exception as erro:
-                print("Erro ao sincronizar saques com Arkhé:", erro)
-
             cursor.execute(
                 """
                 SELECT COUNT(DISTINCT M.ID_USUARIO)
@@ -1767,24 +1612,8 @@ def financeiro_resumo():
             alunos = int((cursor.fetchone() or (0,))[0] or 0)
             peso_instrutor = pesos_instrutores.get(int(id_usuario), 0)
             estimado = pool_instrutores * (peso_instrutor / peso_total) if peso_total else 0
-            cursor.execute(
-                """
-                SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0)
-                FROM SAQUES_INSTRUTOR
-                WHERE ID_USUARIO = ? AND STATUS = 1
-                """,
-                (id_usuario,),
-            )
+            cursor.execute("SELECT COALESCE(SUM(VALOR), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?", (id_usuario,))
             sacado = float((cursor.fetchone() or (0,))[0] or 0)
-            cursor.execute(
-                """
-                SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0)
-                FROM SAQUES_INSTRUTOR
-                WHERE ID_USUARIO = ? AND STATUS = 0
-                """,
-                (id_usuario,),
-            )
-            pendente = float((cursor.fetchone() or (0,))[0] or 0)
             valor_por_view = (pool_instrutores / peso_total) if peso_total else 0
             cursor.execute(
                 """
@@ -1818,9 +1647,8 @@ def financeiro_resumo():
             return jsonify({
                 "perfil": "instrutor",
                 "recebido_estimado": round(estimado, 2),
-                "disponivel_saque": round(max(estimado - sacado - pendente, 0), 2),
+                "disponivel_saque": round(max(estimado - sacado, 0), 2),
                 "ja_sacado": round(sacado, 2),
-                "saques_pendentes": round(pendente, 2),
                 "alunos_ativos": alunos,
                 "percentual_pool": round(percentual, 2),
                 "peso_pool": peso_instrutor,
@@ -1830,9 +1658,7 @@ def financeiro_resumo():
             })
 
         if tipo == 0:
-            cursor.execute(
-                "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM CUSTOS_PLATAFORMA"
-            )
+            cursor.execute("SELECT COALESCE(SUM(VALOR), 0) FROM CUSTOS_PLATAFORMA")
             custos = float((cursor.fetchone() or (0,))[0] or 0)
             cursor.execute("SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE STATUS = 1")
             faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
@@ -2386,53 +2212,15 @@ def solicitar_saque():
     cursor = con.cursor()
 
     try:
-        id_usuario = get_jwt_identity()
-        saques_sincronizados = sincronizar_saques_arkhe(cursor, id_usuario)
-        if saques_sincronizados:
-            con.commit()
-
-        valor_assinatura = float(app.config.get("VALOR_ASSINATURA", 0) or 0)
-        cursor.execute(
-            """
-            SELECT COUNT(DISTINCT M.ID_USUARIO)
-            FROM MATRICULAS M
-            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = M.ID_CURSO
-            WHERE PC.ID_USUARIO = ? AND M.STATUS_MATRICULA = 1
-            """,
-            (id_usuario,),
-        )
-        alunos = int((cursor.fetchone() or (0,))[0] or 0)
-        estimado = alunos * valor_assinatura * 0.5
-        cursor.execute(
-            """
-            SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0)
-            FROM SAQUES_INSTRUTOR
-            WHERE ID_USUARIO = ? AND STATUS IN (0, 1)
-            """,
-            (id_usuario,),
-        )
-        reservado = float((cursor.fetchone() or (0,))[0] or 0)
-        disponivel = max(estimado - reservado, 0)
-
-        if valor > disponivel:
-            return resposta("Valor solicitado maior que o saldo disponivel para saque.", 400)
-
-        saldo_arkhe = float((consultar_saldo() or {}).get("saldo") or 0)
-
-        if valor > saldo_arkhe:
-            return resposta("Saldo insuficiente na conta Arkhé para registrar este saque.", 400)
-
-        # A API Arkhé atual não expõe endpoint de transferência. O pedido fica pendente
-        # e só é concluído quando uma movimentação real de saída correspondente aparecer.
-
         id_saque = proximo_id(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE")
-        saque_arkhe = solicitar_saque_conta(valor, referencia=f"SAQUE-{id_saque}-{id_usuario}")
+        # Sprint item 1: solicita o saque na Arkhe antes de registrar o pedido financeiro local.
+        saque_arkhe = solicitar_saque_conta(valor, referencia=f"SAQUE-{id_saque}-{get_jwt_identity()}")
         cursor.execute(
             """
             INSERT INTO SAQUES_INSTRUTOR (ID_SAQUE, ID_USUARIO, VALOR, STATUS, ID_SAQUE_ARKHE, RESPOSTA_ARKHE)
             VALUES (?, ?, ?, 0, ?, ?)
             """,
-            (id_saque, id_usuario, valor, saque_arkhe.get("id_saque"), para_blob_texto(str(saque_arkhe))),
+            (id_saque, get_jwt_identity(), valor, saque_arkhe.get("id_saque"), para_blob_texto(str(saque_arkhe))),
         )
         con.commit()
         registrar_log("solicitar_saque", f"Saque solicitado no valor {valor}", "SAQUES_INSTRUTOR")

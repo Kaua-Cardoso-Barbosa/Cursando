@@ -118,10 +118,9 @@
 }
 
 .metricaVariacao {
-    color: #2f7d5f;
+    color: #32b978;
     font-size: 0.95rem;
-    font-weight: 500;
-    line-height: 1.35;
+    font-weight: 600;
     margin-bottom: 12px;
 }
 
@@ -581,92 +580,6 @@
     margin-top: 6px;
 }
 
-.areaSaque {
-    width: min(760px, 100%);
-    border: 1.5px solid #666666;
-    border-left: 6px solid #06a663;
-    border-radius: 8px;
-    background: #fafafa;
-    padding: 22px 24px;
-    display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(220px, 280px) auto;
-    align-items: end;
-    gap: 18px;
-}
-
-.textoSaque {
-    min-width: 0;
-}
-
-.textoSaque h3 {
-    color: #111111;
-    font-size: 1.35rem;
-    line-height: 1.1;
-    font-weight: 400;
-    margin: 0 0 8px;
-}
-
-.textoSaque p {
-    color: #2f2f2f;
-    font-size: 0.95rem;
-    line-height: 1.35;
-    margin: 0;
-}
-
-.campoSaque {
-    color: #111111;
-    font-size: 0.95rem;
-    font-weight: 600;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.inputMoeda {
-    min-height: 42px;
-    border: 2px solid #06a663;
-    border-radius: 7px;
-    background: #ffffff;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-}
-
-.inputMoeda > span {
-    align-self: stretch;
-    min-width: 48px;
-    background: #e8f6ef;
-    color: #02693e;
-    border-right: 1px solid #b8e5d0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-}
-
-.inputMoeda input {
-    width: 100%;
-    min-width: 0;
-    min-height: 40px;
-    border: 0;
-    background: transparent;
-    color: #111111;
-    font: inherit;
-    padding: 8px 11px;
-    outline: none;
-}
-
-.inputMoeda:focus-within {
-    border-color: #02693e;
-    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.16);
-}
-
-.areaSaque .botaoPrimario {
-    min-height: 42px;
-    white-space: nowrap;
-    box-shadow: none;
-}
-
 .rodapePagina {
     background: #02693e;
     color: #ffffff;
@@ -798,15 +711,5 @@
 
     .formularioPerfil .botaoPrimario {
         align-self: stretch;
-    }
-
-    .areaSaque {
-        grid-template-columns: 1fr;
-        align-items: stretch;
-        padding: 20px;
-    }
-
-    .areaSaque .botaoPrimario {
-        width: 100%;
     }
 }

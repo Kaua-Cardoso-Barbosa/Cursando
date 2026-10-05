@@ -743,19 +743,13 @@ export default function DashboardAluno({
                                 {/* Sprint item 2: mostra total gasto e historico de faturas do aluno. */}
                                 <CardMetrica
                                     titulo="Total gasto"
-                                    detalhe="Soma estimada das mensalidades vinculadas ao seu historico de assinaturas registradas."
+                                    detalhe="Mensalidades registradas"
                                     valor={`R$ ${Number(financeiro?.total_gasto || 0).toFixed(2).replace(".", ",")}`}
                                 />
                                 <CardMetrica
                                     titulo="Em aberto"
                                     detalhe="Faturas pendentes"
                                     valor={`R$ ${Number(financeiro?.total_aberto || 0).toFixed(2).replace(".", ",")}`}
-                                />
-                                <CardMetrica
-                                    titulo="Faturas"
-                                    detalhe="Quantidade de registros de assinatura usados para calcular seu historico financeiro."
-                                    valor={financeiro?.faturas || 0}
-                                />
                                 />
                             </div>
                             {/* Sprint item 3: lista faturas em aberto e permite gerar pagamento futuro. */}
