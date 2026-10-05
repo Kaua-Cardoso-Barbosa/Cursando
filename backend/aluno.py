@@ -10,6 +10,7 @@ from professor import (
     criar_mensagem,
     curso_para_dict,
     de_blob_texto,
+    STATUS_NOMES,
 )
 
 
@@ -62,11 +63,17 @@ def garantir_tabela_progresso(con):
 
 
 def curso_publico_para_dict(row):
-    curso = curso_para_dict(row[:7])
-    curso["professor"] = de_blob_texto(row[7]) or "Professor(a)"
-    curso["matriculado"] = bool(row[8])
-    curso["videos_assistidos"] = row[9] or 0
-    curso["progresso"] = calcular_progresso(curso["aulas_publicadas"], curso["videos_assistidos"])
+    curso = {"id": row[0], "titulo": row[1], "descricao": de_blob_texto(row[2]), "imagem": row[3], "status": row[4],
+             "status_nome": STATUS_NOMES.get(row[4], "desconhecido"), "total_aulas": row[5] or 0,
+             "aulas_publicadas": row[6] or 0, "total_inscritos": 0,
+             "professor": de_blob_texto(row[7]) or "Professor(a)", "matriculado": bool(row[8]),
+             "videos_assistidos": row[9] or 0}
+
+    curso["progresso"] = calcular_progresso(
+        curso["aulas_publicadas"],
+        curso["videos_assistidos"]
+    )
+
     return curso
 
 
