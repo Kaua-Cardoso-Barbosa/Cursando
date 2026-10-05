@@ -713,7 +713,10 @@ def financeiro_resumo():
             )
             alunos = int((cursor.fetchone() or (0,))[0] or 0)
             estimado = alunos * valor_assinatura * 0.5
-            cursor.execute("SELECT COALESCE(SUM(VALOR), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?", (id_usuario,))
+            cursor.execute(
+                "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?",
+                (id_usuario,),
+            )
             sacado = float((cursor.fetchone() or (0,))[0] or 0)
             # Sprint itens 12, 30 e 31: resumo financeiro inicial do instrutor baseado no pool de receita.
             return jsonify({
@@ -725,7 +728,9 @@ def financeiro_resumo():
             })
 
         if tipo == 0:
-            cursor.execute("SELECT COALESCE(SUM(VALOR), 0) FROM CUSTOS_PLATAFORMA")
+            cursor.execute(
+                "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM CUSTOS_PLATAFORMA"
+            )
             custos = float((cursor.fetchone() or (0,))[0] or 0)
             repasse_estimado = total_arrecadado * 0.5
             # Sprint itens 13, 14, 15 e 16: indicadores financeiros administrativos iniciais.
