@@ -58,3 +58,32 @@
     font-weight: 700;
     color: #ffffff;
 }
+
+/* Sprint item 7: adapta o menu do professor para navegacao horizontal em telas pequenas. */
+@media (max-width: 860px) {
+    .menuLateral {
+        width: 100%;
+        min-height: auto;
+        padding: 8px 0;
+    }
+
+    .linksNavegacao {
+        flex-direction: row;
+        gap: 4px;
+        margin: 0;
+        overflow-x: auto;
+        padding: 0 8px;
+    }
+
+    .linkItem {
+        flex: 0 0 auto;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        padding: 10px 12px;
+        white-space: nowrap;
+    }
+
+    .menuRodape {
+        display: none;
+    }
+}

@@ -535,6 +535,21 @@ def alterar_status_curso(id_curso):
     cursor = con.cursor()
 
     try:
+        if status == STATUS_PUBLICADO:
+            try:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM PROVAS_CURSO
+                    WHERE ID_CURSO = ? AND PUBLICADA = 1
+                    """,
+                    (id_curso,),
+                )
+                if int((cursor.fetchone() or (0,))[0] or 0) == 0:
+                    return resposta("Cadastre e publique uma prova antes de publicar o curso.", 400)
+            except Exception:
+                return resposta("Cadastre e publique uma prova antes de publicar o curso.", 400)
+
         cursor.execute(
             """
             UPDATE CURSOS

@@ -21,7 +21,7 @@ from banco import get_db
 from functools import wraps
 import requests
 
-from servicos.arkhe import criar_cobranca_pix, consultar_cobranca_pix
+from servicos.arkhe import ArkheError, criar_cobranca_pix, consultar_cobranca_pix
 
 
 def criar_mensagem(descricao, tipo="erro"):
@@ -856,7 +856,7 @@ def criar_pagamento_pix():
             "tipo_cobranca": cobranca["tipo_cobranca"],
         }), 201
 
-    except requests.RequestException as erro:
+    except (requests.RequestException, ArkheError) as erro:
         return jsonify({
             "mensagem": "Não foi possível comunicar com a Arkhé",
             "detalhes": str(erro)
@@ -871,6 +871,9 @@ def criar_pagamento_pix():
 @app.route("/assinaturas/pix", methods=["POST"])
 @jwt_required()
 def criar_pix_assinatura():
+    from sprint import garantir_sprint_schema
+
+    garantir_sprint_schema()
     con = get_db()
     cursor = con.cursor()
 
@@ -907,16 +910,20 @@ def criar_pix_assinatura():
                 ID_USUARIO,
                 STATUS,
                 PLANO,
-                ID_COBRANCA_ARKHE
+                ID_COBRANCA_ARKHE,
+                VALOR,
+                DATA_VENCIMENTO
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             RETURNING ID_ASSINATURA
             """,
             (
                 id_usuario,
                 0,
                 1,
-                cobranca["id_cobranca"]
+                cobranca["id_cobranca"],
+                valor,
+                datetime.now() + timedelta(days=3)
             )
         )
 
@@ -934,7 +941,7 @@ def criar_pix_assinatura():
             "tipo_cobranca": cobranca["tipo_cobranca"]
         }), 201
 
-    except requests.RequestException as erro:
+    except (requests.RequestException, ArkheError) as erro:
         con.rollback()
 
         return jsonify({
@@ -958,6 +965,9 @@ def criar_pix_assinatura():
 @app.route("/assinaturas/verificar", methods=["GET"])
 @jwt_required()
 def verificar_pagamento_assinatura():
+    from sprint import garantir_sprint_schema
+
+    garantir_sprint_schema()
     con = get_db()
     cursor = con.cursor()
 
@@ -1044,7 +1054,7 @@ def verificar_pagamento_assinatura():
 
         # STATUS 1 da cobrança indica pagamento confirmado: ativa por 30 dias
         # a partir do momento desta confirmação e salva as duas datas no banco.
-        if status_cobranca == 1:
+        if str(status_cobranca) == "1":
             agora = datetime.now()
             data_expiracao = agora + timedelta(days=30)
 
@@ -1054,12 +1064,16 @@ def verificar_pagamento_assinatura():
                 SET
                     STATUS = 1,
                     DATA_INICIO = ?,
-                    DATA_EXPIRACAO = ?
+                    DATA_EXPIRACAO = ?,
+                    DATA_PAGAMENTO = ?,
+                    VALOR = COALESCE(VALOR, ?)
                 WHERE ID_ASSINATURA = ?
                 """,
                 (
                     agora,
                     data_expiracao,
+                    agora,
+                    current_app.config["VALOR_ASSINATURA"],
                     id_assinatura
                 )
             )
@@ -1084,7 +1098,7 @@ def verificar_pagamento_assinatura():
             "mensagem": "Pagamento ainda não confirmado."
         }), 403
 
-    except requests.RequestException as erro:
+    except (requests.RequestException, ArkheError) as erro:
         con.rollback()
 
         return jsonify({

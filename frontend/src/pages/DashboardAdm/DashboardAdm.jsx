@@ -27,7 +27,13 @@ export default function DashboardAdm({
     const exibindoLogs = location.pathname.endsWith("/Logs");
     const [dashboard, setDashboard] = useState(null);
     const [financeiro, setFinanceiro] = useState(null);
+    const [percentualInstrutores, setPercentualInstrutores] = useState("");
+    const [custos, setCustos] = useState([]);
+    const [novoCusto, setNovoCusto] = useState({ descricao: "", categoria: "", valor: "", data_custo: "" });
     const [logs, setLogs] = useState([]);
+    const [logsGravacao, setLogsGravacao] = useState([]);
+    const [abaLogs, setAbaLogs] = useState("sistema");
+    const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "", acao: "", inicio: "", fim: "" });
 
     // Busca as métricas agregadas no endpoint administrativo ao abrir o dashboard.
     useEffect(() => {
@@ -74,6 +80,10 @@ export default function DashboardAdm({
                 const dados = await resposta.json().catch(() => ({}));
                 if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao carregar financeiro.");
                 setFinanceiro(dados);
+                setPercentualInstrutores(String(dados.percentual_instrutores ?? 50));
+                const respostaCustos = await fetch(`${api}/admin/custos-plataforma`, { credentials: "include" });
+                const dadosCustos = await respostaCustos.json().catch(() => ([]));
+                if (respostaCustos.ok) setCustos(Array.isArray(dadosCustos) ? dadosCustos : []);
             } catch (erro) {
                 console.error("Erro ao carregar financeiro:", erro);
                 setMensagem?.({ tipo: "erro", descricao: erro.message });
@@ -83,15 +93,74 @@ export default function DashboardAdm({
         carregarFinanceiro();
     }, [api, exibindoFinanceiro, setMensagem]);
 
+    async function salvarPercentualInstrutores() {
+        try {
+            const resposta = await fetch(`${api}/admin/financeiro/config`, {
+                method: "PATCH",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    percentual_instrutores: Number(percentualInstrutores)
+                })
+            });
+            const dados = await resposta.json().catch(() => ({}));
+
+            if (dados.mensagem && setMensagem) {
+                setMensagem(dados.mensagem);
+            }
+
+            if (!resposta.ok) {
+                throw new Error(dados?.mensagem?.descricao || "Erro ao atualizar percentual.");
+            }
+
+            const resumo = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
+            const financeiroAtualizado = await resumo.json().catch(() => ({}));
+            if (!resumo.ok) throw new Error(financeiroAtualizado?.mensagem?.descricao || "Erro ao recarregar financeiro.");
+            setFinanceiro(financeiroAtualizado);
+            setPercentualInstrutores(String(financeiroAtualizado.percentual_instrutores ?? percentualInstrutores));
+        } catch (erro) {
+            console.error("Erro ao salvar percentual:", erro);
+            setMensagem?.({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
+    async function cadastrarCusto(evento) {
+        evento.preventDefault();
+        try {
+            const resposta = await fetch(`${api}/admin/custos-plataforma`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(novoCusto)
+            });
+            const dados = await resposta.json().catch(() => ({}));
+            if (dados.mensagem) setMensagem?.(dados.mensagem);
+            if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao cadastrar custo.");
+            setNovoCusto({ descricao: "", categoria: "", valor: "", data_custo: "" });
+            const lista = await fetch(`${api}/admin/custos-plataforma`, { credentials: "include" });
+            const custosAtualizados = await lista.json().catch(() => ([]));
+            if (lista.ok) setCustos(Array.isArray(custosAtualizados) ? custosAtualizados : []);
+        } catch (erro) {
+            setMensagem?.({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
     useEffect(() => {
         if (!exibindoLogs) return;
 
         async function carregarLogs() {
             try {
-                const resposta = await fetch(`${api}/admin/logs`, { credentials: "include" });
+                const params = new URLSearchParams();
+                Object.entries(filtrosLogs).forEach(([chave, valor]) => {
+                    if (valor) params.set(chave, valor);
+                });
+                const resposta = await fetch(`${api}/admin/logs?${params.toString()}`, { credentials: "include" });
                 const dados = await resposta.json().catch(() => ({}));
                 if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao carregar logs.");
                 setLogs(Array.isArray(dados) ? dados : []);
+                const respostaGravacao = await fetch(`${api}/admin/logs-gravacao?${params.toString()}`, { credentials: "include" });
+                const dadosGravacao = await respostaGravacao.json().catch(() => ({}));
+                if (respostaGravacao.ok) setLogsGravacao(Array.isArray(dadosGravacao) ? dadosGravacao : []);
             } catch (erro) {
                 console.error("Erro ao carregar logs:", erro);
                 setMensagem?.({ tipo: "erro", descricao: erro.message });
@@ -99,7 +168,7 @@ export default function DashboardAdm({
         }
 
         carregarLogs();
-    }, [api, exibindoLogs, setMensagem]);
+    }, [api, exibindoLogs, filtrosLogs, setMensagem]);
 
     // Converte a resposta da API nos indicadores apresentados nos cards.
     const metricas = useMemo(() => {
@@ -186,13 +255,97 @@ export default function DashboardAdm({
                                     <div className={css.metricaNumero}>R$ {Number(valor || 0).toFixed(2).replace(".", ",")}</div>
                                 </div>
                             ))}
+                            <div className={css.cardMetrica}>
+                                <div className={css.metricaTopo}>
+                                    <h2>Pool dos instrutores</h2>
+                                    <div className={css.iconeBadge}><FaGraduationCap /></div>
+                                </div>
+                                <span className={css.metricaVariacao}>Percentual da receita</span>
+                                <div className={css.metricaNumero}>{Number(financeiro?.percentual_instrutores || 0).toFixed(2).replace(".", ",")}%</div>
+                                <label className={css.campoFinanceiro}>
+                                    Ajustar percentual
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        value={percentualInstrutores}
+                                        onChange={(evento) => setPercentualInstrutores(evento.target.value)}
+                                    />
+                                </label>
+                                <button className={css.botaoFinanceiro} type="button" onClick={salvarPercentualInstrutores}>
+                                    Salvar percentual
+                                </button>
+                            </div>
+                            <div className={css.cardMetrica}>
+                                <div className={css.metricaTopo}>
+                                    <h2>Saude financeira</h2>
+                                    <div className={css.iconeBadge}><FaFolder /></div>
+                                </div>
+                                <span className={css.metricaVariacao}>Margem apos repasses e custos</span>
+                                <div className={css.metricaNumero}>{Number(financeiro?.margem_caixa_percentual || 0).toFixed(2).replace(".", ",")}%</div>
+                                <p className={css.textoFinanceiro}>
+                                    {financeiro?.assinaturas_ativas || 0} assinaturas ativas, ticket de R$ {Number(financeiro?.receita_media_assinatura || 0).toFixed(2).replace(".", ",")}.
+                                </p>
+                            </div>
+                            <div className={css.cardMetrica}>
+                                <div className={css.metricaTopo}>
+                                    <h2>Ticket medio por aluno</h2>
+                                    <div className={css.iconeBadge}><FaUser /></div>
+                                </div>
+                                <span className={css.metricaVariacao}>Media sobre faturas pagas</span>
+                                <div className={css.metricaNumero}>R$ {Number(financeiro?.ticket_medio_aluno || 0).toFixed(2).replace(".", ",")}</div>
+                            </div>
+                            <div className={css.cardMetrica}>
+                                <div className={css.metricaTopo}>
+                                    <h2>Custos da plataforma</h2>
+                                    <div className={css.iconeBadge}><FaFolder /></div>
+                                </div>
+                                {/* Sprint item 5: formulario administrativo para cadastrar e acompanhar custos da plataforma. */}
+                                <form className={css.formFinanceiro} onSubmit={cadastrarCusto}>
+                                    <input placeholder="Descricao" value={novoCusto.descricao} onChange={(e) => setNovoCusto({ ...novoCusto, descricao: e.target.value })} />
+                                    <input placeholder="Categoria" value={novoCusto.categoria} onChange={(e) => setNovoCusto({ ...novoCusto, categoria: e.target.value })} />
+                                    <input type="number" min="0" step="0.01" placeholder="Valor" value={novoCusto.valor} onChange={(e) => setNovoCusto({ ...novoCusto, valor: e.target.value })} />
+                                    <input type="date" value={novoCusto.data_custo} onChange={(e) => setNovoCusto({ ...novoCusto, data_custo: e.target.value })} />
+                                    <button className={css.botaoFinanceiro} type="submit">Cadastrar custo</button>
+                                </form>
+                                <div className={css.listaCustos}>
+                                    {custos.slice(0, 6).map((custo) => (
+                                        <p key={custo.id}>{custo.descricao} - R$ {Number(custo.valor || 0).toFixed(2).replace(".", ",")}</p>
+                                    ))}
+                                </div>
+                            </div>
                         </section>
                     ) : exibindoLogs ? (
                         <section className={css.listaLogs}>
                             <h2>Logs do sistema</h2>
-                            {/* Sprint itens 24 e 25: lista administrativa das acoes registradas por usuario. */}
-                            {logs.length === 0 && <p>Nenhum log registrado.</p>}
-                            {logs.map((log) => (
+                            <div className={css.abasLogs}>
+                                <button className={abaLogs === "sistema" ? css.abaAtiva : css.abaLog} onClick={() => setAbaLogs("sistema")} type="button">Logs gerais</button>
+                                <button className={abaLogs === "gravacao" ? css.abaAtiva : css.abaLog} onClick={() => setAbaLogs("gravacao")} type="button">Log de gravação</button>
+                            </div>
+                            <div className={css.filtrosLogs}>
+                                <input placeholder="Buscar nome, email ou acao" value={filtrosLogs.busca} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, busca: e.target.value })} />
+                                <select value={filtrosLogs.tipo} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, tipo: e.target.value })}>
+                                    <option value="">Todos</option>
+                                    <option value="0">Admins</option>
+                                    <option value="1">Professores</option>
+                                    <option value="2">Alunos</option>
+                                </select>
+                                <select value={filtrosLogs.acao} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, acao: e.target.value })}>
+                                    <option value="">Todas as acoes</option>
+                                    <option value="criar_prova">Professor criou prova</option>
+                                    <option value="criar_material">Professor criou material</option>
+                                    <option value="enviar_prova">Aluno enviou prova</option>
+                                    <option value="avaliar_curso">Aluno avaliou curso</option>
+                                    <option value="solicitar_saque">Professor solicitou saque</option>
+                                    <option value="requisicao_modificacao">Modificacoes gerais</option>
+                                </select>
+                                <input type="date" value={filtrosLogs.inicio} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, inicio: e.target.value })} />
+                                <input type="date" value={filtrosLogs.fim} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, fim: e.target.value })} />
+                            </div>
+                            {/* Sprint item 6: alterna entre logs gerais e log de gravacao salvo em banco separado. */}
+                            {(abaLogs === "sistema" ? logs : logsGravacao).length === 0 && <p>Nenhum log registrado.</p>}
+                            {(abaLogs === "sistema" ? logs : logsGravacao).map((log) => (
                                 <article key={log.id} className={css.logItem}>
                                     <strong>{log.acao}</strong>
                                     <span>{log.nome || "Usuario"} - {log.email || "sem email"}</span>

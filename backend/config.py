@@ -21,6 +21,10 @@ DB_NAME = os.path.join(
     os.path.dirname(__file__),
     os.getenv("DB_NAME", "BANCO.FDB")
 )
+DB_LOG_NAME = os.path.join(
+    os.path.dirname(__file__),
+    os.getenv("DB_LOG_NAME", "LOG_GRAVACAO.FDB")
+)
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 

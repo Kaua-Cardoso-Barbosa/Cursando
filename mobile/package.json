@@ -17,6 +17,8 @@
     "expo-clipboard": "~8.0.8",
     "expo-font": "~14.0.12",
     "expo-image-picker": "~17.0.8",
+    "expo-local-authentication": "^57.0.3",
+    "expo-notifications": "^57.0.21",
     "expo-screen-capture": "~8.0.10",
     "expo-status-bar": "~3.0.8",
     "react": "19.1.0",

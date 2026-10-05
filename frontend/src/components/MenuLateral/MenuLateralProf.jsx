@@ -27,6 +27,18 @@ export default function MenuLateralProf({ itemAtivo = "inicio" }) {
                         Financeiro
                     </Link>
                     <Link
+                        to="/DashboardProfessor/chat"
+                        className={`${css.linkItem} ${itemAtivo === "chat" ? css.ativo : ""}`}
+                    >
+                        Chat
+                    </Link>
+                    <Link
+                        to="/DashboardProfessor/relatorios"
+                        className={`${css.linkItem} ${itemAtivo === "relatorios" ? css.ativo : ""}`}
+                    >
+                        RelatÃ³rios
+                    </Link>
+                    <Link
                         to="/DashboardProfessor/perfil"
                         className={`${css.linkItem} ${itemAtivo === "perfil" ? css.ativo : ""}`}
                     >

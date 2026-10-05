@@ -136,6 +136,71 @@
     color: #111111;
 }
 
+.campoFinanceiro {
+    display: grid;
+    gap: 6px;
+    margin-top: 18px;
+    color: #222222;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.campoFinanceiro input {
+    min-height: 42px;
+    border: 1.5px solid #139a58;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 1rem;
+    background: #ffffff;
+    color: #111111;
+}
+
+.botaoFinanceiro {
+    margin-top: 12px;
+    min-height: 42px;
+    border: none;
+    border-radius: 8px;
+    background: #139a58;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.textoFinanceiro {
+    color: #444444;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    margin-top: 12px;
+}
+
+.formFinanceiro {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.formFinanceiro input {
+    min-height: 40px;
+    border: 1.5px solid #139a58;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #ffffff;
+    color: #111111;
+}
+
+.listaCustos {
+    display: grid;
+    gap: 6px;
+    margin-top: 14px;
+}
+
+.listaCustos p {
+    color: #333333;
+    font-size: 0.92rem;
+    overflow-wrap: anywhere;
+}
+
 .rodapePagina {
     background-color: #006338;
     color: #ffffff;
@@ -197,6 +262,51 @@
     margin-bottom: 8px;
 }
 
+.filtrosLogs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.abasLogs {
+    display: inline-flex;
+    gap: 6px;
+    padding: 4px;
+    border: 1px solid #c7d8cf;
+    border-radius: 8px;
+    background: #f4f8f6;
+    width: fit-content;
+}
+
+.abaLog,
+.abaAtiva {
+    min-height: 38px;
+    border: 0;
+    border-radius: 6px;
+    padding: 0 14px;
+    color: #244338;
+    background: transparent;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.abaAtiva {
+    background: #02693e;
+    color: #ffffff;
+}
+
+.filtrosLogs input,
+.filtrosLogs select {
+    min-height: 40px;
+    border: 1.5px solid #139a58;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #ffffff;
+    color: #111111;
+}
+
 .logItem {
     border: 1.5px solid #666666;
     border-radius: 8px;
@@ -249,5 +359,9 @@
         grid-template-columns: 1fr;
         gap: 18px;
         padding: 24px 18px;
+    }
+
+    .filtrosLogs {
+        grid-template-columns: 1fr;
     }
 }

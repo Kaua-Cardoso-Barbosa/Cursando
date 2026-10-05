@@ -1,12 +1,14 @@
 import io
 from datetime import datetime, timedelta
 
-from flask import Response, jsonify, request
+from flask import Response, current_app, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required, verify_jwt_in_request
 
 from app import app
 from banco import get_db
+from log_banco import garantir_log_schema, get_log_db
 from professor import de_blob_texto, para_blob_texto
+from servicos.arkhe import ArkheError, criar_cobranca_pix, solicitar_saque_conta
 
 
 _schema_pronto = False
@@ -38,6 +40,23 @@ def _existe_relacao(cursor, nome):
 def _criar_tabela(cursor, nome, ddl):
     if not _existe_relacao(cursor, nome):
         cursor.execute(ddl)
+
+
+def _existe_coluna(cursor, tabela, coluna):
+    cursor.execute(
+        """
+        SELECT 1
+        FROM RDB$RELATION_FIELDS
+        WHERE RDB$RELATION_NAME = ? AND RDB$FIELD_NAME = ?
+        """,
+        (tabela.upper(), coluna.upper()),
+    )
+    return cursor.fetchone() is not None
+
+
+def _garantir_coluna(cursor, tabela, coluna, ddl):
+    if not _existe_coluna(cursor, tabela, coluna):
+        cursor.execute(f"ALTER TABLE {tabela} ADD {ddl}")
 
 
 def garantir_sprint_schema():
@@ -209,7 +228,86 @@ def garantir_sprint_schema():
             )
             """,
         )
+        _criar_tabela(
+            cursor,
+            "FINANCEIRO_CONFIG",
+            """
+            CREATE TABLE FINANCEIRO_CONFIG (
+                ID_CONFIG INTEGER NOT NULL PRIMARY KEY,
+                PERCENTUAL_INSTRUTORES NUMERIC(5,2) DEFAULT 50,
+                ATUALIZADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+        )
+        _criar_tabela(
+            cursor,
+            "MENSAGENS_CHAT",
+            """
+            CREATE TABLE MENSAGENS_CHAT (
+                ID_MENSAGEM INTEGER NOT NULL PRIMARY KEY,
+                ID_CURSO INTEGER NOT NULL,
+                ID_ALUNO INTEGER NOT NULL,
+                ID_REMETENTE INTEGER NOT NULL,
+                ID_DESTINATARIO INTEGER NOT NULL,
+                TEXTO BLOB SUB_TYPE TEXT NOT NULL,
+                LIDA INTEGER DEFAULT 0,
+                CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+        )
+        _criar_tabela(
+            cursor,
+            "CATEGORIAS_CURSO",
+            """
+            CREATE TABLE CATEGORIAS_CURSO (
+                ID_CATEGORIA INTEGER NOT NULL PRIMARY KEY,
+                NOME VARCHAR(120) NOT NULL,
+                NOME_NORMALIZADO VARCHAR(120) NOT NULL
+            )
+            """,
+        )
+        _criar_tabela(
+            cursor,
+            "TEMAS_CURSO",
+            """
+            CREATE TABLE TEMAS_CURSO (
+                ID_TEMA INTEGER NOT NULL PRIMARY KEY,
+                NOME VARCHAR(120) NOT NULL,
+                NOME_NORMALIZADO VARCHAR(120) NOT NULL
+            )
+            """,
+        )
+        _criar_tabela(
+            cursor,
+            "CURSO_TAXONOMIA",
+            """
+            CREATE TABLE CURSO_TAXONOMIA (
+                ID_CURSO INTEGER NOT NULL PRIMARY KEY,
+                ID_CATEGORIA INTEGER,
+                ID_TEMA INTEGER
+            )
+            """,
+        )
         con.commit()
+        cursor.execute("SELECT COUNT(*) FROM FINANCEIRO_CONFIG")
+        if int((cursor.fetchone() or (0,))[0] or 0) == 0:
+            cursor.execute(
+                """
+                INSERT INTO FINANCEIRO_CONFIG (ID_CONFIG, PERCENTUAL_INSTRUTORES)
+                VALUES (1, 50)
+                """
+            )
+        # Sprint itens 1, 2, 3, 4 e 5: campos financeiros para faturas, custos, ticket medio e saques via Arkhe.
+        _garantir_coluna(cursor, "ASSINATURAS", "VALOR", "VALOR NUMERIC(15,2)")
+        _garantir_coluna(cursor, "ASSINATURAS", "DATA_VENCIMENTO", "DATA_VENCIMENTO TIMESTAMP")
+        _garantir_coluna(cursor, "ASSINATURAS", "DATA_PAGAMENTO", "DATA_PAGAMENTO TIMESTAMP")
+        _garantir_coluna(cursor, "ASSINATURAS", "CRIADO_EM", "CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+        _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE_ARKHE", "ID_SAQUE_ARKHE VARCHAR(120)")
+        _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "RESPOSTA_ARKHE", "RESPOSTA_ARKHE BLOB SUB_TYPE TEXT")
+        _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "CATEGORIA", "CATEGORIA VARCHAR(80)")
+        _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_USUARIO", "ID_USUARIO INTEGER")
+        con.commit()
+        garantir_log_schema()
         _schema_pronto = True
     except Exception:
         con.rollback()
@@ -231,7 +329,51 @@ def exigir_tipo(*tipos):
     return None
 
 
+def percentual_instrutores(cursor):
+    cursor.execute("SELECT PERCENTUAL_INSTRUTORES FROM FINANCEIRO_CONFIG WHERE ID_CONFIG = 1")
+    return float((cursor.fetchone() or (50,))[0] or 50)
+
+
+def pesos_pool_instrutores(cursor):
+    cursor.execute(
+        """
+        SELECT
+            PC.ID_USUARIO,
+            COUNT(PA.ID_VIDEO)
+        FROM PROFESSORES_CURSO PC
+        JOIN CURSOS C ON C.ID_CURSO = PC.ID_CURSO AND C.EXCLUIDO = 0
+        JOIN VIDEOS V ON V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1
+        LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO
+        GROUP BY PC.ID_USUARIO
+        """
+    )
+    pesos = {int(row[0]): int(row[1] or 0) for row in cursor.fetchall()}
+
+    if sum(pesos.values()) > 0:
+        return pesos
+
+    cursor.execute(
+        """
+        SELECT
+            PC.ID_USUARIO,
+            COUNT(DISTINCT M.ID_USUARIO)
+        FROM PROFESSORES_CURSO PC
+        JOIN CURSOS C ON C.ID_CURSO = PC.ID_CURSO AND C.EXCLUIDO = 0
+        LEFT JOIN MATRICULAS M ON M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1
+        GROUP BY PC.ID_USUARIO
+        """
+    )
+    return {int(row[0]): int(row[1] or 0) for row in cursor.fetchall()}
+
+
+def normalizar_taxonomia(valor):
+    return " ".join((valor or "").strip().lower().split())
+
+
+
 def registrar_log(acao, detalhes="", tabela=None):
+    cursor = None
+    con = None
     try:
         garantir_sprint_schema()
         id_usuario = get_jwt_identity()
@@ -266,22 +408,37 @@ def registrar_log(acao, detalhes="", tabela=None):
             ),
         )
 
-        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-            cursor.execute(
-                """
-                INSERT INTO LOG_GRAVACAO (ID_LOG, ID_USUARIO, ACAO, TABELA_AFETADA, DETALHES)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    proximo_id(cursor, "LOG_GRAVACAO", "ID_LOG"),
-                    id_usuario,
-                    request.method,
-                    tabela,
-                    para_blob_texto(detalhes),
-                ),
-            )
-
         con.commit()
+
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            # Sprint item 6: grava operacoes de criacao, edicao e exclusao em banco separado de auditoria.
+            log_con = get_log_db()
+            log_cursor = log_con.cursor()
+            try:
+                log_cursor.execute("SELECT COALESCE(MAX(ID_LOG), 0) + 1 FROM LOG_GRAVACAO")
+                id_log = log_cursor.fetchone()[0]
+                log_cursor.execute(
+                    """
+                    INSERT INTO LOG_GRAVACAO (ID_LOG, ID_USUARIO, ACAO, TABELA_AFETADA, ROTA, METODO, DETALHES)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        id_log,
+                        id_usuario,
+                        request.method,
+                        tabela,
+                        request.path[:300],
+                        request.method,
+                        para_blob_texto(detalhes),
+                    ),
+                )
+                log_con.commit()
+            except Exception:
+                log_con.rollback()
+                raise
+            finally:
+                log_cursor.close()
+                log_con.close()
     except Exception as erro:
         print("Erro ao registrar log:", erro)
     finally:
@@ -513,6 +670,20 @@ def avaliar_curso(id_curso):
         if not matricula or int(matricula[0] or 0) < 100:
             return resposta("Avaliacao liberada somente apos concluir o curso.", 403)
 
+        cursor.execute(
+            """
+            SELECT FIRST 1 R.STATUS
+            FROM PROVAS_CURSO P
+            JOIN RESPOSTAS_PROVA R ON R.ID_PROVA = P.ID_PROVA AND R.ID_USUARIO = ?
+            WHERE P.ID_CURSO = ? AND P.PUBLICADA = 1
+            ORDER BY R.ID_RESPOSTA DESC
+            """,
+            (get_jwt_identity(), id_curso),
+        )
+        status_prova = cursor.fetchone()
+        if not status_prova or int(status_prova[0] or 0) != 1:
+            return resposta("Avaliacao liberada somente apos aprovacao na prova.", 403)
+
         # Sprint item 27: permite avaliacao do curso somente depois da conclusao.
         cursor.execute(
             """
@@ -573,6 +744,690 @@ def _pdf_simples(titulo, linhas):
     return saida.getvalue()
 
 
+def _curso_do_professor(cursor, id_curso, id_professor):
+    cursor.execute(
+        """
+        SELECT 1
+        FROM PROFESSORES_CURSO PC
+        JOIN CURSOS C ON C.ID_CURSO = PC.ID_CURSO AND C.EXCLUIDO = 0
+        WHERE PC.ID_CURSO = ? AND PC.ID_USUARIO = ?
+        """,
+        (id_curso, id_professor),
+    )
+    return cursor.fetchone() is not None
+
+
+def _aluno_matriculado(cursor, id_curso, id_aluno):
+    cursor.execute(
+        """
+        SELECT 1
+        FROM MATRICULAS
+        WHERE ID_CURSO = ? AND ID_USUARIO = ? AND STATUS_MATRICULA = 1
+        """,
+        (id_curso, id_aluno),
+    )
+    return cursor.fetchone() is not None
+
+
+def _professor_responsavel(cursor, id_curso):
+    cursor.execute(
+        """
+        SELECT FIRST 1 ID_USUARIO
+        FROM PROFESSORES_CURSO
+        WHERE ID_CURSO = ?
+        ORDER BY ID_USUARIO
+        """,
+        (id_curso,),
+    )
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+
+@app.route("/chat/conversas", methods=["GET"])
+@jwt_required()
+def chat_conversas():
+    garantir_sprint_schema()
+    tipo = int(get_jwt().get("tipo", -1))
+    id_usuario = int(get_jwt_identity())
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if tipo == 1:
+            cursor.execute(
+                """
+                SELECT
+                    M.ID_CURSO,
+                    M.ID_ALUNO,
+                    C.TITULO,
+                    U.NOME,
+                    U.EMAIL,
+                    MAX(M.CRIADO_EM),
+                    SUM(CASE WHEN M.ID_DESTINATARIO = ? AND M.LIDA = 0 THEN 1 ELSE 0 END)
+                FROM MENSAGENS_CHAT M
+                JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
+                JOIN USUARIOS U ON U.ID_USUARIO = M.ID_ALUNO
+                JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = M.ID_CURSO AND PC.ID_USUARIO = ?
+                GROUP BY M.ID_CURSO, M.ID_ALUNO, C.TITULO, U.NOME, U.EMAIL
+                ORDER BY MAX(M.CRIADO_EM) DESC
+                """,
+                (id_usuario, id_usuario),
+            )
+            return jsonify([
+                {
+                    "id_curso": row[0],
+                    "id_aluno": row[1],
+                    "curso": row[2],
+                    "nome": row[3],
+                    "email": row[4],
+                    "ultima_mensagem_em": row[5].isoformat() if row[5] else None,
+                    "nao_lidas": int(row[6] or 0),
+                }
+                for row in cursor.fetchall()
+            ])
+
+        if tipo == 2:
+            cursor.execute(
+                """
+                SELECT
+                    M.ID_CURSO,
+                    M.ID_ALUNO,
+                    C.TITULO,
+                    U.NOME,
+                    U.EMAIL,
+                    MAX(M.CRIADO_EM),
+                    SUM(CASE WHEN M.ID_DESTINATARIO = ? AND M.LIDA = 0 THEN 1 ELSE 0 END)
+                FROM MENSAGENS_CHAT M
+                JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
+                JOIN USUARIOS U ON U.ID_USUARIO = M.ID_DESTINATARIO
+                WHERE M.ID_ALUNO = ?
+                GROUP BY M.ID_CURSO, M.ID_ALUNO, C.TITULO, U.NOME, U.EMAIL
+                ORDER BY MAX(M.CRIADO_EM) DESC
+                """,
+                (id_usuario, id_usuario),
+            )
+            return jsonify([
+                {
+                    "id_curso": row[0],
+                    "id_aluno": row[1],
+                    "curso": row[2],
+                    "nome": row[3],
+                    "email": row[4],
+                    "ultima_mensagem_em": row[5].isoformat() if row[5] else None,
+                    "nao_lidas": int(row[6] or 0),
+                }
+                for row in cursor.fetchall()
+            ])
+
+        return resposta("Chat disponivel apenas para alunos e instrutores.", 403)
+    except Exception as erro:
+        return resposta(f"Erro ao listar conversas: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/taxonomias/<string:tipo>", methods=["GET", "POST"])
+@jwt_required()
+def taxonomias(tipo):
+    if tipo not in {"categorias", "temas"}:
+        return resposta("Tipo de taxonomia invalido.", 400)
+
+    garantir_sprint_schema()
+    tabela = "CATEGORIAS_CURSO" if tipo == "categorias" else "TEMAS_CURSO"
+    coluna = "ID_CATEGORIA" if tipo == "categorias" else "ID_TEMA"
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if request.method == "GET":
+            cursor.execute(f"SELECT {coluna}, NOME FROM {tabela} ORDER BY NOME")
+            return jsonify([{"id": row[0], "nome": row[1]} for row in cursor.fetchall()])
+
+        negado = exigir_tipo(1, 0)
+        if negado:
+            return negado
+
+        nome = (request.get_json() or {}).get("nome") or ""
+        nome = nome.strip()
+        normalizado = normalizar_taxonomia(nome)
+
+        if not normalizado:
+            return resposta("Nome e obrigatorio.", 400)
+
+        cursor.execute(f"SELECT {coluna}, NOME FROM {tabela} WHERE NOME_NORMALIZADO = ?", (normalizado,))
+        existente = cursor.fetchone()
+        if existente:
+            return resposta(f"{tipo[:-1].capitalize()} ja existe: {existente[1]}", 409, id=existente[0], nome=existente[1])
+
+        novo_id = proximo_id(cursor, tabela, coluna)
+        cursor.execute(
+            f"INSERT INTO {tabela} ({coluna}, NOME, NOME_NORMALIZADO) VALUES (?, ?, ?)",
+            (novo_id, nome, normalizado),
+        )
+        con.commit()
+        registrar_log("criar_taxonomia", f"{tipo}: {nome}", tabela)
+        return resposta("Taxonomia cadastrada.", 201, "sucesso", id=novo_id, nome=nome)
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar taxonomia: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/cursos/<int:id_curso>/taxonomia", methods=["GET", "PUT"])
+@jwt_required()
+def taxonomia_curso_professor(id_curso):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if not _curso_do_professor(cursor, id_curso, int(get_jwt_identity())):
+            return resposta("Curso nao encontrado para este instrutor.", 404)
+
+        if request.method == "GET":
+            cursor.execute(
+                """
+                SELECT CT.ID_CATEGORIA, CAT.NOME, CT.ID_TEMA, T.NOME
+                FROM CURSO_TAXONOMIA CT
+                LEFT JOIN CATEGORIAS_CURSO CAT ON CAT.ID_CATEGORIA = CT.ID_CATEGORIA
+                LEFT JOIN TEMAS_CURSO T ON T.ID_TEMA = CT.ID_TEMA
+                WHERE CT.ID_CURSO = ?
+                """,
+                (id_curso,),
+            )
+            row = cursor.fetchone()
+            return jsonify({
+                "id_curso": id_curso,
+                "id_categoria": row[0] if row else None,
+                "categoria": row[1] if row else "",
+                "id_tema": row[2] if row else None,
+                "tema": row[3] if row else "",
+            })
+
+        dados = request.get_json() or {}
+        id_categoria = dados.get("id_categoria")
+        id_tema = dados.get("id_tema")
+        cursor.execute(
+            """
+            UPDATE OR INSERT INTO CURSO_TAXONOMIA (ID_CURSO, ID_CATEGORIA, ID_TEMA)
+            VALUES (?, ?, ?)
+            MATCHING (ID_CURSO)
+            """,
+            (id_curso, id_categoria, id_tema),
+        )
+        con.commit()
+        registrar_log("atualizar_taxonomia_curso", f"Curso {id_curso}", "CURSO_TAXONOMIA")
+        return resposta("Taxonomia do curso atualizada.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao atualizar taxonomia do curso: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/chat/cursos/<int:id_curso>/mensagens", methods=["GET", "POST"])
+@jwt_required()
+def chat_mensagens(id_curso):
+    garantir_sprint_schema()
+    tipo = int(get_jwt().get("tipo", -1))
+    id_usuario = int(get_jwt_identity())
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if tipo == 2:
+            id_aluno = id_usuario
+            if not _aluno_matriculado(cursor, id_curso, id_aluno):
+                return resposta("Aluno sem matricula ativa neste curso.", 403)
+        elif tipo == 1:
+            if not _curso_do_professor(cursor, id_curso, id_usuario):
+                return resposta("Curso nao encontrado para este instrutor.", 404)
+            id_aluno = int((request.args.get("id_aluno") or (request.get_json(silent=True) or {}).get("id_aluno") or 0))
+            if not id_aluno or not _aluno_matriculado(cursor, id_curso, id_aluno):
+                return resposta("Informe um aluno matriculado para a conversa.", 400)
+        else:
+            return resposta("Chat disponivel apenas para alunos e instrutores.", 403)
+
+        if request.method == "GET":
+            cursor.execute(
+                """
+                UPDATE MENSAGENS_CHAT
+                SET LIDA = 1
+                WHERE ID_CURSO = ? AND ID_ALUNO = ? AND ID_DESTINATARIO = ?
+                """,
+                (id_curso, id_aluno, id_usuario),
+            )
+            cursor.execute(
+                """
+                SELECT M.ID_MENSAGEM, M.ID_REMETENTE, U.NOME, U.EMAIL, M.TEXTO, M.LIDA, M.CRIADO_EM
+                FROM MENSAGENS_CHAT M
+                JOIN USUARIOS U ON U.ID_USUARIO = M.ID_REMETENTE
+                WHERE M.ID_CURSO = ? AND M.ID_ALUNO = ?
+                ORDER BY M.ID_MENSAGEM
+                """,
+                (id_curso, id_aluno),
+            )
+            mensagens = [
+                {
+                    "id": row[0],
+                    "id_remetente": row[1],
+                    "nome": row[2],
+                    "email": row[3],
+                    "texto": de_blob_texto(row[4]),
+                    "lida": row[5] == 1,
+                    "criado_em": row[6].isoformat() if row[6] else None,
+                    "minha": int(row[1]) == id_usuario,
+                }
+                for row in cursor.fetchall()
+            ]
+            con.commit()
+            return jsonify(mensagens)
+
+        dados = request.get_json() or {}
+        texto = (dados.get("texto") or "").strip()
+        if not texto:
+            return resposta("Mensagem nao pode ficar vazia.", 400)
+
+        if tipo == 2:
+            id_destinatario = _professor_responsavel(cursor, id_curso)
+            if not id_destinatario:
+                return resposta("Curso sem instrutor responsavel.", 400)
+        else:
+            id_destinatario = id_aluno
+
+        cursor.execute(
+            """
+            INSERT INTO MENSAGENS_CHAT (
+                ID_MENSAGEM, ID_CURSO, ID_ALUNO, ID_REMETENTE, ID_DESTINATARIO, TEXTO
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                proximo_id(cursor, "MENSAGENS_CHAT", "ID_MENSAGEM"),
+                id_curso,
+                id_aluno,
+                id_usuario,
+                id_destinatario,
+                para_blob_texto(texto),
+            ),
+        )
+        con.commit()
+        registrar_log("enviar_mensagem_chat", f"Mensagem enviada no curso {id_curso}", "MENSAGENS_CHAT")
+        return resposta("Mensagem enviada.", 201, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar chat: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/cursos/<int:id_curso>/prova", methods=["GET", "POST"])
+@jwt_required()
+def prova_professor(id_curso):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if not _curso_do_professor(cursor, id_curso, int(get_jwt_identity())):
+            return resposta("Curso nao encontrado para este instrutor.", 404)
+
+        if request.method == "GET":
+            cursor.execute(
+                """
+                SELECT FIRST 1 ID_PROVA, TITULO, PUBLICADA
+                FROM PROVAS_CURSO
+                WHERE ID_CURSO = ?
+                ORDER BY ID_PROVA DESC
+                """,
+                (id_curso,),
+            )
+            prova = cursor.fetchone()
+            if not prova:
+                return jsonify({"prova": None, "questoes": []})
+
+            cursor.execute(
+                """
+                SELECT ID_QUESTAO, ENUNCIADO, TIPO, ALTERNATIVAS, RESPOSTA_ESPERADA
+                FROM QUESTOES_PROVA
+                WHERE ID_PROVA = ?
+                ORDER BY ID_QUESTAO
+                """,
+                (prova[0],),
+            )
+            return jsonify({
+                "prova": {
+                    "id": prova[0],
+                    "titulo": prova[1],
+                    "publicada": prova[2] == 1,
+                },
+                "questoes": [
+                    {
+                        "id": row[0],
+                        "enunciado": de_blob_texto(row[1]),
+                        "tipo": row[2],
+                        "alternativas": de_blob_texto(row[3]),
+                        "resposta_esperada": de_blob_texto(row[4]),
+                    }
+                    for row in cursor.fetchall()
+                ],
+            })
+
+        dados = request.get_json() or {}
+        titulo = (dados.get("titulo") or "").strip()
+        questoes = dados.get("questoes") or []
+
+        if not titulo:
+            return resposta("Titulo da prova e obrigatorio.", 400)
+
+        if not isinstance(questoes, list) or len(questoes) == 0:
+            return resposta("Cadastre ao menos uma questao.", 400)
+
+        id_prova = proximo_id(cursor, "PROVAS_CURSO", "ID_PROVA")
+        cursor.execute(
+            """
+            INSERT INTO PROVAS_CURSO (ID_PROVA, ID_CURSO, TITULO, PUBLICADA)
+            VALUES (?, ?, ?, 0)
+            """,
+            (id_prova, id_curso, titulo),
+        )
+
+        for questao in questoes:
+            enunciado = (questao.get("enunciado") or "").strip()
+            tipo = (questao.get("tipo") or "objetiva").strip().lower()
+            alternativas = questao.get("alternativas") or ""
+            resposta_esperada = questao.get("resposta_esperada") or ""
+
+            if not enunciado or tipo not in {"objetiva", "dissertativa"}:
+                return resposta("Questao invalida.", 400)
+
+            cursor.execute(
+                """
+                INSERT INTO QUESTOES_PROVA (
+                    ID_QUESTAO, ID_PROVA, ENUNCIADO, TIPO, ALTERNATIVAS, RESPOSTA_ESPERADA
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    proximo_id(cursor, "QUESTOES_PROVA", "ID_QUESTAO"),
+                    id_prova,
+                    para_blob_texto(enunciado),
+                    tipo,
+                    para_blob_texto(alternativas if isinstance(alternativas, str) else "\n".join(alternativas)),
+                    para_blob_texto(resposta_esperada),
+                ),
+            )
+
+        con.commit()
+        registrar_log("criar_prova", f"Prova {titulo} criada no curso {id_curso}", "PROVAS_CURSO")
+        return resposta("Prova cadastrada como rascunho.", 201, "sucesso", id_prova=id_prova)
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar prova: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/provas/<int:id_prova>/publicar", methods=["PATCH"])
+@jwt_required()
+def publicar_prova(id_prova):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT P.ID_CURSO
+            FROM PROVAS_CURSO P
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = P.ID_CURSO
+            WHERE P.ID_PROVA = ? AND PC.ID_USUARIO = ?
+            """,
+            (id_prova, get_jwt_identity()),
+        )
+        if not cursor.fetchone():
+            return resposta("Prova nao encontrada para este instrutor.", 404)
+
+        cursor.execute("SELECT COUNT(*) FROM QUESTOES_PROVA WHERE ID_PROVA = ?", (id_prova,))
+        if int((cursor.fetchone() or (0,))[0] or 0) == 0:
+            return resposta("Cadastre questoes antes de publicar a prova.", 400)
+
+        cursor.execute("UPDATE PROVAS_CURSO SET PUBLICADA = 1 WHERE ID_PROVA = ?", (id_prova,))
+        con.commit()
+        registrar_log("publicar_prova", f"Prova {id_prova} publicada", "PROVAS_CURSO")
+        return resposta("Prova publicada com sucesso.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao publicar prova: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/aluno/cursos/<int:id_curso>/prova", methods=["GET", "POST"])
+@jwt_required()
+def prova_aluno(id_curso):
+    negado = exigir_tipo(2)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    id_aluno = int(get_jwt_identity())
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if not _aluno_matriculado(cursor, id_curso, id_aluno):
+            return resposta("Aluno sem matricula ativa neste curso.", 403)
+
+        cursor.execute(
+            """
+            SELECT PROGRESSO
+            FROM MATRICULAS
+            WHERE ID_CURSO = ? AND ID_USUARIO = ?
+            """,
+            (id_curso, id_aluno),
+        )
+        if int((cursor.fetchone() or (0,))[0] or 0) < 100:
+            return resposta("Prova liberada somente apos concluir as aulas.", 403)
+
+        cursor.execute(
+            """
+            SELECT FIRST 1 ID_PROVA, TITULO
+            FROM PROVAS_CURSO
+            WHERE ID_CURSO = ? AND PUBLICADA = 1
+            ORDER BY ID_PROVA DESC
+            """,
+            (id_curso,),
+        )
+        prova = cursor.fetchone()
+        if not prova:
+            return resposta("Curso ainda nao possui prova publicada.", 403)
+
+        if request.method == "GET":
+            cursor.execute(
+                """
+                SELECT FIRST 1 STATUS, FEEDBACK, CRIADO_EM, CORRIGIDO_EM
+                FROM RESPOSTAS_PROVA
+                WHERE ID_PROVA = ? AND ID_USUARIO = ?
+                ORDER BY ID_RESPOSTA DESC
+                """,
+                (prova[0], id_aluno),
+            )
+            envio = cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT ID_QUESTAO, ENUNCIADO, TIPO, ALTERNATIVAS
+                FROM QUESTOES_PROVA
+                WHERE ID_PROVA = ?
+                ORDER BY ID_QUESTAO
+                """,
+                (prova[0],),
+            )
+            return jsonify({
+                "prova": {
+                    "id": prova[0],
+                    "titulo": prova[1],
+                },
+                "envio": {
+                    "status": envio[0],
+                    "feedback": de_blob_texto(envio[1]),
+                    "criado_em": envio[2].isoformat() if envio and envio[2] else None,
+                    "corrigido_em": envio[3].isoformat() if envio and envio[3] else None,
+                } if envio else None,
+                "questoes": [
+                    {
+                        "id": row[0],
+                        "enunciado": de_blob_texto(row[1]),
+                        "tipo": row[2],
+                        "alternativas": de_blob_texto(row[3]),
+                    }
+                    for row in cursor.fetchall()
+                ],
+            })
+
+        dados = request.get_json() or {}
+        respostas = dados.get("respostas")
+        if not respostas:
+            return resposta("Envie as respostas da prova.", 400)
+
+        cursor.execute(
+            """
+            INSERT INTO RESPOSTAS_PROVA (ID_RESPOSTA, ID_PROVA, ID_USUARIO, RESPOSTAS, STATUS)
+            VALUES (?, ?, ?, ?, 0)
+            """,
+            (
+                proximo_id(cursor, "RESPOSTAS_PROVA", "ID_RESPOSTA"),
+                prova[0],
+                id_aluno,
+                para_blob_texto(str(respostas)),
+            ),
+        )
+        con.commit()
+        registrar_log("enviar_prova", f"Aluno enviou prova {prova[0]}", "RESPOSTAS_PROVA")
+        return resposta("Prova enviada para correcao.", 201, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar prova do aluno: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/provas/respostas", methods=["GET"])
+@jwt_required()
+def respostas_prova_professor():
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT FIRST 200
+                R.ID_RESPOSTA, P.ID_PROVA, P.TITULO, C.TITULO, U.NOME, U.EMAIL,
+                R.RESPOSTAS, R.STATUS, R.FEEDBACK, R.CRIADO_EM
+            FROM RESPOSTAS_PROVA R
+            JOIN PROVAS_CURSO P ON P.ID_PROVA = R.ID_PROVA
+            JOIN CURSOS C ON C.ID_CURSO = P.ID_CURSO
+            JOIN USUARIOS U ON U.ID_USUARIO = R.ID_USUARIO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = P.ID_CURSO
+            WHERE PC.ID_USUARIO = ?
+            ORDER BY R.ID_RESPOSTA DESC
+            """,
+            (get_jwt_identity(),),
+        )
+        return jsonify([
+            {
+                "id": row[0],
+                "id_prova": row[1],
+                "prova": row[2],
+                "curso": row[3],
+                "aluno": row[4],
+                "email": row[5],
+                "respostas": de_blob_texto(row[6]),
+                "status": row[7],
+                "feedback": de_blob_texto(row[8]),
+                "criado_em": row[9].isoformat() if row[9] else None,
+            }
+            for row in cursor.fetchall()
+        ])
+    except Exception as erro:
+        return resposta(f"Erro ao listar respostas: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/provas/respostas/<int:id_resposta>", methods=["PATCH"])
+@jwt_required()
+def corrigir_resposta_prova(id_resposta):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    dados = request.get_json() or {}
+    aprovado = bool(dados.get("aprovado"))
+    feedback = (dados.get("feedback") or "").strip()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT 1
+            FROM RESPOSTAS_PROVA R
+            JOIN PROVAS_CURSO P ON P.ID_PROVA = R.ID_PROVA
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = P.ID_CURSO
+            WHERE R.ID_RESPOSTA = ? AND PC.ID_USUARIO = ?
+            """,
+            (id_resposta, get_jwt_identity()),
+        )
+        if not cursor.fetchone():
+            return resposta("Resposta nao encontrada para este instrutor.", 404)
+
+        cursor.execute(
+            """
+            UPDATE RESPOSTAS_PROVA
+            SET STATUS = ?, FEEDBACK = ?, CORRIGIDO_EM = CURRENT_TIMESTAMP
+            WHERE ID_RESPOSTA = ?
+            """,
+            (1 if aprovado else 2, para_blob_texto(feedback), id_resposta),
+        )
+        con.commit()
+        registrar_log("corrigir_prova", f"Resposta {id_resposta} corrigida", "RESPOSTAS_PROVA")
+        return resposta("Correcao registrada.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao corrigir prova: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
 @app.route("/aluno/cursos/<int:id_curso>/certificado", methods=["GET"])
 @jwt_required()
 def certificado_aluno(id_curso):
@@ -598,6 +1453,29 @@ def certificado_aluno(id_curso):
         row = cursor.fetchone()
         if not row or int(row[2] or 0) < 100:
             return resposta("Certificado liberado somente apos concluir o curso.", 403)
+
+        cursor.execute(
+            """
+            SELECT FIRST 1 P.ID_PROVA, R.STATUS, R.FEEDBACK
+            FROM PROVAS_CURSO P
+            LEFT JOIN RESPOSTAS_PROVA R
+              ON R.ID_PROVA = P.ID_PROVA AND R.ID_USUARIO = ?
+            WHERE P.ID_CURSO = ? AND P.PUBLICADA = 1
+            ORDER BY P.ID_PROVA DESC, R.ID_RESPOSTA DESC
+            """,
+            (get_jwt_identity(), id_curso),
+        )
+        prova = cursor.fetchone()
+        if not prova:
+            return resposta("Certificado bloqueado: curso sem prova publicada.", 403)
+
+        if int(prova[1] or 0) == 0:
+            return resposta("Certificado bloqueado: prova aguardando correcao.", 403)
+
+        if int(prova[1] or 0) != 1:
+            feedback = de_blob_texto(prova[2])
+            detalhe = f" Feedback: {feedback}" if feedback else ""
+            return resposta(f"Certificado bloqueado: aluno reprovado na prova. Tente novamente apos 1 dia.{detalhe}", 403)
 
         codigo = f"CERT-{id_curso}-{get_jwt_identity()}-{datetime.now().strftime('%Y%m%d')}"
         cursor.execute(
@@ -640,8 +1518,12 @@ def logs_admin():
         return negado
 
     garantir_sprint_schema()
-    termo = (request.args.get("busca") or "").lower()
+    termo = (request.args.get("busca") or "").lower().strip()
     tipo = request.args.get("tipo")
+    acao = (request.args.get("acao") or "").strip()
+    id_usuario_filtro = request.args.get("id_usuario")
+    inicio = request.args.get("inicio")
+    fim = request.args.get("fim")
     con = get_db()
     cursor = con.cursor()
 
@@ -649,11 +1531,23 @@ def logs_admin():
         filtros = []
         params = []
         if termo:
-            filtros.append("(LOWER(NOME) LIKE ? OR LOWER(EMAIL) LIKE ? OR LOWER(ACAO) LIKE ?)")
-            params.extend([f"%{termo}%", f"%{termo}%", f"%{termo}%"])
+            filtros.append("(LOWER(NOME) LIKE ? OR LOWER(EMAIL) LIKE ? OR LOWER(ACAO) LIKE ? OR LOWER(DETALHES) LIKE ?)")
+            params.extend([f"%{termo}%", f"%{termo}%", f"%{termo}%", f"%{termo}%"])
         if tipo not in (None, ""):
             filtros.append("TIPO_USUARIO = ?")
             params.append(int(tipo))
+        if acao:
+            filtros.append("ACAO = ?")
+            params.append(acao)
+        if id_usuario_filtro:
+            filtros.append("ID_USUARIO = ?")
+            params.append(int(id_usuario_filtro))
+        if inicio:
+            filtros.append("CAST(CRIADO_EM AS DATE) >= ?")
+            params.append(inicio)
+        if fim:
+            filtros.append("CAST(CRIADO_EM AS DATE) <= ?")
+            params.append(fim)
         where = f"WHERE {' AND '.join(filtros)}" if filtros else ""
         cursor.execute(
             f"""
@@ -697,9 +1591,13 @@ def financeiro_resumo():
 
     try:
         valor_assinatura = float(app.config.get("VALOR_ASSINATURA", 0) or 0)
+        percentual = percentual_instrutores(cursor)
         cursor.execute("SELECT COUNT(*) FROM ASSINATURAS WHERE STATUS = 1")
         assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
         total_arrecadado = assinaturas_ativas * valor_assinatura
+        pool_instrutores = total_arrecadado * (percentual / 100)
+        pesos_instrutores = pesos_pool_instrutores(cursor)
+        peso_total = sum(pesos_instrutores.values())
 
         if tipo == 1:
             cursor.execute(
@@ -712,9 +1610,39 @@ def financeiro_resumo():
                 (id_usuario,),
             )
             alunos = int((cursor.fetchone() or (0,))[0] or 0)
-            estimado = alunos * valor_assinatura * 0.5
+            peso_instrutor = pesos_instrutores.get(int(id_usuario), 0)
+            estimado = pool_instrutores * (peso_instrutor / peso_total) if peso_total else 0
             cursor.execute("SELECT COALESCE(SUM(VALOR), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?", (id_usuario,))
             sacado = float((cursor.fetchone() or (0,))[0] or 0)
+            valor_por_view = (pool_instrutores / peso_total) if peso_total else 0
+            cursor.execute(
+                """
+                SELECT
+                    C.ID_CURSO,
+                    C.TITULO,
+                    COUNT(PA.ID_VIDEO),
+                    COUNT(DISTINCT M.ID_USUARIO)
+                FROM CURSOS C
+                JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+                LEFT JOIN VIDEOS V ON V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1
+                LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO
+                LEFT JOIN MATRICULAS M ON M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1
+                WHERE PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
+                GROUP BY C.ID_CURSO, C.TITULO
+                ORDER BY COUNT(PA.ID_VIDEO) DESC, C.TITULO
+                """,
+                (id_usuario,),
+            )
+            cursos_receita = []
+            for row in cursor.fetchall():
+                views = int(row[2] or 0)
+                cursos_receita.append({
+                    "id_curso": row[0],
+                    "curso": row[1],
+                    "views": views,
+                    "alunos": int(row[3] or 0),
+                    "receita_estimativa": round(views * valor_por_view, 2),
+                })
             # Sprint itens 12, 30 e 31: resumo financeiro inicial do instrutor baseado no pool de receita.
             return jsonify({
                 "perfil": "instrutor",
@@ -722,36 +1650,547 @@ def financeiro_resumo():
                 "disponivel_saque": round(max(estimado - sacado, 0), 2),
                 "ja_sacado": round(sacado, 2),
                 "alunos_ativos": alunos,
+                "percentual_pool": round(percentual, 2),
+                "peso_pool": peso_instrutor,
+                "peso_total_pool": peso_total,
+                "valor_por_view": round(valor_por_view, 2),
+                "cursos_receita": cursos_receita,
             })
 
         if tipo == 0:
             cursor.execute("SELECT COALESCE(SUM(VALOR), 0) FROM CUSTOS_PLATAFORMA")
             custos = float((cursor.fetchone() or (0,))[0] or 0)
-            repasse_estimado = total_arrecadado * 0.5
+            cursor.execute("SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE STATUS = 1")
+            faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
+            ticket_medio = (float(total_pago or 0) / int(faturas_pagas or 0)) if int(faturas_pagas or 0) else 0
             # Sprint itens 13, 14, 15 e 16: indicadores financeiros administrativos iniciais.
             return jsonify({
                 "perfil": "admin",
                 "total_arrecadado": round(total_arrecadado, 2),
-                "total_repassado_estimado": round(repasse_estimado, 2),
+                "total_repassado_estimado": round(pool_instrutores, 2),
                 "custos": round(custos, 2),
-                "saldo_caixa": round(total_arrecadado - repasse_estimado - custos, 2),
+                "saldo_caixa": round(total_arrecadado - pool_instrutores - custos, 2),
                 "assinaturas_ativas": assinaturas_ativas,
+                "percentual_instrutores": round(percentual, 2),
+                "peso_total_pool": peso_total,
+                "receita_media_assinatura": round(valor_assinatura, 2),
+                "ticket_medio_aluno": round(ticket_medio, 2),
+                "margem_caixa_percentual": round(((total_arrecadado - pool_instrutores - custos) / total_arrecadado) * 100, 2) if total_arrecadado else 0,
             })
 
         cursor.execute(
-            "SELECT COUNT(*) FROM ASSINATURAS WHERE ID_USUARIO = ?",
+            "SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 1",
             (id_usuario,),
         )
-        qtd = int((cursor.fetchone() or (0,))[0] or 0)
-        gasto = qtd * valor_assinatura
-        # Sprint itens 33 e 34: resumo inicial de faturas do aluno.
+        qtd, gasto = cursor.fetchone() or (0, 0)
+        cursor.execute(
+            "SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS <> 1",
+            (id_usuario,),
+        )
+        abertas, aberto = cursor.fetchone() or (0, 0)
+        # Sprint itens 2 e 3: resumo de gasto e faturas abertas do aluno.
         return jsonify({
             "perfil": "aluno",
-            "faturas": qtd or 0,
+            "faturas": int(qtd or 0),
+            "faturas_abertas": int(abertas or 0),
             "total_gasto": float(gasto or 0),
+            "total_aberto": float(aberto or 0),
         })
     except Exception as erro:
         return resposta(f"Erro ao carregar financeiro: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/admin/logs/<int:id_log>", methods=["GET"])
+@jwt_required()
+def detalhe_log_admin(id_log):
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT ID_LOG, ID_USUARIO, TIPO_USUARIO, NOME, EMAIL, ACAO, ROTA, METODO, DETALHES, CRIADO_EM
+            FROM LOG_ACOES
+            WHERE ID_LOG = ?
+            """,
+            (id_log,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return resposta("Log nao encontrado.", 404)
+
+        return jsonify({
+            "id": row[0],
+            "id_usuario": row[1],
+            "tipo_usuario": row[2],
+            "nome": row[3],
+            "email": row[4],
+            "acao": row[5],
+            "rota": row[6],
+            "metodo": row[7],
+            "detalhes": de_blob_texto(row[8]),
+            "criado_em": row[9].isoformat() if row[9] else None,
+        })
+    except Exception as erro:
+        return resposta(f"Erro ao carregar log: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/admin/logs-gravacao", methods=["GET"])
+@jwt_required()
+def logs_gravacao_admin():
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    termo = (request.args.get("busca") or "").lower().strip()
+    log_con = get_log_db()
+    cursor = log_con.cursor()
+
+    try:
+        filtros = []
+        params = []
+        if termo:
+            filtros.append("(LOWER(ACAO) LIKE ? OR LOWER(TABELA_AFETADA) LIKE ? OR LOWER(DETALHES) LIKE ?)")
+            params.extend([f"%{termo}%", f"%{termo}%", f"%{termo}%"])
+
+        where = f"WHERE {' AND '.join(filtros)}" if filtros else ""
+        cursor.execute(
+            f"""
+            SELECT FIRST 200 ID_LOG, ID_USUARIO, ACAO, TABELA_AFETADA, ROTA, METODO, DETALHES, CRIADO_EM
+            FROM LOG_GRAVACAO
+            {where}
+            ORDER BY ID_LOG DESC
+            """,
+            tuple(params),
+        )
+        # Sprint item 6: lista o log de gravacao salvo no banco separado para a aba administrativa.
+        return jsonify([
+            {
+                "id": row[0],
+                "id_usuario": row[1],
+                "acao": row[2],
+                "tabela": row[3],
+                "rota": row[4],
+                "metodo": row[5],
+                "detalhes": de_blob_texto(row[6]),
+                "criado_em": row[7].isoformat() if row[7] else None,
+            }
+            for row in cursor.fetchall()
+        ])
+    except Exception as erro:
+        return resposta(f"Erro ao listar log de gravacao: {erro}", 500)
+    finally:
+        cursor.close()
+        log_con.close()
+
+
+def _fatura_para_dict(row):
+    status = int(row[2] or 0)
+    valor_padrao = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
+    return {
+        "id": row[0],
+        "id_cobranca": row[1],
+        "status": status,
+        "status_label": "paga" if status == 1 else "em aberto",
+        "valor": float(row[3] or valor_padrao),
+        "data_inicio": row[4].isoformat() if row[4] else None,
+        "data_expiracao": row[5].isoformat() if row[5] else None,
+        "data_vencimento": row[6].isoformat() if row[6] else None,
+        "data_pagamento": row[7].isoformat() if row[7] else None,
+        "criado_em": row[8].isoformat() if row[8] else None,
+        "aberta": status != 1,
+    }
+
+
+def aluno_tem_fatura_aberta(cursor, id_usuario):
+    garantir_sprint_schema()
+    cursor.execute(
+        """
+        SELECT FIRST 1 ID_ASSINATURA
+        FROM ASSINATURAS
+        WHERE ID_USUARIO = ? AND STATUS <> 1
+        ORDER BY ID_ASSINATURA DESC
+        """,
+        (id_usuario,),
+    )
+    return cursor.fetchone() is not None
+
+
+@app.route("/financeiro/faturas", methods=["GET", "POST"])
+@jwt_required()
+def faturas_aluno():
+    negado = exigir_tipo(2)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    id_usuario = get_jwt_identity()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if request.method == "POST":
+            dados = request.get_json() or {}
+            valor = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
+            meses = max(1, min(int(dados.get("meses") or 1), 12))
+            valor_total = round(valor * meses, 2)
+            # Sprint item 3: cria faturas abertas ou futuras usando a Arkhe para pagamento PIX.
+            cobranca = criar_cobranca_pix(valor_total)
+            agora = datetime.now()
+            vencimento = agora + timedelta(days=3)
+            id_assinatura = proximo_id(cursor, "ASSINATURAS", "ID_ASSINATURA")
+            cursor.execute(
+                """
+                INSERT INTO ASSINATURAS (
+                    ID_ASSINATURA, ID_USUARIO, PLANO, STATUS, ID_COBRANCA_ARKHE,
+                    VALOR, DATA_VENCIMENTO, CRIADO_EM
+                )
+                VALUES (?, ?, 1, 0, ?, ?, ?, ?)
+                """,
+                (id_assinatura, id_usuario, cobranca["id_cobranca"], valor_total, vencimento, agora),
+            )
+            con.commit()
+            registrar_log("criar_fatura", f"Fatura {id_assinatura} criada para {meses} mes(es)", "ASSINATURAS")
+            return jsonify({
+                "id_assinatura": id_assinatura,
+                "id_cobranca": cobranca["id_cobranca"],
+                "valor": cobranca["valor"],
+                "codigo_pagamento": cobranca["codigo_pagamento"],
+                "status": cobranca["status"],
+                "tipo_cobranca": cobranca["tipo_cobranca"],
+            }), 201
+
+        cursor.execute(
+            """
+            SELECT ID_ASSINATURA, ID_COBRANCA_ARKHE, STATUS, VALOR, DATA_INICIO,
+                   DATA_EXPIRACAO, DATA_VENCIMENTO, DATA_PAGAMENTO, CRIADO_EM
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ?
+            ORDER BY ID_ASSINATURA DESC
+            """,
+            (id_usuario,),
+        )
+        faturas = [_fatura_para_dict(row) for row in cursor.fetchall()]
+        # Sprint item 2: devolve total gasto, total em aberto e historico de faturas do aluno.
+        total_gasto = sum(item["valor"] for item in faturas if item["status"] == 1)
+        total_aberto = sum(item["valor"] for item in faturas if item["status"] != 1)
+        return jsonify({
+            "faturas": faturas,
+            "total_gasto": round(total_gasto, 2),
+            "total_aberto": round(total_aberto, 2),
+            "tem_fatura_aberta": total_aberto > 0,
+        })
+    except ArkheError as erro:
+        con.rollback()
+        return resposta(f"Erro ao comunicar com a Arkhe: {erro}", 502)
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar faturas: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/admin/alunos/<int:id_aluno>/financeiro", methods=["GET"])
+@jwt_required()
+def financeiro_aluno_admin(id_aluno):
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute("SELECT ID_USUARIO, NOME, EMAIL FROM USUARIOS WHERE ID_USUARIO = ? AND TIPO_USUARIO = 2", (id_aluno,))
+        aluno = cursor.fetchone()
+        if not aluno:
+            return resposta("Aluno nao encontrado.", 404)
+
+        cursor.execute("SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 1", (id_aluno,))
+        faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
+        faturas_pagas = int(faturas_pagas or 0)
+        total_pago = float(total_pago or 0)
+
+        cursor.execute(
+            """
+            SELECT C.ID_CURSO, C.TITULO, M.PROGRESSO
+            FROM MATRICULAS M
+            JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
+            WHERE M.ID_USUARIO = ? AND M.STATUS_MATRICULA = 1
+            ORDER BY C.TITULO
+            """,
+            (id_aluno,),
+        )
+        cursos = [{"id": row[0], "titulo": row[1], "progresso": int(row[2] or 0)} for row in cursor.fetchall()]
+        cursor.execute("SELECT COUNT(*) FROM PROGRESSO_AULAS WHERE ID_USUARIO = ?", (id_aluno,))
+        aulas_assistidas = int((cursor.fetchone() or (0,))[0] or 0)
+        # Sprint item 4: calcula ticket medio por aluno com contexto academico para o perfil administrativo.
+        return jsonify({
+            "aluno": {"id": aluno[0], "nome": aluno[1], "email": aluno[2]},
+            "ticket_medio": round(total_pago / faturas_pagas, 2) if faturas_pagas else 0,
+            "total_pago": round(total_pago, 2),
+            "faturas_pagas": faturas_pagas,
+            "cursos": cursos,
+            "aulas_assistidas": aulas_assistidas,
+        })
+    except Exception as erro:
+        return resposta(f"Erro ao carregar financeiro do aluno: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/admin/custos-plataforma", methods=["GET", "POST"])
+@jwt_required()
+def custos_plataforma_admin():
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if request.method == "POST":
+            dados = request.get_json() or {}
+            descricao = (dados.get("descricao") or "").strip()
+            categoria = (dados.get("categoria") or "geral").strip()
+            valor = float(dados.get("valor") or 0)
+            data_custo = dados.get("data_custo") or datetime.now().date().isoformat()
+            if not descricao or valor <= 0:
+                return resposta("Descricao e valor positivo sao obrigatorios.", 400)
+            # Sprint item 5: cadastra custos operacionais para acompanhamento financeiro da plataforma.
+            cursor.execute(
+                """
+                INSERT INTO CUSTOS_PLATAFORMA (ID_CUSTO, DESCRICAO, VALOR, DATA_CUSTO, CATEGORIA, ID_USUARIO)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (proximo_id(cursor, "CUSTOS_PLATAFORMA", "ID_CUSTO"), descricao, valor, data_custo, categoria, get_jwt_identity()),
+            )
+            con.commit()
+            registrar_log("criar_custo", f"Custo {descricao} cadastrado no valor {valor}", "CUSTOS_PLATAFORMA")
+            return resposta("Custo cadastrado com sucesso.", 201, "sucesso")
+
+        cursor.execute(
+            """
+            SELECT ID_CUSTO, DESCRICAO, VALOR, DATA_CUSTO, CATEGORIA, CRIADO_EM
+            FROM CUSTOS_PLATAFORMA
+            ORDER BY DATA_CUSTO DESC, ID_CUSTO DESC
+            """
+        )
+        return jsonify([
+            {
+                "id": row[0],
+                "descricao": row[1],
+                "valor": float(row[2] or 0),
+                "data_custo": row[3].isoformat() if row[3] else None,
+                "categoria": row[4] or "geral",
+                "criado_em": row[5].isoformat() if row[5] else None,
+            }
+            for row in cursor.fetchall()
+        ])
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar custos: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+def _filtros_periodo(prefixo=""):
+    inicio = request.args.get("inicio")
+    fim = request.args.get("fim")
+    filtros = []
+    params = []
+    campo = f"{prefixo}CRIADO_EM" if prefixo else "CRIADO_EM"
+
+    if inicio:
+        filtros.append(f"CAST({campo} AS DATE) >= ?")
+        params.append(inicio)
+
+    if fim:
+        filtros.append(f"CAST({campo} AS DATE) <= ?")
+        params.append(fim)
+
+    return filtros, params
+
+
+@app.route("/relatorios/professor", methods=["GET"])
+@jwt_required()
+def relatorio_professor():
+    garantir_sprint_schema()
+    tipo = int(get_jwt().get("tipo", -1))
+    id_usuario = int(get_jwt_identity())
+    id_curso = request.args.get("id_curso")
+    id_instrutor = request.args.get("id_instrutor")
+    formato = request.args.get("formato")
+
+    if tipo not in {0, 1}:
+        return resposta("Relatorios disponiveis apenas para administradores e instrutores.", 403)
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        params = []
+        where = ["C.EXCLUIDO = 0"]
+
+        if tipo == 1:
+            where.append("PC.ID_USUARIO = ?")
+            params.append(id_usuario)
+        elif id_instrutor:
+            where.append("PC.ID_USUARIO = ?")
+            params.append(int(id_instrutor))
+
+        if id_curso:
+            where.append("C.ID_CURSO = ?")
+            params.append(int(id_curso))
+
+        periodo_filtros, periodo_params = _filtros_periodo("C.")
+        where.extend(periodo_filtros)
+        params.extend(periodo_params)
+
+        cursor.execute(
+            f"""
+            SELECT
+                C.ID_CURSO,
+                C.TITULO,
+                U.NOME,
+                COUNT(DISTINCT M.ID_USUARIO),
+                COUNT(DISTINCT V.ID_VIDEO),
+                COUNT(DISTINCT PA.ID_VIDEO),
+                COALESCE(AVG(A.NOTA), 0)
+            FROM CURSOS C
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            JOIN USUARIOS U ON U.ID_USUARIO = PC.ID_USUARIO
+            LEFT JOIN MATRICULAS M ON M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1
+            LEFT JOIN VIDEOS V ON V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0
+            LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO
+            LEFT JOIN AVALIACOES_CURSO A ON A.ID_CURSO = C.ID_CURSO
+            WHERE {' AND '.join(where)}
+            GROUP BY C.ID_CURSO, C.TITULO, U.NOME
+            ORDER BY C.TITULO
+            """,
+            tuple(params),
+        )
+        cursos = [
+            {
+                "id_curso": row[0],
+                "curso": row[1],
+                "instrutor": row[2],
+                "alunos": int(row[3] or 0),
+                "modulos": 0,
+                "aulas": int(row[4] or 0),
+                "aulas_assistidas": int(row[5] or 0),
+                "horas_assistidas": round((int(row[5] or 0) * 10) / 60, 2),
+                "avaliacao_media": round(float(row[6] or 0), 2),
+            }
+            for row in cursor.fetchall()
+        ]
+
+        total_alunos = sum(item["alunos"] for item in cursos)
+        total_aulas_assistidas = sum(item["aulas_assistidas"] for item in cursos)
+        total_horas = sum(item["horas_assistidas"] for item in cursos)
+
+        payload = {
+            "filtros": {
+                "inicio": request.args.get("inicio"),
+                "fim": request.args.get("fim"),
+                "id_instrutor": id_instrutor,
+                "id_curso": id_curso,
+            },
+            "resumo": {
+                "alunos": total_alunos,
+                "cursos": len(cursos),
+                "modulos": 0,
+                "aulas_assistidas": total_aulas_assistidas,
+                "horas_assistidas": round(total_horas, 2),
+            },
+            "cursos": cursos,
+        }
+
+        if formato == "pdf":
+            linhas = [
+                f"Alunos: {payload['resumo']['alunos']}",
+                f"Cursos: {payload['resumo']['cursos']}",
+                f"Aulas assistidas: {payload['resumo']['aulas_assistidas']}",
+                f"Horas assistidas: {payload['resumo']['horas_assistidas']}",
+                "",
+            ]
+            for curso in cursos:
+                linhas.append(
+                    f"{curso['curso']} | Instrutor: {curso['instrutor']} | Alunos: {curso['alunos']} | Horas: {curso['horas_assistidas']}"
+                )
+
+            return Response(
+                _pdf_simples("Relatorio do Professor", linhas),
+                mimetype="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=relatorio-professor.pdf"},
+            )
+
+        return jsonify(payload)
+    except Exception as erro:
+        return resposta(f"Erro ao gerar relatorio: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/admin/financeiro/config", methods=["GET", "PATCH"])
+@jwt_required()
+def financeiro_config_admin():
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if request.method == "GET":
+            return jsonify({
+                "percentual_instrutores": round(percentual_instrutores(cursor), 2)
+            })
+
+        dados = request.get_json() or {}
+        percentual = float(dados.get("percentual_instrutores"))
+
+        if percentual < 0 or percentual > 100:
+            return resposta("Percentual dos instrutores deve ficar entre 0 e 100.", 400)
+
+        cursor.execute(
+            """
+            UPDATE FINANCEIRO_CONFIG
+            SET PERCENTUAL_INSTRUTORES = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP
+            WHERE ID_CONFIG = 1
+            """,
+            (percentual,),
+        )
+        con.commit()
+        registrar_log("atualizar_pool_receita", f"Percentual dos instrutores alterado para {percentual}%", "FINANCEIRO_CONFIG")
+        return resposta("Percentual do pool atualizado com sucesso.", 200, "sucesso", percentual_instrutores=round(percentual, 2))
+    except (TypeError, ValueError):
+        con.rollback()
+        return resposta("Percentual dos instrutores invalido.", 400)
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao atualizar configuracao financeira: {erro}", 500)
     finally:
         cursor.close()
         con.close()
@@ -773,17 +2212,22 @@ def solicitar_saque():
     cursor = con.cursor()
 
     try:
-        # Sprint item 32: registra a solicitacao de saque; a liquidacao ARKHE fica pendente de endpoint do provedor.
+        id_saque = proximo_id(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE")
+        # Sprint item 1: solicita o saque na Arkhe antes de registrar o pedido financeiro local.
+        saque_arkhe = solicitar_saque_conta(valor, referencia=f"SAQUE-{id_saque}-{get_jwt_identity()}")
         cursor.execute(
             """
-            INSERT INTO SAQUES_INSTRUTOR (ID_SAQUE, ID_USUARIO, VALOR, STATUS)
-            VALUES (?, ?, ?, 0)
+            INSERT INTO SAQUES_INSTRUTOR (ID_SAQUE, ID_USUARIO, VALOR, STATUS, ID_SAQUE_ARKHE, RESPOSTA_ARKHE)
+            VALUES (?, ?, ?, 0, ?, ?)
             """,
-            (proximo_id(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE"), get_jwt_identity(), valor),
+            (id_saque, get_jwt_identity(), valor, saque_arkhe.get("id_saque"), para_blob_texto(str(saque_arkhe))),
         )
         con.commit()
         registrar_log("solicitar_saque", f"Saque solicitado no valor {valor}", "SAQUES_INSTRUTOR")
         return resposta("Solicitacao de saque registrada.", 201, "sucesso")
+    except ArkheError as erro:
+        con.rollback()
+        return resposta(f"Erro ao solicitar saque na Arkhe: {erro}", 502)
     except Exception as erro:
         con.rollback()
         return resposta(f"Erro ao solicitar saque: {erro}", 500)

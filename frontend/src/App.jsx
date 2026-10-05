@@ -151,7 +151,7 @@ function AppConteudo() {
                 }/>
 
                 <Route path="/DashboardAluno/*" element={
-                    <RotaRestrita api={api} tipoPermitido={2} exigirAssinatura>
+                    <RotaRestrita api={api} tipoPermitido={2}>
                         <DashboardAluno api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
                     </RotaRestrita>
                 }/>

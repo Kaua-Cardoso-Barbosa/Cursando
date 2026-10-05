@@ -54,7 +54,7 @@ export default function Assinatura({ api, sair }) {
             const dados = await resposta.json();
 
             if (!resposta.ok) {
-                throw new Error(dados.mensagem || "Nao foi possivel iniciar o pagamento.");
+                throw new Error(getMensagemErro(dados, "Nao foi possivel iniciar o pagamento."));
             }
 
             setPagamento(dados);
@@ -150,4 +150,20 @@ export default function Assinatura({ api, sair }) {
             </section>
         </main>
     );
+}
+
+function getMensagemErro(dados, padrao) {
+    if (typeof dados?.mensagem === "string") {
+        return dados.mensagem;
+    }
+
+    if (typeof dados?.mensagem?.descricao === "string") {
+        return dados.mensagem.descricao;
+    }
+
+    if (typeof dados?.erro === "string") {
+        return dados.erro;
+    }
+
+    return padrao;
 }

@@ -29,6 +29,20 @@ def exigir_aluno():
     return None
 
 
+def bloquear_por_fatura_aberta(cursor, id_aluno):
+    from sprint import aluno_tem_fatura_aberta
+
+    # Sprint item 3: bloqueia cursos quando ha fatura aberta e orienta o aluno a pagar no financeiro.
+    if aluno_tem_fatura_aberta(cursor, id_aluno):
+        return resposta(
+            "Voce possui fatura em aberto. Acesse a aba Financeiro para consultar e pagar.",
+            402,
+            "erro",
+            redirecionar="/DashboardAluno/financeiro",
+        )
+    return None
+
+
 def garantir_tabela_progresso(con):
     cursor = con.cursor()
 
@@ -42,18 +56,51 @@ def garantir_tabela_progresso(con):
         )
 
         if cursor.fetchone():
-            return
+            progresso_existe = True
+        else:
+            progresso_existe = False
 
-        cursor.execute(
-            """
-            CREATE TABLE PROGRESSO_AULAS (
-                ID_USUARIO INTEGER NOT NULL,
-                ID_VIDEO INTEGER NOT NULL,
-                ASSISTIDO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT PK_PROGRESSO_AULAS PRIMARY KEY (ID_USUARIO, ID_VIDEO)
+        if not progresso_existe:
+            cursor.execute(
+                """
+                CREATE TABLE PROGRESSO_AULAS (
+                    ID_USUARIO INTEGER NOT NULL,
+                    ID_VIDEO INTEGER NOT NULL,
+                    ASSISTIDO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT PK_PROGRESSO_AULAS PRIMARY KEY (ID_USUARIO, ID_VIDEO)
+                )
+                """
             )
-            """
-        )
+
+        for nome, ddl in {
+            "CATEGORIAS_CURSO": """
+                CREATE TABLE CATEGORIAS_CURSO (
+                    ID_CATEGORIA INTEGER NOT NULL PRIMARY KEY,
+                    NOME VARCHAR(120) NOT NULL,
+                    NOME_NORMALIZADO VARCHAR(120) NOT NULL
+                )
+            """,
+            "TEMAS_CURSO": """
+                CREATE TABLE TEMAS_CURSO (
+                    ID_TEMA INTEGER NOT NULL PRIMARY KEY,
+                    NOME VARCHAR(120) NOT NULL,
+                    NOME_NORMALIZADO VARCHAR(120) NOT NULL
+                )
+            """,
+            "CURSO_TAXONOMIA": """
+                CREATE TABLE CURSO_TAXONOMIA (
+                    ID_CURSO INTEGER NOT NULL PRIMARY KEY,
+                    ID_CATEGORIA INTEGER,
+                    ID_TEMA INTEGER
+                )
+            """,
+        }.items():
+            cursor.execute(
+                "SELECT 1 FROM RDB$RELATIONS WHERE RDB$RELATION_NAME = ?",
+                (nome,),
+            )
+            if not cursor.fetchone():
+                cursor.execute(ddl)
         con.commit()
     except Exception:
         con.rollback()
@@ -67,7 +114,10 @@ def curso_publico_para_dict(row):
              "status_nome": STATUS_NOMES.get(row[4], "desconhecido"), "total_aulas": row[5] or 0,
              "aulas_publicadas": row[6] or 0, "total_inscritos": 0,
              "professor": de_blob_texto(row[7]) or "Professor(a)", "matriculado": bool(row[8]),
-             "videos_assistidos": row[9] or 0}
+             "videos_assistidos": row[9] or 0,
+             "categoria": row[10] if len(row) > 10 else "",
+             "tema": row[11] if len(row) > 11 else "",
+             "avaliacao_media": round(float(row[12] or 0), 2) if len(row) > 12 else 0}
 
     curso["progresso"] = calcular_progresso(
         curso["aulas_publicadas"],
@@ -154,8 +204,14 @@ def query_cursos_base(filtro_extra=""):
             (SELECT COUNT(*)
              FROM PROGRESSO_AULAS PA
              JOIN VIDEOS V2 ON V2.ID_VIDEO = PA.ID_VIDEO
-             WHERE PA.ID_USUARIO = ? AND V2.ID_CURSO = C.ID_CURSO AND V2.EXCLUIDO = 0 AND V2.STATUS = 1)
+             WHERE PA.ID_USUARIO = ? AND V2.ID_CURSO = C.ID_CURSO AND V2.EXCLUIDO = 0 AND V2.STATUS = 1),
+            COALESCE(CAT.NOME, ''),
+            COALESCE(TEMA.NOME, ''),
+            COALESCE((SELECT AVG(A.NOTA) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0)
         FROM CURSOS C
+        LEFT JOIN CURSO_TAXONOMIA CT ON CT.ID_CURSO = C.ID_CURSO
+        LEFT JOIN CATEGORIAS_CURSO CAT ON CAT.ID_CATEGORIA = CT.ID_CATEGORIA
+        LEFT JOIN TEMAS_CURSO TEMA ON TEMA.ID_TEMA = CT.ID_TEMA
         WHERE C.EXCLUIDO = 0 AND C.STATUS = 1 {filtro_extra}
     """
 
@@ -257,6 +313,10 @@ def listar_cursos_aluno():
 
     try:
         garantir_tabela_progresso(con)
+        bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         cursor.execute(
             query_cursos_base(
                 """
@@ -287,12 +347,51 @@ def descobrir_cursos():
 
     id_aluno = get_jwt_identity()
     busca = (request.args.get("busca") or "").strip().lower()
+    categoria = (request.args.get("categoria") or "").strip().lower()
+    tema = (request.args.get("tema") or "").strip().lower()
+    avaliacao_min = request.args.get("avaliacao_min")
     filtros = []
     parametros = [id_aluno, id_aluno]
 
     if busca:
-        filtros.append("AND LOWER(C.TITULO) LIKE ?")
-        parametros.append(f"%{busca}%")
+        filtros.append("AND (LOWER(C.TITULO) LIKE ? OR LOWER(COALESCE(CAT.NOME, '')) LIKE ? OR LOWER(COALESCE(TEMA.NOME, '')) LIKE ?)")
+        parametros.extend([f"%{busca}%", f"%{busca}%", f"%{busca}%"])
+
+    if categoria:
+        filtros.append("AND LOWER(COALESCE(CAT.NOME, '')) = ?")
+        parametros.append(categoria)
+
+    if tema:
+        filtros.append("AND LOWER(COALESCE(TEMA.NOME, '')) = ?")
+        parametros.append(tema)
+
+    if avaliacao_min:
+        filtros.append("AND COALESCE((SELECT AVG(A.NOTA) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0) >= ?")
+        parametros.append(float(avaliacao_min))
+
+    if request.args.get("recomendados") == "1":
+        filtros.append(
+            """
+            AND EXISTS (
+                SELECT 1
+                FROM MATRICULAS MR
+                JOIN CURSO_TAXONOMIA CTR ON CTR.ID_CURSO = MR.ID_CURSO
+                WHERE MR.ID_USUARIO = ?
+                  AND MR.STATUS_MATRICULA = 1
+                  AND (
+                    CTR.ID_CATEGORIA = CT.ID_CATEGORIA
+                    OR CTR.ID_TEMA = CT.ID_TEMA
+                  )
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM MATRICULAS MX
+                WHERE MX.ID_CURSO = C.ID_CURSO
+                  AND MX.ID_USUARIO = ?
+                  AND MX.STATUS_MATRICULA = 1
+            )
+            """
+        )
+        parametros.extend([id_aluno, id_aluno])
 
     if request.args.get("apenas_novos") == "1":
         filtros.append(
@@ -353,6 +452,11 @@ def detalhe_curso_aluno(id_curso):
             return resposta("Curso nao encontrado.", 404)
 
         curso = curso_publico_para_dict(row)
+        if curso["matriculado"]:
+            bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
+            if bloqueio:
+                return bloqueio
+
         cursor.execute(
             """
             SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS,
@@ -393,6 +497,10 @@ def inscrever_curso(id_curso):
     cursor = con.cursor()
 
     try:
+        bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         cursor.execute(
             "SELECT 1 FROM CURSOS WHERE ID_CURSO = ? AND STATUS = 1 AND EXCLUIDO = 0",
             (id_curso,),
@@ -447,6 +555,10 @@ def detalhe_aula_aluno(id_aula):
 
     try:
         garantir_tabela_progresso(con)
+        bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         cursor.execute(
             """
             SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS,
@@ -518,6 +630,10 @@ def marcar_aula_assistida(id_aula):
 
     try:
         garantir_tabela_progresso(con)
+        bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         cursor.execute(
             """
             SELECT 1

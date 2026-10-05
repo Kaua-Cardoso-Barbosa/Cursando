@@ -1,14 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { resolverUrlMidia } from "../api/client";
 import { colors, globalStyles } from "../styles";
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
 
-export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson }) {
+export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onSubmitExam, onReview }) {
   // Exibe apenas as aulas disponibilizadas pelo detalhe do curso retornado pela API.
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
+  const materiais = detalhe?.materiais || [];
+  const prova = detalhe?.prova;
+  const [respostas, setRespostas] = useState({});
+  const [avaliacao, setAvaliacao] = useState({ nota: "5", comentario: "" });
 
   return (
     <ScrollView
@@ -46,6 +51,70 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
         ))}
         {!carregando && aulas.length === 0 ? <Text style={globalStyles.message}>Nenhuma aula publicada neste curso.</Text> : null}
       </View>
+
+      <View style={styles.materials}>
+        <Text style={styles.sectionTitle}>Complementos</Text>
+        {materiais.map((material) => (
+          <View key={material.id} style={[globalStyles.card, styles.materialCard]}>
+            <Text style={styles.materialTitle}>{material.titulo}</Text>
+            <Text style={styles.materialType}>{material.tipo}</Text>
+            <Text style={styles.description}>{material.descricao}</Text>
+            {material.bloqueado ? (
+              <Text style={styles.locked}>Disponivel apos inscricao no curso.</Text>
+            ) : (
+              <Pressable onPress={() => Linking.openURL(material.url)}>
+                <Text style={styles.openLink}>Abrir material</Text>
+              </Pressable>
+            )}
+          </View>
+        ))}
+        {!carregando && materiais.length === 0 ? <Text style={globalStyles.message}>Nenhum complemento disponivel.</Text> : null}
+      </View>
+
+      {Number(curso?.progresso || 0) >= 100 && prova?.prova ? (
+        <View style={styles.materials}>
+          <Text style={styles.sectionTitle}>Prova final</Text>
+          {prova.envio ? (
+            <Text style={styles.locked}>
+              Status: {prova.envio.status === 1 ? "Aprovado" : prova.envio.status === 2 ? "Reprovado" : "Aguardando correcao"}
+            </Text>
+          ) : null}
+          {prova.questoes?.map((questao) => (
+            <View key={questao.id} style={[globalStyles.card, styles.materialCard]}>
+              <Text style={styles.materialTitle}>{questao.enunciado}</Text>
+              <TextInput
+                value={respostas[questao.id] || ""}
+                onChangeText={(valor) => setRespostas({ ...respostas, [questao.id]: valor })}
+                style={globalStyles.input}
+                multiline
+              />
+            </View>
+          ))}
+          <Pressable style={globalStyles.primaryButton} onPress={() => onSubmitExam?.(respostas)}>
+            <Text style={globalStyles.buttonText}>Enviar prova</Text>
+          </Pressable>
+          {prova.envio?.status === 1 ? (
+            <View style={[globalStyles.card, styles.materialCard]}>
+              <Text style={styles.materialTitle}>Avaliar curso</Text>
+              <TextInput
+                value={avaliacao.nota}
+                onChangeText={(nota) => setAvaliacao({ ...avaliacao, nota })}
+                keyboardType="number-pad"
+                style={globalStyles.input}
+              />
+              <TextInput
+                value={avaliacao.comentario}
+                onChangeText={(comentario) => setAvaliacao({ ...avaliacao, comentario })}
+                placeholder="Comentario"
+                style={globalStyles.input}
+              />
+              <Pressable style={globalStyles.primaryButton} onPress={() => onReview?.({ nota: Number(avaliacao.nota), comentario: avaliacao.comentario })}>
+                <Text style={globalStyles.buttonText}>Enviar avaliacao</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -123,5 +192,40 @@ const styles = StyleSheet.create({
   backText: {
     color: colors.darkGreen,
     fontSize: 16
+  },
+  materials: {
+    gap: 12,
+    marginTop: 26
+  },
+  sectionTitle: {
+    color: colors.black,
+    fontSize: 24,
+    lineHeight: 30
+  },
+  materialCard: {
+    padding: 14
+  },
+  materialTitle: {
+    color: colors.black,
+    fontSize: 18,
+    fontWeight: "700"
+  },
+  materialType: {
+    color: colors.darkGreen,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 3
+  },
+  locked: {
+    color: colors.textMuted,
+    fontSize: 14,
+    marginTop: 8
+  },
+  openLink: {
+    color: colors.darkGreen,
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 8,
+    textDecorationLine: "underline"
   }
 });

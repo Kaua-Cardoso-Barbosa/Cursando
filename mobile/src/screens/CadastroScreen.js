@@ -28,8 +28,37 @@ export default function CadastroScreen({ onBack }) {
   async function cadastrar() {
     if (carregando) return;
 
-    if (!nome.trim() || !email.trim() || !cpf.trim() || !senha || !confirmarSenha) {
+    const nomeTratado = nome.trim();
+    const emailTratado = email.trim().toLowerCase();
+    const cpfTratado = cpf.replace(/\D/g, "");
+
+    if (!nomeTratado || !emailTratado || !cpfTratado || !senha || !confirmarSenha) {
       setErro("Preencha todos os campos para criar sua conta.");
+      return;
+    }
+
+    if (!validarNome(nomeTratado)) {
+      setErro("Informe um nome valido, usando apenas letras, espacos, hifens ou apostrofos.");
+      return;
+    }
+
+    if (!validarEmail(emailTratado)) {
+      setErro("Informe um e-mail valido.");
+      return;
+    }
+
+    if (cpfTratado.length !== 11) {
+      setErro("Informe um CPF valido com 11 digitos.");
+      return;
+    }
+
+    if (senha !== confirmarSenha) {
+      setErro("As senhas nao coincidem.");
+      return;
+    }
+
+    if (!validarSenha(senha)) {
+      setErro("A senha deve ter de 8 a 12 caracteres, com letra maiuscula, letra minuscula, numero e caractere especial.");
       return;
     }
 
@@ -42,9 +71,9 @@ export default function CadastroScreen({ onBack }) {
       await apiRequest("/cadastrar", {
         method: "POST",
         body: JSON.stringify({
-          nome: nome.trim(),
-          email: email.trim().toLowerCase(),
-          cpf,
+          nome: nomeTratado,
+          email: emailTratado,
+          cpf: cpfTratado,
           senha,
           confirmar_senha: confirmarSenha
         })
@@ -67,20 +96,52 @@ export default function CadastroScreen({ onBack }) {
           <Text style={styles.title}>Cadastro</Text>
 
           <View style={styles.card}>
-            <Field label="Nome:" value={nome} onChangeText={setNome} />
-            <Field label="Email:" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-            <Field label="CPF:" value={cpf} onChangeText={setCpf} keyboardType="number-pad" />
-            <Field label="Senha:" value={senha} onChangeText={setSenha} secureTextEntry />
-            <Field label="Confirmar senha:" value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry />
+            <Field
+              label="Nome:"
+              value={nome}
+              onChangeText={setNome}
+              autoCapitalize="words"
+            />
+            <Field
+              label="Email:"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Field
+              label="CPF:"
+              value={cpf}
+              onChangeText={setCpf}
+              keyboardType="number-pad"
+              maxLength={14}
+            />
+            <Field
+              label="Senha:"
+              value={senha}
+              onChangeText={setSenha}
+              secureTextEntry
+            />
+            <Field
+              label="Confirmar senha:"
+              value={confirmarSenha}
+              onChangeText={setConfirmarSenha}
+              secureTextEntry
+            />
 
             {erro ? <Text style={globalStyles.error}>{erro}</Text> : null}
             {sucesso ? <Text style={styles.success}>{sucesso}</Text> : null}
 
-            <Pressable style={globalStyles.primaryButton} onPress={cadastrar} disabled={carregando}>
+            <Pressable
+              style={[globalStyles.primaryButton, carregando && styles.disabledButton]}
+              onPress={cadastrar}
+              disabled={carregando}
+            >
               {carregando ? <ActivityIndicator color={colors.white} /> : <Text style={globalStyles.buttonText}>Cadastrar</Text>}
             </Pressable>
 
-            <Pressable style={styles.backButton} onPress={onBack}>
+            <Pressable style={styles.backButton} onPress={onBack} disabled={carregando}>
               <Text style={styles.backText}>Ja tenho cadastro</Text>
             </Pressable>
           </View>
@@ -139,5 +200,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 19,
     marginBottom: 10
+  },
+  disabledButton: {
+    opacity: 0.72
   }
 });
+
+const nomesInvalidos = new Set(["teste", "test", "nome", "asdf", "abc"]);
+
+function validarNome(valor) {
+  const nomeNormalizado = (valor || "").trim().normalize("NFC");
+  const partes = nomeNormalizado.split(/\s+/);
+  const padraoNome = /^\p{L}+(?:[ '-]\p{L}+)*$/u;
+  const letras = Array.from(nomeNormalizado).filter(
+    (caractere) => caractere.toLocaleUpperCase() !== caractere.toLocaleLowerCase()
+  );
+
+  if (nomeNormalizado.length < 2 || nomeNormalizado.length > 100) {
+    return false;
+  }
+
+  if (nomesInvalidos.has(nomeNormalizado.toLocaleLowerCase())) {
+    return false;
+  }
+
+  return partes.every((parte) => parte.length > 0)
+    && padraoNome.test(nomeNormalizado)
+    && new Set(letras.map((letra) => letra.toLocaleLowerCase())).size > 1;
+}
+
+function validarEmail(valor) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor || "");
+}
+
+function validarSenha(valor) {
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,12}$/.test(valor || "");
+}

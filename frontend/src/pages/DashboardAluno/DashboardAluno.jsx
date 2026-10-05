@@ -14,6 +14,7 @@ import Button from "../../components/Button/Button.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import css from "./DashboardAluno.module.css";
 import PlayerVideo from "../../components/PlayerVideo/PlayerVideo.jsx";
+import ChatCurso from "../../components/ChatCurso/ChatCurso.jsx";
 
 const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
 const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
@@ -166,10 +167,16 @@ export default function DashboardAluno({
     const [meusCursos, setMeusCursos] = useState([]);
     const [descobrir, setDescobrir] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
+    const [faturas, setFaturas] = useState([]);
+    const [pagamentoFatura, setPagamentoFatura] = useState(null);
     const [busca, setBusca] = useState("");
     const [ordemDescobrir, setOrdemDescobrir] = useState("recentes");
     const [apenasNaoInscritos, setApenasNaoInscritos] = useState(false);
     const [detalheCurso, setDetalheCurso] = useState(null);
+    const [materiaisCurso, setMateriaisCurso] = useState([]);
+    const [provaAluno, setProvaAluno] = useState(null);
+    const [respostasProva, setRespostasProva] = useState({});
+    const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
     const [aulaAtual, setAulaAtual] = useState(null);
     const [protecaoAtiva, setProtecaoAtiva] = useState(false);
     const [carregando, setCarregando] = useState(false);
@@ -180,13 +187,14 @@ export default function DashboardAluno({
     const visao = useMemo(() => {
         if (location.pathname.endsWith("/perfil")) return "perfil";
         if (location.pathname.endsWith("/financeiro")) return "financeiro";
+        if (location.pathname.endsWith("/chat")) return "chat";
         if (location.pathname.includes("/descobrir")) return "descobrir";
         if (location.pathname.includes("/aulas/")) return "aula";
         if (location.pathname.includes("/cursos")) return "meus-cursos";
         return "inicio";
     }, [location.pathname]);
 
-    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
+    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
 
     const avisar = useCallback((mensagem) => {
         if (mensagem && setMensagem) setMensagem(mensagem);
@@ -195,7 +203,12 @@ export default function DashboardAluno({
     const lerResposta = useCallback(async (resposta) => {
         const dados = await resposta.json().catch(() => ({}));
         if (dados.mensagem) avisar(dados.mensagem);
-        if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao conectar com a API.");
+        if (!resposta.ok) {
+            const erro = new Error(dados?.mensagem?.descricao || "Erro ao conectar com a API.");
+            erro.dados = dados;
+            erro.status = resposta.status;
+            throw erro;
+        }
         return dados;
     }, [avisar]);
 
@@ -216,6 +229,7 @@ export default function DashboardAluno({
             setMeusCursos(await lerResposta(resposta));
         } catch (erro) {
             console.error("Erro ao carregar cursos do aluno:", erro);
+            if (erro.status === 402) navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
             setMeusCursos([]);
         } finally {
             setCarregando(false);
@@ -243,11 +257,25 @@ export default function DashboardAluno({
     const carregarDetalheCurso = useCallback(async (idCurso) => {
         setCarregando(true);
         try {
-            const resposta = await fetch(`${api}/aluno/cursos/${idCurso}`, { credentials: "include" });
+            const requisicoes = [
+                fetch(`${api}/aluno/cursos/${idCurso}`, { credentials: "include" }),
+                fetch(`${api}/aluno/cursos/${idCurso}/materiais`, { credentials: "include" })
+            ];
+            const [resposta, respostaMateriais] = await Promise.all(requisicoes);
             setDetalheCurso(await lerResposta(resposta));
+            setMateriaisCurso(await lerResposta(respostaMateriais));
+            try {
+                const respostaProva = await fetch(`${api}/aluno/cursos/${idCurso}/prova`, { credentials: "include" });
+                setProvaAluno(await lerResposta(respostaProva));
+            } catch {
+                setProvaAluno(null);
+            }
         } catch (erro) {
             console.error("Erro ao carregar curso:", erro);
+            if (erro.status === 402) navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
             setDetalheCurso(null);
+            setMateriaisCurso([]);
+            setProvaAluno(null);
         } finally {
             setCarregando(false);
         }
@@ -260,6 +288,7 @@ export default function DashboardAluno({
             setAulaAtual(await lerResposta(resposta));
         } catch (erro) {
             console.error("Erro ao carregar aula:", erro);
+            if (erro.status === 402) navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
             setAulaAtual(null);
         } finally {
             setCarregando(false);
@@ -317,6 +346,9 @@ export default function DashboardAluno({
             try {
                 const resposta = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
                 setFinanceiro(await lerResposta(resposta));
+                const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
+                const dadosFaturas = await lerResposta(respostaFaturas);
+                setFaturas(dadosFaturas.faturas || []);
             } catch (erro) {
                 console.error("Erro ao carregar financeiro do aluno:", erro);
                 avisar({ tipo: "erro", descricao: erro.message });
@@ -366,6 +398,29 @@ export default function DashboardAluno({
             navigate(`/DashboardAluno/cursos/${curso.id}`);
         } catch (erro) {
             console.error("Erro ao inscrever:", erro);
+            if (erro.status === 402) {
+                navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
+                return;
+            }
+            avisar({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
+    async function criarFaturaFutura() {
+        try {
+            const resposta = await fetch(`${api}/financeiro/faturas`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ meses: 1 })
+            });
+            const dados = await lerResposta(resposta);
+            setPagamentoFatura(dados);
+            const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
+            const lista = await lerResposta(respostaFaturas);
+            setFaturas(lista.faturas || []);
+            setFinanceiro((atual) => ({ ...(atual || {}), total_aberto: lista.total_aberto, faturas_abertas: (lista.faturas || []).filter((f) => f.aberta).length }));
+        } catch (erro) {
             avisar({ tipo: "erro", descricao: erro.message });
         }
     }
@@ -387,6 +442,27 @@ export default function DashboardAluno({
     function baixarCertificado(curso) {
         // Sprint item 5: abre o PDF de certificado liberado quando o curso chegou a 100%.
         window.open(`${api}/aluno/cursos/${curso.id}/certificado`, "_blank", "noopener,noreferrer");
+    }
+
+    async function enviarProvaAluno() {
+        const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/prova`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ respostas: respostasProva })
+        });
+        await lerResposta(resposta);
+        await carregarDetalheCurso(cursoDetalhe.id);
+    }
+
+    async function enviarAvaliacaoCurso() {
+        const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/avaliacoes`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(avaliacao)
+        });
+        await lerResposta(resposta);
     }
 
     const metricas = dashboard?.metricas || { inscritos: 0, finalizados: 0, iniciados: 0 };
@@ -545,15 +621,52 @@ export default function DashboardAluno({
                                 <div className={css.conteudoCurso}>
                                     <h2>Todos os Complementos</h2>
 
-                                    <EstadoVazio texto="Nenhum complemento disponível neste curso." />
+                                    {materiaisCurso.length === 0 && <EstadoVazio texto="Nenhum complemento disponível neste curso." />}
+                                    <div className={css.listaMateriais}>
+                                        {materiaisCurso.map((material) => (
+                                            <article key={material.id} className={css.cardMaterial}>
+                                                <strong>{material.titulo}</strong>
+                                                <span>{material.tipo}</span>
+                                                <p>{material.descricao}</p>
+                                                {material.bloqueado ? (
+                                                    <small>Disponível após inscrição no curso.</small>
+                                                ) : (
+                                                    <a href={material.url} target="_blank" rel="noreferrer">Abrir material</a>
+                                                )}
+                                            </article>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             <p className={css.descricaoCurso}>{cursoDetalhe.descricao}</p>
                             {cursoDetalhe.matriculado && Number(cursoDetalhe.progresso || 0) >= 100 && (
-                                <button className={css.botaoCertificado} onClick={() => baixarCertificado(cursoDetalhe)}>
-                                    Baixar certificado
-                                </button>
+                                <>
+                                    {provaAluno?.prova && (
+                                        <section className={css.conteudoCurso}>
+                                            <h2>Prova final</h2>
+                                            {provaAluno.envio && <p>Status: {provaAluno.envio.status === 1 ? "Aprovado" : provaAluno.envio.status === 2 ? "Reprovado" : "Aguardando correção"}</p>}
+                                            {provaAluno.questoes?.map((questao) => (
+                                                <label key={questao.id} className={css.campoBusca}>
+                                                    {questao.enunciado}
+                                                    <input value={respostasProva[questao.id] || ""} onChange={(e) => setRespostasProva({ ...respostasProva, [questao.id]: e.target.value })} />
+                                                </label>
+                                            ))}
+                                            <button className={css.botaoInscrever} onClick={enviarProvaAluno}>Enviar prova</button>
+                                            {provaAluno.envio?.status === 1 && (
+                                                <>
+                                                    <button className={css.botaoCertificado} onClick={() => baixarCertificado(cursoDetalhe)}>Baixar certificado</button>
+                                                    <div className={css.conteudoCurso}>
+                                                        <h2>Avaliar curso</h2>
+                                                        <input type="number" min="0" max="5" value={avaliacao.nota} onChange={(e) => setAvaliacao({ ...avaliacao, nota: Number(e.target.value) })} />
+                                                        <input value={avaliacao.comentario} onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })} placeholder="Comentario" />
+                                                        <button className={css.botaoInscrever} onClick={enviarAvaliacaoCurso}>Enviar avaliação</button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </section>
+                                    )}
+                                </>
                             )}
                             <h2>{cursoDetalhe.matriculado ? "Todas video-aulas do curso:" : "Video-aulas disponiveis apos inscrever-se:"}</h2>
 
@@ -627,17 +740,46 @@ export default function DashboardAluno({
                             </div>
                             {/* Sprint itens 33 e 34: resumo inicial de gastos e faturas do aluno. */}
                             <div className={css.gridMetricas}>
+                                {/* Sprint item 2: mostra total gasto e historico de faturas do aluno. */}
                                 <CardMetrica
                                     titulo="Total gasto"
                                     detalhe="Mensalidades registradas"
                                     valor={`R$ ${Number(financeiro?.total_gasto || 0).toFixed(2).replace(".", ",")}`}
                                 />
                                 <CardMetrica
-                                    titulo="Faturas"
-                                    detalhe="Historico de assinaturas"
-                                    valor={financeiro?.faturas || 0}
+                                    titulo="Em aberto"
+                                    detalhe="Faturas pendentes"
+                                    valor={`R$ ${Number(financeiro?.total_aberto || 0).toFixed(2).replace(".", ",")}`}
                                 />
                             </div>
+                            {/* Sprint item 3: lista faturas em aberto e permite gerar pagamento futuro. */}
+                            <div className={css.conteudoCurso}>
+                                <h2>Historico de faturas</h2>
+                                <button className={css.botaoCertificado} type="button" onClick={criarFaturaFutura}>
+                                    Pagar proxima mensalidade
+                                </button>
+                                {pagamentoFatura?.codigo_pagamento && (
+                                    <div className={css.cardMaterial}>
+                                        <strong>PIX gerado</strong>
+                                        <p>{pagamentoFatura.codigo_pagamento}</p>
+                                    </div>
+                                )}
+                                <div className={css.listaMateriais}>
+                                    {faturas.map((fatura) => (
+                                        <article className={css.cardMaterial} key={fatura.id}>
+                                            <strong>Fatura #{fatura.id} - {fatura.status_label}</strong>
+                                            <span>R$ {Number(fatura.valor || 0).toFixed(2).replace(".", ",")}</span>
+                                            <p>Vencimento: {formatarDataAssinatura(fatura.data_vencimento || fatura.data_expiracao || fatura.criado_em)}</p>
+                                        </article>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
+                    {visao === "chat" && (
+                        <section className={css.secaoCursos}>
+                            <ChatCurso api={api} perfil="aluno" setMensagem={setMensagem} />
                         </section>
                     )}
                 </main>

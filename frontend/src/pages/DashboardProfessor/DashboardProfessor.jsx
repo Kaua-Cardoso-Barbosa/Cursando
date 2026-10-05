@@ -17,6 +17,7 @@ import FormularioModalProfessor from "../../components/DashboardProfessor/Formul
 import EstadoVazioProfessor from "../../components/DashboardProfessor/EstadoVazioProfessor.jsx";
 import RodapeProfessor from "../../components/DashboardProfessor/RodapeProfessor.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
+import ChatCurso from "../../components/ChatCurso/ChatCurso.jsx";
 import css from "./DashboardProfessor.module.css";
 
 const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
@@ -44,6 +45,13 @@ export default function DashboardProfessor({
     const [aulas, setAulas] = useState([]);
     const [alunos, setAlunos] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
+    const [relatorio, setRelatorio] = useState(null);
+    const [filtrosRelatorio, setFiltrosRelatorio] = useState({ inicio: "", fim: "", id_curso: "" });
+    const [materiais, setMateriais] = useState([]);
+    const [materialForm, setMaterialForm] = useState({ titulo: "", tipo: "link", url: "", descricao: "" });
+    const [prova, setProva] = useState(null);
+    const [provaForm, setProvaForm] = useState({ titulo: "", enunciado: "", tipo: "objetiva", alternativas: "", resposta_esperada: "" });
+    const [respostasProva, setRespostasProva] = useState([]);
     const [valorSaque, setValorSaque] = useState("");
     const [cursoSelecionado, setCursoSelecionado] = useState(null);
     const [modal, setModal] = useState(null);
@@ -115,11 +123,17 @@ export default function DashboardProfessor({
         setCarregando(true);
 
         try {
-            const resposta = await fetch(`${api}/professor/cursos/${idCurso}/aulas?status=${status}`, {
-                credentials: "include"
-            });
+            const [resposta, respostaMateriais, respostaProva, respostaCorrecoes] = await Promise.all([
+                fetch(`${api}/professor/cursos/${idCurso}/aulas?status=${status}`, { credentials: "include" }),
+                fetch(`${api}/professor/cursos/${idCurso}/materiais`, { credentials: "include" }),
+                fetch(`${api}/professor/cursos/${idCurso}/prova`, { credentials: "include" }),
+                fetch(`${api}/professor/provas/respostas`, { credentials: "include" })
+            ]);
             const dados = await lerResposta(resposta);
             setAulas(Array.isArray(dados) ? dados : []);
+            setMateriais(await lerResposta(respostaMateriais));
+            setProva(await lerResposta(respostaProva));
+            setRespostasProva(await lerResposta(respostaCorrecoes));
         } catch (erro) {
             console.error("Erro ao carregar aulas:", erro);
             setAulas([]);
@@ -201,6 +215,18 @@ export default function DashboardProfessor({
             return;
         }
 
+        if (location.pathname.endsWith("/chat")) {
+            setVisao("chat");
+            setCursoSelecionado(null);
+            return;
+        }
+
+        if (location.pathname.endsWith("/relatorios")) {
+            setVisao("relatorios");
+            setCursoSelecionado(null);
+            return;
+        }
+
         setVisao("inicio");
         setCursoSelecionado(null);
     }, [carregarCursos, cursos, cursoSelecionado, location.pathname]);
@@ -244,6 +270,37 @@ export default function DashboardProfessor({
 
         carregarFinanceiro();
     }, [api, avisar, lerResposta, visao]);
+
+    const carregarRelatorio = useCallback(async () => {
+        const params = new URLSearchParams();
+        if (filtrosRelatorio.inicio) params.set("inicio", filtrosRelatorio.inicio);
+        if (filtrosRelatorio.fim) params.set("fim", filtrosRelatorio.fim);
+        if (filtrosRelatorio.id_curso) params.set("id_curso", filtrosRelatorio.id_curso);
+
+        try {
+            const resposta = await fetch(`${api}/relatorios/professor?${params.toString()}`, {
+                credentials: "include"
+            });
+            setRelatorio(await lerResposta(resposta));
+        } catch (erro) {
+            console.error("Erro ao carregar relatorio:", erro);
+            avisar({ tipo: "erro", descricao: erro.message });
+        }
+    }, [api, avisar, filtrosRelatorio, lerResposta]);
+
+    useEffect(() => {
+        if (visao === "relatorios") {
+            carregarRelatorio();
+        }
+    }, [carregarRelatorio, visao]);
+
+    function baixarRelatorioPdf() {
+        const params = new URLSearchParams({ formato: "pdf" });
+        if (filtrosRelatorio.inicio) params.set("inicio", filtrosRelatorio.inicio);
+        if (filtrosRelatorio.fim) params.set("fim", filtrosRelatorio.fim);
+        if (filtrosRelatorio.id_curso) params.set("id_curso", filtrosRelatorio.id_curso);
+        window.open(`${api}/relatorios/professor?${params.toString()}`, "_blank", "noopener,noreferrer");
+    }
 
     function montarFormData(form) {
         const dados = new FormData();
@@ -400,6 +457,68 @@ export default function DashboardProfessor({
         }
     }
 
+    async function salvarMaterial() {
+        try {
+            const resposta = await fetch(`${api}/professor/cursos/${cursoSelecionado.id}/materiais`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(materialForm)
+            });
+            await lerResposta(resposta);
+            setMaterialForm({ titulo: "", tipo: "link", url: "", descricao: "" });
+            await carregarAulas(cursoSelecionado.id, filtroAulas);
+        } catch (erro) {
+            avisar({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
+    async function salvarProva() {
+        try {
+            const resposta = await fetch(`${api}/professor/cursos/${cursoSelecionado.id}/prova`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    titulo: provaForm.titulo,
+                    questoes: [{
+                        enunciado: provaForm.enunciado,
+                        tipo: provaForm.tipo,
+                        alternativas: provaForm.alternativas,
+                        resposta_esperada: provaForm.resposta_esperada
+                    }]
+                })
+            });
+            await lerResposta(resposta);
+            setProvaForm({ titulo: "", enunciado: "", tipo: "objetiva", alternativas: "", resposta_esperada: "" });
+            await carregarAulas(cursoSelecionado.id, filtroAulas);
+        } catch (erro) {
+            avisar({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
+    async function publicarProvaAtual() {
+        if (!prova?.prova?.id) return;
+        const resposta = await fetch(`${api}/professor/provas/${prova.prova.id}/publicar`, {
+            method: "PATCH",
+            credentials: "include"
+        });
+        await lerResposta(resposta);
+        await carregarAulas(cursoSelecionado.id, filtroAulas);
+    }
+
+    async function corrigirResposta(idResposta, aprovado) {
+        const feedback = window.prompt("Feedback para o aluno") || "";
+        const resposta = await fetch(`${api}/professor/provas/respostas/${idResposta}`, {
+            method: "PATCH",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ aprovado, feedback })
+        });
+        await lerResposta(resposta);
+        await carregarAulas(cursoSelecionado.id, filtroAulas);
+    }
+
     function abrirAulas(curso) {
         setCursoSelecionado(curso);
         setFiltroAulas("todos");
@@ -421,7 +540,7 @@ export default function DashboardProfessor({
 
     return (
         <div className={css.painelProfessor}>
-            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : visao === "financeiro" ? "financeiro" : "meus-cursos"} />
+            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "relatorios" ? "relatorios" : "meus-cursos"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
@@ -618,6 +737,86 @@ export default function DashboardProfessor({
                                     Solicitar saque
                                 </button>
                             </div>
+                            {financeiro?.cursos_receita?.length > 0 && (
+                                <div className={css.listaAlunosCurso}>
+                                    <div className={css.cabecalhoListaAlunos}>
+                                        <span>Curso</span>
+                                        <span>Receita estimada</span>
+                                    </div>
+                                    {financeiro.cursos_receita.map((curso) => (
+                                        <div key={curso.id_curso} className={css.linhaAlunoCurso}>
+                                            <span>{curso.curso} ({curso.views} views)</span>
+                                            <span>R$ {Number(curso.receita_estimativa || 0).toFixed(2).replace(".", ",")}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                    )}
+
+                    {visao === "chat" && (
+                        <section className={css.secaoCursos}>
+                            <ChatCurso api={api} perfil="professor" setMensagem={setMensagem} />
+                        </section>
+                    )}
+
+                    {visao === "relatorios" && (
+                        <section className={css.secaoCursos}>
+                            <div className={css.barraTitulo}>
+                                <h2>Relatorios</h2>
+                                <button className={css.botaoPrimario} onClick={baixarRelatorioPdf}>Baixar PDF</button>
+                            </div>
+                            <div className={css.formularioPerfil}>
+                                <label>
+                                    Inicio
+                                    <input type="date" value={filtrosRelatorio.inicio} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, inicio: e.target.value })} />
+                                </label>
+                                <label>
+                                    Fim
+                                    <input type="date" value={filtrosRelatorio.fim} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, fim: e.target.value })} />
+                                </label>
+                                <label>
+                                    ID do curso
+                                    <input value={filtrosRelatorio.id_curso} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, id_curso: e.target.value })} placeholder="Opcional" />
+                                </label>
+                                <button className={css.botaoPrimario} onClick={carregarRelatorio}>Filtrar</button>
+                            </div>
+                            <div className={css.gridMetricas}>
+                                <CardMetricaProfessor titulo="Alunos" valor={relatorio?.resumo?.alunos || 0} />
+                                <CardMetricaProfessor titulo="Cursos" valor={relatorio?.resumo?.cursos || 0} />
+                                <CardMetricaProfessor titulo="Aulas assistidas" valor={relatorio?.resumo?.aulas_assistidas || 0} />
+                                <CardMetricaProfessor titulo="Horas assistidas" valor={relatorio?.resumo?.horas_assistidas || 0} />
+                            </div>
+
+                            <section className={css.formularioPerfil}>
+                                <h2>Complementos</h2>
+                                <label>Titulo<input value={materialForm.titulo} onChange={(e) => setMaterialForm({ ...materialForm, titulo: e.target.value })} /></label>
+                                <label>Tipo<input value={materialForm.tipo} onChange={(e) => setMaterialForm({ ...materialForm, tipo: e.target.value })} /></label>
+                                <label>URL<input value={materialForm.url} onChange={(e) => setMaterialForm({ ...materialForm, url: e.target.value })} /></label>
+                                <label>Descricao<input value={materialForm.descricao} onChange={(e) => setMaterialForm({ ...materialForm, descricao: e.target.value })} /></label>
+                                <button className={css.botaoPrimario} onClick={salvarMaterial}>Cadastrar complemento</button>
+                                {materiais.map((material) => <p key={material.id}>{material.titulo} - {material.tipo}</p>)}
+                            </section>
+
+                            <section className={css.formularioPerfil}>
+                                <h2>Prova do curso</h2>
+                                {prova?.prova && <p>Atual: {prova.prova.titulo} ({prova.prova.publicada ? "publicada" : "rascunho"})</p>}
+                                <label>Titulo<input value={provaForm.titulo} onChange={(e) => setProvaForm({ ...provaForm, titulo: e.target.value })} /></label>
+                                <label>Enunciado<input value={provaForm.enunciado} onChange={(e) => setProvaForm({ ...provaForm, enunciado: e.target.value })} /></label>
+                                <label>Tipo<input value={provaForm.tipo} onChange={(e) => setProvaForm({ ...provaForm, tipo: e.target.value })} /></label>
+                                <label>Alternativas<input value={provaForm.alternativas} onChange={(e) => setProvaForm({ ...provaForm, alternativas: e.target.value })} /></label>
+                                <label>Resposta esperada<input value={provaForm.resposta_esperada} onChange={(e) => setProvaForm({ ...provaForm, resposta_esperada: e.target.value })} /></label>
+                                <button className={css.botaoPrimario} onClick={salvarProva}>Cadastrar prova</button>
+                                {prova?.prova && !prova.prova.publicada && <button className={css.botaoSecundario} onClick={publicarProvaAtual}>Publicar prova</button>}
+                                {respostasProva.filter((item) => item.curso === cursoSelecionado.titulo).map((resposta) => (
+                                    <article key={resposta.id}>
+                                        <strong>{resposta.aluno}</strong>
+                                        <p>{resposta.respostas}</p>
+                                        <button className={css.botaoPrimario} onClick={() => corrigirResposta(resposta.id, true)}>Aprovar</button>
+                                        <button className={css.botaoSecundario} onClick={() => corrigirResposta(resposta.id, false)}>Reprovar</button>
+                                    </article>
+                                ))}
+                            </section>
                         </section>
                     )}
                 </main>

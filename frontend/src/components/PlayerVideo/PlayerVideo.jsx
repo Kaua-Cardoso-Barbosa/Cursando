@@ -126,6 +126,23 @@ export default function PlayerVideo({
 
         carregarVideo();
 
+        const bloquearEvento = (evento) => {
+            evento.preventDefault();
+        };
+
+        const bloquearTeclas = (evento) => {
+            if (
+                evento.key === "PrintScreen" ||
+                (evento.ctrlKey && evento.shiftKey) ||
+                (evento.metaKey && evento.shiftKey)
+            ) {
+                evento.preventDefault();
+            }
+        };
+
+        container.addEventListener("contextmenu", bloquearEvento);
+        document.addEventListener("keydown", bloquearTeclas);
+
         return () => {
             video.removeEventListener(
                 "ended",
@@ -138,6 +155,8 @@ export default function PlayerVideo({
             );
 
             ui.destroy();
+            container.removeEventListener("contextmenu", bloquearEvento);
+            document.removeEventListener("keydown", bloquearTeclas);
         };
     }, [videoUrl, videoAula, marcarAssistida]);
 
@@ -151,6 +170,9 @@ export default function PlayerVideo({
                 className={css.shakaVideo}
                 poster={posterUrl}
                 playsInline
+                controlsList="nodownload noremoteplayback"
+                disablePictureInPicture
+                onContextMenu={(evento) => evento.preventDefault()}
             />
         </div>
     );

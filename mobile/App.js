@@ -1,19 +1,32 @@
 import { StatusBar } from "expo-status-bar";
+import * as LocalAuthentication from "expo-local-authentication";
+import * as Notifications from "expo-notifications";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, Vibration, View } from "react-native";
 import { apiRequest, carregarSessao, limparSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
 import AssinaturaScreen from "./src/screens/AssinaturaScreen";
 import CadastroScreen from "./src/screens/CadastroScreen";
+import ChatScreen from "./src/screens/ChatScreen";
 import CursosScreen from "./src/screens/CursosScreen";
 import EditarCursoScreen from "./src/screens/EditarCursoScreen";
 import EditarPerfilScreen from "./src/screens/EditarPerfilScreen";
+import FinanceiroScreen from "./src/screens/FinanceiroScreen";
 import InicioScreen from "./src/screens/InicioScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
 import PlayerAulaScreen from "./src/screens/PlayerAulaScreen";
 import { colors, globalStyles } from "./src/styles";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true
+  })
+});
 
 export default function App() {
   const [token, setToken] = useState("");
@@ -22,6 +35,7 @@ export default function App() {
   const [validandoAssinatura, setValidandoAssinatura] = useState(false);
   const [perfil, setPerfil] = useState(null);
   const [dashboard, setDashboard] = useState(null);
+  const [financeiro, setFinanceiro] = useState(null);
   const [cursos, setCursos] = useState([]);
   const [detalheCursoAluno, setDetalheCursoAluno] = useState(null);
   const [detalheAulaAluno, setDetalheAulaAluno] = useState(null);
@@ -39,20 +53,62 @@ export default function App() {
       const tipo = Number(authUser?.tipo ?? usuario?.tipo ?? 1);
       const dashboardPath = tipo === 2 ? "/aluno/dashboard" : "/professor/dashboard";
       const cursosPath = tipo === 2 ? "/aluno/cursos" : "/professor/cursos?status=todos";
-      const [dashboardData, cursosData, perfilData] = await Promise.all([
+      const requisicoes = [
         apiRequest(dashboardPath, {}, authToken),
         apiRequest(cursosPath, {}, authToken),
         apiRequest("/perfil", {}, authToken)
-      ]);
+      ];
+
+      // Sprint item 8: carrega o financeiro no app tambem para alunos, nao apenas professores.
+      if (tipo === 1 || tipo === 2) {
+        requisicoes.push(apiRequest("/financeiro/resumo", {}, authToken));
+      }
+
+      const [dashboardData, cursosData, perfilData, financeiroData] = await Promise.all(requisicoes);
       setDashboard(dashboardData);
       setCursos(Array.isArray(cursosData) ? cursosData : []);
       setPerfil(perfilData);
+      setFinanceiro((tipo === 1 || tipo === 2) ? financeiroData : null);
       setUsuario((atual) => ({ ...(atual || {}), ...perfilData, tipo }));
     } catch (error) {
       Alert.alert("Erro", error.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function confirmarBiometriaDisponivel() {
+    const compativel = await LocalAuthentication.hasHardwareAsync();
+    const cadastrado = compativel ? await LocalAuthentication.isEnrolledAsync() : false;
+
+    if (!compativel || !cadastrado) {
+      return true;
+    }
+
+    const resultado = await LocalAuthentication.authenticateAsync({
+      promptMessage: "Confirmar acesso ao Cursando",
+      cancelLabel: "Cancelar",
+      fallbackLabel: "Usar senha do aparelho"
+    });
+
+    return resultado.success === true;
+  }
+
+  async function avisarSessaoAtiva() {
+    Vibration.vibrate(60);
+
+    const permissao = await Notifications.requestPermissionsAsync();
+    if (permissao.status !== "granted") {
+      return;
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Cursando",
+        body: "Sessao iniciada com sucesso."
+      },
+      trigger: null
+    });
   }
 
   // Valida a assinatura do aluno antes de carregar a área interna do aplicativo.
@@ -68,14 +124,11 @@ export default function App() {
     setValidandoAssinatura(true);
     try {
       const dados = await apiRequest("/assinaturas/verificar", {}, authToken);
-      const ativa = dados?.assinatura === true;
-      setAssinaturaAtiva(ativa);
-
-      if (ativa) {
-        await carregarDados(authToken, authUser);
-      }
+      setAssinaturaAtiva(dados?.assinatura === true);
+      await carregarDados(authToken, authUser);
     } catch {
       setAssinaturaAtiva(false);
+      await carregarDados(authToken, authUser);
     } finally {
       setValidandoAssinatura(false);
     }
@@ -91,8 +144,15 @@ export default function App() {
     async function iniciar() {
       const sessao = await carregarSessao();
       if (sessao.token) {
+        const autorizado = await confirmarBiometriaDisponivel();
+        if (!autorizado) {
+          await limparSessao();
+          return;
+        }
+
         setToken(sessao.token);
         setUsuario(sessao.usuario);
+        avisarSessaoAtiva().catch(() => {});
         validarAcesso(sessao.token, sessao.usuario);
       }
     }
@@ -106,6 +166,7 @@ export default function App() {
     setAssinaturaAtiva(null);
     setPerfil(null);
     setDashboard(null);
+    setFinanceiro(null);
     setCursos([]);
     setDetalheCursoAluno(null);
     setDetalheAulaAluno(null);
@@ -115,8 +176,17 @@ export default function App() {
   async function abrirCursoAluno(curso) {
     setLoading(true);
     try {
-      const detalhe = await apiRequest(`/aluno/cursos/${curso.id}`, {}, token);
-      setDetalheCursoAluno(detalhe);
+      const [detalhe, materiais] = await Promise.all([
+        apiRequest(`/aluno/cursos/${curso.id}`, {}, token),
+        apiRequest(`/aluno/cursos/${curso.id}/materiais`, {}, token)
+      ]);
+      let prova = null;
+      try {
+        prova = await apiRequest(`/aluno/cursos/${curso.id}/prova`, {}, token);
+      } catch {
+        prova = null;
+      }
+      setDetalheCursoAluno({ ...detalhe, materiais: Array.isArray(materiais) ? materiais : [], prova });
       setDetalheAulaAluno(null);
       setTab("courses");
     } catch (error) {
@@ -144,12 +214,35 @@ export default function App() {
       await apiRequest(`/aluno/aulas/${aula.id}/assistir`, { method: "POST" }, token);
       await carregarDados();
       if (detalheCursoAluno?.curso?.id) {
-        const detalhe = await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}`, {}, token);
-        setDetalheCursoAluno(detalhe);
+        const [detalhe, materiais] = await Promise.all([
+          apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}`, {}, token),
+          apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/materiais`, {}, token)
+        ]);
+        setDetalheCursoAluno({ ...detalhe, materiais: Array.isArray(materiais) ? materiais : [] });
       }
     } catch (error) {
       Alert.alert("Erro", error.message);
     }
+  }
+
+  async function enviarProvaAluno(respostas) {
+    if (!detalheCursoAluno?.curso?.id) return;
+
+    await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/prova`, {
+      method: "POST",
+      body: JSON.stringify({ respostas })
+    }, token);
+    await abrirCursoAluno(detalheCursoAluno.curso);
+  }
+
+  async function avaliarCursoAluno(dados) {
+    if (!detalheCursoAluno?.curso?.id) return;
+
+    await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/avaliacoes`, {
+      method: "POST",
+      body: JSON.stringify(dados)
+    }, token);
+    Alert.alert("Avaliação", "Avaliação enviada.");
   }
 
   function trocarAba(key) {
@@ -232,6 +325,7 @@ export default function App() {
           setToken(novoToken);
           setUsuario(novoUsuario);
           setAssinaturaAtiva(null);
+          avisarSessaoAtiva().catch(() => {});
           validarAcesso(novoToken, novoUsuario);
         }} onSignup={() => setCadastroAberto(true)} />
       </SafeAreaView>
@@ -240,23 +334,10 @@ export default function App() {
 
   const tipoUsuario = Number(usuario?.tipo ?? perfil?.tipo ?? 1);
 
-  if (tipoUsuario === 2 && assinaturaAtiva !== true) {
-    if (assinaturaAtiva === null || validandoAssinatura) {
-      return (
-        <SafeAreaView style={[globalStyles.app, styles.loading]}>
-          <ActivityIndicator size="large" color={colors.green} />
-        </SafeAreaView>
-      );
-    }
-
+  if (tipoUsuario === 2 && assinaturaAtiva === null && validandoAssinatura) {
     return (
-      <SafeAreaView style={globalStyles.app}>
-        <StatusBar style="dark" />
-        <AssinaturaScreen
-          token={token}
-          onLogout={sair}
-          onAssinaturaAtiva={concluirAssinatura}
-        />
+      <SafeAreaView style={[globalStyles.app, styles.loading]}>
+        <ActivityIndicator size="large" color={colors.green} />
       </SafeAreaView>
     );
   }
@@ -275,7 +356,7 @@ export default function App() {
       <SafeAreaView style={globalStyles.app}>
         <StatusBar style="dark" />
         <EditarPerfilScreen perfil={perfil} onCancel={() => setEditingProfile(false)} onSave={salvarPerfil} salvando={saving} />
-        <BottomNav active="profile" onChange={(key) => {
+        <BottomNav active="profile" tipoUsuario={tipoUsuario} onChange={(key) => {
           setEditingProfile(false);
           trocarAba(key);
         }} />
@@ -322,6 +403,8 @@ export default function App() {
             onRefresh={() => abrirCursoAluno(detalheCursoAluno.curso)}
             onBack={() => setDetalheCursoAluno(null)}
             onOpenLesson={abrirAulaAluno}
+            onSubmitExam={enviarProvaAluno}
+            onReview={avaliarCursoAluno}
           />
         )}
         {tab === "courses" && tipoUsuario === 2 && detalheAulaAluno && (
@@ -333,8 +416,26 @@ export default function App() {
           />
         )}
         {tab === "profile" && <PerfilScreen perfil={perfil} onEdit={() => setEditingProfile(true)} onLogout={sair} />}
+        {tab === "chat" && (
+          <ChatScreen
+            token={token}
+            tipoUsuario={tipoUsuario}
+            cursos={cursos}
+            carregando={loading}
+            onRefresh={carregarDados}
+          />
+        )}
+        {tab === "finance" && (tipoUsuario === 1 || tipoUsuario === 2) && (
+          <FinanceiroScreen
+            financeiro={financeiro}
+            carregando={loading}
+            onRefresh={carregarDados}
+            token={token}
+            tipoUsuario={tipoUsuario}
+          />
+        )}
       </View>
-      <BottomNav active={tab} onChange={trocarAba} />
+      <BottomNav active={tab} onChange={trocarAba} tipoUsuario={tipoUsuario} />
     </SafeAreaView>
   );
 }

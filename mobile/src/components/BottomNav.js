@@ -2,13 +2,30 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, systemNavigationInset } from "../styles";
 
-const items = [
+const baseItems = [
   { key: "home", label: "In\u00edcio", icon: "home-outline" },
   { key: "courses", label: "Meus Cursos", icon: "videocam-outline" },
+  { key: "chat", label: "Chat", icon: "chatbubble-ellipses-outline" },
   { key: "profile", label: "Perfil", icon: "person-circle-outline" }
 ];
 
-export default function BottomNav({ active, onChange }) {
+export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
+  const items = Number(tipoUsuario) === 1
+    ? [
+      baseItems[0],
+      baseItems[1],
+      baseItems[2],
+      { key: "finance", label: "Financeiro", icon: "wallet-outline" },
+      baseItems[3]
+    ]
+    : [
+      baseItems[0],
+      baseItems[1],
+      baseItems[2],
+      { key: "finance", label: "Financeiro", icon: "wallet-outline" },
+      baseItems[3]
+    ];
+
   return (
     <View style={styles.nav}>
       {items.map((item, index) => {
@@ -72,7 +89,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.black,
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 16
   },
   labelActive: {
