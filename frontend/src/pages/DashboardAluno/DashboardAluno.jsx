@@ -91,7 +91,7 @@ function EstadoVazio({ texto }) {
     );
 }
 
-function CardMetrica({ titulo, detalhe, valor, icone = <FaGraduationCap />, data = false }) {
+function CardMetrica({ titulo, detalhe, valor, icone = <FaGraduationCap /> }) {
     return (
         <article className={css.cardMetrica}>
             <div className={css.metricaTopo}>
@@ -101,7 +101,7 @@ function CardMetrica({ titulo, detalhe, valor, icone = <FaGraduationCap />, data
                 </div>
             </div>
             <span className={css.metricaVariacao}>{detalhe}</span>
-            <strong className={data ? css.metricaData : css.metricaNumero}>{valor}</strong>
+            <strong className={css.metricaNumero}>{valor}</strong>
         </article>
     );
 }
@@ -406,14 +406,12 @@ export default function DashboardAluno({
                                         detalhe="Data de início"
                                         valor={formatarDataAssinatura(dashboard?.assinatura?.data_inicio)}
                                         icone={<FaCalendarAlt />}
-                                        data
                                     />
                                     <CardMetrica
                                         titulo="Válida até"
                                         detalhe="Data de término"
                                         valor={formatarDataAssinatura(dashboard?.assinatura?.data_expiracao)}
                                         icone={<FaCalendarAlt />}
-                                        data
                                     />
                                     <CardMetrica titulo="Cursos inscritos" detalhe="" valor={metricas.inscritos} />
                                     <CardMetrica titulo="Cursos finalizados" detalhe="" valor={metricas.finalizados} />

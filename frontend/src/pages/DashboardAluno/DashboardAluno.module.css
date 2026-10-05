@@ -84,7 +84,7 @@
     background: #fafafa;
     border: 1.5px solid #666666;
     border-radius: 16px;
-    padding: 12px 14px;
+    padding: 20px 24px;
     display: flex;
     flex-direction: column;
 }
@@ -125,12 +125,6 @@
 }
 
 .metricaNumero {
-    color: #111111;
-    font-size: 2rem;
-    font-weight: 500;
-}
-
-.metricaData {
     color: #111111;
     font-size: 2rem;
     font-weight: 500;

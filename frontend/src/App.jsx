@@ -99,13 +99,32 @@ function AppConteudo() {
             "/": "Início - Cursando",
             "/login": "Login - Cursando",
             "/cadastro": "Cadastro - Cursando",
-            "/dashboardaluno": "Dashboard Usuário - Cursando",
-            "/dashboardprofessor": "Dashboard Professor - Cursando",
-            "/dashboardadm": "Dashboard Administrador - Cursando",
+
+            "/DashboardAluno": "Dashboard Usuário - Cursando",
+            "/DashboardAluno/cursos": "Meus Cursos - Cursando",
+            "/DashboardAluno/descobrir": "Descobrir Cursos - Cursando",
+            "/DashboardAluno/perfil": "Meu Perfil - Cursando",
+
+            "/DashboardProfessor": "Dashboard Professor - Cursando",
+            "/DashboardAdm": "Dashboard Administrador - Cursando",
             "/gerenciamento-usuarios": "Gerenciamento de Usuários - Cursando",
         };
 
-        document.title = titulos[location.pathname] || "Cursando";
+        let titulo = titulos[location.pathname];
+
+        if (!titulo && location.pathname.match(/^\/dashboardaluno\/cursos\/\d+$/)) {
+            titulo = "Curso - Cursando";
+        }
+
+        if (!titulo && location.pathname.match(/^\/dashboardaluno\/descobrir\/\d+$/)) {
+            titulo = "Curso - Cursando";
+        }
+
+        if (!titulo && location.pathname.match(/^\/dashboardaluno\/aulas\/\d+$/)) {
+            titulo = "Aula - Cursando";
+        }
+
+        document.title = titulo || "Cursando";
     }, [location.pathname]);
 
     return (
