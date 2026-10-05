@@ -1,95 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FaPaperPlane, FaUserCircle } from "react-icons/fa";
-
-const styles = {
-    layout: {
-        display: "grid",
-        gridTemplateColumns: "minmax(240px, 320px) 1fr",
-        gap: 18,
-        minHeight: 520
-    },
-    panel: {
-        border: "1.5px solid #666666",
-        borderRadius: 8,
-        background: "#ffffff",
-        overflow: "hidden"
-    },
-    title: {
-        fontSize: "1.8rem",
-        fontWeight: 400,
-        color: "#111111",
-        marginBottom: 18
-    },
-    listButton: {
-        width: "100%",
-        border: "none",
-        borderBottom: "1px solid #dddddd",
-        background: "#ffffff",
-        padding: "14px 16px",
-        textAlign: "left",
-        display: "grid",
-        gap: 4,
-        cursor: "pointer"
-    },
-    listButtonActive: {
-        background: "#e8f7ef"
-    },
-    person: {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        color: "#111111",
-        fontWeight: 700
-    },
-    muted: {
-        color: "#666666",
-        fontSize: ".9rem"
-    },
-    messages: {
-        height: 390,
-        overflowY: "auto",
-        padding: 18,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        background: "#fafafa"
-    },
-    bubble: {
-        maxWidth: "78%",
-        border: "1px solid #dddddd",
-        borderRadius: 8,
-        padding: "10px 12px",
-        background: "#ffffff",
-        color: "#111111"
-    },
-    mine: {
-        alignSelf: "flex-end",
-        borderColor: "#139a58",
-        background: "#e8f7ef"
-    },
-    composer: {
-        display: "flex",
-        gap: 10,
-        padding: 14,
-        borderTop: "1px solid #dddddd"
-    },
-    input: {
-        flex: 1,
-        minHeight: 44,
-        border: "1.5px solid #139a58",
-        borderRadius: 8,
-        padding: "8px 10px",
-        font: "inherit"
-    },
-    send: {
-        minWidth: 48,
-        border: "none",
-        borderRadius: 8,
-        background: "#139a58",
-        color: "#ffffff",
-        cursor: "pointer"
-    }
-};
+import css from "./ChatCurso.module.css";
 
 export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
     const [conversas, setConversas] = useState([]);
@@ -97,16 +8,23 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
     const [mensagens, setMensagens] = useState([]);
     const [texto, setTexto] = useState("");
     const [carregando, setCarregando] = useState(false);
+    const mensagensRef = useRef(null);
 
     const lerResposta = useCallback(async (resposta) => {
         const dados = await resposta.json().catch(() => ({}));
-        if (dados.mensagem && setMensagem) setMensagem(dados.mensagem);
-        if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao conectar com a API.");
+        if (dados.mensagem && typeof dados.mensagem === "object") setMensagem?.(dados.mensagem);
+        if (!resposta.ok) {
+            throw new Error(
+                typeof dados?.mensagem === "string"
+                    ? dados.mensagem
+                    : dados?.mensagem?.descricao || "Erro ao conectar com a API."
+            );
+        }
         return dados;
     }, [setMensagem]);
 
-    const carregarConversas = useCallback(async () => {
-        setCarregando(true);
+    const carregarConversas = useCallback(async ({ silencioso = false } = {}) => {
+        if (!silencioso) setCarregando(true);
         try {
             if (perfil === "aluno") {
                 const [cursosResposta, conversasResposta] = await Promise.all([
@@ -144,7 +62,7 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
             setMensagem?.({ tipo: "erro", descricao: erro.message });
             setConversas([]);
         } finally {
-            setCarregando(false);
+            if (!silencioso) setCarregando(false);
         }
     }, [api, lerResposta, perfil, setMensagem]);
 
@@ -169,6 +87,24 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
         });
     }, [carregarMensagens, selecionada, setMensagem]);
 
+    useEffect(() => {
+        const intervalo = window.setInterval(() => {
+            carregarConversas({ silencioso: true });
+            if (selecionada) {
+                carregarMensagens(selecionada).catch((erro) => {
+                    console.error("Erro ao atualizar mensagens:", erro);
+                });
+            }
+        }, 3000);
+
+        return () => window.clearInterval(intervalo);
+    }, [carregarConversas, carregarMensagens, selecionada]);
+
+    useEffect(() => {
+        if (!mensagensRef.current) return;
+        mensagensRef.current.scrollTop = mensagensRef.current.scrollHeight;
+    }, [mensagens]);
+
     async function enviarMensagem() {
         if (!selecionada || !texto.trim()) return;
 
@@ -185,61 +121,83 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
             await lerResposta(resposta);
             setTexto("");
             await carregarMensagens(selecionada);
-            await carregarConversas();
+            await carregarConversas({ silencioso: true });
         } catch (erro) {
             console.error("Erro ao enviar mensagem:", erro);
             setMensagem?.({ tipo: "erro", descricao: erro.message });
         }
     }
 
+    function aoTeclarMensagem(evento) {
+        if (evento.key !== "Enter" || evento.shiftKey) return;
+        evento.preventDefault();
+        enviarMensagem();
+    }
+
     return (
-        <section>
-            <h2 style={styles.title}>Chat</h2>
-            <div style={styles.layout}>
-                <aside style={styles.panel}>
-                    {carregando && <p style={{ padding: 16 }}>Carregando conversas...</p>}
-                    {!carregando && conversas.length === 0 && <p style={{ padding: 16 }}>Nenhuma conversa disponivel.</p>}
+        <section className={css.chat}>
+            <div className={css.topo}>
+                <div>
+                    <h2>Mensagens</h2>
+                    <p>Converse sobre cursos, aulas e dúvidas dos alunos.</p>
+                </div>
+                <span>{conversas.length} {conversas.length === 1 ? "conversa" : "conversas"}</span>
+            </div>
+
+            <div className={css.layout}>
+                <aside className={css.listaConversas}>
+                    {carregando && <p className={css.estado}>Carregando conversas...</p>}
+                    {!carregando && conversas.length === 0 && <p className={css.estado}>Nenhuma conversa disponível.</p>}
                     {conversas.map((conversa) => {
                         const ativo = selecionada?.id_curso === conversa.id_curso && selecionada?.id_aluno === conversa.id_aluno;
                         return (
                             <button
                                 key={`${conversa.id_curso}-${conversa.id_aluno || "aluno"}`}
                                 type="button"
-                                style={{ ...styles.listButton, ...(ativo ? styles.listButtonActive : {}) }}
+                                className={`${css.itemConversa} ${ativo ? css.itemAtivo : ""}`}
                                 onClick={() => setSelecionada(conversa)}
                             >
-                                <span style={styles.person}><FaUserCircle /> {conversa.nome}</span>
-                                <span style={styles.muted}>{conversa.curso}</span>
-                                {conversa.nao_lidas > 0 && <strong>{conversa.nao_lidas} nova(s)</strong>}
+                                <span className={css.avatar}><FaUserCircle /></span>
+                                <span className={css.resumoConversa}>
+                                    <strong>{conversa.nome}</strong>
+                                    <small>{conversa.curso}</small>
+                                </span>
+                                {conversa.nao_lidas > 0 && <span className={css.badge}>{conversa.nao_lidas}</span>}
                             </button>
                         );
                     })}
                 </aside>
 
-                <div style={styles.panel}>
-                    <div style={styles.messages}>
-                        {!selecionada && <p>Selecione uma conversa.</p>}
-                        {selecionada && mensagens.length === 0 && <p>Nenhuma mensagem enviada ainda.</p>}
+                <div className={css.painelMensagens}>
+                    <div className={css.cabecalhoConversa}>
+                        <strong>{selecionada ? selecionada.nome : "Selecione uma conversa"}</strong>
+                        {selecionada && <small>{selecionada.curso}</small>}
+                    </div>
+
+                    <div className={css.mensagens} ref={mensagensRef}>
+                        {!selecionada && <p className={css.estado}>Escolha uma conversa para começar.</p>}
+                        {selecionada && mensagens.length === 0 && <p className={css.estado}>Nenhuma mensagem enviada ainda.</p>}
                         {mensagens.map((mensagem) => (
                             <article
                                 key={mensagem.id}
-                                style={{ ...styles.bubble, ...(mensagem.minha ? styles.mine : {}) }}
+                                className={`${css.balao} ${mensagem.minha ? css.meuBalao : ""}`}
                             >
                                 <strong>{mensagem.nome}</strong>
                                 <p>{mensagem.texto}</p>
-                                <small style={styles.muted}>{mensagem.criado_em ? new Date(mensagem.criado_em).toLocaleString("pt-BR") : ""}</small>
+                                <small>{mensagem.criado_em ? new Date(mensagem.criado_em).toLocaleString("pt-BR") : ""}</small>
                             </article>
                         ))}
                     </div>
-                    <div style={styles.composer}>
-                        <input
-                            style={styles.input}
+
+                    <div className={css.compositor}>
+                        <textarea
                             value={texto}
                             onChange={(evento) => setTexto(evento.target.value)}
+                            onKeyDown={aoTeclarMensagem}
                             placeholder={selecionada ? "Digite sua mensagem" : "Selecione uma conversa"}
                             disabled={!selecionada}
                         />
-                        <button style={styles.send} type="button" onClick={enviarMensagem} disabled={!selecionada}>
+                        <button type="button" onClick={enviarMensagem} disabled={!selecionada || !texto.trim()} title="Enviar mensagem">
                             <FaPaperPlane />
                         </button>
                     </div>

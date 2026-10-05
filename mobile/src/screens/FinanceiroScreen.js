@@ -18,7 +18,10 @@ const cards = [
 export default function FinanceiroScreen({ financeiro, carregando, onRefresh, token, tipoUsuario }) {
   const [faturas, setFaturas] = useState([]);
   const [pagamento, setPagamento] = useState(null);
+  const [verificando, setVerificando] = useState(false);
   const aluno = Number(tipoUsuario) === 2;
+  const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
+  const faturasPagas = faturas.filter((fatura) => !fatura.aberta);
   const cardsAtivos = aluno
     ? [
       ["Total gasto", "Mensalidades pagas", "total_gasto", "cash-outline", "money"],
@@ -57,6 +60,23 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
     }
   }
 
+  async function verificarPagamento() {
+    if (!pagamento?.id_assinatura) return;
+    try {
+      setVerificando(true);
+      await apiRequest(`/financeiro/faturas/${pagamento.id_assinatura}/verificar`, {
+        method: "POST"
+      }, token);
+      setPagamento(null);
+      await carregarFaturas();
+      await onRefresh?.();
+    } catch (error) {
+      Alert.alert("Pagamento", error.message);
+    } finally {
+      setVerificando(false);
+    }
+  }
+
   return (
     <ScrollView
       contentContainerStyle={globalStyles.page}
@@ -87,27 +107,47 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
 
       <Text style={styles.poolText}>
         {aluno
-          ? "Faturas abertas bloqueiam cursos e aulas ate a confirmacao do pagamento."
+          ? "Mensalidades futuras podem ficar em aberto sem interromper uma assinatura ativa."
           : `Percentual do pool: ${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}%`}
       </Text>
 
       {aluno && (
         <View style={styles.invoiceSection}>
-          <Pressable style={styles.payButton} onPress={pagarProxima}>
-            <Text style={styles.payButtonText}>Pagar proxima mensalidade</Text>
-          </Pressable>
-          {pagamento?.codigo_pagamento && (
-            <View style={styles.invoiceCard}>
-              <Text style={styles.invoiceTitle}>PIX gerado</Text>
-              <Text style={styles.invoiceText}>{pagamento.codigo_pagamento}</Text>
-            </View>
-          )}
-          {faturas.map((fatura) => (
-            <View key={fatura.id} style={styles.invoiceCard}>
-              <Text style={styles.invoiceTitle}>Fatura #{fatura.id} - {fatura.status_label}</Text>
-              <Text style={styles.invoiceText}>{moeda(fatura.valor)}</Text>
-            </View>
-          ))}
+          <View style={styles.invoiceBlock}>
+            <Text style={styles.sectionTitle}>Pagamento de novas mensalidades</Text>
+            <Text style={styles.invoiceText}>Gere uma nova cobranca sem interromper a mensalidade atual.</Text>
+            <Pressable style={styles.payButton} onPress={pagarProxima}>
+              <Text style={styles.payButtonText}>Pagar nova mensalidade</Text>
+            </Pressable>
+            {pagamento?.codigo_pagamento && (
+              <View style={styles.invoiceCard}>
+                <Text style={styles.invoiceTitle}>PIX gerado</Text>
+                <Text style={styles.invoiceText}>{pagamento.codigo_pagamento}</Text>
+                <Pressable style={styles.confirmButton} onPress={verificarPagamento} disabled={verificando}>
+                  <Text style={styles.payButtonText}>{verificando ? "Verificando..." : "Ja paguei"}</Text>
+                </Pressable>
+              </View>
+            )}
+            {faturasAbertas.map((fatura) => (
+              <View key={fatura.id} style={styles.invoiceCard}>
+                <Text style={styles.invoiceTitle}>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</Text>
+                <Text style={styles.invoiceText}>{moeda(fatura.valor)}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.invoiceBlock}>
+            <Text style={styles.sectionTitle}>Historico de mensalidades</Text>
+            {faturasPagas.map((fatura) => (
+              <View key={fatura.id} style={styles.invoiceCard}>
+                <Text style={styles.invoiceTitle}>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</Text>
+                <Text style={styles.invoiceText}>{moeda(fatura.valor)}</Text>
+              </View>
+            ))}
+            {faturasPagas.length === 0 && (
+              <Text style={styles.invoiceText}>Nenhuma mensalidade paga registrada.</Text>
+            )}
+          </View>
         </View>
       )}
     </ScrollView>
@@ -170,6 +210,18 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 18
   },
+  invoiceBlock: {
+    gap: 12,
+    borderTopWidth: 1.5,
+    borderTopColor: colors.darkGreen,
+    paddingTop: 16
+  },
+  sectionTitle: {
+    color: colors.black,
+    fontSize: 21,
+    lineHeight: 26,
+    fontWeight: "700"
+  },
   payButton: {
     minHeight: 48,
     borderRadius: 8,
@@ -200,5 +252,14 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20
+  },
+  confirmButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    backgroundColor: colors.darkGreen,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    marginTop: 12
   }
 });

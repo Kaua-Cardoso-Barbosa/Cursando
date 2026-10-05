@@ -1,0 +1,244 @@
+.chat {
+    width: 100%;
+}
+
+.topo {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    border-bottom: 2px solid #06a663;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.topo h2 {
+    color: #111111;
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1.1;
+    margin: 0;
+}
+
+.topo p {
+    color: #555555;
+    font-size: 0.98rem;
+    line-height: 1.35;
+    margin: 5px 0 0;
+}
+
+.topo span {
+    color: #02693e;
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+    gap: 18px;
+    min-height: 560px;
+}
+
+.listaConversas,
+.painelMensagens {
+    border: 1.5px solid #666666;
+    border-radius: 8px;
+    background: #ffffff;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.listaConversas {
+    max-height: 660px;
+    overflow-y: auto;
+}
+
+.itemConversa {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #dddddd;
+    background: #ffffff;
+    color: #111111;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    text-align: left;
+}
+
+.itemConversa:hover,
+.itemAtivo {
+    background: #e8f7ef;
+}
+
+.avatar {
+    color: #02693e;
+    display: inline-flex;
+    font-size: 1.6rem;
+}
+
+.resumoConversa {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.resumoConversa strong,
+.resumoConversa small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.resumoConversa strong {
+    color: #111111;
+    font-size: 0.98rem;
+}
+
+.resumoConversa small,
+.cabecalhoConversa small {
+    color: #666666;
+    font-size: 0.86rem;
+}
+
+.badge {
+    min-width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #02693e;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.painelMensagens {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+
+.cabecalhoConversa {
+    border-bottom: 1px solid #dddddd;
+    display: grid;
+    gap: 2px;
+    padding: 14px 18px;
+}
+
+.cabecalhoConversa strong {
+    color: #111111;
+    font-size: 1rem;
+}
+
+.mensagens {
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 520px;
+    min-height: 390px;
+    overflow-y: auto;
+    padding: 18px;
+}
+
+.balao {
+    align-self: flex-start;
+    max-width: min(72%, 680px);
+    border: 1px solid #dddddd;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #111111;
+    padding: 10px 12px;
+}
+
+.meuBalao {
+    align-self: flex-end;
+    border-color: #139a58;
+    background: #e8f7ef;
+}
+
+.balao strong {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.balao p {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin: 0 0 6px;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.balao small {
+    color: #666666;
+    font-size: 0.78rem;
+}
+
+.compositor {
+    border-top: 1px solid #dddddd;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: 10px;
+    padding: 14px;
+}
+
+.compositor textarea {
+    min-height: 46px;
+    max-height: 138px;
+    border: 1.5px solid #139a58;
+    border-radius: 8px;
+    color: #111111;
+    font: inherit;
+    line-height: 1.35;
+    padding: 10px 12px;
+    resize: vertical;
+}
+
+.compositor button {
+    min-height: 46px;
+    border: none;
+    border-radius: 8px;
+    background: #139a58;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.compositor button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.estado {
+    color: #555555;
+    margin: 0;
+    padding: 16px;
+}
+
+@media (max-width: 900px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    .listaConversas {
+        max-height: 260px;
+    }
+}
+
+@media (max-width: 560px) {
+    .topo {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .balao {
+        max-width: 92%;
+    }
+}

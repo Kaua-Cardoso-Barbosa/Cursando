@@ -8,7 +8,7 @@ from app import app
 from banco import get_db
 from log_banco import garantir_log_schema, get_log_db
 from professor import de_blob_texto, para_blob_texto
-from servicos.arkhe import ArkheError, criar_cobranca_pix, solicitar_saque_conta
+from servicos.arkhe import ArkheError, criar_cobranca_pix, consultar_cobranca_pix, solicitar_saque_conta
 
 
 _schema_pronto = False
@@ -1796,11 +1796,12 @@ def logs_gravacao_admin():
         log_con.close()
 
 
-def _fatura_para_dict(row):
+def _fatura_para_dict(row, numero=None):
     status = int(row[2] or 0)
     valor_padrao = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
     return {
         "id": row[0],
+        "numero": numero or row[0],
         "id_cobranca": row[1],
         "status": status,
         "status_label": "paga" if status == 1 else "em aberto",
@@ -1816,6 +1817,21 @@ def _fatura_para_dict(row):
 
 def aluno_tem_fatura_aberta(cursor, id_usuario):
     garantir_sprint_schema()
+    agora = datetime.now()
+    cursor.execute(
+        """
+        SELECT FIRST 1 ID_ASSINATURA
+        FROM ASSINATURAS
+        WHERE ID_USUARIO = ?
+          AND STATUS = 1
+          AND (DATA_EXPIRACAO IS NULL OR DATA_EXPIRACAO >= ?)
+        ORDER BY DATA_EXPIRACAO DESC, ID_ASSINATURA DESC
+        """,
+        (id_usuario, agora),
+    )
+    if cursor.fetchone() is not None:
+        return False
+
     cursor.execute(
         """
         SELECT FIRST 1 ID_ASSINATURA
@@ -1846,6 +1862,32 @@ def faturas_aluno():
             valor = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
             meses = max(1, min(int(dados.get("meses") or 1), 12))
             valor_total = round(valor * meses, 2)
+            cursor.execute(
+                """
+                SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
+                FROM ASSINATURAS
+                WHERE ID_USUARIO = ?
+                  AND STATUS <> 1
+                  AND ID_COBRANCA_ARKHE IS NOT NULL
+                ORDER BY ID_ASSINATURA DESC
+                """,
+                (id_usuario,),
+            )
+            fatura_aberta = cursor.fetchone()
+            if fatura_aberta:
+                id_assinatura, id_cobranca, valor_fatura = fatura_aberta
+                cobranca = consultar_cobranca_pix(id_cobranca)
+                return jsonify({
+                    "id_assinatura": id_assinatura,
+                    "id_cobranca": cobranca["id_cobranca"],
+                    "valor": cobranca.get("valor", valor_fatura),
+                    "codigo_pagamento": cobranca["codigo_pagamento"],
+                    "status": cobranca["status"],
+                    "tipo_cobranca": cobranca["tipo_cobranca"],
+                    "fatura_existente": True,
+                    "mensagem": "Ja existe uma mensalidade em aberto para pagamento.",
+                }), 200
+
             # Sprint item 3: cria faturas abertas ou futuras usando a Arkhe para pagamento PIX.
             cobranca = criar_cobranca_pix(valor_total)
             agora = datetime.now()
@@ -1878,19 +1920,24 @@ def faturas_aluno():
                    DATA_EXPIRACAO, DATA_VENCIMENTO, DATA_PAGAMENTO, CRIADO_EM
             FROM ASSINATURAS
             WHERE ID_USUARIO = ?
-            ORDER BY ID_ASSINATURA DESC
+            ORDER BY ID_ASSINATURA ASC
             """,
             (id_usuario,),
         )
-        faturas = [_fatura_para_dict(row) for row in cursor.fetchall()]
+        faturas = [_fatura_para_dict(row, indice + 1) for indice, row in enumerate(cursor.fetchall())]
+        faturas = list(reversed(faturas))
+        faturas_abertas = [item for item in faturas if item["status"] != 1]
+        faturas_pagas = [item for item in faturas if item["status"] == 1]
         # Sprint item 2: devolve total gasto, total em aberto e historico de faturas do aluno.
-        total_gasto = sum(item["valor"] for item in faturas if item["status"] == 1)
-        total_aberto = sum(item["valor"] for item in faturas if item["status"] != 1)
+        total_gasto = sum(item["valor"] for item in faturas_pagas)
+        total_aberto = sum(item["valor"] for item in faturas_abertas)
         return jsonify({
             "faturas": faturas,
+            "faturas_abertas": faturas_abertas,
+            "faturas_pagas": faturas_pagas,
             "total_gasto": round(total_gasto, 2),
             "total_aberto": round(total_aberto, 2),
-            "tem_fatura_aberta": total_aberto > 0,
+            "tem_fatura_aberta": aluno_tem_fatura_aberta(cursor, id_usuario),
         })
     except ArkheError as erro:
         con.rollback()
@@ -1898,6 +1945,92 @@ def faturas_aluno():
     except Exception as erro:
         con.rollback()
         return resposta(f"Erro ao processar faturas: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/financeiro/faturas/<int:id_assinatura>/verificar", methods=["POST"])
+@jwt_required()
+def verificar_fatura_aluno(id_assinatura):
+    negado = exigir_tipo(2)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    id_usuario = get_jwt_identity()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT ID_COBRANCA_ARKHE, STATUS
+            FROM ASSINATURAS
+            WHERE ID_ASSINATURA = ? AND ID_USUARIO = ?
+            """,
+            (id_assinatura, id_usuario),
+        )
+        fatura = cursor.fetchone()
+
+        if not fatura:
+            return resposta("Mensalidade nao encontrada.", 404)
+
+        id_cobranca, status = fatura
+        if int(status or 0) == 1:
+            return jsonify({"assinatura": True, "status": "ativa", "id_assinatura": id_assinatura}), 200
+
+        if not id_cobranca:
+            return resposta("Mensalidade aguardando codigo de cobranca.", 409)
+
+        cobranca = consultar_cobranca_pix(id_cobranca)
+        if str(cobranca["status"]) != "1":
+            return resposta("Pagamento ainda nao confirmado.", 402, status_cobranca=cobranca["status"])
+
+        agora = datetime.now()
+        cursor.execute(
+            """
+            SELECT FIRST 1 DATA_EXPIRACAO
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ?
+              AND STATUS = 1
+              AND (DATA_EXPIRACAO IS NULL OR DATA_EXPIRACAO >= ?)
+            ORDER BY DATA_EXPIRACAO DESC, ID_ASSINATURA DESC
+            """,
+            (id_usuario, agora),
+        )
+        assinatura_ativa = cursor.fetchone()
+        data_inicio = assinatura_ativa[0] if assinatura_ativa and assinatura_ativa[0] and assinatura_ativa[0] > agora else agora
+        data_expiracao = data_inicio + timedelta(days=30)
+
+        cursor.execute(
+            """
+            UPDATE ASSINATURAS
+            SET STATUS = 1,
+                DATA_INICIO = ?,
+                DATA_EXPIRACAO = ?,
+                DATA_PAGAMENTO = ?,
+                VALOR = COALESCE(VALOR, ?)
+            WHERE ID_ASSINATURA = ? AND ID_USUARIO = ?
+            """,
+            (data_inicio, data_expiracao, agora, current_app.config["VALOR_ASSINATURA"], id_assinatura, id_usuario),
+        )
+        con.commit()
+
+        return jsonify({
+            "assinatura": True,
+            "status": "ativa",
+            "id_assinatura": id_assinatura,
+            "data_inicio": data_inicio.isoformat(),
+            "data_expiracao": data_expiracao.isoformat(),
+            "mensagem": {"tipo": "sucesso", "descricao": "Pagamento confirmado."},
+        }), 200
+    except ArkheError as erro:
+        con.rollback()
+        return resposta(f"Erro ao comunicar com a Arkhe: {erro}", 502)
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao verificar pagamento: {erro}", 500)
     finally:
         cursor.close()
         con.close()

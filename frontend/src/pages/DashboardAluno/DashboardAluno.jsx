@@ -20,9 +20,9 @@ const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
 const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
 
 function formatarDataAssinatura(data) {
-    if (!data) return "Nao disponivel";
+    if (!data) return "Não disponível";
     const valor = new Date(data);
-    if (Number.isNaN(valor.getTime())) return "Nao disponivel";
+    if (Number.isNaN(valor.getTime())) return "Não disponível";
     return new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
         month: "2-digit",
@@ -67,7 +67,7 @@ function RodapeAluno() {
             </div>
 
             <div className={css.colunaRodape}>
-                <h4>Navegacao</h4>
+                <h4>Navegação</h4>
                 <a href="/">Home</a>
                 <a href="/login">Login</a>
                 <a href="/cadastro">Cadastro</a>
@@ -169,6 +169,8 @@ export default function DashboardAluno({
     const [financeiro, setFinanceiro] = useState(null);
     const [faturas, setFaturas] = useState([]);
     const [pagamentoFatura, setPagamentoFatura] = useState(null);
+    const [verificandoFatura, setVerificandoFatura] = useState(false);
+    const [codigoFaturaCopiado, setCodigoFaturaCopiado] = useState(false);
     const [busca, setBusca] = useState("");
     const [ordemDescobrir, setOrdemDescobrir] = useState("recentes");
     const [apenasNaoInscritos, setApenasNaoInscritos] = useState(false);
@@ -202,9 +204,13 @@ export default function DashboardAluno({
 
     const lerResposta = useCallback(async (resposta) => {
         const dados = await resposta.json().catch(() => ({}));
-        if (dados.mensagem) avisar(dados.mensagem);
+        if (dados.mensagem && typeof dados.mensagem === "object") avisar(dados.mensagem);
         if (!resposta.ok) {
-            const erro = new Error(dados?.mensagem?.descricao || "Erro ao conectar com a API.");
+            const erro = new Error(
+                typeof dados?.mensagem === "string"
+                    ? dados.mensagem
+                    : dados?.mensagem?.descricao || "Erro ao conectar com a API."
+            );
             erro.dados = dados;
             erro.status = resposta.status;
             throw erro;
@@ -416,12 +422,54 @@ export default function DashboardAluno({
             });
             const dados = await lerResposta(resposta);
             setPagamentoFatura(dados);
+            if (dados.fatura_existente) {
+                avisar({ tipo: "info", descricao: dados.mensagem || "Use a mensalidade em aberto para concluir o pagamento." });
+            }
             const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
             const lista = await lerResposta(respostaFaturas);
             setFaturas(lista.faturas || []);
-            setFinanceiro((atual) => ({ ...(atual || {}), total_aberto: lista.total_aberto, faturas_abertas: (lista.faturas || []).filter((f) => f.aberta).length }));
+            setFinanceiro((atual) => ({
+                ...(atual || {}),
+                total_aberto: lista.total_aberto,
+                faturas_abertas: (lista.faturas_abertas || []).length
+            }));
         } catch (erro) {
             avisar({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
+    async function copiarCodigoFatura() {
+        if (!pagamentoFatura?.codigo_pagamento) return;
+        await navigator.clipboard.writeText(pagamentoFatura.codigo_pagamento);
+        setCodigoFaturaCopiado(true);
+        window.setTimeout(() => setCodigoFaturaCopiado(false), 2500);
+    }
+
+    async function verificarPagamentoFatura() {
+        if (!pagamentoFatura?.id_assinatura) return;
+        setVerificandoFatura(true);
+        try {
+            const resposta = await fetch(`${api}/financeiro/faturas/${pagamentoFatura.id_assinatura}/verificar`, {
+                method: "POST",
+                credentials: "include"
+            });
+            await lerResposta(resposta);
+            const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
+            const lista = await lerResposta(respostaFaturas);
+            setFaturas(lista.faturas || []);
+            setFinanceiro((atual) => ({
+                ...(atual || {}),
+                total_gasto: lista.total_gasto,
+                total_aberto: lista.total_aberto,
+                faturas_abertas: (lista.faturas_abertas || []).length,
+                faturas: (lista.faturas_pagas || []).length
+            }));
+            setPagamentoFatura(null);
+            await carregarDashboard();
+        } catch (erro) {
+            avisar({ tipo: "erro", descricao: erro.message });
+        } finally {
+            setVerificandoFatura(false);
         }
     }
 
@@ -471,6 +519,8 @@ export default function DashboardAluno({
     const aulasDetalhe = detalheCurso?.aulas || [];
     const videoAula = aulaAtual?.aula;
     const proximas = aulaAtual?.proximas || [];
+    const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
+    const faturasPagas = faturas.filter((fatura) => !fatura.aberta);
 
     return (
         <div className={css.painelAluno}>
@@ -525,7 +575,7 @@ export default function DashboardAluno({
                         <section className={css.secaoCursos}>
                             <h2>Todos os Cursos</h2>
                             {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
-                            {!carregando && meusCursos.length === 0 && <EstadoVazio texto="Voce ainda nao se inscreveu em cursos." />}
+                            {!carregando && meusCursos.length === 0 && <EstadoVazio texto="Você ainda não se inscreveu em cursos." />}
                             <div className={css.gridCursos}>
                                 {meusCursos.map((curso) => (
                                     <CursoCard key={curso.id} curso={curso} api={api} mostrarProgresso onAbrir={() => navigate(`/DashboardAluno/cursos/${curso.id}`)} />
@@ -563,7 +613,7 @@ export default function DashboardAluno({
                             </div>
 
                             {carregando && <p className={css.textoApoio}>Buscando cursos...</p>}
-                            {!carregando && descobrir.length === 0 && <EstadoVazio texto="Nenhum curso publico encontrado." />}
+                            {!carregando && descobrir.length === 0 && <EstadoVazio texto="Nenhum curso público encontrado." />}
                             <div className={css.gridCursos}>
                                 {descobrir.map((curso) => (
                                     <CursoCard key={curso.id} curso={curso} api={api} onAbrir={() => navigate(`/DashboardAluno/descobrir/${curso.id}`)} />
@@ -583,6 +633,7 @@ export default function DashboardAluno({
                                 <div className={css.resumoCurso}>
                                     <h2>{cursoDetalhe.titulo}</h2>
                                     <p><strong>Professor(a):</strong> {cursoDetalhe.professor}</p>
+                                    <p className={css.descricaoCurso}>{cursoDetalhe.descricao}</p>
                                     {!cursoDetalhe.matriculado && (
                                         <button className={css.botaoInscrever} onClick={() => inscrever(cursoDetalhe)}>
                                             Inscrever-se
@@ -590,8 +641,6 @@ export default function DashboardAluno({
                                     )}
                                 </div>
                             </div>
-
-                            <p></p>
 
                             <div className={css.navegacaoCurso}>
                                 <button
@@ -605,7 +654,7 @@ export default function DashboardAluno({
                                     className={abaCurso === "complementos" ? css.abaAtiva : css.abaCurso}
                                     onClick={() => setAbaCurso("complementos")}
                                 >
-                                    Todos os Complementos
+                                    Complementos
                                 </button>
                             </div>
 
@@ -619,7 +668,7 @@ export default function DashboardAluno({
 
                             {abaCurso === "complementos" && (
                                 <div className={css.conteudoCurso}>
-                                    <h2>Todos os Complementos</h2>
+                                    <h2>Complementos</h2>
 
                                     {materiaisCurso.length === 0 && <EstadoVazio texto="Nenhum complemento disponível neste curso." />}
                                     <div className={css.listaMateriais}>
@@ -639,7 +688,6 @@ export default function DashboardAluno({
                                 </div>
                             )}
 
-                            <p className={css.descricaoCurso}>{cursoDetalhe.descricao}</p>
                             {cursoDetalhe.matriculado && Number(cursoDetalhe.progresso || 0) >= 100 && (
                                 <>
                                     {provaAluno?.prova && (
@@ -659,7 +707,7 @@ export default function DashboardAluno({
                                                     <div className={css.conteudoCurso}>
                                                         <h2>Avaliar curso</h2>
                                                         <input type="number" min="0" max="5" value={avaliacao.nota} onChange={(e) => setAvaliacao({ ...avaliacao, nota: Number(e.target.value) })} />
-                                                        <input value={avaliacao.comentario} onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })} placeholder="Comentario" />
+                                                        <input value={avaliacao.comentario} onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })} placeholder="Comentário" />
                                                         <button className={css.botaoInscrever} onClick={enviarAvaliacaoCurso}>Enviar avaliação</button>
                                                     </div>
                                                 </>
@@ -668,7 +716,7 @@ export default function DashboardAluno({
                                     )}
                                 </>
                             )}
-                            <h2>{cursoDetalhe.matriculado ? "Todas video-aulas do curso:" : "Video-aulas disponiveis apos inscrever-se:"}</h2>
+                            <h2>{cursoDetalhe.matriculado ? "Videoaulas do curso" : "Videoaulas disponíveis após a inscrição"}</h2>
 
                             {aulasDetalhe.length === 0 && <EstadoVazio texto="Nenhuma aula publicada neste curso." />}
                             <div className={css.gridAulas}>
@@ -691,7 +739,7 @@ export default function DashboardAluno({
                             </button>
 
                             {carregando && <p className={css.textoApoio}>Carregando aula...</p>}
-                            {!carregando && !videoAula && <EstadoVazio texto="Aula nao encontrada." />}
+                            {!carregando && !videoAula && <EstadoVazio texto="Aula não encontrada." />}
 
                             {videoAula && (
                                 <>
@@ -710,12 +758,12 @@ export default function DashboardAluno({
                                         {protecaoAtiva && (
                                             <div className={css.avisoProtecao}>
                                                 <FaShieldAlt />
-                                                <span>Conteudo protegido contra captura.</span>
+                                                <span>Conteúdo protegido contra captura.</span>
                                             </div>
                                         )}
                                     </div>
 
-                                    <h2>Próximas video-aulas:</h2>
+                                    <h2>Próximas videoaulas</h2>
                                     <div className={css.gridAulas}>
                                         {proximas.map((aula) => (
                                             <AulaCard key={aula.id} aula={aula} api={api} onAbrir={() => navigate(`/DashboardAluno/aulas/${aula.id}`)} />
@@ -752,26 +800,64 @@ export default function DashboardAluno({
                                     valor={`R$ ${Number(financeiro?.total_aberto || 0).toFixed(2).replace(".", ",")}`}
                                 />
                             </div>
-                            {/* Sprint item 3: lista faturas em aberto e permite gerar pagamento futuro. */}
-                            <div className={css.conteudoCurso}>
-                                <h2>Historico de faturas</h2>
-                                <button className={css.botaoCertificado} type="button" onClick={criarFaturaFutura}>
-                                    Pagar proxima mensalidade
-                                </button>
-                                {pagamentoFatura?.codigo_pagamento && (
-                                    <div className={css.cardMaterial}>
-                                        <strong>PIX gerado</strong>
-                                        <p>{pagamentoFatura.codigo_pagamento}</p>
+                            <div className={css.areaFinanceiro}>
+                                <div className={css.blocoFinanceiro}>
+                                    <div className={css.cabecalhoBlocoFinanceiro}>
+                                        <div>
+                                            <h2>Pagamento de novas mensalidades</h2>
+                                            <p>Gere uma nova cobrança sem interromper a mensalidade atual.</p>
+                                        </div>
+                                        <button className={css.botaoCertificado} type="button" onClick={criarFaturaFutura}>
+                                            Pagar nova mensalidade
+                                        </button>
                                     </div>
-                                )}
-                                <div className={css.listaMateriais}>
-                                    {faturas.map((fatura) => (
-                                        <article className={css.cardMaterial} key={fatura.id}>
-                                            <strong>Fatura #{fatura.id} - {fatura.status_label}</strong>
-                                            <span>R$ {Number(fatura.valor || 0).toFixed(2).replace(".", ",")}</span>
-                                            <p>Vencimento: {formatarDataAssinatura(fatura.data_vencimento || fatura.data_expiracao || fatura.criado_em)}</p>
-                                        </article>
-                                    ))}
+                                    {pagamentoFatura?.codigo_pagamento && (
+                                        <div className={css.cardPagamentoPix}>
+                                            <strong>{pagamentoFatura.fatura_existente ? "Mensalidade pendente" : "PIX gerado"}</strong>
+                                            <p className={css.codigoPixFinanceiro}>{pagamentoFatura.codigo_pagamento}</p>
+                                            <div className={css.acoesPagamentoPix}>
+                                                <button
+                                                    className={css.botaoSecundarioFinanceiro}
+                                                    type="button"
+                                                    onClick={copiarCodigoFatura}
+                                                >
+                                                    {codigoFaturaCopiado ? "Código copiado" : "Copiar código"}
+                                                </button>
+                                                <button
+                                                    className={css.botaoCertificado}
+                                                    type="button"
+                                                    onClick={verificarPagamentoFatura}
+                                                    disabled={verificandoFatura}
+                                                >
+                                                    {verificandoFatura ? "Verificando..." : "Já paguei"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className={css.listaMateriais}>
+                                        {faturasAbertas.map((fatura) => (
+                                            <article className={css.cardMaterial} key={fatura.id}>
+                                                <strong>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</strong>
+                                                <span>R$ {Number(fatura.valor || 0).toFixed(2).replace(".", ",")}</span>
+                                                <p>Vencimento: {formatarDataAssinatura(fatura.data_vencimento || fatura.data_expiracao || fatura.criado_em)}</p>
+                                            </article>
+                                        ))}
+                                        {faturasAbertas.length === 0 && <EstadoVazio texto="Nenhuma mensalidade em aberto." />}
+                                    </div>
+                                </div>
+
+                                <div className={css.blocoFinanceiro}>
+                                    <h2>Histórico de mensalidades</h2>
+                                    <div className={css.listaMateriais}>
+                                        {faturasPagas.map((fatura) => (
+                                            <article className={css.cardMaterial} key={fatura.id}>
+                                                <strong>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</strong>
+                                                <span>R$ {Number(fatura.valor || 0).toFixed(2).replace(".", ",")}</span>
+                                                <p>Vencimento: {formatarDataAssinatura(fatura.data_vencimento || fatura.data_expiracao || fatura.criado_em)}</p>
+                                            </article>
+                                        ))}
+                                        {faturasPagas.length === 0 && <EstadoVazio texto="Nenhuma mensalidade paga registrada." />}
+                                    </div>
                                 </div>
                             </div>
                         </section>

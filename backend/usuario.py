@@ -985,7 +985,12 @@ def verificar_pagamento_assinatura():
                 DATA_EXPIRACAO
             FROM ASSINATURAS
             WHERE ID_USUARIO = ?
-            ORDER BY ID_ASSINATURA DESC
+            ORDER BY
+                CASE
+                    WHEN STATUS = 1 AND (DATA_EXPIRACAO IS NULL OR DATA_EXPIRACAO >= CURRENT_TIMESTAMP) THEN 0
+                    ELSE 1
+                END,
+                ID_ASSINATURA DESC
             """,
             (id_usuario,)
         )
