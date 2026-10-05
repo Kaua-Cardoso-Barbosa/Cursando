@@ -165,11 +165,13 @@ export default function DashboardAluno({
     const [dashboard, setDashboard] = useState(null);
     const [meusCursos, setMeusCursos] = useState([]);
     const [descobrir, setDescobrir] = useState([]);
+    const [financeiro, setFinanceiro] = useState(null);
     const [busca, setBusca] = useState("");
     const [ordemDescobrir, setOrdemDescobrir] = useState("recentes");
     const [apenasNaoInscritos, setApenasNaoInscritos] = useState(false);
     const [detalheCurso, setDetalheCurso] = useState(null);
     const [aulaAtual, setAulaAtual] = useState(null);
+    const [protecaoAtiva, setProtecaoAtiva] = useState(false);
     const [carregando, setCarregando] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
@@ -177,13 +179,14 @@ export default function DashboardAluno({
 
     const visao = useMemo(() => {
         if (location.pathname.endsWith("/perfil")) return "perfil";
+        if (location.pathname.endsWith("/financeiro")) return "financeiro";
         if (location.pathname.includes("/descobrir")) return "descobrir";
         if (location.pathname.includes("/aulas/")) return "aula";
         if (location.pathname.includes("/cursos")) return "meus-cursos";
         return "inicio";
     }, [location.pathname]);
 
-    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
+    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
 
     const avisar = useCallback((mensagem) => {
         if (mensagem && setMensagem) setMensagem(mensagem);
@@ -308,6 +311,22 @@ export default function DashboardAluno({
     }, [carregarAula, carregarDescobrir, carregarDetalheCurso, carregarMeusCursos, location.pathname]);
 
     useEffect(() => {
+        if (visao !== "financeiro") return;
+
+        async function carregarFinanceiro() {
+            try {
+                const resposta = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
+                setFinanceiro(await lerResposta(resposta));
+            } catch (erro) {
+                console.error("Erro ao carregar financeiro do aluno:", erro);
+                avisar({ tipo: "erro", descricao: erro.message });
+            }
+        }
+
+        carregarFinanceiro();
+    }, [api, avisar, lerResposta, visao]);
+
+    useEffect(() => {
         function ativarProtecao(evento) {
             if (visao !== "aula") return;
             if (evento?.key === "PrintScreen" || (evento?.ctrlKey && evento?.shiftKey) || evento?.type === "contextmenu") {
@@ -364,6 +383,11 @@ export default function DashboardAluno({
             console.error("Erro ao marcar aula como assistida:", erro);
         }
     }, [api, carregarDashboard, lerResposta]);
+
+    function baixarCertificado(curso) {
+        // Sprint item 5: abre o PDF de certificado liberado quando o curso chegou a 100%.
+        window.open(`${api}/aluno/cursos/${curso.id}/certificado`, "_blank", "noopener,noreferrer");
+    }
 
     const metricas = dashboard?.metricas || { inscritos: 0, finalizados: 0, iniciados: 0 };
     const recentes = dashboard?.recentes || [];
@@ -526,6 +550,11 @@ export default function DashboardAluno({
                             )}
 
                             <p className={css.descricaoCurso}>{cursoDetalhe.descricao}</p>
+                            {cursoDetalhe.matriculado && Number(cursoDetalhe.progresso || 0) >= 100 && (
+                                <button className={css.botaoCertificado} onClick={() => baixarCertificado(cursoDetalhe)}>
+                                    Baixar certificado
+                                </button>
+                            )}
                             <h2>{cursoDetalhe.matriculado ? "Todas video-aulas do curso:" : "Video-aulas disponiveis apos inscrever-se:"}</h2>
 
                             {aulasDetalhe.length === 0 && <EstadoVazio texto="Nenhuma aula publicada neste curso." />}
@@ -553,7 +582,7 @@ export default function DashboardAluno({
 
                             {videoAula && (
                                 <>
-                                    <div>
+                                    <div className={protecaoAtiva ? css.playerProtegido : ""}>
                                         {/* O player carrega o manifesto protegido devolvido pelo backend. */}
                                         <PlayerVideo
                                             videoAula={videoAula}
@@ -565,6 +594,12 @@ export default function DashboardAluno({
                                             }
                                             marcarAssistida={marcarAssistida}
                                         />
+                                        {protecaoAtiva && (
+                                            <div className={css.avisoProtecao}>
+                                                <FaShieldAlt />
+                                                <span>Conteudo protegido contra captura.</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <h2>Próximas video-aulas:</h2>
@@ -581,6 +616,28 @@ export default function DashboardAluno({
                     {visao === "perfil" && (
                         <section className={css.secaoPerfil}>
                             <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
+                        </section>
+                    )}
+
+                    {visao === "financeiro" && (
+                        <section className={css.secaoMetricas}>
+                            <div className={css.tituloUltimasAulas}>
+                                <h2>Financeiro</h2>
+                                <span>Assinatura</span>
+                            </div>
+                            {/* Sprint itens 33 e 34: resumo inicial de gastos e faturas do aluno. */}
+                            <div className={css.gridMetricas}>
+                                <CardMetrica
+                                    titulo="Total gasto"
+                                    detalhe="Mensalidades registradas"
+                                    valor={`R$ ${Number(financeiro?.total_gasto || 0).toFixed(2).replace(".", ",")}`}
+                                />
+                                <CardMetrica
+                                    titulo="Faturas"
+                                    detalhe="Historico de assinaturas"
+                                    valor={financeiro?.faturas || 0}
+                                />
+                            </div>
                         </section>
                     )}
                 </main>

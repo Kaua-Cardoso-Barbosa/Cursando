@@ -27,6 +27,12 @@ export default function MenuLateralAluno({ itemAtivo = "inicio" }) {
                         Descobrir
                     </Link>
                     <Link
+                        to="/DashboardAluno/financeiro"
+                        className={`${css.linkItem} ${itemAtivo === "financeiro" ? css.ativo : ""}`}
+                    >
+                        Financeiro
+                    </Link>
+                    <Link
                         to="/DashboardAluno/perfil"
                         className={`${css.linkItem} ${itemAtivo === "perfil" ? css.ativo : ""}`}
                     >

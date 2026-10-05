@@ -174,6 +174,18 @@ function AppConteudo() {
                     </RotaRestrita>
                 }/>
 
+                <Route path="/DashboardAdm/Financeiro" element={
+                    <RotaRestrita api={api} tipoPermitido={0}>
+                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
+                    </RotaRestrita>
+                }/>
+
+                <Route path="/DashboardAdm/Logs" element={
+                    <RotaRestrita api={api} tipoPermitido={0}>
+                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
+                    </RotaRestrita>
+                }/>
+
                 <Route path="/DashboardAdm/GerenciamentoUsuarios" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
                         <GerenciamentoUsuarios api={api} sair={sair} setMensagem={setMensagem} />

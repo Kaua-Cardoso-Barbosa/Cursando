@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { ResizeMode, Video } from "expo-av";
+import { useEffect } from "react";
+import * as ScreenCapture from "expo-screen-capture";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { resolverUrlMidia } from "../api/client";
 import { colors, globalStyles } from "../styles";
@@ -10,6 +12,15 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
   // Reproduz a URL de mídia autenticada e registra a conclusão enviada pelo player nativo.
   const aula = detalhe?.aula;
   const proximas = detalhe?.proximas || [];
+
+  useEffect(() => {
+    // Sprint item 10/26: bloqueia captura e gravacao de tela enquanto o aluno assiste aula no app.
+    ScreenCapture.preventScreenCaptureAsync("aula-protegida").catch(() => {});
+
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync("aula-protegida").catch(() => {});
+    };
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={globalStyles.page}>

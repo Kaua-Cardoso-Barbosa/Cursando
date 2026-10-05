@@ -39,6 +39,7 @@ con = fdb.connect(
 from usuario import *
 from professor import *
 from aluno import *
+from sprint import *
 from servicos.arkhe import consultar_conta
 
 print("\nROTAS REGISTRADAS ANTES DA ROTA ARKHÉ:")

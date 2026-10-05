@@ -5,6 +5,7 @@ import { apiRequest, carregarSessao, limparSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
 import AssinaturaScreen from "./src/screens/AssinaturaScreen";
+import CadastroScreen from "./src/screens/CadastroScreen";
 import CursosScreen from "./src/screens/CursosScreen";
 import EditarCursoScreen from "./src/screens/EditarCursoScreen";
 import EditarPerfilScreen from "./src/screens/EditarPerfilScreen";
@@ -29,6 +30,7 @@ export default function App() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [cadastroAberto, setCadastroAberto] = useState(false);
 
   async function carregarDados(authToken = token, authUser = usuario) {
     if (!authToken) return;
@@ -212,6 +214,15 @@ export default function App() {
   }
 
   if (!token) {
+    if (cadastroAberto) {
+      return (
+        <SafeAreaView style={[globalStyles.app, styles.loginApp]}>
+          <StatusBar style="light" />
+          <CadastroScreen onBack={() => setCadastroAberto(false)} />
+        </SafeAreaView>
+      );
+    }
+
     return (
       <SafeAreaView style={[globalStyles.app, styles.loginApp]}>
         <StatusBar style="light" />
@@ -222,7 +233,7 @@ export default function App() {
           setUsuario(novoUsuario);
           setAssinaturaAtiva(null);
           validarAcesso(novoToken, novoUsuario);
-        }} />
+        }} onSignup={() => setCadastroAberto(true)} />
       </SafeAreaView>
     );
   }

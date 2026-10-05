@@ -15,7 +15,7 @@ import BrandLogo from "../components/BrandLogo";
 import Field from "../components/Field";
 import { colors, globalStyles } from "../styles";
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, onSignup }) {
   // O estado mantem os campos e a interface sincronizados com a digitacao e o envio.
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -134,6 +134,10 @@ export default function LoginScreen({ onLogin }) {
                 <Text style={globalStyles.buttonText}>Entrar</Text>
               )}
             </Pressable>
+
+            <Pressable style={styles.signupButton} onPress={onSignup}>
+              <Text style={styles.signupText}>Nao tem cadastro? Cadastre-se</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -236,5 +240,14 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 22,
     alignItems: "stretch"
+  },
+  signupButton: {
+    alignItems: "center",
+    paddingTop: 16
+  },
+  signupText: {
+    color: colors.darkGreen,
+    fontSize: 15,
+    textDecorationLine: "underline"
   }
 });

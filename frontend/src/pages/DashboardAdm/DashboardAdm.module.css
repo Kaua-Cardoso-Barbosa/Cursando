@@ -182,3 +182,72 @@
     align-items: center;
     gap: 8px;
 }
+
+.listaLogs {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.listaLogs h2 {
+    color: #111111;
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 400;
+    margin-bottom: 8px;
+}
+
+.logItem {
+    border: 1.5px solid #666666;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 14px 16px;
+    display: grid;
+    gap: 5px;
+}
+
+.logItem strong {
+    color: #02693e;
+    font-size: 1rem;
+}
+
+.logItem span,
+.logItem small,
+.logItem p {
+    color: #222222;
+    overflow-wrap: anywhere;
+}
+
+.logItem small {
+    color: #666666;
+}
+
+@media (max-width: 860px) {
+    .painelAdm {
+        flex-direction: column;
+    }
+
+    .areaConteudo {
+        padding: 24px 18px 32px;
+    }
+
+    .cabecalhoUsuario {
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .dadosUsuario {
+        padding-right: 0;
+    }
+
+    .secaoMetricas {
+        grid-template-columns: 1fr;
+    }
+
+    .rodapePagina {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+        padding: 24px 18px;
+    }
+}

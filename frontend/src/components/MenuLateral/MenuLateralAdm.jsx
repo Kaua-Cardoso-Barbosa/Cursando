@@ -21,6 +21,18 @@ export default function MenuLateralAdm({ itemAtivo = "inicio" }) {
                         Gerenciar Usuarios
                     </Link>
                     <Link
+                        to="/DashboardAdm/Financeiro"
+                        className={`${css.linkItem} ${itemAtivo === "financeiro" ? css.ativo : ""}`}
+                    >
+                        Financeiro
+                    </Link>
+                    <Link
+                        to="/DashboardAdm/Logs"
+                        className={`${css.linkItem} ${itemAtivo === "logs" ? css.ativo : ""}`}
+                    >
+                        Logs
+                    </Link>
+                    <Link
                         to="/DashboardAdm/perfil"
                         className={`${css.linkItem} ${itemAtivo === "perfil" ? css.ativo : ""}`}
                     >

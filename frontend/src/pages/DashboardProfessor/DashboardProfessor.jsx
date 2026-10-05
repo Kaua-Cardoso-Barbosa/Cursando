@@ -43,6 +43,8 @@ export default function DashboardProfessor({
     const [cursos, setCursos] = useState([]);
     const [aulas, setAulas] = useState([]);
     const [alunos, setAlunos] = useState([]);
+    const [financeiro, setFinanceiro] = useState(null);
+    const [valorSaque, setValorSaque] = useState("");
     const [cursoSelecionado, setCursoSelecionado] = useState(null);
     const [modal, setModal] = useState(null);
     const [confirmacao, setConfirmacao] = useState(null);
@@ -193,6 +195,12 @@ export default function DashboardProfessor({
             return;
         }
 
+        if (location.pathname.endsWith("/financeiro")) {
+            setVisao("financeiro");
+            setCursoSelecionado(null);
+            return;
+        }
+
         setVisao("inicio");
         setCursoSelecionado(null);
     }, [carregarCursos, cursos, cursoSelecionado, location.pathname]);
@@ -218,6 +226,24 @@ export default function DashboardProfessor({
             carregarAlunos(cursoSelecionado.id);
         }
     }, [carregarAlunos, visao, cursoSelecionado]);
+
+    useEffect(() => {
+        if (visao !== "financeiro") return;
+
+        async function carregarFinanceiro() {
+            try {
+                const resposta = await fetch(`${api}/financeiro/resumo`, {
+                    credentials: "include"
+                });
+                setFinanceiro(await lerResposta(resposta));
+            } catch (erro) {
+                console.error("Erro ao carregar financeiro:", erro);
+                avisar({ tipo: "erro", descricao: erro.message });
+            }
+        }
+
+        carregarFinanceiro();
+    }, [api, avisar, lerResposta, visao]);
 
     function montarFormData(form) {
         const dados = new FormData();
@@ -356,6 +382,24 @@ export default function DashboardProfessor({
         }
     }
 
+    async function solicitarSaque() {
+        try {
+            const resposta = await fetch(`${api}/professor/saques`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ valor: Number(valorSaque) })
+            });
+            await lerResposta(resposta);
+            setValorSaque("");
+            const resumo = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
+            setFinanceiro(await lerResposta(resumo));
+        } catch (erro) {
+            console.error("Erro ao solicitar saque:", erro);
+            avisar({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
     function abrirAulas(curso) {
         setCursoSelecionado(curso);
         setFiltroAulas("todos");
@@ -377,7 +421,7 @@ export default function DashboardProfessor({
 
     return (
         <div className={css.painelProfessor}>
-            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : "meus-cursos"} />
+            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : visao === "financeiro" ? "financeiro" : "meus-cursos"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
@@ -543,6 +587,37 @@ export default function DashboardProfessor({
                     {visao === "perfil" && (
                         <section className={css.secaoPerfil}>
                             <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
+                        </section>
+                    )}
+
+                    {visao === "financeiro" && (
+                        <section className={css.secaoCursos}>
+                            <div className={css.barraTitulo}>
+                                <h2>Financeiro</h2>
+                            </div>
+                            {/* Sprint itens 12, 30, 31 e 32: cards financeiros e solicitacao de saque do instrutor. */}
+                            <div className={css.gridMetricas}>
+                                <CardMetricaProfessor titulo="Recebido estimado" detalhe="Pool de receita" valor={`R$ ${Number(financeiro?.recebido_estimado || 0).toFixed(2).replace(".", ",")}`} />
+                                <CardMetricaProfessor titulo="Disponivel para saque" detalhe="Saldo bruto" valor={`R$ ${Number(financeiro?.disponivel_saque || 0).toFixed(2).replace(".", ",")}`} />
+                                <CardMetricaProfessor titulo="Ja sacado" detalhe="Solicitacoes registradas" valor={`R$ ${Number(financeiro?.ja_sacado || 0).toFixed(2).replace(".", ",")}`} />
+                                <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matriculas nos seus cursos" valor={financeiro?.alunos_ativos || 0} />
+                            </div>
+                            <div className={css.formularioPerfil}>
+                                <label>
+                                    Valor do saque
+                                    <input
+                                        value={valorSaque}
+                                        onChange={(evento) => setValorSaque(evento.target.value)}
+                                        type="number"
+                                        min="1"
+                                        step="0.01"
+                                        placeholder="0,00"
+                                    />
+                                </label>
+                                <button className={css.botaoPrimario} onClick={solicitarSaque}>
+                                    Solicitar saque
+                                </button>
+                            </div>
                         </section>
                     )}
                 </main>

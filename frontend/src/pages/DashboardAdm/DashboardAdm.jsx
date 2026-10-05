@@ -23,11 +23,15 @@ export default function DashboardAdm({
                                      }) {
     const location = useLocation();
     const exibindoPerfil = location.pathname.endsWith("/perfil");
+    const exibindoFinanceiro = location.pathname.endsWith("/Financeiro");
+    const exibindoLogs = location.pathname.endsWith("/Logs");
     const [dashboard, setDashboard] = useState(null);
+    const [financeiro, setFinanceiro] = useState(null);
+    const [logs, setLogs] = useState([]);
 
     // Busca as métricas agregadas no endpoint administrativo ao abrir o dashboard.
     useEffect(() => {
-        if (exibindoPerfil) {
+        if (exibindoPerfil || exibindoFinanceiro || exibindoLogs) {
             return;
         }
 
@@ -59,7 +63,43 @@ export default function DashboardAdm({
         }
 
         carregarDashboard();
-    }, [api, exibindoPerfil, setMensagem]);
+    }, [api, exibindoFinanceiro, exibindoLogs, exibindoPerfil, setMensagem]);
+
+    useEffect(() => {
+        if (!exibindoFinanceiro) return;
+
+        async function carregarFinanceiro() {
+            try {
+                const resposta = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
+                const dados = await resposta.json().catch(() => ({}));
+                if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao carregar financeiro.");
+                setFinanceiro(dados);
+            } catch (erro) {
+                console.error("Erro ao carregar financeiro:", erro);
+                setMensagem?.({ tipo: "erro", descricao: erro.message });
+            }
+        }
+
+        carregarFinanceiro();
+    }, [api, exibindoFinanceiro, setMensagem]);
+
+    useEffect(() => {
+        if (!exibindoLogs) return;
+
+        async function carregarLogs() {
+            try {
+                const resposta = await fetch(`${api}/admin/logs`, { credentials: "include" });
+                const dados = await resposta.json().catch(() => ({}));
+                if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao carregar logs.");
+                setLogs(Array.isArray(dados) ? dados : []);
+            } catch (erro) {
+                console.error("Erro ao carregar logs:", erro);
+                setMensagem?.({ tipo: "erro", descricao: erro.message });
+            }
+        }
+
+        carregarLogs();
+    }, [api, exibindoLogs, setMensagem]);
 
     // Converte a resposta da API nos indicadores apresentados nos cards.
     const metricas = useMemo(() => {
@@ -99,7 +139,7 @@ export default function DashboardAdm({
 
     return (
         <div className={css.painelAdm}>
-            <MenuLateralAdm itemAtivo={exibindoPerfil ? "perfil" : "inicio"} />
+            <MenuLateralAdm itemAtivo={exibindoPerfil ? "perfil" : exibindoFinanceiro ? "financeiro" : exibindoLogs ? "logs" : "inicio"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
@@ -128,6 +168,39 @@ export default function DashboardAdm({
 
                     {exibindoPerfil ? (
                         <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
+                    ) : exibindoFinanceiro ? (
+                        <section className={css.secaoMetricas}>
+                            {/* Sprint itens 13, 14, 15 e 16: cards de gestao financeira administrativa. */}
+                            {[
+                                ["Total arrecadado", financeiro?.total_arrecadado],
+                                ["Total repassado", financeiro?.total_repassado_estimado],
+                                ["Custos", financeiro?.custos],
+                                ["Saldo em caixa", financeiro?.saldo_caixa]
+                            ].map(([titulo, valor]) => (
+                                <div key={titulo} className={css.cardMetrica}>
+                                    <div className={css.metricaTopo}>
+                                        <h2>{titulo}</h2>
+                                        <div className={css.iconeBadge}><FaFolder /></div>
+                                    </div>
+                                    <span className={css.metricaVariacao}>Resumo financeiro</span>
+                                    <div className={css.metricaNumero}>R$ {Number(valor || 0).toFixed(2).replace(".", ",")}</div>
+                                </div>
+                            ))}
+                        </section>
+                    ) : exibindoLogs ? (
+                        <section className={css.listaLogs}>
+                            <h2>Logs do sistema</h2>
+                            {/* Sprint itens 24 e 25: lista administrativa das acoes registradas por usuario. */}
+                            {logs.length === 0 && <p>Nenhum log registrado.</p>}
+                            {logs.map((log) => (
+                                <article key={log.id} className={css.logItem}>
+                                    <strong>{log.acao}</strong>
+                                    <span>{log.nome || "Usuario"} - {log.email || "sem email"}</span>
+                                    <small>{log.metodo} {log.rota}</small>
+                                    <p>{log.detalhes}</p>
+                                </article>
+                            ))}
+                        </section>
                     ) : (
                         <section className={css.secaoMetricas}>
                             {metricas.map((metrica) => (
