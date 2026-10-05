@@ -1612,7 +1612,7 @@ def financeiro_resumo():
             alunos = int((cursor.fetchone() or (0,))[0] or 0)
             peso_instrutor = pesos_instrutores.get(int(id_usuario), 0)
             estimado = pool_instrutores * (peso_instrutor / peso_total) if peso_total else 0
-            cursor.execute("SELECT COALESCE(SUM(VALOR), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?", (id_usuario,))
+            cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?", (id_usuario,))
             sacado = float((cursor.fetchone() or (0,))[0] or 0)
             valor_por_view = (pool_instrutores / peso_total) if peso_total else 0
             cursor.execute(
@@ -1658,9 +1658,9 @@ def financeiro_resumo():
             })
 
         if tipo == 0:
-            cursor.execute("SELECT COALESCE(SUM(VALOR), 0) FROM CUSTOS_PLATAFORMA")
+            cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM CUSTOS_PLATAFORMA")
             custos = float((cursor.fetchone() or (0,))[0] or 0)
-            cursor.execute("SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE STATUS = 1")
+            cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
             faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
             ticket_medio = (float(total_pago or 0) / int(faturas_pagas or 0)) if int(faturas_pagas or 0) else 0
             # Sprint itens 13, 14, 15 e 16: indicadores financeiros administrativos iniciais.
@@ -1679,12 +1679,12 @@ def financeiro_resumo():
             })
 
         cursor.execute(
-            "SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 1",
+            "SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 1",
             (id_usuario,),
         )
         qtd, gasto = cursor.fetchone() or (0, 0)
         cursor.execute(
-            "SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS <> 1",
+            "SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS <> 1",
             (id_usuario,),
         )
         abertas, aberto = cursor.fetchone() or (0, 0)
@@ -1920,7 +1920,7 @@ def financeiro_aluno_admin(id_aluno):
         if not aluno:
             return resposta("Aluno nao encontrado.", 404)
 
-        cursor.execute("SELECT COUNT(*), COALESCE(SUM(VALOR), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 1", (id_aluno,))
+        cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 1", (id_aluno,))
         faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
         faturas_pagas = int(faturas_pagas or 0)
         total_pago = float(total_pago or 0)
