@@ -467,7 +467,17 @@ def detalhe_aula_aluno(id_aula):
             return resposta("Aula nao encontrada para seus cursos.", 404)
 
         aula = aula_para_dict(row[:6])
-        curso = curso_para_dict(row[6:13])
+
+        curso = {
+            "id": row[6],
+            "titulo": row[7],
+            "descricao": de_blob_texto(row[8]),
+            "imagem": row[9],
+            "status": row[10],
+            "status_nome": STATUS_NOMES.get(row[10], "desconhecido"),
+            "total_aulas": row[11] or 0,
+            "aulas_publicadas": row[12] or 0,
+        }
 
         cursor.execute(
             """

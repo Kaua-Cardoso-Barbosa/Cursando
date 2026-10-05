@@ -173,6 +173,7 @@ export default function DashboardAluno({
     const [carregando, setCarregando] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+    const [abaCurso, setAbaCurso] = useState("modulos");
 
     const visao = useMemo(() => {
         if (location.pathname.endsWith("/perfil")) return "perfil";
@@ -491,6 +492,40 @@ export default function DashboardAluno({
                                     )}
                                 </div>
                             </div>
+
+                            <p></p>
+
+                            <div className={css.navegacaoCurso}>
+                                <button
+                                    className={abaCurso === "modulos" ? css.abaAtiva : css.abaCurso}
+                                    onClick={() => setAbaCurso("modulos")}
+                                >
+                                    Módulos
+                                </button>
+
+                                <button
+                                    className={abaCurso === "complementos" ? css.abaAtiva : css.abaCurso}
+                                    onClick={() => setAbaCurso("complementos")}
+                                >
+                                    Todos os Complementos
+                                </button>
+                            </div>
+
+                            {abaCurso === "modulos" && (
+                                <div className={css.conteudoCurso}>
+                                    <h2>Módulos</h2>
+
+                                    <EstadoVazio texto="Nenhum módulo disponível neste curso." />
+                                </div>
+                            )}
+
+                            {abaCurso === "complementos" && (
+                                <div className={css.conteudoCurso}>
+                                    <h2>Todos os Complementos</h2>
+
+                                    <EstadoVazio texto="Nenhum complemento disponível neste curso." />
+                                </div>
+                            )}
 
                             <p className={css.descricaoCurso}>{cursoDetalhe.descricao}</p>
                             <h2>{cursoDetalhe.matriculado ? "Todas video-aulas do curso:" : "Video-aulas disponiveis apos inscrever-se:"}</h2>

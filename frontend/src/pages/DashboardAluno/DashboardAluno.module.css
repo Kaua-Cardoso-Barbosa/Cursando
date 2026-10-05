@@ -484,6 +484,69 @@
     cursor: pointer;
 }
 
+.navegacaoCurso {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 4px;
+    max-width: 100%;
+    margin: 6px 0 22px;
+    padding: 4px;
+    border: 1px solid #c7d8cf;
+    border-radius: 8px;
+    background: #f4f8f6;
+}
+
+.abaCurso,
+.abaAtiva {
+    min-height: 42px;
+    border: 0;
+    border-radius: 6px;
+    padding: 0 18px;
+    color: #244338;
+    font: inherit;
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.15;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.abaCurso {
+    background: transparent;
+}
+
+.abaCurso:hover {
+    background: #e4f1eb;
+    color: #02693e;
+}
+
+.abaCurso:focus-visible,
+.abaAtiva:focus-visible {
+    outline: 3px solid rgba(6, 166, 99, 0.25);
+    outline-offset: 2px;
+}
+
+.abaAtiva {
+    background: #02693e;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(2, 105, 62, 0.18);
+}
+
+.conteudoCurso {
+    width: 100%;
+    margin: 0 0 26px;
+    padding: 22px;
+    border: 1px solid #d9e5df;
+    border-radius: 8px;
+    background: #fbfdfc;
+}
+
+.conteudoCurso h2 {
+    margin-bottom: 16px;
+    font-size: 1.45rem;
+}
+
 .playerSeguro {
     width: 100%;
     max-width: 1080px;
@@ -668,6 +731,22 @@
         width: 100%;
         min-width: 0;
         font-size: 1.5rem;
+    }
+
+    .navegacaoCurso {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .abaCurso,
+    .abaAtiva {
+        width: 100%;
+        white-space: normal;
+    }
+
+    .conteudoCurso {
+        padding: 16px;
     }
 
     .playerSeguro {
