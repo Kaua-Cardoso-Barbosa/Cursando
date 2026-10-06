@@ -32,3 +32,60 @@
     align-items: center;
     gap: 16px;
 }
+
+.perfilLink {
+    min-height: 34px;
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    border-radius: 999px;
+    color: var(--branco);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 3px 8px 3px 10px;
+    text-decoration: none;
+    max-width: 240px;
+}
+
+.perfilLink:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--branco);
+    text-decoration: none;
+}
+
+.nomePerfil {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.avatarPerfil {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.avatarPerfil img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 640px) {
+    .actions {
+        gap: 8px;
+    }
+
+    .nomePerfil {
+        max-width: 86px;
+    }
+}

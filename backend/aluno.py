@@ -43,6 +43,34 @@ def bloquear_por_fatura_aberta(cursor, id_aluno):
     return None
 
 
+def aluno_tem_assinatura_ativa(cursor, id_aluno):
+    cursor.execute(
+        """
+        SELECT FIRST 1 ID_ASSINATURA
+        FROM ASSINATURAS
+        WHERE ID_USUARIO = ?
+          AND STATUS = 1
+          AND DATA_EXPIRACAO IS NOT NULL
+          AND DATA_EXPIRACAO >= CURRENT_TIMESTAMP
+        ORDER BY DATA_EXPIRACAO DESC, ID_ASSINATURA DESC
+        """,
+        (id_aluno,),
+    )
+    return cursor.fetchone() is not None
+
+
+def exigir_assinatura_ativa(cursor, id_aluno):
+    if aluno_tem_assinatura_ativa(cursor, id_aluno):
+        return None
+
+    return resposta(
+        "Voce precisa de uma assinatura ativa para acessar os cursos e aulas.",
+        402,
+        "erro",
+        redirecionar="/DashboardAluno/financeiro",
+    )
+
+
 def garantir_tabela_progresso(con):
     cursor = con.cursor()
 
@@ -229,6 +257,24 @@ def aluno_dashboard():
 
     try:
         garantir_tabela_progresso(con)
+        if not aluno_tem_assinatura_ativa(cursor, id_aluno):
+            return jsonify(
+                {
+                    "metricas": {
+                        "inscritos": 0,
+                        "finalizados": 0,
+                    },
+                    "recentes": [],
+                    "assinatura": None,
+                    "acesso_bloqueado": True,
+                    "redirecionar": "/DashboardAluno/financeiro",
+                    "mensagem": criar_mensagem(
+                        "Voce precisa de uma assinatura ativa para acessar seus cursos e aulas.",
+                        "erro",
+                    ),
+                }
+            ), 402
+
         cursor.execute(
             """
             SELECT
@@ -313,6 +359,10 @@ def listar_cursos_aluno():
 
     try:
         garantir_tabela_progresso(con)
+        bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
         if bloqueio:
             return bloqueio
@@ -453,6 +503,10 @@ def detalhe_curso_aluno(id_curso):
 
         curso = curso_publico_para_dict(row)
         if curso["matriculado"]:
+            bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
+            if bloqueio:
+                return bloqueio
+
             bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
             if bloqueio:
                 return bloqueio
@@ -497,6 +551,10 @@ def inscrever_curso(id_curso):
     cursor = con.cursor()
 
     try:
+        bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
         if bloqueio:
             return bloqueio
@@ -555,6 +613,10 @@ def detalhe_aula_aluno(id_aula):
 
     try:
         garantir_tabela_progresso(con)
+        bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
         if bloqueio:
             return bloqueio
@@ -630,6 +692,10 @@ def marcar_aula_assistida(id_aula):
 
     try:
         garantir_tabela_progresso(con)
+        bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
         if bloqueio:
             return bloqueio

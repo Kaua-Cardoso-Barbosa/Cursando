@@ -4,14 +4,25 @@ import Button from "../Button/Button.jsx";
 import css from "./PerfilUsuario.module.css";
 import validarNome from "../../utils/validarNome";
 
+function resolverUrlMidia(api, caminho) {
+    if (!caminho) return "";
+    if (caminho.startsWith("http://") || caminho.startsWith("https://")) {
+        return caminho;
+    }
+    return `${api}${caminho}`;
+}
+
 export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) {
     const [perfil, setPerfil] = useState({
         nome: "",
         email: "",
         cpf: "",
+        imagem_perfil: "",
         senha: "",
         confirmar_senha: ""
     });
+    const [imagemArquivo, setImagemArquivo] = useState(null);
+    const [previewImagem, setPreviewImagem] = useState("");
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
     const [erroLocal, setErroLocal] = useState("");
@@ -57,9 +68,11 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
                     nome: dados.nome || "",
                     email: dados.email || "",
                     cpf: dados.cpf || "",
+                    imagem_perfil: dados.imagem_perfil || "",
                     senha: "",
                     confirmar_senha: ""
                 });
+                setPreviewImagem(dados.imagem_perfil ? resolverUrlMidia(api, dados.imagem_perfil) : "");
             } catch (erro) {
                 console.error("Erro ao carregar perfil:", erro);
                 avisar({ tipo: "erro", descricao: erro.message });
@@ -70,6 +83,17 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
 
         carregarPerfil();
     }, [api, avisar, lerResposta]);
+
+    function selecionarImagem(evento) {
+        const arquivo = evento.target.files?.[0];
+        setImagemArquivo(arquivo || null);
+
+        if (arquivo) {
+            setPreviewImagem(URL.createObjectURL(arquivo));
+        } else {
+            setPreviewImagem(perfil.imagem_perfil ? resolverUrlMidia(api, perfil.imagem_perfil) : "");
+        }
+    }
 
     async function salvarPerfil(evento) {
         evento.preventDefault();
@@ -86,13 +110,21 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
         }
 
         try {
+            const formulario = new FormData();
+            formulario.append("nome", perfil.nome);
+            formulario.append("email", perfil.email);
+            formulario.append("cpf", perfil.cpf);
+            formulario.append("senha", perfil.senha);
+            formulario.append("confirmar_senha", perfil.confirmar_senha);
+
+            if (imagemArquivo) {
+                formulario.append("imagem_perfil", imagemArquivo);
+            }
+
             const resposta = await fetch(`${api}/perfil`, {
                 method: "PUT",
                 credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(perfil)
+                body: formulario
             });
             const dados = await lerResposta(resposta);
             const usuarioAtualizado = dados.usuario || perfil;
@@ -101,9 +133,12 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
                 nome: usuarioAtualizado.nome || perfil.nome,
                 email: usuarioAtualizado.email || perfil.email,
                 cpf: usuarioAtualizado.cpf || perfil.cpf,
+                imagem_perfil: usuarioAtualizado.imagem_perfil || perfil.imagem_perfil,
                 senha: "",
                 confirmar_senha: ""
             });
+            setImagemArquivo(null);
+            setPreviewImagem(usuarioAtualizado.imagem_perfil ? resolverUrlMidia(api, usuarioAtualizado.imagem_perfil) : "");
 
             if (onPerfilAtualizado) {
                 onPerfilAtualizado(usuarioAtualizado);
@@ -126,6 +161,24 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
 
                 {!carregando && (
                     <form onSubmit={salvarPerfil}>
+                        <div className={css.areaImagemPerfil}>
+                            <div className={css.previewPerfil}>
+                                {previewImagem ? (
+                                    <img src={previewImagem} alt="Imagem de perfil" />
+                                ) : (
+                                    <span>{(perfil.nome || "U").slice(0, 1).toUpperCase()}</span>
+                                )}
+                            </div>
+                            <label className={css.campoUpload}>
+                                Imagem de perfil
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    onChange={selecionarImagem}
+                                />
+                            </label>
+                        </div>
+
                         <Input
                             tipoInp="text"
                             label="Nome:"

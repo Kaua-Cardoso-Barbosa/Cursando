@@ -6,11 +6,9 @@ import {
     FaGraduationCap,
     FaPlay,
     FaSearch,
-    FaShieldAlt,
-    FaUser
+    FaShieldAlt
 } from "react-icons/fa";
 import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno.jsx";
-import Button from "../../components/Button/Button.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import css from "./DashboardAluno.module.css";
 import PlayerVideo from "../../components/PlayerVideo/PlayerVideo.jsx";
@@ -38,7 +36,7 @@ function resolverUrlMidia(api, caminho) {
     return `${api}${caminho}`;
 }
 
-function CabecalhoAluno({ usuario, sair }) {
+function CabecalhoAluno({ usuario }) {
     return (
         <header className={css.cabecalhoUsuario}>
             <div className={css.dadosUsuario}>
@@ -46,12 +44,6 @@ function CabecalhoAluno({ usuario, sair }) {
                 <span className={css.cargoUsuario}>Aluno</span>
             </div>
 
-            <div className={css.acoesUsuario}>
-                <Button texto="Sair" fundoCor="vermelho" tamanho="pequeno" onClick={sair} />
-                <div className={css.fotoPerfil}>
-                    <FaUser />
-                </div>
-            </div>
         </header>
     );
 }
@@ -158,7 +150,6 @@ function AulaCard({ aula, api, onAbrir }) {
 
 export default function DashboardAluno({
     api,
-    sair,
     setMensagem,
     onPerfilAtualizado,
     usuario = { nome: "Aluno", tipo: 2 }
@@ -170,6 +161,7 @@ export default function DashboardAluno({
     const [faturas, setFaturas] = useState([]);
     const [pagamentoFatura, setPagamentoFatura] = useState(null);
     const [verificandoFatura, setVerificandoFatura] = useState(false);
+    const [criandoFatura, setCriandoFatura] = useState(false);
     const [codigoFaturaCopiado, setCodigoFaturaCopiado] = useState(false);
     const [busca, setBusca] = useState("");
     const [ordemDescobrir, setOrdemDescobrir] = useState("recentes");
@@ -268,12 +260,18 @@ export default function DashboardAluno({
                 fetch(`${api}/aluno/cursos/${idCurso}/materiais`, { credentials: "include" })
             ];
             const [resposta, respostaMateriais] = await Promise.all(requisicoes);
-            setDetalheCurso(await lerResposta(resposta));
+            const dadosCurso = await lerResposta(resposta);
+            setDetalheCurso(dadosCurso);
             setMateriaisCurso(await lerResposta(respostaMateriais));
-            try {
-                const respostaProva = await fetch(`${api}/aluno/cursos/${idCurso}/prova`, { credentials: "include" });
-                setProvaAluno(await lerResposta(respostaProva));
-            } catch {
+
+            if (dadosCurso?.curso?.matriculado) {
+                try {
+                    const respostaProva = await fetch(`${api}/aluno/cursos/${idCurso}/prova`, { credentials: "include" });
+                    setProvaAluno(await lerResposta(respostaProva));
+                } catch {
+                    setProvaAluno(null);
+                }
+            } else {
                 setProvaAluno(null);
             }
         } catch (erro) {
@@ -413,6 +411,8 @@ export default function DashboardAluno({
     }
 
     async function criarFaturaFutura() {
+        if (criandoFatura) return;
+        setCriandoFatura(true);
         try {
             const resposta = await fetch(`${api}/financeiro/faturas`, {
                 method: "POST",
@@ -435,6 +435,8 @@ export default function DashboardAluno({
             }));
         } catch (erro) {
             avisar({ tipo: "erro", descricao: erro.message });
+        } finally {
+            setCriandoFatura(false);
         }
     }
 
@@ -528,7 +530,7 @@ export default function DashboardAluno({
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    {visao !== "aula" && <CabecalhoAluno usuario={usuario} sair={sair} />}
+                    {visao !== "aula" && <CabecalhoAluno usuario={usuario} />}
 
                     {visao === "inicio" && (
                         <>
@@ -807,8 +809,8 @@ export default function DashboardAluno({
                                             <h2>Pagamento de novas mensalidades</h2>
                                             <p>Gere uma nova cobrança sem interromper a mensalidade atual.</p>
                                         </div>
-                                        <button className={css.botaoCertificado} type="button" onClick={criarFaturaFutura}>
-                                            Pagar nova mensalidade
+                                        <button className={css.botaoCertificado} type="button" onClick={criarFaturaFutura} disabled={criandoFatura}>
+                                            {criandoFatura ? "Gerando mensalidade..." : "Pagar nova mensalidade"}
                                         </button>
                                     </div>
                                     {pagamentoFatura?.codigo_pagamento && (

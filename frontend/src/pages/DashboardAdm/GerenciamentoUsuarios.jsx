@@ -4,7 +4,6 @@ import {
     FaLinux,
     FaPlus,
     FaSearch,
-    FaUser,
     FaWindows
 } from "react-icons/fa";
 import Button from "../../components/Button/Button.jsx";
@@ -33,7 +32,6 @@ function normalizar(texto) {
 
 export default function GerenciamentoUsuarios({
                                                   api,
-                                                  sair,
                                                   usuario,
                                                   setMensagem
                                               }) {
@@ -368,18 +366,6 @@ export default function GerenciamentoUsuarios({
                             <span className={css.cargoUsuario}>{nomeTipoUsuario(usuario.tipo)}</span>
                         </div>
 
-                        <div className={css.acoesUsuario}>
-                            <Button
-                                texto="Sair"
-                                fundoCor="vermelho"
-                                tamanho="pequeno"
-                                onClick={sair}
-                            />
-
-                            <div className={css.fotoPerfil}>
-                                <FaUser />
-                            </div>
-                        </div>
                     </header>
 
                     {erro && <div className={css.erro}>{erro}</div>}

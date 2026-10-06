@@ -38,6 +38,49 @@
     text-align: center;
 }
 
+.areaImagemPerfil {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.previewPerfil {
+    width: 86px;
+    height: 86px;
+    flex: 0 0 86px;
+    border: 1.5px solid #139a58;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #eef7f1;
+    color: #02693e;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.previewPerfil img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.campoUpload {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: #222222;
+    font-weight: 600;
+}
+
+.campoUpload input {
+    min-height: auto;
+    border: 1.5px solid #139a58;
+    border-radius: 6px;
+    padding: 8px;
+}
+
 .textoApoio,
 .erro,
 .campoObrigatorio {
@@ -73,5 +116,10 @@
     .formulario h1 {
         font-size: 27px;
         margin-bottom: 25px;
+    }
+
+    .areaImagemPerfil {
+        align-items: flex-start;
+        flex-direction: column;
     }
 }

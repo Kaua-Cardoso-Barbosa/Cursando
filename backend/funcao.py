@@ -76,6 +76,23 @@ def pegar_token_requisicao():
 
     return None
 
+
+def garantir_coluna_imagem_perfil(cursor):
+    cursor.execute(
+        """
+        SELECT 1
+        FROM RDB$RELATION_FIELDS
+        WHERE RDB$RELATION_NAME = 'USUARIOS'
+          AND RDB$FIELD_NAME = 'IMAGEM_PERFIL'
+        """
+    )
+    if cursor.fetchone():
+        return False
+
+    cursor.execute("ALTER TABLE USUARIOS ADD IMAGEM_PERFIL VARCHAR(500)")
+    return True
+
+
 @app.route('/verificar_token', methods=['GET'])
 def verificar_token():
     try:
@@ -87,8 +104,11 @@ def verificar_token():
         con = get_db()
         cursor = con.cursor()
 
+        if garantir_coluna_imagem_perfil(cursor):
+            con.commit()
+
         cursor.execute("""
-            SELECT NOME
+            SELECT NOME, IMAGEM_PERFIL
             FROM USUARIOS
             WHERE ID_USUARIO = ?
         """, (id_usuario,))
@@ -106,6 +126,7 @@ def verificar_token():
             'autenticado': True,
             'id_usuario': id_usuario,
             'nome': usuario[0],
+            'imagem_perfil': usuario[1],
             'tipo': tipo
         }), 200
 

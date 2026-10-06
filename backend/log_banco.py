@@ -52,6 +52,28 @@ def garantir_log_schema():
                 )
                 """
             )
+        else:
+            cursor.execute(
+                """
+                SELECT 1
+                FROM RDB$RELATION_FIELDS
+                WHERE RDB$RELATION_NAME = 'LOG_GRAVACAO'
+                  AND RDB$FIELD_NAME = 'ROTA'
+                """
+            )
+            if not cursor.fetchone():
+                cursor.execute("ALTER TABLE LOG_GRAVACAO ADD ROTA VARCHAR(300)")
+
+            cursor.execute(
+                """
+                SELECT 1
+                FROM RDB$RELATION_FIELDS
+                WHERE RDB$RELATION_NAME = 'LOG_GRAVACAO'
+                  AND RDB$FIELD_NAME = 'METODO'
+                """
+            )
+            if not cursor.fetchone():
+                cursor.execute("ALTER TABLE LOG_GRAVACAO ADD METODO VARCHAR(10)")
         con.commit()
     except Exception:
         con.rollback()

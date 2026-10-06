@@ -9,6 +9,7 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
     const [texto, setTexto] = useState("");
     const [carregando, setCarregando] = useState(false);
     const mensagensRef = useRef(null);
+    const textoRef = useRef(null);
 
     const lerResposta = useCallback(async (resposta) => {
         const dados = await resposta.json().catch(() => ({}));
@@ -105,6 +106,12 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
         mensagensRef.current.scrollTop = mensagensRef.current.scrollHeight;
     }, [mensagens]);
 
+    useEffect(() => {
+        if (!textoRef.current) return;
+        textoRef.current.style.height = "auto";
+        textoRef.current.style.height = `${textoRef.current.scrollHeight}px`;
+    }, [texto]);
+
     async function enviarMensagem() {
         if (!selecionada || !texto.trim()) return;
 
@@ -136,14 +143,6 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
 
     return (
         <section className={css.chat}>
-            <div className={css.topo}>
-                <div>
-                    <h2>Mensagens</h2>
-                    <p>Converse sobre cursos, aulas e dúvidas dos alunos.</p>
-                </div>
-                <span>{conversas.length} {conversas.length === 1 ? "conversa" : "conversas"}</span>
-            </div>
-
             <div className={css.layout}>
                 <aside className={css.listaConversas}>
                     {carregando && <p className={css.estado}>Carregando conversas...</p>}
@@ -191,6 +190,7 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
 
                     <div className={css.compositor}>
                         <textarea
+                            ref={textoRef}
                             value={texto}
                             onChange={(evento) => setTexto(evento.target.value)}
                             onKeyDown={aoTeclarMensagem}

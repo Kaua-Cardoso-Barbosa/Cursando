@@ -321,6 +321,13 @@
     font-size: 1rem;
 }
 
+.logTopo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .logItem span,
 .logItem small,
 .logItem p {
@@ -330,6 +337,19 @@
 
 .logItem small {
     color: #666666;
+}
+
+.logDetalhes {
+    max-height: 180px;
+    overflow: auto;
+    margin: 2px 0 0;
+    padding: 10px;
+    border-radius: 6px;
+    background: #f4f7f5;
+    color: #222222;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 @media (max-width: 860px) {

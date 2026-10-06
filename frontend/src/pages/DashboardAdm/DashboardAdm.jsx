@@ -11,12 +11,10 @@ import {
 } from "react-icons/fa";
 import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm.jsx";
 import css from "./DashboardAdm.module.css";
-import Button from "../../components/Button/Button.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 
 export default function DashboardAdm({
                                          api,
-                                         sair,
                                          setMensagem,
                                          onPerfilAtualizado,
                                          usuario
@@ -34,6 +32,19 @@ export default function DashboardAdm({
     const [logsGravacao, setLogsGravacao] = useState([]);
     const [abaLogs, setAbaLogs] = useState("sistema");
     const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "", acao: "", inicio: "", fim: "" });
+
+    function detalhesLog(log) {
+        try {
+            return JSON.parse(log.detalhes || "{}");
+        } catch {
+            return null;
+        }
+    }
+
+    function formatarDataLog(valor) {
+        if (!valor) return "";
+        return new Date(valor).toLocaleString("pt-BR");
+    }
 
     // Busca as métricas agregadas no endpoint administrativo ao abrir o dashboard.
     useEffect(() => {
@@ -222,17 +233,6 @@ export default function DashboardAdm({
                             </span>
                         </div>
 
-                        <div className={css.acoesUsuario}>
-                            <Button
-                                texto="Sair"
-                                fundoCor="vermelho"
-                                tamanho="pequeno"
-                                onClick={sair}
-                            />
-                            <div className={css.fotoPerfil}>
-                                <FaUser />
-                            </div>
-                        </div>
                     </header>
 
                     {exibindoPerfil ? (
@@ -345,14 +345,30 @@ export default function DashboardAdm({
                             </div>
                             {/* Sprint item 6: alterna entre logs gerais e log de gravacao salvo em banco separado. */}
                             {(abaLogs === "sistema" ? logs : logsGravacao).length === 0 && <p>Nenhum log registrado.</p>}
-                            {(abaLogs === "sistema" ? logs : logsGravacao).map((log) => (
-                                <article key={log.id} className={css.logItem}>
-                                    <strong>{log.acao}</strong>
-                                    <span>{log.nome || "Usuario"} - {log.email || "sem email"}</span>
-                                    <small>{log.metodo} {log.rota}</small>
-                                    <p>{log.detalhes}</p>
-                                </article>
-                            ))}
+                            {(abaLogs === "sistema" ? logs : logsGravacao).map((log) => {
+                                const detalhes = detalhesLog(log);
+                                const requisicao = detalhes?.requisicao || {};
+                                const corpo = detalhes?.corpo?.json;
+
+                                return (
+                                    <article key={log.id} className={css.logItem}>
+                                        <div className={css.logTopo}>
+                                            <strong>{log.acao}</strong>
+                                            <small>{formatarDataLog(log.criado_em)}</small>
+                                        </div>
+                                        <span>{log.nome || `Usuario ${log.id_usuario || "nao identificado"}`} - {log.email || "sem email"}</span>
+                                        <small>{log.metodo} {log.rota} {requisicao.status_http ? `- status ${requisicao.status_http}` : ""}</small>
+                                        <p>{log.resumo || log.detalhes}</p>
+                                        {log.tabela && <small>Tabela afetada: {log.tabela}</small>}
+                                        {detalhes?.parametros_rota && Object.keys(detalhes.parametros_rota).length > 0 && (
+                                            <small>Recurso: {JSON.stringify(detalhes.parametros_rota)}</small>
+                                        )}
+                                        {corpo && Object.keys(corpo).length > 0 && (
+                                            <pre className={css.logDetalhes}>{JSON.stringify(corpo, null, 2)}</pre>
+                                        )}
+                                    </article>
+                                );
+                            })}
                         </section>
                     ) : (
                         <section className={css.secaoMetricas}>

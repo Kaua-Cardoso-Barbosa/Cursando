@@ -1,7 +1,9 @@
 import io
+import json
 from datetime import datetime, timedelta
+from threading import Lock
 
-from flask import Response, current_app, jsonify, request
+from flask import Response, current_app, g, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required, verify_jwt_in_request
 
 from app import app
@@ -12,6 +14,7 @@ from servicos.arkhe import ArkheError, criar_cobranca_pix, consultar_cobranca_pi
 
 
 _schema_pronto = False
+_faturas_lock = Lock()
 
 
 def resposta(descricao, status=200, tipo="erro", **extra):
@@ -370,14 +373,129 @@ def normalizar_taxonomia(valor):
     return " ".join((valor or "").strip().lower().split())
 
 
+_CAMPOS_SENSIVEIS_LOG = {
+    "senha",
+    "confirmar_senha",
+    "nova_senha",
+    "confirmar_nova_senha",
+    "token",
+    "access_token",
+    "authorization",
+    "codigo",
+    "codigo_pagamento",
+}
 
-def registrar_log(acao, detalhes="", tabela=None):
+
+def _mascarar_valor_log(valor):
+    if isinstance(valor, dict):
+        return {
+            chave: "***" if str(chave).lower() in _CAMPOS_SENSIVEIS_LOG else _mascarar_valor_log(conteudo)
+            for chave, conteudo in valor.items()
+        }
+
+    if isinstance(valor, list):
+        return [_mascarar_valor_log(item) for item in valor]
+
+    return valor
+
+
+def _payload_requisicao_log():
+    dados = {}
+
+    json_recebido = request.get_json(silent=True)
+    if isinstance(json_recebido, dict):
+        dados["json"] = _mascarar_valor_log(json_recebido)
+    elif json_recebido is not None:
+        dados["json"] = "[payload_json_nao_objeto]"
+
+    if request.form:
+        dados["form"] = _mascarar_valor_log(request.form.to_dict(flat=False))
+
+    if request.files:
+        dados["arquivos"] = [
+            {
+                "campo": nome,
+                "nome": arquivo.filename,
+                "tipo": arquivo.mimetype,
+            }
+            for nome, arquivo in request.files.items()
+        ]
+
+    return dados
+
+
+def _texto_detalhes_log(valor):
+    if isinstance(valor, (dict, list)):
+        return json.dumps(valor, ensure_ascii=False, default=str, indent=2)
+
+    return str(valor or "")
+
+
+def _montar_detalhes_log(acao, detalhes, tabela, status_code=None):
+    return {
+        "acao": acao,
+        "descricao": detalhes or "",
+        "tabela_afetada": tabela,
+        "usuario": {
+            "id": get_jwt_identity(),
+            "tipo": get_jwt().get("tipo") if get_jwt() else None,
+        },
+        "requisicao": {
+            "metodo": request.method,
+            "rota": request.path,
+            "endpoint": request.endpoint,
+            "status_http": status_code,
+            "ip": request.headers.get("X-Forwarded-For", request.remote_addr),
+            "user_agent": request.headers.get("User-Agent"),
+        },
+        "parametros_rota": request.view_args or {},
+        "query": request.args.to_dict(flat=False),
+        "corpo": _payload_requisicao_log(),
+    }
+
+
+def _resumo_detalhes_log(detalhes):
+    try:
+        dados = json.loads(detalhes)
+    except (TypeError, ValueError):
+        return detalhes
+
+    descricao = dados.get("descricao") or dados.get("acao") or ""
+    requisicao = dados.get("requisicao") or {}
+    status = requisicao.get("status_http")
+    rota = requisicao.get("rota")
+    metodo = requisicao.get("metodo")
+    partes = [
+        parte
+        for parte in [
+            descricao,
+            f"{metodo} {rota}".strip() if rota else "",
+            f"status {status}" if status else "",
+        ]
+        if parte
+    ]
+    return " | ".join(partes)
+
+
+def _acao_gravacao(metodo):
+    return {
+        "POST": "CRIACAO",
+        "PUT": "ALTERACAO",
+        "PATCH": "ALTERACAO",
+        "DELETE": "EXCLUSAO",
+    }.get(metodo, metodo)[:20]
+
+
+
+def registrar_log(acao, detalhes="", tabela=None, status_code=None):
     cursor = None
     con = None
     try:
         garantir_sprint_schema()
         id_usuario = get_jwt_identity()
         tipo = get_jwt().get("tipo") if get_jwt() else None
+        detalhes_contexto = _montar_detalhes_log(acao, detalhes, tabela, status_code)
+        detalhes_texto = _texto_detalhes_log(detalhes_contexto)
         con = get_db()
         cursor = con.cursor()
         nome = email = None
@@ -404,11 +522,12 @@ def registrar_log(acao, detalhes="", tabela=None):
                 acao,
                 request.path[:300],
                 request.method,
-                para_blob_texto(detalhes),
+                para_blob_texto(detalhes_texto),
             ),
         )
 
         con.commit()
+        g.log_manual_registrado = True
 
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             # Sprint item 6: grava operacoes de criacao, edicao e exclusao em banco separado de auditoria.
@@ -425,11 +544,11 @@ def registrar_log(acao, detalhes="", tabela=None):
                     (
                         id_log,
                         id_usuario,
-                        request.method,
+                        _acao_gravacao(request.method),
                         tabela,
                         request.path[:300],
                         request.method,
-                        para_blob_texto(detalhes),
+                        para_blob_texto(detalhes_texto),
                     ),
                 )
                 log_con.commit()
@@ -454,10 +573,14 @@ def registrar_modificacoes(response):
     if request.path.startswith("/static") or request.path.startswith("/admin/logs"):
         return response
 
-    if request.method in {"POST", "PUT", "PATCH", "DELETE"} and response.status_code < 400:
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"} and response.status_code < 400 and not getattr(g, "log_manual_registrado", False):
         try:
             verify_jwt_in_request(optional=True)
-            registrar_log("requisicao_modificacao", f"{request.method} {request.path}")
+            registrar_log(
+                "requisicao_modificacao",
+                "Requisicao de modificacao concluida sem log especifico da rota.",
+                status_code=response.status_code,
+            )
         except Exception as erro:
             print("Erro no log automatico:", erro)
 
@@ -612,6 +735,11 @@ def materiais_aluno(id_curso):
             (id_curso, get_jwt_identity()),
         )
         matriculado = bool(cursor.fetchone()[0])
+        if matriculado:
+            bloqueio = _bloqueio_assinatura_aluno(cursor, int(get_jwt_identity()))
+            if bloqueio:
+                return bloqueio
+
         cursor.execute(
             """
             SELECT ID_MATERIAL, TITULO, TIPO, URL, DESCRICAO
@@ -669,6 +797,10 @@ def avaliar_curso(id_curso):
         matricula = cursor.fetchone()
         if not matricula or int(matricula[0] or 0) < 100:
             return resposta("Avaliacao liberada somente apos concluir o curso.", 403)
+
+        bloqueio = _bloqueio_assinatura_aluno(cursor, int(get_jwt_identity()))
+        if bloqueio:
+            return bloqueio
 
         cursor.execute(
             """
@@ -767,6 +899,20 @@ def _aluno_matriculado(cursor, id_curso, id_aluno):
         (id_curso, id_aluno),
     )
     return cursor.fetchone() is not None
+
+
+def _bloqueio_assinatura_aluno(cursor, id_aluno):
+    from aluno import aluno_tem_assinatura_ativa
+
+    if aluno_tem_assinatura_ativa(cursor, id_aluno):
+        return None
+
+    return resposta(
+        "Voce precisa de uma assinatura ativa para acessar este recurso.",
+        402,
+        "erro",
+        redirecionar="/DashboardAluno/financeiro",
+    )
 
 
 def _professor_responsavel(cursor, id_curso):
@@ -987,6 +1133,9 @@ def chat_mensagens(id_curso):
             id_aluno = id_usuario
             if not _aluno_matriculado(cursor, id_curso, id_aluno):
                 return resposta("Aluno sem matricula ativa neste curso.", 403)
+            bloqueio = _bloqueio_assinatura_aluno(cursor, id_aluno)
+            if bloqueio:
+                return bloqueio
         elif tipo == 1:
             if not _curso_do_professor(cursor, id_curso, id_usuario):
                 return resposta("Curso nao encontrado para este instrutor.", 404)
@@ -1238,6 +1387,10 @@ def prova_aluno(id_curso):
         if not _aluno_matriculado(cursor, id_curso, id_aluno):
             return resposta("Aluno sem matricula ativa neste curso.", 403)
 
+        bloqueio = _bloqueio_assinatura_aluno(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
         cursor.execute(
             """
             SELECT PROGRESSO
@@ -1440,6 +1593,10 @@ def certificado_aluno(id_curso):
     cursor = con.cursor()
 
     try:
+        bloqueio = _bloqueio_assinatura_aluno(cursor, int(get_jwt_identity()))
+        if bloqueio:
+            return bloqueio
+
         cursor.execute(
             """
             SELECT U.NOME, C.TITULO, M.PROGRESSO
@@ -1569,6 +1726,7 @@ def logs_admin():
                 "rota": row[6],
                 "metodo": row[7],
                 "detalhes": de_blob_texto(row[8]),
+                "resumo": _resumo_detalhes_log(de_blob_texto(row[8])),
                 "criado_em": row[9].isoformat() if row[9] else None,
             }
             for row in cursor.fetchall()
@@ -1737,6 +1895,7 @@ def detalhe_log_admin(id_log):
             "rota": row[6],
             "metodo": row[7],
             "detalhes": de_blob_texto(row[8]),
+            "resumo": _resumo_detalhes_log(de_blob_texto(row[8])),
             "criado_em": row[9].isoformat() if row[9] else None,
         })
     except Exception as erro:
@@ -1785,6 +1944,7 @@ def logs_gravacao_admin():
                 "rota": row[4],
                 "metodo": row[5],
                 "detalhes": de_blob_texto(row[6]),
+                "resumo": _resumo_detalhes_log(de_blob_texto(row[6])),
                 "criado_em": row[7].isoformat() if row[7] else None,
             }
             for row in cursor.fetchall()
@@ -1858,61 +2018,62 @@ def faturas_aluno():
 
     try:
         if request.method == "POST":
-            dados = request.get_json() or {}
-            valor = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
-            meses = max(1, min(int(dados.get("meses") or 1), 12))
-            valor_total = round(valor * meses, 2)
-            cursor.execute(
-                """
-                SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
-                FROM ASSINATURAS
-                WHERE ID_USUARIO = ?
-                  AND STATUS <> 1
-                  AND ID_COBRANCA_ARKHE IS NOT NULL
-                ORDER BY ID_ASSINATURA DESC
-                """,
-                (id_usuario,),
-            )
-            fatura_aberta = cursor.fetchone()
-            if fatura_aberta:
-                id_assinatura, id_cobranca, valor_fatura = fatura_aberta
-                cobranca = consultar_cobranca_pix(id_cobranca)
+            with _faturas_lock:
+                dados = request.get_json() or {}
+                valor = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
+                meses = max(1, min(int(dados.get("meses") or 1), 12))
+                valor_total = round(valor * meses, 2)
+                cursor.execute(
+                    """
+                    SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
+                    FROM ASSINATURAS
+                    WHERE ID_USUARIO = ?
+                      AND STATUS <> 1
+                      AND ID_COBRANCA_ARKHE IS NOT NULL
+                    ORDER BY ID_ASSINATURA DESC
+                    """,
+                    (id_usuario,),
+                )
+                fatura_aberta = cursor.fetchone()
+                if fatura_aberta:
+                    id_assinatura, id_cobranca, valor_fatura = fatura_aberta
+                    cobranca = consultar_cobranca_pix(id_cobranca)
+                    return jsonify({
+                        "id_assinatura": id_assinatura,
+                        "id_cobranca": cobranca["id_cobranca"],
+                        "valor": cobranca.get("valor", valor_fatura),
+                        "codigo_pagamento": cobranca["codigo_pagamento"],
+                        "status": cobranca["status"],
+                        "tipo_cobranca": cobranca["tipo_cobranca"],
+                        "fatura_existente": True,
+                        "mensagem": "Já existe uma mensalidade em aberto para pagamento.",
+                    }), 200
+
+                # Sprint item 3: cria faturas abertas ou futuras usando a Arkhe para pagamento PIX.
+                cobranca = criar_cobranca_pix(valor_total)
+                agora = datetime.now()
+                vencimento = agora + timedelta(days=3)
+                id_assinatura = proximo_id(cursor, "ASSINATURAS", "ID_ASSINATURA")
+                cursor.execute(
+                    """
+                    INSERT INTO ASSINATURAS (
+                        ID_ASSINATURA, ID_USUARIO, PLANO, STATUS, ID_COBRANCA_ARKHE,
+                        VALOR, DATA_VENCIMENTO, CRIADO_EM
+                    )
+                    VALUES (?, ?, 1, 0, ?, ?, ?, ?)
+                    """,
+                    (id_assinatura, id_usuario, cobranca["id_cobranca"], valor_total, vencimento, agora),
+                )
+                con.commit()
+                registrar_log("criar_fatura", f"Fatura {id_assinatura} criada para {meses} mes(es)", "ASSINATURAS")
                 return jsonify({
                     "id_assinatura": id_assinatura,
                     "id_cobranca": cobranca["id_cobranca"],
-                    "valor": cobranca.get("valor", valor_fatura),
+                    "valor": cobranca["valor"],
                     "codigo_pagamento": cobranca["codigo_pagamento"],
                     "status": cobranca["status"],
                     "tipo_cobranca": cobranca["tipo_cobranca"],
-                    "fatura_existente": True,
-                    "mensagem": "Ja existe uma mensalidade em aberto para pagamento.",
-                }), 200
-
-            # Sprint item 3: cria faturas abertas ou futuras usando a Arkhe para pagamento PIX.
-            cobranca = criar_cobranca_pix(valor_total)
-            agora = datetime.now()
-            vencimento = agora + timedelta(days=3)
-            id_assinatura = proximo_id(cursor, "ASSINATURAS", "ID_ASSINATURA")
-            cursor.execute(
-                """
-                INSERT INTO ASSINATURAS (
-                    ID_ASSINATURA, ID_USUARIO, PLANO, STATUS, ID_COBRANCA_ARKHE,
-                    VALOR, DATA_VENCIMENTO, CRIADO_EM
-                )
-                VALUES (?, ?, 1, 0, ?, ?, ?, ?)
-                """,
-                (id_assinatura, id_usuario, cobranca["id_cobranca"], valor_total, vencimento, agora),
-            )
-            con.commit()
-            registrar_log("criar_fatura", f"Fatura {id_assinatura} criada para {meses} mes(es)", "ASSINATURAS")
-            return jsonify({
-                "id_assinatura": id_assinatura,
-                "id_cobranca": cobranca["id_cobranca"],
-                "valor": cobranca["valor"],
-                "codigo_pagamento": cobranca["codigo_pagamento"],
-                "status": cobranca["status"],
-                "tipo_cobranca": cobranca["tipo_cobranca"],
-            }), 201
+                }), 201
 
         cursor.execute(
             """

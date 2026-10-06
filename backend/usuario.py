@@ -1,6 +1,7 @@
 import os
 import re
 import unicodedata
+from uuid import uuid4
 
 import fdb
 from flask import current_app, jsonify, make_response, request
@@ -20,6 +21,7 @@ from app import app
 from banco import get_db
 from functools import wraps
 import requests
+from werkzeug.utils import secure_filename
 
 from servicos.arkhe import ArkheError, criar_cobranca_pix, consultar_cobranca_pix
 
@@ -36,6 +38,41 @@ def resposta_mensagem(descricao, status=200, tipo="erro", **extra):
     payload = {"mensagem": criar_mensagem(descricao, tipo)}
     payload.update(extra)
     return jsonify(payload), status
+
+
+def garantir_coluna_imagem_perfil(cursor):
+    cursor.execute(
+        """
+        SELECT 1
+        FROM RDB$RELATION_FIELDS
+        WHERE RDB$RELATION_NAME = 'USUARIOS'
+          AND RDB$FIELD_NAME = 'IMAGEM_PERFIL'
+        """
+    )
+    if cursor.fetchone():
+        return False
+
+    cursor.execute("ALTER TABLE USUARIOS ADD IMAGEM_PERFIL VARCHAR(500)")
+    return True
+
+
+def salvar_imagem_perfil(arquivo):
+    if not arquivo or not arquivo.filename:
+        return None
+
+    extensao = arquivo.filename.rsplit(".", 1)[-1].lower() if "." in arquivo.filename else ""
+    if extensao not in {"jpg", "jpeg", "png", "webp"}:
+        raise ValueError("Imagem invalida. Use: jpg, jpeg, png ou webp.")
+
+    pasta = os.path.join(current_app.root_path, "static", "uploads", "perfis")
+    os.makedirs(pasta, exist_ok=True)
+
+    nome_seguro = secure_filename(arquivo.filename)
+    nome_final = f"{uuid4().hex}_{nome_seguro}"
+    caminho = os.path.join(pasta, nome_final)
+    arquivo.save(caminho)
+
+    return f"/static/uploads/perfis/{nome_final}"
 
 
 def email_valido(email):
@@ -507,9 +544,12 @@ def login():
 
     try:
         garantir_coluna_email_verificado(cursor, con)
+        if garantir_coluna_imagem_perfil(cursor):
+            con.commit()
+
         cursor.execute(
             """
-            SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS, CPF, EMAIL_VERIFICADO
+            SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS, CPF, EMAIL_VERIFICADO, IMAGEM_PERFIL
             FROM USUARIOS
             WHERE EMAIL = ?
             """,
@@ -520,7 +560,7 @@ def login():
         if not usuario:
             return resposta_mensagem("E-mail ou senha invalida", 401)
 
-        id_usuario, nome_usuario, email_usuario, senha_banco, tipo, situacao, tentativa, cpf, email_verificado = usuario
+        id_usuario, nome_usuario, email_usuario, senha_banco, tipo, situacao, tentativa, cpf, email_verificado, imagem_perfil = usuario
         tentativa = tentativa or 0
 
         if situacao == 1:
@@ -569,6 +609,7 @@ def login():
                         "nome": nome_usuario,
                         "email": email_usuario,
                         "cpf": cpf,
+                        "imagem_perfil": imagem_perfil,
                     },
                     "token": token,
                 }
@@ -673,9 +714,12 @@ def buscar_perfil():
     cursor = con.cursor()
 
     try:
+        if garantir_coluna_imagem_perfil(cursor):
+            con.commit()
+
         cursor.execute(
             """
-            SELECT ID_USUARIO, NOME, EMAIL, CPF, TIPO_USUARIO
+            SELECT ID_USUARIO, NOME, EMAIL, CPF, TIPO_USUARIO, IMAGEM_PERFIL
             FROM USUARIOS
             WHERE ID_USUARIO = ?
             """,
@@ -693,6 +737,7 @@ def buscar_perfil():
                 "email": usuario[2],
                 "cpf": usuario[3],
                 "tipo": usuario[4],
+                "imagem_perfil": usuario[5],
             }
         ), 200
     except Exception as erro:
@@ -706,7 +751,10 @@ def buscar_perfil():
 @jwt_required()
 def editar_perfil():
     id_usuario = get_jwt_identity()
-    dados = request.get_json() or {}
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        dados = request.form
+    else:
+        dados = request.get_json() or {}
     nome_recebido = (dados.get("nome") or "").strip()
     email_recebido = (dados.get("email") or "").lower().strip()
     cpf_recebido = (dados.get("cpf") or "").strip()
@@ -724,9 +772,12 @@ def editar_perfil():
     cursor = con.cursor()
 
     try:
+        if garantir_coluna_imagem_perfil(cursor):
+            con.commit()
+
         cursor.execute(
             """
-            SELECT NOME, EMAIL, CPF
+            SELECT NOME, EMAIL, CPF, IMAGEM_PERFIL
             FROM USUARIOS
             WHERE ID_USUARIO = ?
             """,
@@ -740,6 +791,7 @@ def editar_perfil():
         nome = nome_recebido or usuario_atual[0]
         email = email_recebido or usuario_atual[1]
         cpf = cpf_recebido or usuario_atual[2]
+        imagem_perfil = usuario_atual[3]
 
         if email_recebido and not email_valido(email):
             return resposta_mensagem("E-mail invalido", 400)
@@ -760,23 +812,30 @@ def editar_perfil():
         if cursor.fetchone():
             return resposta_mensagem("CPF ja cadastrado", 400)
 
+        arquivo_imagem = request.files.get("imagem_perfil") or request.files.get("imagem")
+        if arquivo_imagem and arquivo_imagem.filename:
+            try:
+                imagem_perfil = salvar_imagem_perfil(arquivo_imagem)
+            except ValueError as erro:
+                return resposta_mensagem(str(erro), 400)
+
         if senha:
             cursor.execute(
                 """
                 UPDATE USUARIOS
-                SET NOME = ?, EMAIL = ?, CPF = ?, SENHA = ?
+                SET NOME = ?, EMAIL = ?, CPF = ?, SENHA = ?, IMAGEM_PERFIL = ?
                 WHERE ID_USUARIO = ?
                 """,
-                (nome, email, cpf, generate_password_hash(senha), id_usuario),
+                (nome, email, cpf, generate_password_hash(senha), imagem_perfil, id_usuario),
             )
         else:
             cursor.execute(
                 """
                 UPDATE USUARIOS
-                SET NOME = ?, EMAIL = ?, CPF = ?
+                SET NOME = ?, EMAIL = ?, CPF = ?, IMAGEM_PERFIL = ?
                 WHERE ID_USUARIO = ?
                 """,
-                (nome, email, cpf, id_usuario),
+                (nome, email, cpf, imagem_perfil, id_usuario),
             )
 
         con.commit()
@@ -791,6 +850,7 @@ def editar_perfil():
                 "email": email,
                 "cpf": cpf,
                 "tipo": get_jwt().get("tipo"),
+                "imagem_perfil": imagem_perfil,
             },
         )
     except Exception as erro:

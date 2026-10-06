@@ -32,7 +32,6 @@ function resolverUrlMidia(api, caminho) {
 
 export default function DashboardProfessor({
                                                api,
-                                               sair,
                                                setMensagem,
                                                onPerfilAtualizado,
                                                usuario = { nome: "Professor", tipo: 1 }
@@ -544,7 +543,7 @@ export default function DashboardProfessor({
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    <CabecalhoProfessor usuario={usuario} sair={sair} />
+                    <CabecalhoProfessor usuario={usuario} />
 
                     {visao === "inicio" && (
                         <>

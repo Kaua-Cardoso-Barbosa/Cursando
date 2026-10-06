@@ -130,7 +130,7 @@ function AppConteudo() {
 
     return (
         <>
-            <Header usuario={usuario}/>
+            <Header usuario={usuario} sair={sair}/>
             {mensagem && <Alerts key={mensagem.id} tipo={mensagem.tipo} imagem={`/imagens_assets/${mensagem.tipo}.png`} duracao={'8000'} descricao={mensagem.descricao} fechar={() => setMensagem(null)} />}
             <ConfirmAlert
                 aberto={confirmarLogout}

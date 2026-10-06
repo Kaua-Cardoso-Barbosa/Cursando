@@ -1,44 +1,13 @@
 .chat {
+    --altura-chat: clamp(520px, calc(100vh - 180px), 660px);
     width: 100%;
-}
-
-.topo {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 18px;
-    border-bottom: 2px solid #06a663;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-}
-
-.topo h2 {
-    color: #111111;
-    font-size: 2rem;
-    font-weight: 400;
-    line-height: 1.1;
-    margin: 0;
-}
-
-.topo p {
-    color: #555555;
-    font-size: 0.98rem;
-    line-height: 1.35;
-    margin: 5px 0 0;
-}
-
-.topo span {
-    color: #02693e;
-    font-size: 0.95rem;
-    font-weight: 700;
-    white-space: nowrap;
 }
 
 .layout {
     display: grid;
     grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
     gap: 18px;
-    min-height: 560px;
+    align-items: stretch;
 }
 
 .listaConversas,
@@ -46,12 +15,12 @@
     border: 1.5px solid #666666;
     border-radius: 8px;
     background: #ffffff;
+    height: var(--altura-chat);
     min-width: 0;
     overflow: hidden;
 }
 
 .listaConversas {
-    max-height: 660px;
     overflow-y: auto;
 }
 
@@ -140,8 +109,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 520px;
-    min-height: 390px;
+    min-height: 0;
     overflow-y: auto;
     padding: 18px;
 }
@@ -197,12 +165,13 @@
     color: #111111;
     font: inherit;
     line-height: 1.35;
+    overflow-y: auto;
     padding: 10px 12px;
-    resize: vertical;
+    resize: none;
 }
 
 .compositor button {
-    min-height: 46px;
+    height: 50px;
     border: none;
     border-radius: 8px;
     background: #139a58;
@@ -226,18 +195,9 @@
     .layout {
         grid-template-columns: 1fr;
     }
-
-    .listaConversas {
-        max-height: 260px;
-    }
 }
 
 @media (max-width: 560px) {
-    .topo {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
     .balao {
         max-width: 92%;
     }
