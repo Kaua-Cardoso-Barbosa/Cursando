@@ -1355,7 +1355,7 @@ def verificar_pagamento_assinatura():
                 "assinatura": False,
                 "status": "sem_assinatura",
                 "mensagem": "Usuário não possui assinatura."
-            }), 403
+            }), 200
 
         (
             id_assinatura,
@@ -1395,7 +1395,7 @@ def verificar_pagamento_assinatura():
                 "assinatura": False,
                 "status": "expirada",
                 "mensagem": "A assinatura do usuário expirou."
-            }), 403
+            }), 200
 
         # Sem o identificador da cobrança não é possível confirmar o PIX na Arkhé.
         # A confirmação é consultada na Arkhé quando esta rota é chamada.
@@ -1427,7 +1427,7 @@ def verificar_pagamento_assinatura():
                 "assinatura": False,
                 "status": "pendente",
                 "mensagem": "Assinatura aguardando pagamento."
-            }), 403
+            }), 200
 
         status_cobranca = cobranca["status"]
 
@@ -1478,7 +1478,7 @@ def verificar_pagamento_assinatura():
             "id_cobranca": id_cobranca,
             "status_cobranca": status_cobranca,
             "mensagem": "Pagamento ainda não confirmado."
-        }), 403
+        }), 200
 
     except (requests.RequestException, ArkheError) as erro:
         con.rollback()

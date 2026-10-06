@@ -86,12 +86,12 @@ def _normalizar_cobranca(dados, exigir_codigo_pix=True):
         "brcode",
         "emv",
     )
-    # Sprint item 1: impede exibir ou copiar um identificador que não seja o Pix Copia e Cola BR Code.
+    # Aceita o código de pagamento retornado pela Arkhé, incluindo identificadores sandbox.
     if exigir_codigo_pix and (
         not isinstance(codigo_pagamento, str)
-        or not codigo_pagamento.startswith("000201")
+        or not codigo_pagamento.strip()
     ):
-        raise ArkheError("A Arkhé não retornou um código Pix Copia e Cola válido.")
+        raise ArkheError("A Arkhé não retornou um código Pix válido.")
 
     status = _primeiro_valor(dados, "status", "situacao")
     tipo_cobranca = _primeiro_valor(dados, "tipo_cobranca", "tipo", "type")
