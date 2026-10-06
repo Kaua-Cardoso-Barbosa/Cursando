@@ -179,12 +179,16 @@ export async function apiRequest(
           .catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(
+        // Sprint item 3: keeps response status and payload so the app can distinguish sync failures from missing access.
+        const error = new Error(
             data?.mensagem?.descricao ||
             data?.mensagem ||
             data?.erro ||
             "Erro ao conectar com a API."
         );
+        error.status = response.status;
+        error.dados = data;
+        throw error;
       }
 
       activeApiUrl = apiUrl;

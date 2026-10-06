@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -80,19 +81,38 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
 
   useEffect(() => {
     carregarConversas();
-  }, [token, tipoUsuario, cursos.length]);
+  }, [token, tipoUsuario, cursos]);
 
   useEffect(() => {
     carregarMensagens(selecionada).catch(() => setMensagens([]));
   }, [selecionada]);
 
+  useEffect(() => {
+    const inscricao = AppState.addEventListener("change", (estado) => {
+      if (estado !== "active") return;
+
+      // Sprint item 3: sincroniza conversas e mensagens recebidas no site quando o app volta ao primeiro plano.
+      carregarConversas();
+      if (selecionada) {
+        carregarMensagens(selecionada).catch(() => setMensagens([]));
+      }
+    });
+
+    return () => inscricao.remove();
+  }, [token, tipoUsuario, cursos, selecionada]);
+
+  async function atualizarChat() {
+    await onRefresh?.();
+    await carregarConversas();
+    if (selecionada) {
+      await carregarMensagens(selecionada).catch(() => setMensagens([]));
+    }
+  }
+
   return (
     <ScrollView
       contentContainerStyle={globalStyles.page}
-      refreshControl={<RefreshControl refreshing={carregando || loading} onRefresh={async () => {
-        await onRefresh?.();
-        await carregarConversas();
-      }} />}
+      refreshControl={<RefreshControl refreshing={carregando || loading} onRefresh={atualizarChat} />}
     >
       <View style={styles.header}>
         <Text style={globalStyles.title}>Chat</Text>

@@ -51,6 +51,46 @@ export default function RotaProtegida({
         verificarSessao();
     }, [api, exigirAssinatura]);
 
+    useEffect(() => {
+        async function sincronizarSessao() {
+            if (document.hidden) return;
+
+            try {
+                const retorno = await fetch(`${api}/verificar_token`, {
+                    method: "GET",
+                    credentials: "include"
+                });
+
+                if (!retorno.ok) {
+                    setUsuario(null);
+                    return;
+                }
+
+                const dados = await retorno.json();
+                setUsuario(dados.autenticado ? dados : null);
+
+                if (dados.autenticado && exigirAssinatura && Number(dados.tipo) === 2) {
+                    const assinatura = await fetch(`${api}/assinaturas/verificar`, {
+                        credentials: "include"
+                    });
+
+                    if (assinatura.ok) {
+                        setAssinaturaValida(true);
+                    } else if (assinatura.status === 403) {
+                        // Sprint item 3: sincroniza a permissao de acesso se o pagamento mudou no outro cliente.
+                        setAssinaturaValida(false);
+                    }
+                }
+            } catch (erro) {
+                // Sprint item 3: conserva a sessao carregada quando a verificacao falha por falta de rede.
+                console.error("Erro ao sincronizar sessao:", erro);
+            }
+        }
+
+        window.addEventListener("cursando:sincronizar", sincronizarSessao);
+        return () => window.removeEventListener("cursando:sincronizar", sincronizarSessao);
+    }, [api, exigirAssinatura]);
+
     if (carregando) {
         return <p>Verificando sessao...</p>;
     }

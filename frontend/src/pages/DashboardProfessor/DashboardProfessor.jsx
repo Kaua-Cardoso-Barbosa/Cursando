@@ -271,6 +271,51 @@ export default function DashboardProfessor({
         carregarFinanceiro();
     }, [api, avisar, lerResposta, visao]);
 
+    useEffect(() => {
+        let sincronizando = false;
+
+        async function sincronizarVisaoAtiva() {
+            if (document.hidden || sincronizando) return;
+            sincronizando = true;
+
+            try {
+                const tarefas = [carregarDashboard()];
+                if (visao === "cursos") tarefas.push(carregarCursos(filtroCursos));
+                if (visao === "aulas" && cursoSelecionado) {
+                    tarefas.push(carregarAulas(cursoSelecionado.id, filtroAulas));
+                }
+                if (visao === "alunos" && cursoSelecionado) {
+                    tarefas.push(carregarAlunos(cursoSelecionado.id));
+                }
+                if (visao === "financeiro") {
+                    tarefas.push((async () => {
+                        const resposta = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
+                        setFinanceiro(await lerResposta(resposta));
+                    })());
+                }
+
+                // Sprint item 3: sincroniza dashboard, cursos, aulas e financeiro ao retornar do aplicativo.
+                await Promise.allSettled(tarefas);
+            } finally {
+                sincronizando = false;
+            }
+        }
+
+        window.addEventListener("cursando:sincronizar", sincronizarVisaoAtiva);
+        return () => window.removeEventListener("cursando:sincronizar", sincronizarVisaoAtiva);
+    }, [
+        api,
+        carregarAlunos,
+        carregarAulas,
+        carregarCursos,
+        carregarDashboard,
+        cursoSelecionado,
+        filtroAulas,
+        filtroCursos,
+        lerResposta,
+        visao
+    ]);
+
     const carregarRelatorio = useCallback(async () => {
         const params = new URLSearchParams();
         if (filtrosRelatorio.inicio) params.set("inicio", filtrosRelatorio.inicio);
@@ -292,6 +337,18 @@ export default function DashboardProfessor({
         if (visao === "relatorios") {
             carregarRelatorio();
         }
+    }, [carregarRelatorio, visao]);
+
+    useEffect(() => {
+        function sincronizarRelatorio() {
+            if (!document.hidden && visao === "relatorios") {
+                // Sprint item 3: atualiza indicadores de atividade e aulas assistidas modificados no aplicativo.
+                carregarRelatorio();
+            }
+        }
+
+        window.addEventListener("cursando:sincronizar", sincronizarRelatorio);
+        return () => window.removeEventListener("cursando:sincronizar", sincronizarRelatorio);
     }, [carregarRelatorio, visao]);
 
     function baixarRelatorioPdf() {

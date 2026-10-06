@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client";
 import { colors, globalStyles } from "../styles";
 
@@ -18,6 +18,7 @@ const cards = [
 
 export default function FinanceiroScreen({ financeiro, carregando, onRefresh, token, tipoUsuario }) {
   const [faturas, setFaturas] = useState([]);
+  const [atualizandoFaturas, setAtualizandoFaturas] = useState(false);
   const [pagamento, setPagamento] = useState(null);
   const [verificando, setVerificando] = useState(false);
   const [pixCopiado, setPixCopiado] = useState(false);
@@ -35,17 +36,33 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
 
   async function carregarFaturas() {
     if (!aluno || !token) return;
+    setAtualizandoFaturas(true);
     try {
       const dados = await apiRequest("/financeiro/faturas", {}, token);
       setFaturas(dados.faturas || []);
     } catch (error) {
       Alert.alert("Erro", error.message);
+    } finally {
+      setAtualizandoFaturas(false);
     }
   }
 
   useEffect(() => {
     carregarFaturas();
+    const inscricao = AppState.addEventListener("change", (estado) => {
+      if (estado === "active") {
+        // Sprint item 3: atualiza faturas criadas ou pagas no site ao retornar ao financeiro do app.
+        carregarFaturas();
+      }
+    });
+
+    return () => inscricao.remove();
   }, [aluno, token]);
+
+  async function atualizarFinanceiro() {
+    // Sprint item 3: o gesto de atualizar busca resumo e faturas na mesma fonte usada pelo site.
+    await Promise.all([onRefresh?.(), carregarFaturas()]);
+  }
 
   async function pagarProxima() {
     try {
@@ -91,7 +108,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
   return (
     <ScrollView
       contentContainerStyle={globalStyles.page}
-      refreshControl={<RefreshControl refreshing={carregando} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={carregando || atualizandoFaturas} onRefresh={atualizarFinanceiro} />}
     >
       <View style={styles.header}>
         <Text style={globalStyles.title}>Financeiro</Text>

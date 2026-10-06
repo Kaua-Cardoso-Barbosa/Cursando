@@ -50,13 +50,26 @@ function AppConteudo() {
             return dados;
         } catch (erro) {
             console.error("Erro ao verificar sessao:", erro);
-            setUsuario(null);
+            // Sprint item 3: preserva a sessao em falha de rede para nao divergir do estado salvo no servidor.
             return null;
         }
     }, [api]);
 
     useEffect(() => {
         atualizarSessao();
+    }, [atualizarSessao]);
+
+    useEffect(() => {
+        function sincronizarAoRetomar() {
+            if (document.hidden) return;
+
+            // Sprint item 3: revalida perfil e avisa os paineis web para buscar dados alterados no aplicativo.
+            atualizarSessao();
+            window.dispatchEvent(new Event("cursando:sincronizar"));
+        }
+
+        document.addEventListener("visibilitychange", sincronizarAoRetomar);
+        return () => document.removeEventListener("visibilitychange", sincronizarAoRetomar);
     }, [atualizarSessao]);
 
     function atualizarUsuario(dadosAtualizados) {

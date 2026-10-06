@@ -343,24 +343,22 @@ export default function DashboardAluno({
         }
     }, [carregarAula, carregarDescobrir, carregarDetalheCurso, carregarMeusCursos, location.pathname]);
 
-    useEffect(() => {
-        if (visao !== "financeiro") return;
-
-        async function carregarFinanceiro() {
-            try {
-                const resposta = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
-                setFinanceiro(await lerResposta(resposta));
-                const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
-                const dadosFaturas = await lerResposta(respostaFaturas);
-                setFaturas(dadosFaturas.faturas || []);
-            } catch (erro) {
-                console.error("Erro ao carregar financeiro do aluno:", erro);
-                avisar({ tipo: "erro", descricao: erro.message });
-            }
+    const carregarFinanceiro = useCallback(async () => {
+        try {
+            const resposta = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
+            setFinanceiro(await lerResposta(resposta));
+            const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
+            const dadosFaturas = await lerResposta(respostaFaturas);
+            setFaturas(dadosFaturas.faturas || []);
+        } catch (erro) {
+            console.error("Erro ao carregar financeiro do aluno:", erro);
+            avisar({ tipo: "erro", descricao: erro.message });
         }
+    }, [api, avisar, lerResposta]);
 
-        carregarFinanceiro();
-    }, [api, avisar, lerResposta, visao]);
+    useEffect(() => {
+        if (visao === "financeiro") carregarFinanceiro();
+    }, [carregarFinanceiro, visao]);
 
     useEffect(() => {
         function ativarProtecao(evento) {
@@ -388,6 +386,52 @@ export default function DashboardAluno({
             document.removeEventListener("contextmenu", ativarProtecao);
         };
     }, [visao]);
+
+    useEffect(() => {
+        let sincronizando = false;
+
+        async function sincronizarVisaoAtiva() {
+            if (document.hidden || sincronizando) return;
+            sincronizando = true;
+
+            try {
+                const tarefas = [carregarDashboard()];
+                const caminho = location.pathname;
+                const matchAula = caminho.match(/\/DashboardAluno\/aulas\/(\d+)/);
+                const matchCurso = caminho.match(/\/DashboardAluno\/cursos\/(\d+)/);
+                const matchDescobrir = caminho.match(/\/DashboardAluno\/descobrir\/(\d+)/);
+
+                if (matchAula) {
+                    tarefas.push(carregarAula(matchAula[1]));
+                } else if (matchCurso || matchDescobrir) {
+                    tarefas.push(carregarDetalheCurso((matchCurso || matchDescobrir)[1]));
+                } else if (caminho.endsWith("/cursos")) {
+                    tarefas.push(carregarMeusCursos());
+                } else if (caminho.endsWith("/descobrir")) {
+                    tarefas.push(carregarDescobrir());
+                }
+
+                if (visao === "financeiro") tarefas.push(carregarFinanceiro());
+
+                // Sprint item 3: recarrega do backend a tela atual quando o aluno retorna do app ou de outra aba.
+                await Promise.allSettled(tarefas);
+            } finally {
+                sincronizando = false;
+            }
+        }
+
+        window.addEventListener("cursando:sincronizar", sincronizarVisaoAtiva);
+        return () => window.removeEventListener("cursando:sincronizar", sincronizarVisaoAtiva);
+    }, [
+        carregarAula,
+        carregarDashboard,
+        carregarDescobrir,
+        carregarDetalheCurso,
+        carregarFinanceiro,
+        carregarMeusCursos,
+        location.pathname,
+        visao
+    ]);
 
     // Solicita a matrícula e abre o detalhe do curso após a confirmação da API.
     // Solicita a matrícula e abre o detalhe do curso após a confirmação da API.

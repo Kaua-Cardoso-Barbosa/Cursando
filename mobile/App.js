@@ -1,8 +1,8 @@
 import { StatusBar } from "expo-status-bar";
 import { isRunningInExpoGo } from "expo";
 import * as LocalAuthentication from "expo-local-authentication";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, Vibration, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, AppState, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
 import { apiRequest, carregarSessao, limparSessao, salvarSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
@@ -24,9 +24,11 @@ let notificationHandlerConfigured = false;
 
 export default function App() {
   const [token, setToken] = useState("");
+  const sincronizandoApp = useRef(false);
   const [usuario, setUsuario] = useState(null);
   const [assinaturaAtiva, setAssinaturaAtiva] = useState(null);
   const [validandoAssinatura, setValidandoAssinatura] = useState(false);
+  const [erroSincronizacao, setErroSincronizacao] = useState("");
   const [perfil, setPerfil] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [financeiro, setFinanceiro] = useState(null);
@@ -66,7 +68,10 @@ export default function App() {
       setCursos(Array.isArray(cursosData) ? cursosData : []);
       setPerfil(perfilData);
       setFinanceiro((tipo === 1 || tipo === 2) ? financeiroData : null);
-      setUsuario((atual) => ({ ...(atual || {}), ...perfilData, tipo }));
+      const usuarioAtualizado = { ...(authUser || {}), ...perfilData, tipo };
+      setUsuario(usuarioAtualizado);
+      // Sprint item 3: persiste no app o mesmo perfil atualizado que o site acabou de ler do backend.
+      await salvarSessao(authToken, usuarioAtualizado);
     } catch (error) {
       Alert.alert("Erro", error.message);
     } finally {
@@ -129,22 +134,40 @@ export default function App() {
   // Valida a assinatura do aluno antes de carregar a área interna do aplicativo.
   async function validarAcesso(authToken, authUser) {
     const tipo = Number(authUser?.tipo ?? 1);
+    setErroSincronizacao("");
 
     if (tipo !== 2) {
       setAssinaturaAtiva(true);
       await carregarDados(authToken, authUser);
-      return;
+      return true;
     }
 
-    // Sprint item 1: após validar o e-mail, envia o aluno sem assinatura para a tela de pagamento.
+    // Sprint item 3: distingue falta de assinatura de falha de rede para manter os dados dos dois clientes coerentes.
     setValidandoAssinatura(true);
+    setAssinaturaAtiva(null);
     try {
       const dados = await apiRequest("/assinaturas/verificar", {}, authToken);
-      setAssinaturaAtiva(dados?.assinatura === true);
-      await carregarDados(authToken, authUser);
-    } catch {
-      setAssinaturaAtiva(false);
-      await carregarDados(authToken, authUser);
+      const ativa = dados?.assinatura === true;
+      setAssinaturaAtiva(ativa);
+      if (ativa) {
+        await carregarDados(authToken, authUser);
+      } else {
+        setDashboard(null);
+        setCursos([]);
+        setFinanceiro(null);
+      }
+      return ativa;
+    } catch (error) {
+      if (error?.status === 403 && error?.dados?.assinatura === false) {
+        setAssinaturaAtiva(false);
+        setDashboard(null);
+        setCursos([]);
+        setFinanceiro(null);
+        return false;
+      }
+
+      setErroSincronizacao(error?.message || "Nao foi possivel atualizar seu acesso.");
+      return null;
     } finally {
       setValidandoAssinatura(false);
     }
@@ -175,6 +198,33 @@ export default function App() {
     iniciar();
   }, []);
 
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const assinaturaCursoId = detalheCursoAluno?.curso?.id;
+    const aulaId = detalheAulaAluno?.aula?.id;
+    const inscricao = AppState.addEventListener("change", async (estado) => {
+      if (estado !== "active" || sincronizandoApp.current) return;
+      sincronizandoApp.current = true;
+
+      try {
+        // Sprint item 3: ao voltar ao app, revalida acesso e busca no servidor os dados alterados no site.
+        const acessoAtivo = await validarAcesso(token, usuario);
+        if (!acessoAtivo) return;
+
+        if (aulaId) {
+          await abrirAulaAluno({ id: aulaId });
+        } else if (assinaturaCursoId) {
+          await abrirCursoAluno({ id: assinaturaCursoId });
+        }
+      } finally {
+        sincronizandoApp.current = false;
+      }
+    });
+
+    return () => inscricao.remove();
+  }, [token, usuario, detalheCursoAluno?.curso?.id, detalheAulaAluno?.aula?.id]);
+
   async function sair() {
     await limparSessao();
     setToken("");
@@ -189,20 +239,24 @@ export default function App() {
     setTab("home");
   }
 
+  async function buscarDetalheCursoAluno(idCurso) {
+    const [detalhe, materiais] = await Promise.all([
+      apiRequest(`/aluno/cursos/${idCurso}`, {}, token),
+      apiRequest(`/aluno/cursos/${idCurso}/materiais`, {}, token)
+    ]);
+    let prova = null;
+    try {
+      prova = await apiRequest(`/aluno/cursos/${idCurso}/prova`, {}, token);
+    } catch {
+      prova = null;
+    }
+    return { ...detalhe, materiais: Array.isArray(materiais) ? materiais : [], prova };
+  }
+
   async function abrirCursoAluno(curso) {
     setLoading(true);
     try {
-      const [detalhe, materiais] = await Promise.all([
-        apiRequest(`/aluno/cursos/${curso.id}`, {}, token),
-        apiRequest(`/aluno/cursos/${curso.id}/materiais`, {}, token)
-      ]);
-      let prova = null;
-      try {
-        prova = await apiRequest(`/aluno/cursos/${curso.id}/prova`, {}, token);
-      } catch {
-        prova = null;
-      }
-      setDetalheCursoAluno({ ...detalhe, materiais: Array.isArray(materiais) ? materiais : [], prova });
+      setDetalheCursoAluno(await buscarDetalheCursoAluno(curso.id));
       setDetalheAulaAluno(null);
       setTab("courses");
     } catch (error) {
@@ -230,11 +284,8 @@ export default function App() {
       await apiRequest(`/aluno/aulas/${aula.id}/assistir`, { method: "POST" }, token);
       await carregarDados();
       if (detalheCursoAluno?.curso?.id) {
-        const [detalhe, materiais] = await Promise.all([
-          apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}`, {}, token),
-          apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/materiais`, {}, token)
-        ]);
-        setDetalheCursoAluno({ ...detalhe, materiais: Array.isArray(materiais) ? materiais : [] });
+        // Sprint item 3: atualiza progresso, materiais e prova com os mesmos dados exibidos no site.
+        setDetalheCursoAluno(await buscarDetalheCursoAluno(detalheCursoAluno.curso.id));
       }
     } catch (error) {
       Alert.alert("Erro", error.message);
@@ -313,7 +364,10 @@ export default function App() {
       }, token);
       const novoPerfil = atualizado.usuario || dados;
       setPerfil(novoPerfil);
-      setUsuario((atual) => ({ ...(atual || {}), ...novoPerfil }));
+      const usuarioAtualizado = { ...(usuario || {}), ...novoPerfil };
+      setUsuario(usuarioAtualizado);
+      // Sprint item 3: grava o perfil atualizado no cache persistente usado pelo próximo início do app.
+      await salvarSessao(token, usuarioAtualizado);
       setEditingProfile(false);
     } catch (error) {
       Alert.alert("Erro", error.message);
@@ -384,6 +438,22 @@ export default function App() {
             setEmailPendente(email);
           }}
         />
+      </SafeAreaView>
+    );
+  }
+
+  if (erroSincronizacao) {
+    return (
+      <SafeAreaView style={[globalStyles.app, styles.syncErrorPage]}>
+        <StatusBar style="dark" />
+        <Text style={styles.syncErrorTitle}>Nao foi possivel sincronizar seu acesso.</Text>
+        <Text style={styles.syncErrorMessage}>{erroSincronizacao}</Text>
+        <Pressable style={globalStyles.primaryButton} onPress={() => validarAcesso(token, usuario)}>
+          <Text style={globalStyles.buttonText}>Tentar novamente</Text>
+        </Pressable>
+        <Pressable style={globalStyles.secondaryButton} onPress={sair}>
+          <Text style={globalStyles.secondaryText}>Sair da conta</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -506,6 +576,24 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  syncErrorPage: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    padding: 24
+  },
+  syncErrorTitle: {
+    color: colors.black,
+    fontSize: 21,
+    fontWeight: "700",
+    textAlign: "center"
+  },
+  syncErrorMessage: {
+    color: colors.textMuted,
+    fontSize: 15,
+    textAlign: "center"
+  },
   loginApp: {
     paddingBottom: 0
   },

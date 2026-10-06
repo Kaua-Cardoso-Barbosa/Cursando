@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Input from "../Input/Input.jsx";
 import Button from "../Button/Button.jsx";
 import css from "./PerfilUsuario.module.css";
@@ -25,6 +25,8 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
     const [previewImagem, setPreviewImagem] = useState("");
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
+    const [alteradoLocalmente, setAlteradoLocalmente] = useState(false);
+    const alteradoLocalmenteRef = useRef(false);
     const [erroLocal, setErroLocal] = useState("");
 
     const avisar = useCallback((mensagem) => {
@@ -56,43 +58,66 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
         return dados;
     }, [avisar]);
 
-    useEffect(() => {
-        async function carregarPerfil() {
-            try {
-                const resposta = await fetch(`${api}/perfil`, {
-                    credentials: "include"
-                });
-                const dados = await lerResposta(resposta);
+    const carregarPerfil = useCallback(async () => {
+        try {
+            const resposta = await fetch(`${api}/perfil`, {
+                credentials: "include"
+            });
+            const dados = await lerResposta(resposta);
 
-                setPerfil({
-                    nome: dados.nome || "",
-                    email: dados.email || "",
-                    cpf: dados.cpf || "",
-                    imagem_perfil: dados.imagem_perfil || "",
-                    senha: "",
-                    confirmar_senha: ""
-                });
-                setPreviewImagem(dados.imagem_perfil ? resolverUrlMidia(api, dados.imagem_perfil) : "");
-            } catch (erro) {
-                console.error("Erro ao carregar perfil:", erro);
-                avisar({ tipo: "erro", descricao: erro.message });
-            } finally {
-                setCarregando(false);
-            }
+            // Sprint item 3: descarta uma resposta antiga se o usuario comecou a editar durante a requisicao.
+            if (alteradoLocalmenteRef.current) return;
+
+            setPerfil({
+                nome: dados.nome || "",
+                email: dados.email || "",
+                cpf: dados.cpf || "",
+                imagem_perfil: dados.imagem_perfil || "",
+                senha: "",
+                confirmar_senha: ""
+            });
+            setPreviewImagem(dados.imagem_perfil ? resolverUrlMidia(api, dados.imagem_perfil) : "");
+            setAlteradoLocalmente(false);
+        } catch (erro) {
+            console.error("Erro ao carregar perfil:", erro);
+            avisar({ tipo: "erro", descricao: erro.message });
+        } finally {
+            setCarregando(false);
+        }
+    }, [api, avisar, lerResposta]);
+
+    useEffect(() => {
+        carregarPerfil();
+    }, [carregarPerfil]);
+
+    useEffect(() => {
+        function sincronizarPerfil() {
+            // Sprint item 3: evita substituir rascunhos enquanto atualiza o perfil salvo no outro cliente.
+            if (!document.hidden && !alteradoLocalmente && !salvando) carregarPerfil();
         }
 
-        carregarPerfil();
-    }, [api, avisar, lerResposta]);
+        window.addEventListener("cursando:sincronizar", sincronizarPerfil);
+        return () => window.removeEventListener("cursando:sincronizar", sincronizarPerfil);
+    }, [alteradoLocalmente, carregarPerfil, salvando]);
 
     function selecionarImagem(evento) {
         const arquivo = evento.target.files?.[0];
         setImagemArquivo(arquivo || null);
+        alteradoLocalmenteRef.current = true;
+        setAlteradoLocalmente(true);
 
         if (arquivo) {
             setPreviewImagem(URL.createObjectURL(arquivo));
         } else {
             setPreviewImagem(perfil.imagem_perfil ? resolverUrlMidia(api, perfil.imagem_perfil) : "");
         }
+    }
+
+    function atualizarCampoPerfil(campo, valor) {
+        // Sprint item 3: protege dados ainda nao salvos ao sincronizar o perfil vindo de outro cliente.
+        setPerfil((atual) => ({ ...atual, [campo]: valor }));
+        alteradoLocalmenteRef.current = true;
+        setAlteradoLocalmente(true);
     }
 
     async function salvarPerfil(evento) {
@@ -139,6 +164,8 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
             });
             setImagemArquivo(null);
             setPreviewImagem(usuarioAtualizado.imagem_perfil ? resolverUrlMidia(api, usuarioAtualizado.imagem_perfil) : "");
+            alteradoLocalmenteRef.current = false;
+            setAlteradoLocalmente(false);
 
             if (onPerfilAtualizado) {
                 onPerfilAtualizado(usuarioAtualizado);
@@ -185,7 +212,7 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
                             htmlFor="perfil_nome"
                             placeholder="Digite seu nome"
                             value={perfil.nome}
-                            funcao={(evento) => setPerfil({ ...perfil, nome: evento.target.value })}
+                            funcao={(evento) => atualizarCampoPerfil("nome", evento.target.value)}
                         />
 
                         <Input
@@ -194,7 +221,7 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
                             htmlFor="perfil_email"
                             placeholder="Digite seu email"
                             value={perfil.email}
-                            funcao={(evento) => setPerfil({ ...perfil, email: evento.target.value })}
+                            funcao={(evento) => atualizarCampoPerfil("email", evento.target.value)}
                         />
 
                         <Input
@@ -203,7 +230,7 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
                             htmlFor="perfil_cpf"
                             placeholder="Digite seu CPF"
                             value={perfil.cpf}
-                            funcao={(evento) => setPerfil({ ...perfil, cpf: evento.target.value })}
+                            funcao={(evento) => atualizarCampoPerfil("cpf", evento.target.value)}
                             mask="cpf"
                         />
 
@@ -213,7 +240,7 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
                             htmlFor="perfil_senha"
                             placeholder="Digite uma nova senha"
                             value={perfil.senha}
-                            funcao={(evento) => setPerfil({ ...perfil, senha: evento.target.value })}
+                            funcao={(evento) => atualizarCampoPerfil("senha", evento.target.value)}
                         />
 
                         <Input
@@ -222,7 +249,7 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
                             htmlFor="perfil_confirmar_senha"
                             placeholder="Confirme a nova senha"
                             value={perfil.confirmar_senha}
-                            funcao={(evento) => setPerfil({ ...perfil, confirmar_senha: evento.target.value })}
+                            funcao={(evento) => atualizarCampoPerfil("confirmar_senha", evento.target.value)}
                             obrigatorio={perfil.senha ? "Sim" : "Nao"}
                             required={Boolean(perfil.senha)}
                         />
