@@ -136,7 +136,8 @@ def verificar_token():
             )
             total_assinaturas, assinaturas_ativas = cursor.fetchone() or (0, 0)
 
-            if int(total_assinaturas or 0) == 1 and int(assinaturas_ativas or 0) == 0:
+            # Redireciona qualquer aluno sem assinatura ativa para concluir o pagamento.
+            if int(assinaturas_ativas or 0) == 0:
                 redirecionar = "/assinatura"
 
         cursor.close()

@@ -77,6 +77,14 @@ export default function LoginScreen({ onLogin, onSignup, onVerifyEmail }) {
       // O componente raiz atualiza o estado autenticado e libera a area interna.
       onLogin(dados.token, usuario);
     } catch (error) {
+      // Uma conta ainda n\u00e3o confirmada precisa continuar o fluxo na tela
+      // de verifica\u00e7\u00e3o para que o usu\u00e1rio consiga informar o c\u00f3digo.
+      if (error?.message?.includes("Verifique seu e-mail")) {
+        setErro("");
+        onVerifyEmail(emailTratado);
+        return;
+      }
+
       // Mostra erros de validacao, servidor ou rede nesta mesma tela.
       setErro(error?.message || "N\u00e3o foi poss\u00edvel realizar o login.");
     } finally {

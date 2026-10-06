@@ -86,11 +86,20 @@ export default function Login({ api, setMensagem, atualizarSessao }) {
             }
 
             if (!retorno.ok) {
+                const descricaoMensagem = dados?.mensagem?.descricao || "";
+                if (descricaoMensagem.toLowerCase().includes("verifique seu e-mail")) {
+                    const emailPendente = email.trim().toLowerCase();
+                    sessionStorage.setItem("cursando_email_pendente", emailPendente);
+                    navigate("/verificar-email", {
+                        replace: true,
+                        state: { email: emailPendente }
+                    });
+                }
                 return;
             }
 
-            await atualizarSessao();
-            navigate(getRotaDashboard(dados));
+            const sessao = await atualizarSessao();
+            navigate(sessao?.redirecionar || getRotaDashboard(dados));
         } catch (erro) {
             console.error("Erro ao fazer login:", erro);
             setMensagem({

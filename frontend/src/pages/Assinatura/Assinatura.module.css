@@ -162,6 +162,21 @@
     border-radius: 8px;
 }
 
+.qrCodeArea {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+    margin: 18px auto;
+    padding: 16px;
+    width: fit-content;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #0c4d36;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
 .rotuloCodigoPix {
     color: #0c4d36;
     display: block;

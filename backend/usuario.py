@@ -508,8 +508,8 @@ def cadastrar():
 
         mensagem, tipo_envio = email_verificacao(
             email,
-            "Verificacao de e-mail",
-            "Seu codigo para verificar seu e-mail e",
+            "Seu codigo de confirmacao | Cursando",
+            "Seu codigo de confirmacao de e-mail e:",
             "Digite este codigo no aplicativo ou site para concluir seu cadastro.",
         )
         if tipo_envio != "sucesso":
@@ -622,7 +622,10 @@ def login():
             )
             total_assinaturas, assinaturas_ativas = cursor.fetchone() or (0, 0)
 
-            if int(total_assinaturas or 0) == 1 and int(assinaturas_ativas or 0) == 0:
+            # Alunos sem nenhuma assinatura ativa precisam concluir o pagamento.
+            # Isso cobre tanto quem ainda não possui mensalidade quanto quem
+            # possui apenas mensalidades pendentes ou expiradas.
+            if int(assinaturas_ativas or 0) == 0:
                 redirecionar = "/assinatura"
 
         resposta = make_response(
@@ -725,8 +728,8 @@ def reenviar_codigo_cadastro():
 
     mensagem, tipo_envio = email_verificacao(
         email,
-        "Verificacao de e-mail",
-        "Seu novo codigo para verificar seu e-mail e",
+        "Seu novo codigo de confirmacao | Cursando",
+        "Seu novo codigo de confirmacao de e-mail e:",
         "Digite este codigo no aplicativo ou site para concluir seu cadastro.",
     )
     return resposta_mensagem(mensagem, 200 if tipo_envio == "sucesso" else 503, tipo_envio)
@@ -974,8 +977,8 @@ def esqueci_minha_senha():
     try:
         mensagem, tipo = email_verificacao(
             destinatario,
-            "Recuperacao de senha",
-            "Seu codigo para recuperar sua senha e",
+            "Codigo para redefinir sua senha | Cursando",
+            "Seu codigo para redefinir a senha e:",
         )
         status = 200 if tipo == "sucesso" else 404
         return resposta_mensagem(mensagem, status, tipo)
@@ -1107,6 +1110,33 @@ def criar_pix_assinatura():
             }), 409
 
         # O preço é configurado no servidor e não aceito do navegador.
+        # Uma cobrança pendente já representa o pagamento em andamento. Reutilizar
+        # o PIX evita criar duas mensalidades abertas para o mesmo usuário.
+        cursor.execute(
+            """
+            SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ?
+              AND STATUS <> 1
+              AND ID_COBRANCA_ARKHE IS NOT NULL
+            ORDER BY ID_ASSINATURA DESC
+            """,
+            (id_usuario,)
+        )
+        assinatura_pendente = cursor.fetchone()
+        if assinatura_pendente:
+            id_existente, id_cobranca, valor_existente = assinatura_pendente
+            cobranca_existente = consultar_cobranca_pix(id_cobranca)
+            return jsonify({
+                "id_assinatura": id_existente,
+                "id_cobranca": cobranca_existente["id_cobranca"],
+                "valor": cobranca_existente.get("valor", valor_existente),
+                "codigo_pagamento": cobranca_existente["codigo_pagamento"],
+                "status": cobranca_existente["status"],
+                "tipo_cobranca": cobranca_existente["tipo_cobranca"],
+                "fatura_existente": True
+            }), 200
+
         valor = current_app.config["VALOR_ASSINATURA"]
 
         # Solicita à Arkhé uma cobrança PIX vinculada ao valor do plano.
@@ -1114,9 +1144,14 @@ def criar_pix_assinatura():
 
         # Guarda a assinatura como pendente (STATUS 0) até confirmar o pagamento.
         # O ID da cobrança permite consultar depois o estado do PIX na Arkhé.
+        # Bases antigas podem ter o generator da tabela defasado. Usar o
+        # próximo ID livre evita reutilizar uma chave primária já existente.
+        cursor.execute("SELECT COALESCE(MAX(ID_ASSINATURA), 0) + 1 FROM ASSINATURAS")
+        id_assinatura = cursor.fetchone()[0]
         cursor.execute(
             """
             INSERT INTO ASSINATURAS (
+                ID_ASSINATURA,
                 ID_USUARIO,
                 STATUS,
                 PLANO,
@@ -1124,10 +1159,10 @@ def criar_pix_assinatura():
                 VALOR,
                 DATA_VENCIMENTO
             )
-            VALUES (?, ?, ?, ?, ?, ?)
-            RETURNING ID_ASSINATURA
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
+                id_assinatura,
                 id_usuario,
                 0,
                 1,
@@ -1136,8 +1171,6 @@ def criar_pix_assinatura():
                 datetime.now() + timedelta(days=3)
             )
         )
-
-        id_assinatura = cursor.fetchone()[0]
 
         # Persiste a assinatura pendente antes de devolver o código PIX.
         con.commit()
@@ -1205,7 +1238,8 @@ def verificar_pagamento_assinatura():
             (id_usuario,)
         )
 
-        assinatura = cursor.fetchone()
+        assinaturas = cursor.fetchall()
+        assinatura = assinaturas[0] if assinaturas else None
 
         if not assinatura:
             return jsonify({
@@ -1263,7 +1297,21 @@ def verificar_pagamento_assinatura():
             }), 403
 
         # A confirmação é consultada na Arkhé quando esta rota é chamada.
-        cobranca = consultar_cobranca_pix(id_cobranca)
+        # Verifica todas as cobranças pendentes para aceitar o pagamento de
+        # uma mensalidade antiga caso existam duplicatas no histórico.
+        cobranca = None
+        assinatura_paga = None
+        for assinatura_candidata in assinaturas:
+            if assinatura_candidata[2] == 1 or not assinatura_candidata[1]:
+                continue
+            cobranca_candidata = consultar_cobranca_pix(assinatura_candidata[1])
+            if str(cobranca_candidata["status"]) == "1":
+                assinatura_paga = assinatura_candidata
+                cobranca = cobranca_candidata
+                break
+
+        if cobranca is None:
+            cobranca = consultar_cobranca_pix(id_cobranca)
 
         status_cobranca = cobranca["status"]
 
@@ -1289,7 +1337,7 @@ def verificar_pagamento_assinatura():
                     data_expiracao,
                     agora,
                     current_app.config["VALOR_ASSINATURA"],
-                    id_assinatura
+                    (assinatura_paga or assinatura)[0]
                 )
             )
 
@@ -1298,7 +1346,7 @@ def verificar_pagamento_assinatura():
             return jsonify({
                 "assinatura": True,
                 "status": "ativa",
-                "id_assinatura": id_assinatura,
+                "id_assinatura": (assinatura_paga or assinatura)[0],
                 "data_inicio": agora.isoformat(),
                 "data_expiracao": data_expiracao.isoformat()
             }), 200

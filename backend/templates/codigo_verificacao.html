@@ -1,41 +1,29 @@
-<html>
-<body style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
-<div style="max-width: 500px; margin: auto; background: white; border-radius: 10px; padding: 20px; text-align: center;">
-
-    <div style="display: flex; flex-direction: row; align-content: center; justify-content: center;">
-        <img src="../../frontend/public/imagens_assets/logo.png" style="width: 60px; height: 50px" />
-        <h2 style="color: #06A663;">Cursando</h2>
-    </div>
-
-    <p style="color: #333;">Seu código de verificação é:</p>
-
-    <div style="
-            background: #06A663;
-            color: white;
-            font-size: 30px;
-            font-weight: bold;
-            padding: 15px;
-            border-radius: 10px;
-            letter-spacing: 35px;
-            text-indent: 35px;
-            margin: 20px 0;
-            text-align: center;
-            width: 70%;
-            justify-self: center;
-">
-        {{ codigo }}
-    </div>
-
-    <p style="color: #666; font-size: 14px;">
-        Use este código para confirmar seu email.
-    </p>
-
-    <hr style="margin: 20px 0;">
-
-    <p style="color: #999; font-size: 12px;">
-        © 2026 Cursando
-    </p>
-
-</div>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código de confirmação | Cursando</title>
+</head>
+<body style="margin:0; padding:0; background:#f2f5f4; font-family:Arial,Helvetica,sans-serif; color:#18352b;">
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">Use o código para continuar seu cadastro na Cursando.</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f2f5f4; padding:32px 12px;">
+        <tr><td align="center">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px; background:#ffffff; border:1px solid #dce7e2; border-radius:16px; overflow:hidden;">
+                <tr><td style="background:#063b2b; padding:28px 32px; text-align:center;">
+                    <div style="font-size:25px; line-height:32px; font-weight:700; color:#ffffff;">Cursando</div>
+                    <div style="margin-top:5px; font-size:13px; color:#b9e5d2;">Aprenda no seu ritmo</div>
+                </td></tr>
+                <tr><td style="padding:36px 34px 32px;">
+                    <p style="margin:0 0 18px; font-size:17px; line-height:26px;">Olá, {{ nome|default('') }}!</p>
+                    <p style="margin:0 0 24px; font-size:16px; line-height:25px; color:#40574e;">{{ mensagem|default('Seu código de confirmação é') }}</p>
+                    <div style="margin:0 auto 24px; max-width:300px; padding:18px 14px; border:1px solid #a7d6c2; border-radius:12px; background:#eaf8f1; color:#087344; font-size:34px; line-height:40px; font-weight:700; letter-spacing:8px; text-align:center;">{{ codigo }}</div>
+                    {% if mensagem_secundaria %}<p style="margin:0 0 18px; font-size:14px; line-height:22px; color:#60736b;">{{ mensagem_secundaria }}</p>{% endif %}
+                    <p style="margin:0; font-size:13px; line-height:21px; color:#718078;">Se você não solicitou este código, ignore este e-mail. Nunca compartilhe seu código com outras pessoas.</p>
+                </td></tr>
+                <tr><td style="padding:18px 34px; border-top:1px solid #edf1ef; text-align:center;"><p style="margin:0; font-size:12px; line-height:18px; color:#87958f;">Este e-mail foi enviado automaticamente pela Cursando.</p></td></tr>
+            </table>
+        </td></tr>
+    </table>
 </body>
 </html>

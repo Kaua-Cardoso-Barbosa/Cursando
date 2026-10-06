@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { QRCodeCanvas } from "qrcode.react";
 import css from "./Assinatura.module.css";
 
 export default function Assinatura({ api }) {
@@ -127,6 +128,10 @@ export default function Assinatura({ api }) {
                             <strong>R$ {Number(pagamento.valor || 0).toFixed(2).replace(".", ",")}</strong>
                         </div>
                         <p className={css.instrucao}>Copie o código PIX, conclua o pagamento no seu banco e depois confirme por aqui.</p>
+                        <div className={css.qrCodeArea}>
+                            <QRCodeCanvas value={pagamento.codigo_pagamento || ""} size={210} includeMargin />
+                            <span>Escaneie este QR Code no aplicativo do seu banco.</span>
+                        </div>
                         <div className={css.areaCodigoPix} aria-label="Codigo PIX copia e cola">
                             <span className={css.rotuloCodigoPix}>Pix copia e cola</span>
                             <p className={css.codigoPix}>{pagamento.codigo_pagamento}</p>

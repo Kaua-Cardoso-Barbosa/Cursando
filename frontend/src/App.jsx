@@ -47,9 +47,11 @@ function AppConteudo() {
 
             const dados = await retorno.json();
             setUsuario(dados.autenticado ? dados : null);
+            return dados;
         } catch (erro) {
             console.error("Erro ao verificar sessao:", erro);
             setUsuario(null);
+            return null;
         }
     }, [api]);
 
