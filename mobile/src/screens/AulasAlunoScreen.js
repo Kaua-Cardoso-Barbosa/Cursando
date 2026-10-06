@@ -16,7 +16,7 @@ function formatarPosicaoAula(segundos) {
     : `${minutos}:${String(restante).padStart(2, "0")}`;
 }
 
-export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onSubmitExam, onReview }) {
+export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onSubmitExam, onDownloadCertificate, onReview }) {
   // Exibe apenas as aulas disponibilizadas pelo detalhe do curso retornado pela API.
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
@@ -24,6 +24,16 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
   const prova = detalhe?.prova;
   const [respostas, setRespostas] = useState({});
   const [avaliacao, setAvaliacao] = useState({ nota: "5", comentario: "" });
+  const [baixandoCertificado, setBaixandoCertificado] = useState(false);
+
+  async function baixarCertificado() {
+    setBaixandoCertificado(true);
+    try {
+      await onDownloadCertificate?.();
+    } finally {
+      setBaixandoCertificado(false);
+    }
+  }
 
   return (
     <ScrollView
@@ -110,24 +120,30 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
             <Text style={globalStyles.buttonText}>Enviar prova</Text>
           </Pressable>
           {prova.envio?.status === 1 ? (
-            <View style={[globalStyles.card, styles.materialCard]}>
-              <Text style={styles.materialTitle}>Avaliar curso</Text>
-              <TextInput
-                value={avaliacao.nota}
-                onChangeText={(nota) => setAvaliacao({ ...avaliacao, nota })}
-                keyboardType="number-pad"
-                style={globalStyles.input}
-              />
-              <TextInput
-                value={avaliacao.comentario}
-                onChangeText={(comentario) => setAvaliacao({ ...avaliacao, comentario })}
-                placeholder="Comentario"
-                style={globalStyles.input}
-              />
-              <Pressable style={globalStyles.primaryButton} onPress={() => onReview?.({ nota: Number(avaliacao.nota), comentario: avaliacao.comentario })}>
-                <Text style={globalStyles.buttonText}>Enviar avaliacao</Text>
+            <>
+              {/* Sprint item 5: libera o PDF no app depois da conclusao e aprovacao na prova final. */}
+              <Pressable style={globalStyles.primaryButton} onPress={baixarCertificado} disabled={baixandoCertificado}>
+                <Text style={globalStyles.buttonText}>{baixandoCertificado ? "Preparando certificado..." : "Baixar certificado PDF"}</Text>
               </Pressable>
-            </View>
+              <View style={[globalStyles.card, styles.materialCard]}>
+                <Text style={styles.materialTitle}>Avaliar curso</Text>
+                <TextInput
+                  value={avaliacao.nota}
+                  onChangeText={(nota) => setAvaliacao({ ...avaliacao, nota })}
+                  keyboardType="number-pad"
+                  style={globalStyles.input}
+                />
+                <TextInput
+                  value={avaliacao.comentario}
+                  onChangeText={(comentario) => setAvaliacao({ ...avaliacao, comentario })}
+                  placeholder="Comentario"
+                  style={globalStyles.input}
+                />
+                <Pressable style={globalStyles.primaryButton} onPress={() => onReview?.({ nota: Number(avaliacao.nota), comentario: avaliacao.comentario })}>
+                  <Text style={globalStyles.buttonText}>Enviar avaliacao</Text>
+                </Pressable>
+              </View>
+            </>
           ) : null}
         </View>
       ) : null}

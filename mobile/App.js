@@ -1,9 +1,11 @@
 import { StatusBar } from "expo-status-bar";
 import { isRunningInExpoGo } from "expo";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, AppState, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
-import { apiRequest, carregarSessao, limparSessao, salvarSessao } from "./src/api/client";
+import { apiRequest, carregarSessao, getApiBaseUrl, limparSessao, salvarSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
 import AssinaturaScreen from "./src/screens/AssinaturaScreen";
@@ -314,6 +316,45 @@ export default function App() {
     await abrirCursoAluno(detalheCursoAluno.curso);
   }
 
+  async function baixarCertificadoAluno() {
+    const idCurso = detalheCursoAluno?.curso?.id;
+    if (!idCurso || !token) return;
+
+    try {
+      // Sprint item 5: baixa o PDF autenticado e abre as opcoes nativas para salvar ou compartilhar.
+      const destino = `${FileSystem.documentDirectory}certificado-${idCurso}-${Date.now()}.pdf`;
+      const download = await FileSystem.downloadAsync(
+        `${getApiBaseUrl()}/aluno/cursos/${idCurso}/certificado`,
+        destino,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (download.status < 200 || download.status >= 300) {
+        const conteudoErro = await FileSystem.readAsStringAsync(download.uri).catch(() => "");
+        await FileSystem.deleteAsync(download.uri, { idempotent: true }).catch(() => {});
+        let dadosErro = {};
+        try {
+          dadosErro = JSON.parse(conteudoErro);
+        } catch {
+          dadosErro = {};
+        }
+        throw new Error(dadosErro?.mensagem?.descricao || dadosErro?.mensagem || "Não foi possível gerar o certificado.");
+      }
+
+      if (!(await Sharing.isAvailableAsync())) {
+        throw new Error("O compartilhamento de arquivos não está disponível neste aparelho.");
+      }
+
+      await Sharing.shareAsync(download.uri, {
+        mimeType: "application/pdf",
+        dialogTitle: "Salvar certificado",
+        UTI: "com.adobe.pdf"
+      });
+    } catch (error) {
+      Alert.alert("Certificado", error?.message || "Não foi possível baixar o certificado.");
+    }
+  }
+
   async function avaliarCursoAluno(dados) {
     if (!detalheCursoAluno?.curso?.id) return;
 
@@ -551,6 +592,7 @@ export default function App() {
             onBack={() => setDetalheCursoAluno(null)}
             onOpenLesson={abrirAulaAluno}
             onSubmitExam={enviarProvaAluno}
+            onDownloadCertificate={baixarCertificadoAluno}
             onReview={avaliarCursoAluno}
           />
         )}

@@ -43,6 +43,12 @@ function getApiUrlCandidates() {
 export const API_URL = getApiUrlCandidates()[0];
 
 
+// Sprint item 5: usa no download do certificado o mesmo servidor API validado pelas requisicoes do app.
+export function getApiBaseUrl() {
+  return activeApiUrl || API_URL;
+}
+
+
 export async function salvarSessao(token, usuario) {
   // AsyncStorage mantem token e perfil entre aberturas do app.
   await AsyncStorage.multiSet([

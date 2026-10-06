@@ -1,5 +1,7 @@
 import io
 import json
+import secrets
+import unicodedata
 from datetime import datetime, timedelta
 from threading import Lock
 from decimal import Decimal, InvalidOperation
@@ -890,6 +892,145 @@ def _pdf_simples(titulo, linhas):
     return saida.getvalue()
 
 
+def _pdf_certificado(dados):
+    # Sprint item 5: monta um certificado A4 horizontal com dados de conclusao e validacao.
+    largura = 842
+    comandos = [
+        "0.97 0.98 0.95 rg 0 0 842 595 re f",
+        "0.02 0.31 0.19 RG 3 w 20 20 802 555 re S",
+        "0.75 0.58 0.25 RG 1 w 31 31 780 533 re S",
+        "0.02 0.31 0.19 rg 0 575 842 20 re f",
+    ]
+
+    larguras = {
+        " ": 278, "i": 222, "l": 222, "j": 222, "f": 278, "t": 278,
+        "r": 333, "m": 833, "w": 722, "a": 556, "b": 556, "c": 500,
+        "d": 556, "e": 556, "g": 556, "h": 556, "n": 556, "o": 556,
+        "p": 556, "q": 556, "s": 500, "u": 556, "v": 500, "x": 500,
+        "y": 500, "z": 500, "A": 667, "B": 667, "C": 722, "D": 722,
+        "E": 667, "F": 611, "G": 778, "H": 722, "I": 278, "J": 500,
+        "K": 667, "L": 556, "M": 833, "N": 722, "O": 778, "P": 667,
+        "Q": 778, "R": 722, "S": 667, "T": 611, "U": 722, "V": 667,
+        "W": 944, "X": 667, "Y": 667, "Z": 611, ".": 278, ",": 278,
+        ":": 278, ";": 278, "!": 278, "?": 444, "-": 333, "/": 278,
+        "'": 191, "(": 333, ")": 333,
+    }
+
+    def largura_texto(texto, tamanho):
+        base = unicodedata.normalize("NFD", str(texto))
+        base = "".join(caractere for caractere in base if unicodedata.category(caractere) != "Mn")
+        return sum(larguras.get(caractere, larguras.get(caractere.lower(), 556)) for caractere in base) * tamanho / 1000
+
+    def texto(texto_exibido, y, tamanho, fonte="F1", cor=(0.12, 0.18, 0.15), centro=True, x=None):
+        texto_seguro = str(texto_exibido or "").replace("\r", " ").replace("\n", " ")
+        texto_seguro = texto_seguro.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        if x is None:
+            x = max(55, (largura - largura_texto(texto_exibido, tamanho)) / 2) if centro else 58
+        comandos.append(
+            f"BT /{fonte} {tamanho} Tf {cor[0]:.3f} {cor[1]:.3f} {cor[2]:.3f} rg 1 0 0 1 {x:.2f} {y:.2f} Tm ({texto_seguro}) Tj ET"
+        )
+
+    def quebrar(texto_exibido, tamanho, max_largura):
+        palavras = str(texto_exibido or "").split()
+        linhas = []
+        linha = ""
+        for palavra in palavras:
+            teste = f"{linha} {palavra}".strip()
+            if linha and largura_texto(teste, tamanho) > max_largura:
+                linhas.append(linha)
+                linha = palavra
+            else:
+                linha = teste
+        if linha:
+            linhas.append(linha)
+        return linhas or [""]
+
+    texto("CURSANDO  •  EDUCAÇÃO E DESENVOLVIMENTO", 538, 10, "F2", (0.86, 0.72, 0.43))
+    texto("CERTIFICADO DE CONCLUSÃO", 476, 25, "F2", (0.02, 0.31, 0.19))
+    texto("Certificamos que", 435, 12, "F1", (0.38, 0.43, 0.40))
+
+    nome = str(dados.get("aluno") or "Aluno")
+    tamanho_nome = 25
+    linhas_nome = quebrar(nome, tamanho_nome, 690)
+    while len(linhas_nome) > 2 and tamanho_nome > 16:
+        tamanho_nome -= 1
+        linhas_nome = quebrar(nome, tamanho_nome, 690)
+    y_nome = 395
+    for linha in linhas_nome[:2]:
+        texto(linha, y_nome, tamanho_nome, "F2", (0.02, 0.31, 0.19))
+        y_nome -= tamanho_nome + 3
+    deslocamento_nome = (len(linhas_nome[:2]) - 1) * (tamanho_nome + 4)
+    texto("concluiu com aproveitamento o curso", 360 - deslocamento_nome, 13, "F1", (0.30, 0.36, 0.33))
+
+    titulo_curso = str(dados.get("curso") or "Curso")
+    tamanho_curso = 22
+    linhas_curso = quebrar(titulo_curso, tamanho_curso, 690)
+    while len(linhas_curso) > 4 and tamanho_curso > 13:
+        tamanho_curso -= 1
+        linhas_curso = quebrar(titulo_curso, tamanho_curso, 690)
+    y_curso = 327 - deslocamento_nome
+    for linha in linhas_curso[:4]:
+        texto(linha, y_curso, tamanho_curso, "F2", (0.75, 0.48, 0.14))
+        y_curso -= tamanho_curso + 5
+
+    aulas = int(dados.get("aulas_concluidas") or 0)
+    descricao_conclusao = "e foi aprovado(a) na avaliação final."
+    if aulas:
+        descricao_conclusao = f"e foi aprovado(a) na avaliação final após concluir {aulas} aula(s)."
+    y_detalhe = y_curso - 1
+    texto(descricao_conclusao, y_detalhe, 11, "F1", (0.30, 0.36, 0.33))
+    texto(f"Concluído em {dados.get('data_conclusao', '')}  •  Emitido em {dados.get('data_emissao', '')}", y_detalhe - 22, 10, "F1", (0.38, 0.43, 0.40))
+
+    comandos.extend([
+        "0.75 0.58 0.25 RG 1 w 92 126 m 344 126 l S",
+        "0.75 0.58 0.25 RG 1 w 498 126 m 750 126 l S",
+    ])
+    nome_professor = dados.get("professor") or "Instrutor(a) do curso"
+    x_professor = 92 + max(0, (252 - largura_texto(nome_professor, 10)) / 2)
+    x_plataforma = 498 + max(0, (252 - largura_texto("Cursando", 10)) / 2)
+    texto(nome_professor, 143, 10, "F2", (0.12, 0.18, 0.15), x=x_professor)
+    texto("Professor(a) responsável", 108, 9, "F1", (0.38, 0.43, 0.40), x=128)
+    texto("Cursando", 143, 10, "F2", (0.12, 0.18, 0.15), x=x_plataforma)
+    texto("Plataforma emissora", 108, 9, "F1", (0.38, 0.43, 0.40), x=584)
+    texto(f"Código de autenticidade: {dados.get('codigo', '')}", 70, 9, "F2", (0.02, 0.31, 0.19))
+    texto(f"Verifique em: {dados.get('url_verificacao', '')}", 51, 8, "F1", (0.38, 0.43, 0.40))
+
+    stream = "\n".join(comandos).encode("cp1252", errors="replace")
+    objetos = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+    ]
+    saida = io.BytesIO()
+    saida.write(b"%PDF-1.4\n")
+    offsets = [0]
+    for indice, objeto in enumerate(objetos, 1):
+        offsets.append(saida.tell())
+        saida.write(f"{indice} 0 obj\n".encode())
+        saida.write(objeto)
+        saida.write(b"\nendobj\n")
+    xref = saida.tell()
+    saida.write(f"xref\n0 {len(objetos) + 1}\n".encode())
+    saida.write(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        saida.write(f"{offset:010d} 00000 n \n".encode())
+    saida.write(f"trailer << /Size {len(objetos) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF".encode())
+    return saida.getvalue()
+
+
+def _data_certificado(valor):
+    if hasattr(valor, "strftime"):
+        return valor.strftime("%d/%m/%Y")
+    texto_data = str(valor or "")
+    try:
+        return datetime.fromisoformat(texto_data).strftime("%d/%m/%Y")
+    except ValueError:
+        return texto_data[:10] if texto_data else ""
+
+
 def _curso_do_professor(cursor, id_curso, id_professor):
     cursor.execute(
         """
@@ -1625,6 +1766,21 @@ def certificado_aluno(id_curso):
         if not row or int(row[2] or 0) < 100:
             return resposta("Certificado liberado somente apos concluir o curso.", 403)
 
+        # Sprint item 5: confirma que todas as aulas publicadas foram marcadas como concluidas.
+        cursor.execute(
+            """
+            SELECT COUNT(V.ID_VIDEO), COUNT(PA.ID_VIDEO), MAX(PA.ASSISTIDO_EM)
+            FROM VIDEOS V
+            LEFT JOIN PROGRESSO_AULAS PA
+              ON PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = ?
+            WHERE V.ID_CURSO = ? AND V.EXCLUIDO = 0 AND V.STATUS = 1
+            """,
+            (get_jwt_identity(), id_curso),
+        )
+        total_aulas, aulas_concluidas, concluido_em = cursor.fetchone() or (0, 0, None)
+        if not total_aulas or aulas_concluidas != total_aulas:
+            return resposta("Certificado liberado somente apos concluir todas as aulas do curso.", 403)
+
         cursor.execute(
             """
             SELECT FIRST 1 P.ID_PROVA, R.STATUS, R.FEEDBACK
@@ -1648,34 +1804,128 @@ def certificado_aluno(id_curso):
             detalhe = f" Feedback: {feedback}" if feedback else ""
             return resposta(f"Certificado bloqueado: aluno reprovado na prova. Tente novamente apos 1 dia.{detalhe}", 403)
 
-        codigo = f"CERT-{id_curso}-{get_jwt_identity()}-{datetime.now().strftime('%Y%m%d')}"
         cursor.execute(
             """
-            UPDATE OR INSERT INTO CERTIFICADOS (ID_CERTIFICADO, ID_CURSO, ID_USUARIO, CODIGO)
-            VALUES (?, ?, ?, ?)
-            MATCHING (ID_CURSO, ID_USUARIO)
+            SELECT FIRST 1 CODIGO, CRIADO_EM
+            FROM CERTIFICADOS
+            WHERE ID_CURSO = ? AND ID_USUARIO = ?
+            ORDER BY ID_CERTIFICADO
             """,
-            (proximo_id(cursor, "CERTIFICADOS", "ID_CERTIFICADO"), id_curso, get_jwt_identity(), codigo),
+            (id_curso, get_jwt_identity()),
         )
-        con.commit()
-        # Sprint item 5: gera um PDF simples de certificado para download.
-        pdf = _pdf_simples(
-            "Certificado de Conclusao",
-            [
-                f"Aluno: {row[0]}",
-                f"Curso: {row[1]}",
-                f"Codigo: {codigo}",
-                f"Emitido em: {datetime.now().strftime('%d/%m/%Y')}",
-            ],
+        certificado = cursor.fetchone()
+        if not certificado:
+            # Sprint item 5: reutiliza sempre o mesmo código para cada certificado emitido.
+            codigo = f"CURSANDO-{secrets.token_hex(6).upper()}"
+            cursor.execute(
+                """
+                UPDATE OR INSERT INTO CERTIFICADOS (ID_CERTIFICADO, ID_CURSO, ID_USUARIO, CODIGO)
+                VALUES (?, ?, ?, ?)
+                MATCHING (ID_CURSO, ID_USUARIO)
+                """,
+                (proximo_id(cursor, "CERTIFICADOS", "ID_CERTIFICADO"), id_curso, get_jwt_identity(), codigo),
+            )
+            con.commit()
+            cursor.execute(
+                """
+                SELECT FIRST 1 CODIGO, CRIADO_EM
+                FROM CERTIFICADOS
+                WHERE ID_CURSO = ? AND ID_USUARIO = ?
+                ORDER BY ID_CERTIFICADO
+                """,
+                (id_curso, get_jwt_identity()),
+            )
+            certificado = cursor.fetchone()
+
+        codigo = certificado[0]
+        emitido_em = certificado[1] or datetime.now()
+        cursor.execute(
+            """
+            SELECT FIRST 1 U.NOME
+            FROM PROFESSORES_CURSO PC
+            JOIN USUARIOS U ON U.ID_USUARIO = PC.ID_USUARIO
+            WHERE PC.ID_CURSO = ?
+            ORDER BY U.NOME
+            """,
+            (id_curso,),
         )
+        professor = (cursor.fetchone() or ("Instrutor(a) do curso",))[0]
+        concluido_em = concluido_em or emitido_em
+        url_verificacao = request.url_root.rstrip("/") + f"/certificados/{codigo}/verificar"
+
+        # Sprint item 5: o PDF reúne aluno, curso, aprovação, instrutor, datas e código verificável.
+        pdf = _pdf_certificado({
+            "aluno": row[0],
+            "curso": row[1],
+            "professor": professor,
+            "aulas_concluidas": total_aulas,
+            "data_conclusao": _data_certificado(concluido_em),
+            "data_emissao": _data_certificado(emitido_em),
+            "codigo": codigo,
+            "url_verificacao": url_verificacao,
+        })
         return Response(
             pdf,
             mimetype="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=certificado-{id_curso}.pdf"},
+            headers={
+                "Content-Disposition": f"attachment; filename=certificado-{id_curso}.pdf",
+                "Cache-Control": "private, no-store",
+            },
         )
     except Exception as erro:
         con.rollback()
         return resposta(f"Erro ao gerar certificado: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/certificados/<string:codigo>/verificar", methods=["GET"])
+def verificar_certificado(codigo):
+    # Sprint item 5: permite conferir publicamente se o código do PDF foi emitido pelo Cursando.
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT FIRST 1 C.CODIGO, U.NOME, CUR.TITULO, C.CRIADO_EM
+            FROM CERTIFICADOS C
+            JOIN USUARIOS U ON U.ID_USUARIO = C.ID_USUARIO
+            JOIN CURSOS CUR ON CUR.ID_CURSO = C.ID_CURSO
+            WHERE C.CODIGO = ?
+            """,
+            (codigo,),
+        )
+        certificado = cursor.fetchone()
+        if not certificado:
+            return resposta("Código de certificado não encontrado.", 404)
+
+        cursor.execute(
+            """
+            SELECT FIRST 1 U.NOME
+            FROM PROFESSORES_CURSO PC
+            JOIN USUARIOS U ON U.ID_USUARIO = PC.ID_USUARIO
+            JOIN CERTIFICADOS C ON C.ID_CURSO = PC.ID_CURSO
+            WHERE C.CODIGO = ?
+            ORDER BY U.NOME
+            """,
+            (codigo,),
+        )
+        professor = (cursor.fetchone() or ("Instrutor(a) do curso",))[0]
+        emitido_em = certificado[3]
+        return jsonify({
+            "valido": True,
+            "certificado": {
+                "codigo": certificado[0],
+                "aluno": certificado[1],
+                "curso": certificado[2],
+                "professor": professor,
+                "emitido_em": emitido_em.isoformat() if hasattr(emitido_em, "isoformat") else str(emitido_em or ""),
+            },
+        })
+    except Exception as erro:
+        return resposta(f"Erro ao verificar certificado: {erro}", 500)
     finally:
         cursor.close()
         con.close()

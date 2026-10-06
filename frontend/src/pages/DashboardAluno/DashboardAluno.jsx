@@ -189,6 +189,7 @@ export default function DashboardAluno({
     const [aulaAtual, setAulaAtual] = useState(null);
     const [protecaoAtiva, setProtecaoAtiva] = useState(false);
     const [carregando, setCarregando] = useState(false);
+    const [baixandoCertificado, setBaixandoCertificado] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const [abaCurso, setAbaCurso] = useState("modulos");
@@ -566,9 +567,30 @@ export default function DashboardAluno({
         }
     }, [api, carregarDashboard, lerResposta]);
 
-    function baixarCertificado(curso) {
-        // Sprint item 5: abre o PDF de certificado liberado quando o curso chegou a 100%.
-        window.open(`${api}/aluno/cursos/${curso.id}/certificado`, "_blank", "noopener,noreferrer");
+    async function baixarCertificado(curso) {
+        setBaixandoCertificado(true);
+        try {
+            // Sprint item 5: baixa o PDF autenticado e apresenta erros da API no site.
+            const resposta = await fetch(`${api}/aluno/cursos/${curso.id}/certificado`, {
+                credentials: "include",
+                headers: { Accept: "application/pdf" }
+            });
+            if (!resposta.ok) await lerResposta(resposta);
+
+            const arquivo = await resposta.blob();
+            const urlTemporaria = URL.createObjectURL(arquivo);
+            const link = document.createElement("a");
+            link.href = urlTemporaria;
+            link.download = `certificado-${curso.id}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(urlTemporaria), 1000);
+        } catch (erro) {
+            avisar({ tipo: "erro", descricao: erro.message || "Não foi possível baixar o certificado." });
+        } finally {
+            setBaixandoCertificado(false);
+        }
     }
 
     async function enviarProvaAluno() {
@@ -782,7 +804,9 @@ export default function DashboardAluno({
                                             <button className={css.botaoInscrever} onClick={enviarProvaAluno}>Enviar prova</button>
                                             {provaAluno.envio?.status === 1 && (
                                                 <>
-                                                    <button className={css.botaoCertificado} onClick={() => baixarCertificado(cursoDetalhe)}>Baixar certificado</button>
+                                                    <button className={css.botaoCertificado} type="button" onClick={() => baixarCertificado(cursoDetalhe)} disabled={baixandoCertificado}>
+                                                        {baixandoCertificado ? "Gerando certificado..." : "Baixar certificado PDF"}
+                                                    </button>
                                                     <div className={css.conteudoCurso}>
                                                         <h2>Avaliar curso</h2>
                                                         <input type="number" min="0" max="5" value={avaliacao.nota} onChange={(e) => setAvaliacao({ ...avaliacao, nota: Number(e.target.value) })} />
