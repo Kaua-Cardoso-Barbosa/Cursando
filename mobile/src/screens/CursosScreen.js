@@ -9,7 +9,7 @@ const placeholders = [
   "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900"
 ];
 
-export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, tipoUsuario = 1 }) {
+export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onStudents, tipoUsuario = 1 }) {
   // Alunos abrem detalhes e acompanham progresso; professores recebem ações de gestão.
   const aluno = Number(tipoUsuario) === 2;
 
@@ -60,6 +60,11 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
                         <Ionicons name="folder-open-outline" size={22} color={colors.darkGreen} />
                       </Pressable>
                     ) : null}
+                    {onStudents ? (
+                      <Pressable style={styles.iconButton} onPress={() => onStudents(curso)} hitSlop={10} accessibilityLabel="Ver alunos">
+                        <Ionicons name="people-outline" size={22} color={colors.darkGreen} />
+                      </Pressable>
+                    ) : null}
                     <Pressable style={styles.iconButton} onPress={() => onEdit(curso)} hitSlop={10}>
                       <Ionicons name="pencil-outline" size={22} color={colors.black} />
                     </Pressable>
@@ -94,7 +99,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: 154,
+    aspectRatio: 16 / 9,
     backgroundColor: "#dddddd"
   },
   info: {

@@ -197,8 +197,9 @@
 
 .cartao-curso img {
     width: 100%;
-    height: 180px;
+    aspect-ratio: 16 / 9;
     object-fit: cover;
+    display: block;
 }
 
 .conteudo-cartao {

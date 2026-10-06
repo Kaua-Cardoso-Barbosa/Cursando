@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     elevation: 2
   },
   preview: {
-    height: 154,
+    aspectRatio: 16 / 9,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#dddddd"

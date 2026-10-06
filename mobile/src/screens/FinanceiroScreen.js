@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useState } from "react";
-import { Alert, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client";
 import { colors, globalStyles } from "../styles";
 
@@ -22,7 +22,12 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
   const [pagamento, setPagamento] = useState(null);
   const [verificando, setVerificando] = useState(false);
   const [pixCopiado, setPixCopiado] = useState(false);
+  const [valorSaque, setValorSaque] = useState("");
+  const [solicitandoSaque, setSolicitandoSaque] = useState(false);
   const aluno = Number(tipoUsuario) === 2;
+  const disponivelSaque = Number(financeiro?.disponivel_saque || 0);
+  const valorSaqueNumero = Number(valorSaque);
+  const saqueValido = Number.isFinite(valorSaqueNumero) && valorSaqueNumero > 0 && valorSaqueNumero <= disponivelSaque;
   const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
   const faturasPagas = faturas.filter((fatura) => !fatura.aberta);
   const cardsAtivos = aluno
@@ -105,6 +110,28 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
     setTimeout(() => setPixCopiado(false), 2500);
   }
 
+  async function solicitarSaque() {
+    if (!saqueValido) {
+      Alert.alert("Saque", "Informe um valor valido dentro do saldo disponivel.");
+      return;
+    }
+
+    setSolicitandoSaque(true);
+    try {
+      await apiRequest("/professor/saques", {
+        method: "POST",
+        body: JSON.stringify({ valor: valorSaqueNumero })
+      }, token);
+      setValorSaque("");
+      await onRefresh?.();
+      Alert.alert("Saque", "Solicitacao enviada.");
+    } catch (error) {
+      Alert.alert("Erro", error.message);
+    } finally {
+      setSolicitandoSaque(false);
+    }
+  }
+
   return (
     <ScrollView
       contentContainerStyle={globalStyles.page}
@@ -177,6 +204,40 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
             ))}
             {faturasPagas.length === 0 && (
               <Text style={styles.invoiceText}>Nenhuma mensalidade paga registrada.</Text>
+            )}
+          </View>
+        </View>
+      )}
+
+      {!aluno && (
+        <View style={styles.invoiceSection}>
+          <View style={styles.invoiceBlock}>
+            <Text style={styles.sectionTitle}>Solicitar saque</Text>
+            <Text style={styles.invoiceText}>Disponivel para saque: {moeda(disponivelSaque)}</Text>
+            <TextInput
+              value={valorSaque}
+              onChangeText={setValorSaque}
+              keyboardType="decimal-pad"
+              placeholder="0,00"
+              placeholderTextColor={colors.muted}
+              style={globalStyles.input}
+            />
+            <Pressable style={[styles.payButton, !saqueValido && styles.disabledButton]} onPress={solicitarSaque} disabled={!saqueValido || solicitandoSaque}>
+              <Text style={styles.payButtonText}>{solicitandoSaque ? "Enviando..." : "Solicitar saque"}</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.invoiceBlock}>
+            <Text style={styles.sectionTitle}>Receita estimada por curso</Text>
+            {(financeiro?.cursos_receita || []).map((curso) => (
+              <View key={curso.id_curso} style={styles.invoiceCard}>
+                <Text style={styles.invoiceTitle}>{curso.curso}</Text>
+                <Text style={styles.invoiceText}>Atividade: {Number(curso.views || 0)} aulas concluidas</Text>
+                <Text style={styles.invoiceText}>Receita estimada: {moeda(curso.receita_estimativa)}</Text>
+              </View>
+            ))}
+            {!financeiro?.cursos_receita?.length && (
+              <Text style={styles.invoiceText}>Ainda nao ha receita estimada para exibir.</Text>
             )}
           </View>
         </View>
@@ -292,5 +353,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 14,
     marginTop: 12
+  },
+  disabledButton: {
+    opacity: 0.55
   }
 });

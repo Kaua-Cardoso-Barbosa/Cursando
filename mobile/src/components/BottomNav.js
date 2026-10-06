@@ -14,6 +14,7 @@ export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
     ? [
       baseItems[0],
       baseItems[1],
+      { key: "reports", label: "Relatorios", icon: "bar-chart-outline" },
       baseItems[2],
       { key: "finance", label: "Financeiro", icon: "wallet-outline" },
       baseItems[3]
@@ -21,6 +22,7 @@ export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
     : [
       baseItems[0],
       baseItems[1],
+      { key: "discover", label: "Descobrir", icon: "search-outline" },
       baseItems[2],
       { key: "finance", label: "Financeiro", icon: "wallet-outline" },
       baseItems[3]
@@ -41,7 +43,7 @@ export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
             ]}
             onPress={() => onChange(item.key)}
           >
-            <Ionicons name={item.icon} size={28} color={selected ? colors.white : colors.black} />
+            <Ionicons name={item.icon} size={24} color={selected ? colors.white : colors.black} />
             <Text style={[styles.label, selected && styles.labelActive]} numberOfLines={1}>
               {item.label}
             </Text>
@@ -89,8 +91,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 10,
+    lineHeight: 13,
     fontWeight: "700"
   },
   labelActive: {

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
@@ -20,6 +20,8 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
   const [mensagens, setMensagens] = useState([]);
   const [texto, setTexto] = useState("");
   const [loading, setLoading] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const enviandoRef = useRef(false);
   const aluno = Number(tipoUsuario) === 2;
 
   async function carregarConversas() {
@@ -65,18 +67,26 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
   }
 
   async function enviarMensagem() {
-    if (!selecionada || !texto.trim()) return;
+    const textoMensagem = texto.trim();
+    if (!selecionada || !textoMensagem || enviandoRef.current) return;
 
-    await apiRequest(`/chat/cursos/${selecionada.id_curso}/mensagens`, {
-      method: "POST",
-      body: JSON.stringify({
-        id_aluno: selecionada.id_aluno,
-        texto: texto.trim()
-      })
-    }, token);
-    setTexto("");
-    await carregarMensagens(selecionada);
-    await carregarConversas();
+    enviandoRef.current = true;
+    setEnviando(true);
+    try {
+      await apiRequest(`/chat/cursos/${selecionada.id_curso}/mensagens`, {
+        method: "POST",
+        body: JSON.stringify({
+          id_aluno: selecionada.id_aluno,
+          texto: textoMensagem
+        })
+      }, token);
+      setTexto("");
+      await carregarMensagens(selecionada);
+      await carregarConversas();
+    } finally {
+      enviandoRef.current = false;
+      setEnviando(false);
+    }
   }
 
   useEffect(() => {
@@ -157,12 +167,12 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
         <TextInput
           value={texto}
           onChangeText={setTexto}
-          editable={Boolean(selecionada)}
+          editable={Boolean(selecionada) && !enviando}
           placeholder={selecionada ? "Digite sua mensagem" : "Selecione uma conversa"}
           placeholderTextColor={colors.muted}
           style={styles.input}
         />
-        <Pressable style={styles.send} onPress={enviarMensagem} disabled={!selecionada}>
+        <Pressable style={styles.send} onPress={enviarMensagem} disabled={!selecionada || !texto.trim() || enviando}>
           <Ionicons name="send-outline" size={22} color={colors.white} />
         </Pressable>
       </View>

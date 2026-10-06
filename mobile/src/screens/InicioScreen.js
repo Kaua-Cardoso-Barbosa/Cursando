@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors, globalStyles } from "../styles";
 
@@ -39,13 +38,10 @@ export default function InicioScreen({ usuario, dashboard, carregando, onRefresh
     >
       <View style={styles.header}>
         <View style={styles.headerTextos}>
-          <Text style={styles.kicker}>{Number(tipoUsuario) === 2 ? "Aluno(a)" : "Professor(a)"}</Text>
-          <Text style={[globalStyles.title, styles.headerTitle]}>
+          <Text style={styles.headerTitle}>
             Ola {usuario?.nome || (Number(tipoUsuario) === 2 ? "Aluno" : "Professor")}
           </Text>
-        </View>
-        <View style={styles.headerBadge}>
-          <Ionicons name="sparkles-outline" size={24} color={colors.white} />
+          <Text style={styles.cargoUsuario}>{Number(tipoUsuario) === 2 ? "Aluno" : "Professor(a)"}</Text>
         </View>
       </View>
 
@@ -77,36 +73,28 @@ export default function InicioScreen({ usuario, dashboard, carregando, onRefresh
 
 const styles = StyleSheet.create({
   header: {
-    minHeight: 150,
-    marginBottom: 22,
-    borderRadius: 8,
-    backgroundColor: colors.darkGreen,
-    padding: 20,
+    marginBottom: 24,
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16
+    alignItems: "flex-start"
   },
   headerTextos: {
-    flex: 1
+    minWidth: "78%",
+    borderLeftWidth: 4,
+    borderLeftColor: colors.green,
+    paddingLeft: 14,
+    paddingVertical: 2
   },
   headerTitle: {
-    color: colors.white
+    color: colors.ink,
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: "700"
   },
-  kicker: {
-    color: colors.mint,
-    fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    marginBottom: 8
-  },
-  headerBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.14)",
-    alignItems: "center",
-    justifyContent: "center"
+  cargoUsuario: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 18,
+    marginTop: 5
   },
   cards: {
     gap: 18

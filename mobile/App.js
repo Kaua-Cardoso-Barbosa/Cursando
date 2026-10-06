@@ -7,11 +7,13 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, AppState, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
 import { apiRequest, carregarSessao, getApiBaseUrl, limparSessao, salvarSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
+import AlunosCursoScreen from "./src/screens/AlunosCursoScreen";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
 import AssinaturaScreen from "./src/screens/AssinaturaScreen";
 import CadastroScreen from "./src/screens/CadastroScreen";
 import ChatScreen from "./src/screens/ChatScreen";
 import CursosScreen from "./src/screens/CursosScreen";
+import DescobrirCursosScreen from "./src/screens/DescobrirCursosScreen";
 import EditarCursoScreen from "./src/screens/EditarCursoScreen";
 import EditarPerfilScreen from "./src/screens/EditarPerfilScreen";
 import ModulosProfessorScreen from "./src/screens/ModulosProfessorScreen";
@@ -20,6 +22,7 @@ import InicioScreen from "./src/screens/InicioScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
 import PlayerAulaScreen from "./src/screens/PlayerAulaScreen";
+import RelatoriosProfessorScreen from "./src/screens/RelatoriosProfessorScreen";
 import VerificarEmailScreen from "./src/screens/VerificarEmailScreen";
 import { colors, globalStyles } from "./src/styles";
 
@@ -40,6 +43,7 @@ export default function App() {
   const [detalheAulaAluno, setDetalheAulaAluno] = useState(null);
   const [tab, setTab] = useState("home");
   const [editingCourse, setEditingCourse] = useState(null);
+  const [studentsCourse, setStudentsCourse] = useState(null);
   // Sprint item 6: abre o gerenciamento de módulos e aulas para o curso escolhido.
   const [managingCourse, setManagingCourse] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -220,7 +224,7 @@ export default function App() {
         if (aulaId) {
           await abrirAulaAluno({ id: aulaId });
         } else if (assinaturaCursoId) {
-          await abrirCursoAluno({ id: assinaturaCursoId });
+          await abrirCursoAluno({ id: assinaturaCursoId }, tab === "discover" ? "discover" : "courses");
         }
       } finally {
         sincronizandoApp.current = false;
@@ -228,7 +232,7 @@ export default function App() {
     });
 
     return () => inscricao.remove();
-  }, [token, usuario, detalheCursoAluno?.curso?.id, detalheAulaAluno?.aula?.id]);
+  }, [token, usuario, detalheCursoAluno?.curso?.id, detalheAulaAluno?.aula?.id, tab]);
 
   async function sair() {
     await limparSessao();
@@ -258,13 +262,35 @@ export default function App() {
     return { ...detalhe, materiais: Array.isArray(materiais) ? materiais : [], prova };
   }
 
-  async function abrirCursoAluno(curso) {
+  async function abrirCursoAluno(curso, destino = "courses") {
     setLoading(true);
     try {
       setDetalheCursoAluno(await buscarDetalheCursoAluno(curso.id));
       setDetalheAulaAluno(null);
-      setTab("courses");
+      setTab(destino);
     } catch (error) {
+      Alert.alert("Erro", error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function inscreverCursoAluno(curso) {
+    if (!curso?.id) return;
+
+    setLoading(true);
+    try {
+      await apiRequest(`/aluno/cursos/${curso.id}/inscrever`, { method: "POST" }, token);
+      await carregarDados();
+      setDetalheCursoAluno(await buscarDetalheCursoAluno(curso.id));
+      Alert.alert("Inscricao", "Inscricao realizada com sucesso.");
+    } catch (error) {
+      if (error.status === 402) {
+        setDetalheCursoAluno(null);
+        setDetalheAulaAluno(null);
+        setTab("finance");
+        return;
+      }
       Alert.alert("Erro", error.message);
     } finally {
       setLoading(false);
@@ -370,6 +396,7 @@ export default function App() {
 
   function trocarAba(key) {
     setTab(key);
+    setStudentsCourse(null);
     if (key !== "courses") {
       setDetalheCursoAluno(null);
       setDetalheAulaAluno(null);
@@ -577,7 +604,7 @@ export default function App() {
             tipoUsuario={tipoUsuario}
           />
         )}
-        {tab === "courses" && tipoUsuario === 1 && (
+        {tab === "courses" && tipoUsuario === 1 && !studentsCourse && (
           <CursosScreen
             cursos={cursos}
             carregando={loading}
@@ -585,7 +612,15 @@ export default function App() {
             onEdit={setEditingCourse}
             onDelete={excluirCurso}
             onManage={setManagingCourse}
+            onStudents={setStudentsCourse}
             tipoUsuario={tipoUsuario}
+          />
+        )}
+        {tab === "courses" && tipoUsuario === 1 && studentsCourse && (
+          <AlunosCursoScreen
+            curso={studentsCourse}
+            token={token}
+            onBack={() => setStudentsCourse(null)}
           />
         )}
         {tab === "courses" && tipoUsuario === 2 && !detalheCursoAluno && !detalheAulaAluno && (
@@ -604,12 +639,42 @@ export default function App() {
             onRefresh={() => abrirCursoAluno(detalheCursoAluno.curso)}
             onBack={() => setDetalheCursoAluno(null)}
             onOpenLesson={abrirAulaAluno}
+            onEnroll={inscreverCursoAluno}
             onSubmitExam={enviarProvaAluno}
             onDownloadCertificate={baixarCertificadoAluno}
             onReview={avaliarCursoAluno}
           />
         )}
         {tab === "courses" && tipoUsuario === 2 && detalheAulaAluno && (
+          <PlayerAulaScreen
+            detalhe={detalheAulaAluno}
+            onBack={() => setDetalheAulaAluno(null)}
+            onOpenLesson={abrirAulaAluno}
+            onFinish={marcarAulaAssistida}
+            onSaveProgress={salvarProgressoAula}
+          />
+        )}
+        {tab === "discover" && tipoUsuario === 2 && !detalheCursoAluno && !detalheAulaAluno && (
+          <DescobrirCursosScreen
+            token={token}
+            carregando={loading}
+            onOpen={(curso) => abrirCursoAluno(curso, "discover")}
+          />
+        )}
+        {tab === "discover" && tipoUsuario === 2 && detalheCursoAluno && !detalheAulaAluno && (
+          <AulasAlunoScreen
+            detalhe={detalheCursoAluno}
+            carregando={loading}
+            onRefresh={() => abrirCursoAluno(detalheCursoAluno.curso, "discover")}
+            onBack={() => setDetalheCursoAluno(null)}
+            onOpenLesson={abrirAulaAluno}
+            onEnroll={inscreverCursoAluno}
+            onSubmitExam={enviarProvaAluno}
+            onDownloadCertificate={baixarCertificadoAluno}
+            onReview={avaliarCursoAluno}
+          />
+        )}
+        {tab === "discover" && tipoUsuario === 2 && detalheAulaAluno && (
           <PlayerAulaScreen
             detalhe={detalheAulaAluno}
             onBack={() => setDetalheAulaAluno(null)}
@@ -635,6 +700,13 @@ export default function App() {
             onRefresh={carregarDados}
             token={token}
             tipoUsuario={tipoUsuario}
+          />
+        )}
+        {tab === "reports" && tipoUsuario === 1 && (
+          <RelatoriosProfessorScreen
+            token={token}
+            cursos={cursos}
+            carregando={loading}
           />
         )}
       </View>

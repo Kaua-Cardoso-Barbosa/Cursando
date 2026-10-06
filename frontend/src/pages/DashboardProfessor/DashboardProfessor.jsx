@@ -991,13 +991,6 @@ export default function DashboardProfessor({
                     {visao === "chat" && (
                         <section className={css.secaoCursos}>
                             {/* Sprint item 9: contextualiza o chat compartilhado dentro do painel do professor. */}
-                            <header className={css.cabecalhoPagina}>
-                                <div>
-                                    <span className={css.etiquetaPagina}>COMUNICAÇÃO</span>
-                                    <h2>Conversas dos cursos</h2>
-                                    <p>Responda aos alunos e acompanhe as conversas relacionadas às suas turmas.</p>
-                                </div>
-                            </header>
                             <ChatCurso api={api} perfil="professor" setMensagem={setMensagem} />
                         </section>
                     )}

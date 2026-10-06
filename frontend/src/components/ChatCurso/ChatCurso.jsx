@@ -8,8 +8,10 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
     const [mensagens, setMensagens] = useState([]);
     const [texto, setTexto] = useState("");
     const [carregando, setCarregando] = useState(false);
+    const [enviando, setEnviando] = useState(false);
     const mensagensRef = useRef(null);
     const textoRef = useRef(null);
+    const enviandoRef = useRef(false);
 
     const lerResposta = useCallback(async (resposta) => {
         const dados = await resposta.json().catch(() => ({}));
@@ -113,8 +115,11 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
     }, [texto]);
 
     async function enviarMensagem() {
-        if (!selecionada || !texto.trim()) return;
+        const textoMensagem = texto.trim();
+        if (!selecionada || !textoMensagem || enviandoRef.current) return;
 
+        enviandoRef.current = true;
+        setEnviando(true);
         try {
             const resposta = await fetch(`${api}/chat/cursos/${selecionada.id_curso}/mensagens`, {
                 method: "POST",
@@ -122,7 +127,7 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     id_aluno: selecionada.id_aluno,
-                    texto: texto.trim()
+                    texto: textoMensagem
                 })
             });
             await lerResposta(resposta);
@@ -132,6 +137,9 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
         } catch (erro) {
             console.error("Erro ao enviar mensagem:", erro);
             setMensagem?.({ tipo: "erro", descricao: erro.message });
+        } finally {
+            enviandoRef.current = false;
+            setEnviando(false);
         }
     }
 
@@ -195,9 +203,9 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
                             onChange={(evento) => setTexto(evento.target.value)}
                             onKeyDown={aoTeclarMensagem}
                             placeholder={selecionada ? "Digite sua mensagem" : "Selecione uma conversa"}
-                            disabled={!selecionada}
+                            disabled={!selecionada || enviando}
                         />
-                        <button type="button" onClick={enviarMensagem} disabled={!selecionada || !texto.trim()} title="Enviar mensagem">
+                        <button type="button" onClick={enviarMensagem} disabled={!selecionada || !texto.trim() || enviando} title="Enviar mensagem">
                             <FaPaperPlane />
                         </button>
                     </div>

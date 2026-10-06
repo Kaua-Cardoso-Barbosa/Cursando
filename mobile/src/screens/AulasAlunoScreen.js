@@ -5,6 +5,7 @@ import { resolverUrlMidia } from "../api/client";
 import { colors, globalStyles } from "../styles";
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
+const fallbackCourseImage = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900";
 
 function formatarPosicaoAula(segundos) {
   const total = Math.max(0, Math.floor(Number(segundos) || 0));
@@ -16,7 +17,7 @@ function formatarPosicaoAula(segundos) {
     : `${minutos}:${String(restante).padStart(2, "0")}`;
 }
 
-export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onSubmitExam, onDownloadCertificate, onReview }) {
+export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onEnroll, onSubmitExam, onDownloadCertificate, onReview }) {
   // Exibe apenas as aulas disponibilizadas pelo detalhe do curso retornado pela API.
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
@@ -49,12 +50,21 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
         <Text style={styles.backText}>Voltar</Text>
       </Pressable>
 
-      <View style={styles.header}>
-        <Text style={globalStyles.title}>{modulos.length ? "Módulos do curso" : "Todas video-aulas"}</Text>
-        <Text style={globalStyles.eyebrow} numberOfLines={2}>
-          {curso?.titulo || "Curso"}
-        </Text>
-        <View style={globalStyles.divider} />
+      <View style={styles.courseHero}>
+        <Image
+          source={{ uri: curso?.imagem ? resolverUrlMidia(curso.imagem) : fallbackCourseImage }}
+          style={styles.courseImage}
+        />
+        <View style={styles.courseInfo}>
+          <Text style={styles.courseKicker}>{modulos.length ? "Modulos do curso" : "Video-aulas"}</Text>
+          <Text style={styles.courseTitle}>{curso?.titulo || "Curso"}</Text>
+          {curso?.descricao ? <Text style={styles.courseDescription}>{curso.descricao}</Text> : null}
+          {curso && !curso.matriculado ? (
+            <Pressable style={styles.enrollButton} onPress={() => onEnroll?.(curso)} disabled={carregando}>
+              <Text style={styles.enrollText}>{carregando ? "Inscrevendo..." : "Inscrever-se"}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.list}>
@@ -71,7 +81,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
             {Number(moduloAberto) === Number(modulo.id) ? (
               <View style={styles.moduleLessons}>
                 {(modulo.aulas || []).map((aula) => (
-                  <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(aula)}>
+                  <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
                     <View style={styles.preview}>
                       <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
                       <View style={styles.playBadge}><Ionicons name="play" size={48} color={colors.black} style={styles.play} /></View>
@@ -90,7 +100,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
           </View>
         ))}
         {(modulos.length === 0 ? aulas : aulasSemModulo).map((aula) => (
-          <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(aula)}>
+          <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
             <View style={styles.preview}>
               <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
               <View style={styles.playBadge}><Ionicons name="play" size={48} color={colors.black} style={styles.play} /></View>
@@ -183,6 +193,54 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 26
   },
+  courseHero: {
+    borderWidth: 1.4,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.white,
+    overflow: "hidden",
+    marginBottom: 24
+  },
+  courseImage: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    backgroundColor: "#dddddd"
+  },
+  courseInfo: {
+    padding: 16,
+    gap: 7
+  },
+  courseKicker: {
+    color: colors.darkGreen,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase"
+  },
+  courseTitle: {
+    color: colors.black,
+    fontSize: 25,
+    lineHeight: 30,
+    fontWeight: "700"
+  },
+  courseDescription: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 21
+  },
+  enrollButton: {
+    minHeight: 46,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    paddingHorizontal: 18
+  },
+  enrollText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "700"
+  },
   list: {
     gap: 22
   },
@@ -219,7 +277,7 @@ const styles = StyleSheet.create({
     elevation: 2
   },
   preview: {
-    height: 154,
+    aspectRatio: 16 / 9,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#dddddd"

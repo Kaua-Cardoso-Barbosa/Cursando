@@ -1053,11 +1053,6 @@ export default function DashboardAluno({
                     {visao === "chat" && (
                         <section className={css.secaoCursos}>
                             {/* Sprint item 9: dá contexto ao componente de conversa compartilhado. */}
-                            <header className={css.cabecalhoPagina}>
-                                <span className={css.etiquetaPagina}>COMUNICAÇÃO</span>
-                                <h2>Conversas dos cursos</h2>
-                                <p>Fale com seus professores e acompanhe as mensagens relacionadas aos cursos.</p>
-                            </header>
                             <ChatCurso api={api} perfil="aluno" setMensagem={setMensagem} />
                         </section>
                     )}
