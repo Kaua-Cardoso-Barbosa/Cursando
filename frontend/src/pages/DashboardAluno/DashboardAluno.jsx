@@ -28,6 +28,16 @@ function formatarDataAssinatura(data) {
     }).format(valor);
 }
 
+function formatarPosicaoAula(segundos) {
+    const total = Math.max(0, Math.floor(Number(segundos) || 0));
+    const horas = Math.floor(total / 3600);
+    const minutos = Math.floor((total % 3600) / 60);
+    const restante = total % 60;
+    return horas > 0
+        ? `${horas}:${String(minutos).padStart(2, "0")}:${String(restante).padStart(2, "0")}`
+        : `${minutos}:${String(restante).padStart(2, "0")}`;
+}
+
 function resolverUrlMidia(api, caminho) {
     if (!caminho) return "";
     if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) {
@@ -140,6 +150,11 @@ function AulaCard({ aula, api, onAbrir }) {
                     <div>
                         <h3>{aula.titulo}</h3>
                         <p>{aula.descricao}</p>
+                        {Number(aula.progresso_segundos) > 0 && (
+                            <small className={css.retomadaAula}>
+                                Continuar de {formatarPosicaoAula(aula.progresso_segundos)}
+                            </small>
+                        )}
                     </div>
                     {aula.assistida && <FaCheck className={css.checkAula} />}
                 </div>
@@ -296,6 +311,24 @@ export default function DashboardAluno({
             setAulaAtual(null);
         } finally {
             setCarregando(false);
+        }
+    }, [api, lerResposta]);
+
+    // Sprint item 4: envia ao backend o ponto de reproducao que sera compartilhado com o aplicativo.
+    const salvarProgressoAula = useCallback(async (idAula, posicaoSegundos) => {
+        try {
+            const resposta = await fetch(`${api}/aluno/aulas/${idAula}/progresso`, {
+                method: "PUT",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ posicao_segundos: posicaoSegundos })
+            });
+            const dados = await resposta.json().catch(() => ({}));
+            if (!resposta.ok) {
+                throw new Error(dados?.mensagem?.descricao || "Nao foi possivel salvar a posicao da aula.");
+            }
+        } catch (erro) {
+            console.error("Erro ao salvar posicao da aula:", erro);
         }
     }, [api, lerResposta]);
 
@@ -800,6 +833,7 @@ export default function DashboardAluno({
                                                     : undefined
                                             }
                                             marcarAssistida={marcarAssistida}
+                                            salvarProgresso={salvarProgressoAula}
                                         />
                                         {protecaoAtiva && (
                                             <div className={css.avisoProtecao}>

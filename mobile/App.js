@@ -279,6 +279,18 @@ export default function App() {
     }
   }
 
+  // Sprint item 4: envia ao backend a posicao usada para retomar a aula no site e no app.
+  async function salvarProgressoAula(idAula, posicaoSegundos) {
+    try {
+      await apiRequest(`/aluno/aulas/${idAula}/progresso`, {
+        method: "PUT",
+        body: JSON.stringify({ posicao_segundos: posicaoSegundos })
+      }, token);
+    } catch (error) {
+      console.error("Erro ao salvar posicao da aula:", error);
+    }
+  }
+
   async function marcarAulaAssistida(aula) {
     try {
       await apiRequest(`/aluno/aulas/${aula.id}/assistir`, { method: "POST" }, token);
@@ -548,6 +560,7 @@ export default function App() {
             onBack={() => setDetalheAulaAluno(null)}
             onOpenLesson={abrirAulaAluno}
             onFinish={marcarAulaAssistida}
+            onSaveProgress={salvarProgressoAula}
           />
         )}
         {tab === "profile" && <PerfilScreen perfil={perfil} onEdit={() => setEditingProfile(true)} onLogout={sair} />}

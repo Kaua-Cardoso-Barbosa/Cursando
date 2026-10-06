@@ -8,9 +8,12 @@ export default function PlayerVideo({
                                         videoUrl,
                                         posterUrl,
                                         marcarAssistida,
+                                        salvarProgresso,
                                     }) {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
+    const callbacksRef = useRef({});
+    callbacksRef.current = { videoAula, marcarAssistida, salvarProgresso };
 
     useEffect(() => {
         const video = videoRef.current;
@@ -19,6 +22,28 @@ export default function PlayerVideo({
         if (!video || !container || !videoUrl) return;
 
         const player = new shaka.Player();
+        const posicaoInicial = Math.max(0, Number(videoAula?.progresso_segundos) || 0);
+        let ultimaPosicaoSalva = posicaoInicial;
+        let filaSalvamentos = Promise.resolve();
+        let aulaConcluida = false;
+
+        function salvarPosicao(forcar = false) {
+            if (aulaConcluida) return filaSalvamentos;
+
+            const posicao = Number(video.currentTime);
+            if (!Number.isFinite(posicao) || posicao < 0) return filaSalvamentos;
+
+            const diferenca = Math.abs(posicao - ultimaPosicaoSalva);
+            if (diferenca < 0.5 || (!forcar && diferenca < 10)) return filaSalvamentos;
+
+            ultimaPosicaoSalva = posicao;
+            const idAula = videoAula.id;
+            // Sprint item 4: envia periodicamente o ponto atual para o mesmo progresso usado pelo aplicativo.
+            filaSalvamentos = filaSalvamentos
+                .then(() => callbacksRef.current.salvarProgresso?.(idAula, posicao))
+                .catch((erro) => console.error("Erro ao enfileirar progresso da aula:", erro));
+            return filaSalvamentos;
+        }
 
         const ui = new shaka.ui.Overlay(
             player,
@@ -87,13 +112,28 @@ export default function PlayerVideo({
         );
 
         const quandoTerminar = () => {
-            marcarAssistida(videoAula);
+            if (aulaConcluida) return;
+            aulaConcluida = true;
+            const aulaAtual = callbacksRef.current.videoAula;
+            filaSalvamentos.then(() => callbacksRef.current.marcarAssistida?.(aulaAtual));
+        };
+
+        const quandoPausar = () => salvarPosicao(true);
+        const quandoAtualizar = () => salvarPosicao(false);
+        const quandoBuscar = () => salvarPosicao(true);
+        const quandoOcultar = () => {
+            if (document.hidden) salvarPosicao(true);
         };
 
         video.addEventListener(
             "ended",
             quandoTerminar
         );
+        video.addEventListener("timeupdate", quandoAtualizar);
+        video.addEventListener("pause", quandoPausar);
+        video.addEventListener("seeked", quandoBuscar);
+        document.addEventListener("visibilitychange", quandoOcultar);
+        window.addEventListener("pagehide", quandoPausar);
 
         const carregarVideo = async () => {
             try {
@@ -109,6 +149,14 @@ export default function PlayerVideo({
                 );
 
                 await player.load(videoUrl);
+
+                if (posicaoInicial > 0) {
+                    const duracao = Number(video.duration);
+                    const posicao = Number.isFinite(duracao) && duracao > 0
+                        ? Math.min(posicaoInicial, Math.max(0, duracao - 1))
+                        : posicaoInicial;
+                    video.currentTime = posicao;
+                }
 
                 console.log(
                     "Vídeo carregado com sucesso!"
@@ -144,10 +192,16 @@ export default function PlayerVideo({
         document.addEventListener("keydown", bloquearTeclas);
 
         return () => {
+            salvarPosicao(true);
             video.removeEventListener(
                 "ended",
                 quandoTerminar
             );
+            video.removeEventListener("timeupdate", quandoAtualizar);
+            video.removeEventListener("pause", quandoPausar);
+            video.removeEventListener("seeked", quandoBuscar);
+            document.removeEventListener("visibilitychange", quandoOcultar);
+            window.removeEventListener("pagehide", quandoPausar);
 
             player.removeEventListener(
                 "error",
@@ -158,7 +212,7 @@ export default function PlayerVideo({
             container.removeEventListener("contextmenu", bloquearEvento);
             document.removeEventListener("keydown", bloquearTeclas);
         };
-    }, [videoUrl, videoAula, marcarAssistida]);
+    }, [videoUrl, posterUrl, videoAula?.id]);
 
     return (
         <div

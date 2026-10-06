@@ -6,6 +6,16 @@ import { colors, globalStyles } from "../styles";
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
 
+function formatarPosicaoAula(segundos) {
+  const total = Math.max(0, Math.floor(Number(segundos) || 0));
+  const horas = Math.floor(total / 3600);
+  const minutos = Math.floor((total % 3600) / 60);
+  const restante = total % 60;
+  return horas > 0
+    ? `${horas}:${String(minutos).padStart(2, "0")}:${String(restante).padStart(2, "0")}`
+    : `${minutos}:${String(restante).padStart(2, "0")}`;
+}
+
 export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onSubmitExam, onReview }) {
   // Exibe apenas as aulas disponibilizadas pelo detalhe do curso retornado pela API.
   const curso = detalhe?.curso;
@@ -46,6 +56,12 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
             <View style={styles.info}>
               <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
               <Text style={styles.description} numberOfLines={2}>{aula.descricao}</Text>
+              {/* Sprint item 4: indica a posicao salva antes de reabrir esta aula. */}
+              {Number(aula.progresso_segundos) > 0 ? (
+                <Text style={styles.resumeLabel}>
+                  Continuar de {formatarPosicaoAula(aula.progresso_segundos)}
+                </Text>
+              ) : null}
             </View>
           </Pressable>
         ))}
@@ -175,6 +191,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     marginTop: 2
+  },
+  resumeLabel: {
+    color: colors.darkGreen,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 6
   },
   back: {
     alignSelf: "flex-start",

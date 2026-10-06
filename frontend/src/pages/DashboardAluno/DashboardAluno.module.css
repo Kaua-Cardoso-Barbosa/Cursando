@@ -392,6 +392,15 @@
     overflow-wrap: anywhere;
 }
 
+/* Sprint item 4: destaca a posicao salva para que o aluno escolha a aula a retomar. */
+.retomadaAula {
+    display: inline-block;
+    margin-top: 7px;
+    color: #087a4c;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
 .progressoCurso {
     min-width: 92px;
     align-self: flex-end;

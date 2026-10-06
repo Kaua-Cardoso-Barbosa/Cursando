@@ -1,4 +1,5 @@
 import fdb
+import math
 from flask import current_app, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
@@ -96,6 +97,27 @@ def garantir_tabela_progresso(con):
                     ID_VIDEO INTEGER NOT NULL,
                     ASSISTIDO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT PK_PROGRESSO_AULAS PRIMARY KEY (ID_USUARIO, ID_VIDEO)
+                )
+                """
+            )
+
+        cursor.execute(
+            """
+            SELECT 1
+            FROM RDB$RELATIONS
+            WHERE RDB$RELATION_NAME = 'PROGRESSO_REPRODUCAO'
+            """
+        )
+        if not cursor.fetchone():
+            # Sprint item 4: guarda a posicao de reproducao separada da conclusao da aula.
+            cursor.execute(
+                """
+                CREATE TABLE PROGRESSO_REPRODUCAO (
+                    ID_USUARIO INTEGER NOT NULL,
+                    ID_VIDEO INTEGER NOT NULL,
+                    POSICAO_SEGUNDOS DOUBLE PRECISION DEFAULT 0 NOT NULL,
+                    ATUALIZADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT PK_PROGRESSO_REPRODUCAO PRIMARY KEY (ID_USUARIO, ID_VIDEO)
                 )
                 """
             )
@@ -514,20 +536,24 @@ def detalhe_curso_aluno(id_curso):
         cursor.execute(
             """
             SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS,
-                   CASE WHEN PA.ID_VIDEO IS NULL THEN 0 ELSE 1 END
+                   CASE WHEN PA.ID_VIDEO IS NULL THEN 0 ELSE 1 END,
+                   COALESCE(PR.POSICAO_SEGUNDOS, 0)
             FROM VIDEOS V
             LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = ?
+            LEFT JOIN PROGRESSO_REPRODUCAO PR ON PR.ID_VIDEO = V.ID_VIDEO AND PR.ID_USUARIO = ?
             WHERE V.ID_CURSO = ? AND V.EXCLUIDO = 0 AND V.STATUS = 1
             ORDER BY V.POSICAO_PLAYLIST, V.DATA_UPLOAD, V.ID_VIDEO
             """,
-            (id_aluno, id_curso),
+            (id_aluno, id_aluno, id_curso),
         )
         aulas = []
         for aula_row in cursor.fetchall():
             aula = aula_para_dict(aula_row[:6])
             aula["assistida"] = bool(aula_row[6])
+            aula["progresso_segundos"] = float(aula_row[7] or 0)
             if not curso["matriculado"]:
                 aula["video"] = ""
+                aula["progresso_segundos"] = 0
             aulas.append(aula)
 
         return jsonify({"curso": curso, "aulas": aulas})
@@ -626,14 +652,16 @@ def detalhe_aula_aluno(id_aula):
             SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS,
                    C.ID_CURSO, C.TITULO, C.DESCRICAO, C.IMAGEM_URL, C.STATUS,
                    (SELECT COUNT(*) FROM VIDEOS VX WHERE VX.ID_CURSO = C.ID_CURSO AND VX.EXCLUIDO = 0),
-                   (SELECT COUNT(*) FROM VIDEOS VX WHERE VX.ID_CURSO = C.ID_CURSO AND VX.EXCLUIDO = 0 AND VX.STATUS = 1)
+                   (SELECT COUNT(*) FROM VIDEOS VX WHERE VX.ID_CURSO = C.ID_CURSO AND VX.EXCLUIDO = 0 AND VX.STATUS = 1),
+                   COALESCE(PR.POSICAO_SEGUNDOS, 0)
             FROM VIDEOS V
             JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
             JOIN MATRICULAS M ON M.ID_CURSO = C.ID_CURSO
+            LEFT JOIN PROGRESSO_REPRODUCAO PR ON PR.ID_VIDEO = V.ID_VIDEO AND PR.ID_USUARIO = ?
             WHERE V.ID_VIDEO = ? AND M.ID_USUARIO = ? AND M.STATUS_MATRICULA = 1
               AND V.EXCLUIDO = 0 AND V.STATUS = 1 AND C.EXCLUIDO = 0 AND C.STATUS = 1
             """,
-            (id_aula, id_aluno),
+            (id_aluno, id_aula, id_aluno),
         )
         row = cursor.fetchone()
 
@@ -641,6 +669,7 @@ def detalhe_aula_aluno(id_aula):
             return resposta("Aula nao encontrada para seus cursos.", 404)
 
         aula = aula_para_dict(row[:6])
+        aula["progresso_segundos"] = float(row[13] or 0)
 
         curso = {
             "id": row[6],
@@ -656,23 +685,96 @@ def detalhe_aula_aluno(id_aula):
         cursor.execute(
             """
             SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS,
-                   CASE WHEN PA.ID_VIDEO IS NULL THEN 0 ELSE 1 END
+                   CASE WHEN PA.ID_VIDEO IS NULL THEN 0 ELSE 1 END,
+                   COALESCE(PR.POSICAO_SEGUNDOS, 0)
             FROM VIDEOS V
             LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = ?
+            LEFT JOIN PROGRESSO_REPRODUCAO PR ON PR.ID_VIDEO = V.ID_VIDEO AND PR.ID_USUARIO = ?
             WHERE V.ID_CURSO = ? AND V.EXCLUIDO = 0 AND V.STATUS = 1 AND V.ID_VIDEO <> ?
             ORDER BY V.POSICAO_PLAYLIST, V.DATA_UPLOAD, V.ID_VIDEO
             """,
-            (id_aluno, aula["id_curso"], id_aula),
+            (id_aluno, id_aluno, aula["id_curso"], id_aula),
         )
         proximas = []
         for prox_row in cursor.fetchall():
             proxima = aula_para_dict(prox_row[:6])
             proxima["assistida"] = bool(prox_row[6])
+            proxima["progresso_segundos"] = float(prox_row[7] or 0)
             proximas.append(proxima)
 
         return jsonify({"aula": aula, "curso": curso, "proximas": proximas})
     except Exception as erro:
         return resposta(f"Erro ao carregar aula: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+# Sprint item 4: salva a posicao atual sem marcar a aula como concluida.
+@app.route("/aluno/aulas/<int:id_aula>/progresso", methods=["PUT"])
+@jwt_required()
+def salvar_progresso_aula(id_aula):
+    negado = exigir_aluno()
+    if negado:
+        return negado
+
+    dados = request.get_json(silent=True) or {}
+    valor_posicao = dados.get("posicao_segundos", 0)
+    if isinstance(valor_posicao, bool):
+        return resposta("A posicao da aula e invalida.", 400)
+
+    try:
+        posicao = float(valor_posicao)
+    except (TypeError, ValueError):
+        return resposta("A posicao da aula e invalida.", 400)
+
+    if not math.isfinite(posicao) or posicao < 0 or posicao > 604800:
+        return resposta("A posicao da aula e invalida.", 400)
+
+    id_aluno = get_jwt_identity()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        garantir_tabela_progresso(con)
+        bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
+        bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
+        cursor.execute(
+            """
+            SELECT 1
+            FROM VIDEOS V
+            JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
+            JOIN MATRICULAS M ON M.ID_CURSO = C.ID_CURSO
+            WHERE V.ID_VIDEO = ? AND M.ID_USUARIO = ? AND M.STATUS_MATRICULA = 1
+              AND V.EXCLUIDO = 0 AND V.STATUS = 1 AND C.EXCLUIDO = 0 AND C.STATUS = 1
+            """,
+            (id_aula, id_aluno),
+        )
+        if not cursor.fetchone():
+            return resposta("Aula nao encontrada para seus cursos.", 404)
+
+        # Sprint item 4: app e site gravam a posicao na mesma tabela e retomam do valor mais recente.
+        cursor.execute(
+            """
+            UPDATE OR INSERT INTO PROGRESSO_REPRODUCAO (
+                ID_USUARIO, ID_VIDEO, POSICAO_SEGUNDOS, ATUALIZADO_EM
+            )
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            MATCHING (ID_USUARIO, ID_VIDEO)
+            """,
+            (id_aluno, id_aula, posicao),
+        )
+        con.commit()
+        return resposta("Progresso da aula salvo.", 200, "sucesso", posicao_segundos=posicao)
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao salvar progresso da aula: {erro}", 500)
     finally:
         cursor.close()
         con.close()
@@ -721,6 +823,11 @@ def marcar_aula_assistida(id_aula):
             VALUES (?, ?, CURRENT_TIMESTAMP)
             MATCHING (ID_USUARIO, ID_VIDEO)
             """,
+            (id_aluno, id_aula),
+        )
+        # Sprint item 4: remove o ponto salvo ao concluir para evitar uma retomada quase no fim.
+        cursor.execute(
+            "DELETE FROM PROGRESSO_REPRODUCAO WHERE ID_USUARIO = ? AND ID_VIDEO = ?",
             (id_aluno, id_aula),
         )
         cursor.execute(
