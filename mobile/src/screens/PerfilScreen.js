@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppIcon from "../components/AppIcon";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Field from "../components/Field";
 import { colors, globalStyles } from "../styles";
@@ -7,7 +7,7 @@ export default function PerfilScreen({ perfil, onEdit, onLogout }) {
   return (
     <ScrollView contentContainerStyle={[globalStyles.page, styles.page]}>
       <View style={styles.header}>
-        <Ionicons name="person-circle-outline" size={96} color={colors.black} style={styles.avatar} />
+        <AppIcon name="person-circle-outline" size={84} color={colors.black} style={styles.avatar} />
         <View style={styles.headerText}>
           <Text style={globalStyles.title}>Perfil</Text>
           <Text style={globalStyles.eyebrow}>{perfil?.nome || "Usuario"}</Text>

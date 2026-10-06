@@ -4,9 +4,10 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, AppState, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
+import { ActivityIndicator, AppState, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
 import { apiRequest, carregarSessao, getApiBaseUrl, limparSessao, salvarSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
+import FeedbackProvider, { useFeedback } from "./src/components/FeedbackProvider";
 import AlunosCursoScreen from "./src/screens/AlunosCursoScreen";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
 import AssinaturaScreen from "./src/screens/AssinaturaScreen";
@@ -29,6 +30,15 @@ import { colors, globalStyles } from "./src/styles";
 let notificationHandlerConfigured = false;
 
 export default function App() {
+  return (
+    <FeedbackProvider>
+      <AppContent />
+    </FeedbackProvider>
+  );
+}
+
+function AppContent() {
+  const { mostrarAlerta } = useFeedback();
   const [token, setToken] = useState("");
   const sincronizandoApp = useRef(false);
   const [usuario, setUsuario] = useState(null);
@@ -82,7 +92,7 @@ export default function App() {
       // Sprint item 3: persiste no app o mesmo perfil atualizado que o site acabou de ler do backend.
       await salvarSessao(authToken, usuarioAtualizado);
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setLoading(false);
     }
@@ -269,7 +279,7 @@ export default function App() {
       setDetalheAulaAluno(null);
       setTab(destino);
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setLoading(false);
     }
@@ -283,7 +293,7 @@ export default function App() {
       await apiRequest(`/aluno/cursos/${curso.id}/inscrever`, { method: "POST" }, token);
       await carregarDados();
       setDetalheCursoAluno(await buscarDetalheCursoAluno(curso.id));
-      Alert.alert("Inscricao", "Inscricao realizada com sucesso.");
+      mostrarAlerta("Inscricao", "Inscricao realizada com sucesso.", "sucesso");
     } catch (error) {
       if (error.status === 402) {
         setDetalheCursoAluno(null);
@@ -291,7 +301,7 @@ export default function App() {
         setTab("finance");
         return;
       }
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setLoading(false);
     }
@@ -304,7 +314,7 @@ export default function App() {
       setDetalheAulaAluno(detalhe);
       setTab("courses");
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setLoading(false);
     }
@@ -331,7 +341,7 @@ export default function App() {
         setDetalheCursoAluno(await buscarDetalheCursoAluno(detalheCursoAluno.curso.id));
       }
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     }
   }
 
@@ -380,7 +390,7 @@ export default function App() {
         UTI: "com.adobe.pdf"
       });
     } catch (error) {
-      Alert.alert("Certificado", error?.message || "Não foi possível baixar o certificado.");
+      mostrarAlerta("Certificado", error?.message || "Não foi possível baixar o certificado.", "erro");
     }
   }
 
@@ -391,7 +401,7 @@ export default function App() {
       method: "POST",
       body: JSON.stringify(dados)
     }, token);
-    Alert.alert("Avaliação", "Avaliação enviada.");
+    mostrarAlerta("Avaliação", "Avaliação enviada.", "sucesso");
   }
 
   function trocarAba(key) {
@@ -423,7 +433,7 @@ export default function App() {
       setEditingCourse(null);
       await carregarDados();
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setSaving(false);
     }
@@ -434,7 +444,7 @@ export default function App() {
       await apiRequest(`/professor/cursos/${curso.id}`, { method: "DELETE" }, token);
       await carregarDados();
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     }
   }
 
@@ -453,7 +463,7 @@ export default function App() {
       await salvarSessao(token, usuarioAtualizado);
       setEditingProfile(false);
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setSaving(false);
     }

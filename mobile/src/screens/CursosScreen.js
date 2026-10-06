@@ -1,6 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { resolverUrlMidia } from "../api/client";
+import AppIcon from "../components/AppIcon";
+import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
 const placeholders = [
@@ -12,12 +13,16 @@ const placeholders = [
 export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onStudents, tipoUsuario = 1 }) {
   // Alunos abrem detalhes e acompanham progresso; professores recebem ações de gestão.
   const aluno = Number(tipoUsuario) === 2;
+  const { confirmar } = useFeedback();
 
-  function confirmarExclusao(curso) {
-    Alert.alert("Excluir curso", `Deseja excluir ${curso.titulo}?`, [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Excluir", style: "destructive", onPress: () => onDelete(curso) }
-    ]);
+  async function confirmarExclusao(curso) {
+    const confirmado = await confirmar({
+      titulo: "Excluir curso",
+      descricao: `Deseja excluir ${curso.titulo}?`,
+      textoCancelar: "Cancelar",
+      textoConfirmar: "Excluir"
+    });
+    if (confirmado) onDelete(curso);
   }
 
   return (
@@ -57,19 +62,19 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
                   <View style={styles.actions}>
                     {onManage ? (
                       <Pressable style={styles.iconButton} onPress={() => onManage(curso)} hitSlop={10} accessibilityLabel="Gerenciar módulos">
-                        <Ionicons name="folder-open-outline" size={22} color={colors.darkGreen} />
+                        <AppIcon name="folder-open-outline" size={20} color={colors.darkGreen} />
                       </Pressable>
                     ) : null}
                     {onStudents ? (
                       <Pressable style={styles.iconButton} onPress={() => onStudents(curso)} hitSlop={10} accessibilityLabel="Ver alunos">
-                        <Ionicons name="people-outline" size={22} color={colors.darkGreen} />
+                        <AppIcon name="people-outline" size={20} color={colors.darkGreen} />
                       </Pressable>
                     ) : null}
                     <Pressable style={styles.iconButton} onPress={() => onEdit(curso)} hitSlop={10}>
-                      <Ionicons name="pencil-outline" size={22} color={colors.black} />
+                      <AppIcon name="pencil-outline" size={20} color={colors.black} />
                     </Pressable>
                     <Pressable style={styles.iconButton} onPress={() => confirmarExclusao(curso)} hitSlop={10}>
-                      <Ionicons name="trash-outline" size={22} color={colors.red} />
+                      <AppIcon name="trash-outline" size={20} color={colors.red} />
                     </Pressable>
                   </View>
                 )}

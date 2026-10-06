@@ -1,5 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import AppIcon from "./AppIcon";
 import { colors, systemNavigationInset } from "../styles";
 
 const baseItems = [
@@ -10,6 +11,7 @@ const baseItems = [
 ];
 
 export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const items = Number(tipoUsuario) === 1
     ? [
       baseItems[0],
@@ -28,8 +30,21 @@ export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
       baseItems[3]
     ];
 
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   return (
-    <View style={styles.nav}>
+    <View style={[styles.nav, Platform.OS === "android" && keyboardHeight > 0 && { transform: [{ translateY: keyboardHeight }] }]}>
       {items.map((item, index) => {
         const selected = active === item.key;
 
@@ -43,7 +58,7 @@ export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
             ]}
             onPress={() => onChange(item.key)}
           >
-            <Ionicons name={item.icon} size={24} color={selected ? colors.white : colors.black} />
+            <AppIcon name={item.icon} size={20} color={selected ? colors.white : colors.black} />
             <Text style={[styles.label, selected && styles.labelActive]} numberOfLines={1}>
               {item.label}
             </Text>

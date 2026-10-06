@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest } from "../api/client";
+import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
 function numero(valor) {
@@ -8,6 +9,7 @@ function numero(valor) {
 }
 
 export default function RelatoriosProfessorScreen({ token, cursos = [], carregando }) {
+  const { mostrarAlerta } = useFeedback();
   const [relatorio, setRelatorio] = useState(null);
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
@@ -24,7 +26,7 @@ export default function RelatoriosProfessorScreen({ token, cursos = [], carregan
       const dados = await apiRequest(`/relatorios/professor?${params.toString()}`, {}, token);
       setRelatorio(dados);
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setLoading(false);
     }

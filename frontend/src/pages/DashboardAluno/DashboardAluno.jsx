@@ -116,20 +116,22 @@ function CursoCard({ curso, api, onAbrir, mostrarProgresso = false }) {
     return (
         <article className={css.cardCurso}>
             <button className={css.areaCardClicavel} onClick={() => onAbrir?.(curso)}>
-                <img src={imagem} alt={curso.titulo} className={css.imagemCurso} />
-                <div className={css.infoCurso}>
-                    <div>
-                        <h3>{curso.titulo}</h3>
-                        <p>{curso.descricao}</p>
-                    </div>
+                <div className={css.imagemCursoContainer}>
+                    <img src={imagem} alt={curso.titulo} className={css.imagemCurso} />
                     {mostrarProgresso && (
                         <div className={css.progressoCurso} aria-label={`${progresso}% concluido`}>
                             <span>{progresso}%</span>
-                            <div className={css.barraProgresso}>
+                            <div className={css.barraProgresso} aria-hidden="true">
                                 <i style={{ width: `${progresso}%` }} />
                             </div>
                         </div>
                     )}
+                </div>
+                <div className={css.infoCurso}>
+                    <div className={css.textoCurso}>
+                        <h3>{curso.titulo}</h3>
+                        <p>{curso.descricao}</p>
+                    </div>
                 </div>
             </button>
         </article>

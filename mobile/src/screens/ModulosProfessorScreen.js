@@ -1,12 +1,14 @@
-import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { apiRequest, resolverUrlMidia } from "../api/client";
+import AppIcon from "../components/AppIcon";
 import Field from "../components/Field";
+import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
 export default function ModulosProfessorScreen({ curso, token, onBack }) {
+  const { mostrarAlerta } = useFeedback();
   // Sprint item 6: organiza módulos, capas e videoaulas do curso no aplicativo do instrutor.
   const [modulos, setModulos] = useState([]);
   const [modulo, setModulo] = useState(null);
@@ -26,7 +28,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
       const dados = await apiRequest(`/professor/cursos/${curso.id}/modulos`, {}, token);
       setModulos(Array.isArray(dados) ? dados : []);
     } catch (error) {
-      Alert.alert("Módulos", error.message);
+      mostrarAlerta("Módulos", error.message, "erro");
     } finally {
       setCarregando(false);
     }
@@ -38,7 +40,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
       const dados = await apiRequest(`/professor/cursos/${curso.id}/aulas?id_modulo=${idModulo}`, {}, token);
       setAulas(Array.isArray(dados) ? dados : []);
     } catch (error) {
-      Alert.alert("Aulas", error.message);
+      mostrarAlerta("Aulas", error.message, "erro");
       setAulas([]);
     } finally {
       setCarregando(false);
@@ -59,7 +61,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
 
   async function criarModulo() {
     if (!tituloModulo.trim()) {
-      Alert.alert("Módulo", "Informe o nome do módulo.");
+      mostrarAlerta("Módulo", "Informe o nome do módulo.", "erro");
       return;
     }
     setSalvando(true);
@@ -85,7 +87,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
         setAulas([]);
       }
     } catch (error) {
-      Alert.alert("Erro ao criar módulo", error.message);
+      mostrarAlerta("Erro ao criar módulo", error.message, "erro");
     } finally {
       setSalvando(false);
     }
@@ -109,7 +111,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
 
   async function criarAula() {
     if (!tituloAula.trim() || !descricaoAula.trim() || !videoAula?.uri) {
-      Alert.alert("Aula", "Preencha título, descrição e selecione o vídeo.");
+      mostrarAlerta("Aula", "Preencha título, descrição e selecione o vídeo.", "erro");
       return;
     }
     setSalvando(true);
@@ -130,7 +132,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
       await carregarAulas(modulo.id);
       await carregarModulos();
     } catch (error) {
-      Alert.alert("Erro ao criar aula", error.message);
+      mostrarAlerta("Erro ao criar aula", error.message, "erro");
     } finally {
       setSalvando(false);
     }
@@ -142,7 +144,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
       refreshControl={<RefreshControl refreshing={carregando} onRefresh={modulo ? () => carregarAulas(modulo.id) : carregarModulos} />}
     >
       <Pressable style={styles.back} onPress={modulo ? () => setModulo(null) : onBack}>
-        <Ionicons name="arrow-back" size={20} color={colors.darkGreen} />
+        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
         <Text style={styles.backText}>{modulo ? "Voltar aos módulos" : "Voltar aos cursos"}</Text>
       </Pressable>
       <Text style={globalStyles.title}>{modulo?.titulo || `Módulos de ${curso.titulo}`}</Text>
@@ -156,7 +158,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
             <Field label="Descrição" value={descricaoModulo} onChangeText={setDescricaoModulo} multiline />
             <Pressable style={styles.imagePicker} onPress={escolherImagem}>
               {imagemModulo?.uri ? <Image source={{ uri: imagemModulo.uri }} style={styles.moduleImage} /> : null}
-              <Ionicons name="image-outline" size={22} color={colors.darkGreen} />
+              <AppIcon name="image-outline" size={20} color={colors.darkGreen} />
               <Text style={styles.actionText}>{imagemModulo?.fileName || "Selecionar imagem do módulo"}</Text>
             </Pressable>
             <Pressable style={globalStyles.primaryButton} onPress={criarModulo} disabled={salvando}>
@@ -184,7 +186,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
             <Field label="Título da aula" value={tituloAula} onChangeText={setTituloAula} />
             <Field label="Descrição" value={descricaoAula} onChangeText={setDescricaoAula} multiline />
             <Pressable style={styles.imagePicker} onPress={escolherVideo}>
-              <Ionicons name="videocam-outline" size={22} color={colors.darkGreen} />
+              <AppIcon name="videocam-outline" size={20} color={colors.darkGreen} />
               <Text style={styles.actionText}>{videoAula?.fileName || "Selecionar vídeo"}</Text>
             </Pressable>
             <Pressable style={globalStyles.primaryButton} onPress={criarAula} disabled={salvando}>
@@ -194,7 +196,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
           <View style={styles.list}>
             {aulas.map((aula) => (
               <View key={aula.id} style={[globalStyles.card, styles.lessonCard]}>
-                <Ionicons name="play-circle-outline" size={24} color={colors.darkGreen} />
+                <AppIcon name="play-circle-outline" size={22} color={colors.darkGreen} />
                 <View style={styles.moduleInfo}>
                   <Text style={styles.moduleTitle}>{aula.titulo}</Text>
                   <Text style={styles.moduleDescription}>{aula.descricao}</Text>

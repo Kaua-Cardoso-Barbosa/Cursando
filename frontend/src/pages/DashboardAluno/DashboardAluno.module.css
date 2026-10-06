@@ -354,9 +354,17 @@
     color: inherit;
 }
 
-.imagemCurso {
+.imagemCursoContainer {
+    position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #d9d9d9;
+}
+
+.imagemCurso {
+    width: 100%;
+    height: 100%;
     display: block;
     object-fit: cover;
     background: #d9d9d9;
@@ -370,6 +378,15 @@
     gap: 12px;
     padding: 10px 12px 12px;
     min-height: 68px;
+}
+
+.infoCurso {
+    align-items: stretch;
+}
+
+.textoCurso {
+    flex: 1;
+    min-width: 0;
 }
 
 .infoCurso h3,
@@ -402,20 +419,32 @@
 }
 
 .progressoCurso {
-    min-width: 92px;
-    align-self: flex-end;
-    color: #111111;
-    font-size: 0.78rem;
-    text-align: center;
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    display: grid;
+    justify-items: end;
+    gap: 5px;
+    width: min(92px, 42%);
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    color: #075132;
+    font-size: 0.82rem;
+    line-height: 1.1;
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: right;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .barraProgresso {
-    width: 86px;
-    height: 9px;
-    border: 1px solid #111111;
+    width: 100%;
+    height: 7px;
+    border: 1px solid #b7cfc0;
     border-radius: 999px;
     overflow: hidden;
-    background: #ffffff;
+    background: #eff5f1;
 }
 
 .barraProgresso i {
@@ -1203,7 +1232,7 @@
 
 .gridCursos,
 .gridAulas {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
 }
 

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppIcon from "../components/AppIcon";
 import { ResizeMode, Video } from "expo-av";
 import { useEffect, useRef } from "react";
 import * as ScreenCapture from "expo-screen-capture";
@@ -153,7 +153,7 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
   return (
     <ScrollView contentContainerStyle={globalStyles.page}>
       <Pressable style={styles.back} onPress={onBack}>
-        <Ionicons name="arrow-back" size={19} color={colors.darkGreen} />
+        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
         <Text style={styles.backText}>Voltar</Text>
       </Pressable>
 
@@ -194,7 +194,7 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
                 <View style={styles.preview}>
                   <Image source={{ uri: proxima.thumb ? resolverUrlMidia(proxima.thumb) : fallbackThumb }} style={styles.image} />
                   <View style={styles.playBadge}>
-                    <Ionicons name="play" size={44} color={colors.black} />
+                    <AppIcon name="play" size={40} color={colors.black} />
                   </View>
                 </View>
                 <View style={styles.info}>

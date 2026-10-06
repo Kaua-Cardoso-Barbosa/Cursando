@@ -1,4 +1,5 @@
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import AppIcon from "../components/AppIcon";
 import { colors, globalStyles } from "../styles";
 
 function formatarData(data) {
@@ -15,7 +16,7 @@ const professorMetrics = [
   ["Total de alunos", "Matriculas em seus cursos", "total_alunos", "people-outline"],
   ["Aulas publicadas", "Video-aulas disponiveis", "aulas_publicadas", "play-circle-outline"],
   ["Cursos em rascunho", "Aguardando publicacao", "cursos_privados", "document-text-outline"],
-  ["Cursos concluidos", "Conclusoes por aluno", "cursos_concluidos", "checkmark-done-outline"],
+  ["Cursos concluidos", "Conclusoes por aluno", "cursos_concluidos", "checkmark-circle-outline"],
   ["Modulos concluidos", "Conclusoes por aluno", "modulos_concluidos", "layers-outline"],
   ["Horas assistidas", "Tempo registrado pelo player", "horas_assistidas", "time-outline", "horas"]
 ];
@@ -24,7 +25,7 @@ const alunoMetrics = [
   ["Iniciada em", "Data de inicio da assinatura", "data_inicio", "calendar-outline", "data"],
   ["Valida ate", "Data de termino da assinatura", "data_expiracao", "calendar-outline", "data"],
   ["Cursos inscritos", "+1 nesse mes", "inscritos", "library-outline"],
-  ["Cursos finalizados", "+2 nesse mes", "finalizados", "checkmark-circle-outline"]
+  ["Cursos finalizados", "+2 nesse mes", "finalizados", "albums-outline"]
 ];
 
 export default function InicioScreen({ usuario, dashboard, carregando, onRefresh, tipoUsuario = 1 }) {
@@ -58,7 +59,7 @@ export default function InicioScreen({ usuario, dashboard, carregando, onRefresh
               <View style={styles.cardTop}>
                 <Text style={styles.cardTitle}>{titulo}</Text>
                 <View style={styles.iconBadge}>
-                  <Ionicons name={icon} size={24} color={colors.darkGreen} />
+                  <AppIcon name={icon} size={20} color={colors.darkGreen} />
                 </View>
               </View>
               <Text style={styles.cardDetail}>{detalhe}</Text>

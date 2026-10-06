@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppIcon from "../components/AppIcon";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -38,7 +38,7 @@ export default function EditarCursoScreen({ curso, onCancel, onSave, salvando })
           <Pressable style={styles.upload} onPress={escolherImagem}>
             {preview ? <Image source={{ uri: preview }} style={styles.image} /> : null}
             <View style={styles.uploadIcon}>
-              <Ionicons name="cloud-upload-outline" size={48} color={colors.white} />
+              <AppIcon name="cloud-upload-outline" size={42} color={colors.white} />
             </View>
           </Pressable>
 

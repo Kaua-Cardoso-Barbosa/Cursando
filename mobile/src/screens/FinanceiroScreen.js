@@ -1,8 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useState } from "react";
-import { Alert, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client";
+import AppIcon from "../components/AppIcon";
+import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
 function moeda(valor) {
@@ -17,6 +18,7 @@ const cards = [
 ];
 
 export default function FinanceiroScreen({ financeiro, carregando, onRefresh, token, tipoUsuario }) {
+  const { mostrarAlerta } = useFeedback();
   const [faturas, setFaturas] = useState([]);
   const [atualizandoFaturas, setAtualizandoFaturas] = useState(false);
   const [pagamento, setPagamento] = useState(null);
@@ -46,7 +48,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
       const dados = await apiRequest("/financeiro/faturas", {}, token);
       setFaturas(dados.faturas || []);
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setAtualizandoFaturas(false);
     }
@@ -81,7 +83,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
       await carregarFaturas();
       await onRefresh?.();
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     }
   }
 
@@ -97,7 +99,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
       await carregarFaturas();
       await onRefresh?.();
     } catch (error) {
-      Alert.alert("Pagamento", error.message);
+      mostrarAlerta("Pagamento", error.message, "erro");
     } finally {
       setVerificando(false);
     }
@@ -112,7 +114,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
 
   async function solicitarSaque() {
     if (!saqueValido) {
-      Alert.alert("Saque", "Informe um valor valido dentro do saldo disponivel.");
+      mostrarAlerta("Saque", "Informe um valor valido dentro do saldo disponivel.", "erro");
       return;
     }
 
@@ -124,9 +126,9 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
       }, token);
       setValorSaque("");
       await onRefresh?.();
-      Alert.alert("Saque", "Solicitacao enviada.");
+      mostrarAlerta("Saque", "Solicitacao enviada.", "sucesso");
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
     } finally {
       setSolicitandoSaque(false);
     }
@@ -149,7 +151,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
             <View style={styles.cardTop}>
               <Text style={styles.cardTitle}>{titulo}</Text>
               <View style={styles.iconBadge}>
-                <Ionicons name={icon} size={24} color={colors.black} />
+                <AppIcon name={icon} size={20} color={colors.black} />
               </View>
             </View>
             <Text style={styles.cardDetail}>{detalhe}</Text>

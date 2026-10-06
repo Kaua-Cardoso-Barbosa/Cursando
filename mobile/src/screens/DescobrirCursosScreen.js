@@ -1,12 +1,14 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest, resolverUrlMidia } from "../api/client";
+import AppIcon from "../components/AppIcon";
+import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
 const fallbackImage = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900";
 
 export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
+  const { mostrarAlerta } = useFeedback();
   const [cursos, setCursos] = useState([]);
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState("recentes");
@@ -23,7 +25,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
       const dados = await apiRequest(`/aluno/descobrir?${params.toString()}`, {}, token);
       setCursos(Array.isArray(dados) ? dados : []);
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
       setCursos([]);
     } finally {
       setLoading(false);
@@ -47,7 +49,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
 
       <View style={styles.filters}>
         <View style={styles.searchBox}>
-          <Ionicons name="search-outline" size={20} color={colors.darkGreen} />
+          <AppIcon name="search-outline" size={18} color={colors.darkGreen} />
           <TextInput
             value={busca}
             onChangeText={setBusca}

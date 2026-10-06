@@ -1,10 +1,12 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { apiRequest } from "../api/client";
+import AppIcon from "../components/AppIcon";
+import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
 export default function AlunosCursoScreen({ curso, token, onBack }) {
+  const { mostrarAlerta } = useFeedback();
   const [alunos, setAlunos] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +17,7 @@ export default function AlunosCursoScreen({ curso, token, onBack }) {
       const dados = await apiRequest(`/professor/cursos/${curso.id}/alunos`, {}, token);
       setAlunos(Array.isArray(dados) ? dados : []);
     } catch (error) {
-      Alert.alert("Erro", error.message);
+      mostrarAlerta("Erro", error.message, "erro");
       setAlunos([]);
     } finally {
       setLoading(false);
@@ -32,7 +34,7 @@ export default function AlunosCursoScreen({ curso, token, onBack }) {
       refreshControl={<RefreshControl refreshing={loading} onRefresh={carregar} />}
     >
       <Pressable style={styles.back} onPress={onBack}>
-        <Ionicons name="arrow-back" size={19} color={colors.darkGreen} />
+        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
         <Text style={styles.backText}>Voltar</Text>
       </Pressable>
       <View style={styles.header}>
@@ -44,7 +46,7 @@ export default function AlunosCursoScreen({ curso, token, onBack }) {
         {alunos.map((aluno) => (
           <View key={aluno.id_usuario} style={[globalStyles.card, styles.row]}>
             <View style={styles.avatar}>
-              <Ionicons name="person-outline" size={22} color={colors.darkGreen} />
+              <AppIcon name="person-outline" size={20} color={colors.darkGreen} />
             </View>
             <View style={styles.info}>
               <Text style={styles.name}>{aluno.nome}</Text>

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppIcon from "../components/AppIcon";
 import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import {
@@ -76,7 +76,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.header}>
         <View style={styles.iconBadge}>
-          <Ionicons name="sparkles-outline" size={28} color={colors.darkGreen} />
+          <AppIcon name="sparkles-outline" size={24} color={colors.darkGreen} />
         </View>
         <Text style={styles.eyebrow}>Cursando</Text>
         <Text style={globalStyles.title}>Sua próxima etapa começa aqui.</Text>
@@ -89,11 +89,11 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
         <Text style={styles.planLabel}>PLANO DISPONÍVEL</Text>
         <Text style={styles.planTitle}>Assinatura mensal</Text>
         <View style={styles.benefit}>
-          <Ionicons name="checkmark-circle-outline" size={20} color={colors.green} />
+          <AppIcon name="checkmark-circle-outline" size={18} color={colors.green} />
           <Text style={styles.benefitText}>Acesso aos cursos para alunos</Text>
         </View>
         <View style={styles.benefit}>
-          <Ionicons name="checkmark-circle-outline" size={20} color={colors.green} />
+          <AppIcon name="checkmark-circle-outline" size={18} color={colors.green} />
           <Text style={styles.benefitText}>30 dias de acesso após a confirmação</Text>
         </View>
 

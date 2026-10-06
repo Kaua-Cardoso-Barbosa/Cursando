@@ -1,9 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
+  Keyboard,
+  KeyboardAvoidingView,
   Pressable,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -12,6 +14,7 @@ import {
   View
 } from "react-native";
 import { apiRequest } from "../api/client";
+import AppIcon from "../components/AppIcon";
 import { colors, globalStyles } from "../styles";
 
 export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando, onRefresh }) {
@@ -21,8 +24,20 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
   const [texto, setTexto] = useState("");
   const [loading, setLoading] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [tecladoAberto, setTecladoAberto] = useState(false);
   const enviandoRef = useRef(false);
   const aluno = Number(tipoUsuario) === 2;
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSubscription = Keyboard.addListener(showEvent, () => setTecladoAberto(true));
+    const hideSubscription = Keyboard.addListener(hideEvent, () => setTecladoAberto(false));
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   async function carregarConversas() {
     setLoading(true);
@@ -120,67 +135,78 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={globalStyles.page}
-      refreshControl={<RefreshControl refreshing={carregando || loading} onRefresh={atualizarChat} />}
+    <KeyboardAvoidingView
+      style={styles.keyboardArea}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.header}>
-        <Text style={globalStyles.title}>Chat</Text>
-        <Text style={globalStyles.eyebrow}>{aluno ? "Tire duvidas com o instrutor" : "Mensagens dos alunos"}</Text>
-        <View style={globalStyles.divider} />
-      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[globalStyles.page, styles.page, tecladoAberto && styles.keyboardPage]}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={carregando || loading} onRefresh={atualizarChat} />}
+      >
+        <View style={styles.header}>
+          <Text style={globalStyles.title}>Chat</Text>
+          <Text style={globalStyles.eyebrow}>{aluno ? "Tire duvidas com o instrutor" : "Mensagens dos alunos"}</Text>
+          <View style={globalStyles.divider} />
+        </View>
 
-      <View style={styles.conversations}>
-        {loading ? <ActivityIndicator color={colors.green} /> : null}
-        {!loading && conversas.length === 0 ? <Text style={globalStyles.message}>Nenhuma conversa disponivel.</Text> : null}
-        {conversas.map((conversa) => {
-          const active = selecionada?.id_curso === conversa.id_curso && selecionada?.id_aluno === conversa.id_aluno;
-          return (
-            <Pressable
-              key={`${conversa.id_curso}-${conversa.id_aluno || "aluno"}`}
-              style={[styles.conversation, active && styles.conversationActive]}
-              onPress={() => setSelecionada(conversa)}
-            >
-              <Ionicons name="person-circle-outline" size={34} color={colors.darkGreen} />
-              <View style={styles.conversationText}>
-                <Text style={styles.name}>{conversa.nome}</Text>
-                <Text style={styles.course}>{conversa.curso}</Text>
-              </View>
-              {conversa.nao_lidas > 0 ? <Text style={styles.badge}>{conversa.nao_lidas}</Text> : null}
-            </Pressable>
-          );
-        })}
-      </View>
+        <View style={styles.conversations}>
+          {loading ? <ActivityIndicator color={colors.green} /> : null}
+          {!loading && conversas.length === 0 ? <Text style={globalStyles.message}>Nenhuma conversa disponivel.</Text> : null}
+          {conversas.map((conversa) => {
+            const active = selecionada?.id_curso === conversa.id_curso && selecionada?.id_aluno === conversa.id_aluno;
+            return (
+              <Pressable
+                key={`${conversa.id_curso}-${conversa.id_aluno || "aluno"}`}
+                style={[styles.conversation, active && styles.conversationActive]}
+                onPress={() => setSelecionada(conversa)}
+              >
+                <AppIcon name="person-circle-outline" size={30} color={colors.darkGreen} />
+                <View style={styles.conversationText}>
+                  <Text style={styles.name}>{conversa.nome}</Text>
+                  <Text style={styles.course}>{conversa.curso}</Text>
+                </View>
+                {conversa.nao_lidas > 0 ? <Text style={styles.badge}>{conversa.nao_lidas}</Text> : null}
+              </Pressable>
+            );
+          })}
+        </View>
 
-      <View style={styles.messages}>
-        {!selecionada ? <Text style={styles.empty}>Selecione uma conversa.</Text> : null}
-        {selecionada && mensagens.length === 0 ? <Text style={styles.empty}>Nenhuma mensagem enviada ainda.</Text> : null}
-        {mensagens.map((mensagem) => (
-          <View key={mensagem.id} style={[styles.bubble, mensagem.minha && styles.mine]}>
-            <Text style={styles.sender}>{mensagem.nome}</Text>
-            <Text style={styles.messageText}>{mensagem.texto}</Text>
-          </View>
-        ))}
-      </View>
+        <View style={[styles.messages, tecladoAberto && styles.keyboardMessages]}>
+          {!selecionada ? <Text style={styles.empty}>Selecione uma conversa.</Text> : null}
+          {selecionada && mensagens.length === 0 ? <Text style={styles.empty}>Nenhuma mensagem enviada ainda.</Text> : null}
+          {mensagens.map((mensagem) => (
+            <View key={mensagem.id} style={[styles.bubble, mensagem.minha && styles.mine]}>
+              <Text style={styles.sender}>{mensagem.nome}</Text>
+              <Text style={styles.messageText}>{mensagem.texto}</Text>
+            </View>
+          ))}
+        </View>
 
-      <View style={styles.composer}>
-        <TextInput
-          value={texto}
-          onChangeText={setTexto}
-          editable={Boolean(selecionada) && !enviando}
-          placeholder={selecionada ? "Digite sua mensagem" : "Selecione uma conversa"}
-          placeholderTextColor={colors.muted}
-          style={styles.input}
-        />
-        <Pressable style={styles.send} onPress={enviarMensagem} disabled={!selecionada || !texto.trim() || enviando}>
-          <Ionicons name="send-outline" size={22} color={colors.white} />
-        </Pressable>
-      </View>
-    </ScrollView>
+        <View style={styles.composer}>
+          <TextInput
+            value={texto}
+            onChangeText={setTexto}
+            editable={Boolean(selecionada) && !enviando}
+            placeholder={selecionada ? "Digite sua mensagem" : "Selecione uma conversa"}
+            placeholderTextColor={colors.muted}
+            style={styles.input}
+          />
+          <Pressable style={styles.send} onPress={enviarMensagem} disabled={!selecionada || !texto.trim() || enviando}>
+            <AppIcon name="send-outline" size={20} color={colors.white} />
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardArea: { flex: 1 },
+  scroll: { flex: 1 },
+  page: { flexGrow: 1, paddingBottom: 112 },
+  keyboardPage: { paddingBottom: 20 },
   header: {
     marginBottom: 24
   },
@@ -226,7 +252,8 @@ const styles = StyleSheet.create({
     paddingTop: 2
   },
   messages: {
-    minHeight: 260,
+    flex: 1,
+    minHeight: 180,
     borderWidth: 1.4,
     borderColor: colors.border,
     borderRadius: 8,
@@ -234,6 +261,7 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 10
   },
+  keyboardMessages: { minHeight: 100 },
   empty: {
     color: colors.textMuted,
     textAlign: "center",

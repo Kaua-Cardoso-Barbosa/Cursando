@@ -1,7 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { resolverUrlMidia } from "../api/client";
+import AppIcon from "../components/AppIcon";
 import { colors, globalStyles } from "../styles";
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
@@ -46,7 +46,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
       refreshControl={<RefreshControl refreshing={carregando} onRefresh={onRefresh} />}
     >
       <Pressable style={styles.back} onPress={onBack}>
-        <Ionicons name="arrow-back" size={19} color={colors.darkGreen} />
+        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
         <Text style={styles.backText}>Voltar</Text>
       </Pressable>
 
@@ -76,7 +76,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
                 <Text style={styles.lessonTitle}>{modulo.titulo}</Text>
                 <Text style={styles.description}>{modulo.descricao || `${modulo.total_aulas || modulo.aulas?.length || 0} aulas`}</Text>
               </View>
-              <Ionicons name={Number(moduloAberto) === Number(modulo.id) ? "chevron-up" : "chevron-down"} size={22} color={colors.darkGreen} />
+              <AppIcon name={Number(moduloAberto) === Number(modulo.id) ? "chevron-up" : "chevron-down"} size={20} color={colors.darkGreen} />
             </Pressable>
             {Number(moduloAberto) === Number(modulo.id) ? (
               <View style={styles.moduleLessons}>
@@ -84,8 +84,8 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
                   <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
                     <View style={styles.preview}>
                       <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
-                      <View style={styles.playBadge}><Ionicons name="play" size={48} color={colors.black} style={styles.play} /></View>
-                      {aula.assistida ? <Ionicons name="checkmark-circle" size={34} color={colors.green} style={styles.check} /> : null}
+                      <View style={styles.playBadge}><AppIcon name="play" size={42} color={colors.black} style={styles.play} /></View>
+                      {aula.assistida ? <AppIcon name="checkmark-circle" size={30} color={colors.green} style={styles.check} /> : null}
                     </View>
                     <View style={styles.info}>
                       <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
@@ -103,8 +103,8 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
           <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
             <View style={styles.preview}>
               <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
-              <View style={styles.playBadge}><Ionicons name="play" size={48} color={colors.black} style={styles.play} /></View>
-              {aula.assistida ? <Ionicons name="checkmark-circle" size={34} color={colors.green} style={styles.check} /> : null}
+              <View style={styles.playBadge}><AppIcon name="play" size={42} color={colors.black} style={styles.play} /></View>
+              {aula.assistida ? <AppIcon name="checkmark-circle" size={30} color={colors.green} style={styles.check} /> : null}
             </View>
             <View style={styles.info}>
               <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
