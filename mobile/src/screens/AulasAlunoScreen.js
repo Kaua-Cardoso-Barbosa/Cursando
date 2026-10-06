@@ -20,11 +20,15 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
   // Exibe apenas as aulas disponibilizadas pelo detalhe do curso retornado pela API.
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
+  // Sprint item 6: agrupa as aulas por módulo também na área do aluno no aplicativo.
+  const modulos = detalhe?.modulos || [];
+  const aulasSemModulo = aulas.filter((aula) => !aula.id_modulo);
   const materiais = detalhe?.materiais || [];
   const prova = detalhe?.prova;
   const [respostas, setRespostas] = useState({});
   const [avaliacao, setAvaliacao] = useState({ nota: "5", comentario: "" });
   const [baixandoCertificado, setBaixandoCertificado] = useState(false);
+  const [moduloAberto, setModuloAberto] = useState(null);
 
   async function baixarCertificado() {
     setBaixandoCertificado(true);
@@ -46,7 +50,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
       </Pressable>
 
       <View style={styles.header}>
-        <Text style={globalStyles.title}>Todas video-aulas</Text>
+        <Text style={globalStyles.title}>{modulos.length ? "Módulos do curso" : "Todas video-aulas"}</Text>
         <Text style={globalStyles.eyebrow} numberOfLines={2}>
           {curso?.titulo || "Curso"}
         </Text>
@@ -54,28 +58,52 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
       </View>
 
       <View style={styles.list}>
-        {aulas.map((aula) => (
+        {modulos.map((modulo) => (
+          <View key={modulo.id} style={[globalStyles.card, styles.moduleCard]}>
+            <Pressable style={styles.moduleHeader} onPress={() => setModuloAberto(Number(moduloAberto) === Number(modulo.id) ? null : Number(modulo.id))}>
+              {modulo.imagem ? <Image source={{ uri: resolverUrlMidia(modulo.imagem) }} style={styles.moduleImage} /> : null}
+              <View style={styles.moduleInfo}>
+                <Text style={styles.lessonTitle}>{modulo.titulo}</Text>
+                <Text style={styles.description}>{modulo.descricao || `${modulo.total_aulas || modulo.aulas?.length || 0} aulas`}</Text>
+              </View>
+              <Ionicons name={Number(moduloAberto) === Number(modulo.id) ? "chevron-up" : "chevron-down"} size={22} color={colors.darkGreen} />
+            </Pressable>
+            {Number(moduloAberto) === Number(modulo.id) ? (
+              <View style={styles.moduleLessons}>
+                {(modulo.aulas || []).map((aula) => (
+                  <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(aula)}>
+                    <View style={styles.preview}>
+                      <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
+                      <View style={styles.playBadge}><Ionicons name="play" size={48} color={colors.black} style={styles.play} /></View>
+                      {aula.assistida ? <Ionicons name="checkmark-circle" size={34} color={colors.green} style={styles.check} /> : null}
+                    </View>
+                    <View style={styles.info}>
+                      <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
+                      <Text style={styles.description} numberOfLines={2}>{aula.descricao}</Text>
+                      {Number(aula.progresso_segundos) > 0 ? <Text style={styles.resumeLabel}>Continuar de {formatarPosicaoAula(aula.progresso_segundos)}</Text> : null}
+                    </View>
+                  </Pressable>
+                ))}
+                {!modulo.aulas?.length ? <Text style={globalStyles.message}>Nenhuma aula publicada neste módulo.</Text> : null}
+              </View>
+            ) : null}
+          </View>
+        ))}
+        {(modulos.length === 0 ? aulas : aulasSemModulo).map((aula) => (
           <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(aula)}>
             <View style={styles.preview}>
               <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
-              <View style={styles.playBadge}>
-                <Ionicons name="play" size={48} color={colors.black} style={styles.play} />
-              </View>
+              <View style={styles.playBadge}><Ionicons name="play" size={48} color={colors.black} style={styles.play} /></View>
               {aula.assistida ? <Ionicons name="checkmark-circle" size={34} color={colors.green} style={styles.check} /> : null}
             </View>
             <View style={styles.info}>
               <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
               <Text style={styles.description} numberOfLines={2}>{aula.descricao}</Text>
-              {/* Sprint item 4: indica a posicao salva antes de reabrir esta aula. */}
-              {Number(aula.progresso_segundos) > 0 ? (
-                <Text style={styles.resumeLabel}>
-                  Continuar de {formatarPosicaoAula(aula.progresso_segundos)}
-                </Text>
-              ) : null}
+              {Number(aula.progresso_segundos) > 0 ? <Text style={styles.resumeLabel}>Continuar de {formatarPosicaoAula(aula.progresso_segundos)}</Text> : null}
             </View>
           </Pressable>
         ))}
-        {!carregando && aulas.length === 0 ? <Text style={globalStyles.message}>Nenhuma aula publicada neste curso.</Text> : null}
+        {!carregando && aulas.length === 0 && modulos.length === 0 ? <Text style={globalStyles.message}>Nenhuma aula publicada neste curso.</Text> : null}
       </View>
 
       <View style={styles.materials}>
@@ -157,6 +185,31 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 22
+  },
+  moduleCard: {
+    overflow: "hidden",
+    padding: 0
+  },
+  moduleHeader: {
+    minHeight: 76,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12
+  },
+  moduleImage: {
+    width: 72,
+    height: 58,
+    borderRadius: 6,
+    backgroundColor: "#dddddd"
+  },
+  moduleInfo: {
+    flex: 1
+  },
+  moduleLessons: {
+    gap: 14,
+    padding: 12,
+    paddingTop: 0
   },
   card: {
     shadowColor: colors.black,

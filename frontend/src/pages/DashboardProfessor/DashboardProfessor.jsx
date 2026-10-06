@@ -50,6 +50,10 @@ export default function DashboardProfessor({
     const [dashboard, setDashboard] = useState(null);
     const [cursos, setCursos] = useState([]);
     const [aulas, setAulas] = useState([]);
+    // Sprint item 6: mantém módulos do curso e o módulo aberto no painel do professor.
+    const [modulos, setModulos] = useState([]);
+    const [idModuloSelecionado, setIdModuloSelecionado] = useState(null);
+    const [destinosModulo, setDestinosModulo] = useState({});
     const [alunos, setAlunos] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
     const [relatorio, setRelatorio] = useState(null);
@@ -122,11 +126,13 @@ export default function DashboardProfessor({
         }
     }, [api, filtroCursos, lerResposta]);
 
-    const carregarAulas = useCallback(async (idCurso, status = filtroAulas) => {
+    const carregarAulas = useCallback(async (idCurso, status = filtroAulas, idModulo = null) => {
         setCarregando(true);
 
         try {
-            const resposta = await fetch(`${api}/professor/cursos/${idCurso}/aulas?status=${status}`, { credentials: "include" });
+            const params = new URLSearchParams({ status });
+            if (idModulo) params.set("id_modulo", idModulo);
+            const resposta = await fetch(`${api}/professor/cursos/${idCurso}/aulas?${params.toString()}`, { credentials: "include" });
             const dados = await lerResposta(resposta);
             setAulas(Array.isArray(dados) ? dados : []);
         } catch (erro) {
@@ -136,6 +142,17 @@ export default function DashboardProfessor({
             setCarregando(false);
         }
     }, [api, filtroAulas, lerResposta]);
+
+    const carregarModulos = useCallback(async (idCurso) => {
+        try {
+            const resposta = await fetch(`${api}/professor/cursos/${idCurso}/modulos`, { credentials: "include" });
+            const dados = await lerResposta(resposta);
+            setModulos(Array.isArray(dados) ? dados : []);
+        } catch (erro) {
+            console.error("Erro ao carregar módulos:", erro);
+            setModulos([]);
+        }
+    }, [api, lerResposta]);
 
     const carregarAlunos = useCallback(async (idCurso) => {
         setCarregando(true);
@@ -156,6 +173,7 @@ export default function DashboardProfessor({
 
     useEffect(() => {
         const matchAlunos = location.pathname.match(/\/DashboardProfessor\/cursos\/(\d+)\/alunos$/);
+        const matchModulo = location.pathname.match(/\/DashboardProfessor\/cursos\/(\d+)\/modulos\/(\d+)$/);
         const matchAulas = location.pathname.match(/\/DashboardProfessor\/cursos\/(\d+)\/aulas$/);
 
         if (matchAlunos) {
@@ -177,6 +195,7 @@ export default function DashboardProfessor({
 
         if (matchAulas) {
             setVisao("aulas");
+            setIdModuloSelecionado(null);
             const idCurso = Number(matchAulas[1]);
 
             if (cursoSelecionado?.id !== idCurso) {
@@ -192,9 +211,22 @@ export default function DashboardProfessor({
             return;
         }
 
+        if (matchModulo) {
+            setVisao("aulas");
+            setIdModuloSelecionado(Number(matchModulo[2]));
+            const idCurso = Number(matchModulo[1]);
+            if (cursoSelecionado?.id !== idCurso) {
+                const curso = cursos.find((item) => Number(item.id) === idCurso);
+                if (curso) setCursoSelecionado(curso);
+                else carregarCursos("todos");
+            }
+            return;
+        }
+
         if (location.pathname.endsWith("/cursos")) {
             setVisao("cursos");
             setCursoSelecionado(null);
+            setIdModuloSelecionado(null);
             return;
         }
 
@@ -224,6 +256,7 @@ export default function DashboardProfessor({
 
         setVisao("inicio");
         setCursoSelecionado(null);
+        setIdModuloSelecionado(null);
     }, [carregarCursos, cursos, cursoSelecionado, location.pathname]);
 
     useEffect(() => {
@@ -238,9 +271,10 @@ export default function DashboardProfessor({
 
     useEffect(() => {
         if (visao === "aulas" && cursoSelecionado) {
-            carregarAulas(cursoSelecionado.id, filtroAulas);
+            carregarModulos(cursoSelecionado.id);
+            carregarAulas(cursoSelecionado.id, filtroAulas, idModuloSelecionado);
         }
-    }, [carregarAulas, filtroAulas, visao, cursoSelecionado]);
+    }, [carregarAulas, carregarModulos, filtroAulas, visao, cursoSelecionado, idModuloSelecionado]);
 
     useEffect(() => {
         if (visao === "alunos" && cursoSelecionado) {
@@ -277,7 +311,7 @@ export default function DashboardProfessor({
                 const tarefas = [carregarDashboard()];
                 if (visao === "cursos") tarefas.push(carregarCursos(filtroCursos));
                 if (visao === "aulas" && cursoSelecionado) {
-                    tarefas.push(carregarAulas(cursoSelecionado.id, filtroAulas));
+                    tarefas.push(carregarAulas(cursoSelecionado.id, filtroAulas, idModuloSelecionado));
                 }
                 if (visao === "alunos" && cursoSelecionado) {
                     tarefas.push(carregarAlunos(cursoSelecionado.id));
@@ -305,6 +339,7 @@ export default function DashboardProfessor({
         carregarCursos,
         carregarDashboard,
         cursoSelecionado,
+        idModuloSelecionado,
         filtroAulas,
         filtroCursos,
         lerResposta,
@@ -362,7 +397,7 @@ export default function DashboardProfessor({
         dados.append("titulo", form.titulo);
         dados.append("descricao", form.descricao);
 
-        if (modal.tipo === "curso") {
+        if (modal.tipo === "curso" || modal.tipo === "modulo") {
             if (form.arquivo) {
                 dados.append("imagem", form.arquivo);
             }
@@ -373,6 +408,9 @@ export default function DashboardProfessor({
 
             if (form.thumb) {
                 dados.append("thumb", form.thumb);
+            }
+            if (!modal.item && idModuloSelecionado) {
+                dados.append("id_modulo", String(idModuloSelecionado));
             }
         }
 
@@ -386,6 +424,8 @@ export default function DashboardProfessor({
             const editando = Boolean(modal.item);
             const url = modal.tipo === "curso"
                 ? `${api}/professor/cursos${editando ? `/${modal.item.id}` : ""}`
+                : modal.tipo === "modulo"
+                    ? `${api}/professor/cursos/${cursoSelecionado.id}/modulos${editando ? `/${modal.item.id}` : ""}`
                 : editando
                     ? `${api}/professor/aulas/${modal.item.id}`
                     : `${api}/professor/cursos/${cursoSelecionado.id}/aulas`;
@@ -396,7 +436,7 @@ export default function DashboardProfessor({
                 body: montarFormData(form)
             });
 
-            await lerResposta(resposta);
+            const dados = await lerResposta(resposta);
             setModal(null);
             await carregarDashboard();
 
@@ -406,8 +446,14 @@ export default function DashboardProfessor({
                     setFiltroCursos(proximoFiltro);
                 }
                 await carregarCursos(proximoFiltro);
+            } else if (modal.tipo === "modulo") {
+                await carregarModulos(cursoSelecionado.id);
+                if (!editando && dados.id_modulo) {
+                    setIdModuloSelecionado(Number(dados.id_modulo));
+                    navigate(`/DashboardProfessor/cursos/${cursoSelecionado.id}/modulos/${dados.id_modulo}`);
+                }
             } else if (cursoSelecionado) {
-                await carregarAulas(cursoSelecionado.id, filtroAulas);
+                await carregarAulas(cursoSelecionado.id, filtroAulas, idModuloSelecionado);
             }
         } catch (erro) {
             console.error("Erro ao salvar:", erro);
@@ -471,9 +517,28 @@ export default function DashboardProfessor({
 
             await lerResposta(resposta);
             await carregarDashboard();
-            await carregarAulas(cursoSelecionado.id, filtroAulas);
+            await carregarAulas(cursoSelecionado.id, filtroAulas, idModuloSelecionado);
         } catch (erro) {
             console.error("Erro ao alterar status da aula:", erro);
+        }
+    }
+
+    async function moverAulaParaModulo(aula) {
+        const idModulo = Number(destinosModulo[aula.id]);
+        if (!idModulo) return;
+        try {
+            const resposta = await fetch(`${api}/professor/aulas/${aula.id}/modulo`, {
+                method: "PATCH",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id_modulo: idModulo })
+            });
+            await lerResposta(resposta);
+            await carregarAulas(cursoSelecionado.id, filtroAulas);
+            await carregarModulos(cursoSelecionado.id);
+            setDestinosModulo((atual) => ({ ...atual, [aula.id]: "" }));
+        } catch (erro) {
+            avisar({ tipo: "erro", descricao: erro.message });
         }
     }
 
@@ -486,7 +551,7 @@ export default function DashboardProfessor({
 
             await lerResposta(resposta);
             await carregarDashboard();
-            await carregarAulas(cursoSelecionado.id, filtroAulas);
+            await carregarAulas(cursoSelecionado.id, filtroAulas, idModuloSelecionado);
         } catch (erro) {
             console.error("Erro ao excluir aula:", erro);
         } finally {
@@ -524,7 +589,15 @@ export default function DashboardProfessor({
     function abrirAulas(curso) {
         setCursoSelecionado(curso);
         setFiltroAulas("todos");
+        setIdModuloSelecionado(null);
         navigate(`/DashboardProfessor/cursos/${curso.id}/aulas`);
+    }
+
+    function abrirModulo(modulo) {
+        if (!cursoSelecionado) return;
+        setIdModuloSelecionado(Number(modulo.id));
+        setFiltroAulas("todos");
+        navigate(`/DashboardProfessor/cursos/${cursoSelecionado.id}/modulos/${modulo.id}`);
     }
 
     function abrirAlunos(curso) {
@@ -535,6 +608,7 @@ export default function DashboardProfessor({
     const metricas = dashboard?.metricas || {};
     const recentes = dashboard?.recentes || [];
     const cursosRelatorio = relatorio?.cursos || [];
+    const moduloSelecionado = modulos.find((modulo) => Number(modulo.id) === Number(idModuloSelecionado));
     const valorSaqueNumero = Number(valorSaque);
     const saqueValido = Number.isFinite(valorSaqueNumero)
         && valorSaqueNumero > 0
@@ -637,34 +711,94 @@ export default function DashboardProfessor({
                                         <p className={css.textoApoio}>{cursoSelecionado.descricao}</p>
                                     </div>
                                 </div>
-                                <button className={css.botaoPrimario} onClick={() => setModal({ tipo: "aula", item: null })}>
-                                    <FaPlus /> Adicionar aula
-                                </button>
-                                <div className={css.filtros}>
-                                    <span>Aulas:</span>
-                                    <button className={filtroAulas === "todos" ? css.filtroAtivo : ""} onClick={() => setFiltroAulas("todos")}>Todas</button>
-                                    <button className={filtroAulas === "publicadas" ? css.filtroAtivo : ""} onClick={() => setFiltroAulas("publicadas")}>Publicadas</button>
-                                    <button className={filtroAulas === "privadas" ? css.filtroAtivo : ""} onClick={() => setFiltroAulas("privadas")}>Privadas</button>
-                                </div>
                             </div>
 
-                            {carregando && <p className={css.textoApoio}>Carregando aulas...</p>}
-                            {!carregando && aulas.length === 0 && <EstadoVazioProfessor texto="Nenhuma aula criada para este curso." />}
+                            {!idModuloSelecionado && (
+                                <>
+                                    <div className={css.barraTitulo}>
+                                        <h2>Módulos do curso</h2>
+                                        <button className={css.botaoPrimario} onClick={() => setModal({ tipo: "modulo", item: null })}>
+                                            <FaPlus /> Criar módulo
+                                        </button>
+                                    </div>
+                                    {carregando && <p className={css.textoApoio}>Carregando módulos...</p>}
+                                    {!carregando && modulos.length === 0 && <EstadoVazioProfessor texto="Este curso ainda não tem módulos. Crie o primeiro para organizar as aulas." />}
+                                    <div className={css.gradeModulos}>
+                                        {modulos.map((modulo) => (
+                                            <article className={css.cardModuloProfessor} key={modulo.id}>
+                                                <img src={modulo.imagem ? resolverUrlMidia(api, modulo.imagem) : PLACEHOLDER_CURSO} alt="" />
+                                                <div className={css.infoModuloProfessor}>
+                                                    <h3>{modulo.titulo}</h3>
+                                                    <p>{modulo.descricao || "Sem descrição"}</p>
+                                                    <small>{modulo.total_aulas || 0} aulas</small>
+                                                    <div className={css.acoesModuloProfessor}>
+                                                        <button className={css.botaoPrimario} onClick={() => abrirModulo(modulo)}>Entrar no módulo</button>
+                                                        <button className={css.botaoSecundario} onClick={() => setModal({ tipo: "modulo", item: modulo })}>Editar</button>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        ))}
+                                    </div>
+                                    {aulas.some((aula) => !aula.id_modulo) && (
+                                        <div className={css.aulasSemModulo}>
+                                            <h3>Aulas antigas sem módulo</h3>
+                                            <div className={css.gridAulas}>
+                                                {aulas.filter((aula) => !aula.id_modulo).map((aula) => (
+                                                    <div className={css.aulaSemModuloItem} key={aula.id}>
+                                                        <ItemCardProfessor tipo="aula" item={aula} api={api} usuario={usuario}
+                                                            onEditar={() => setModal({ tipo: "aula", item: aula })}
+                                                            onExcluir={() => setConfirmacao({ tipo: "aula", item: aula })}
+                                                            onStatus={(status) => alterarStatusAula(aula, status)} />
+                                                        {modulos.length > 0 && (
+                                                            <div className={css.moverAulaModulo}>
+                                                                <select value={destinosModulo[aula.id] || ""} onChange={(evento) => setDestinosModulo((atual) => ({ ...atual, [aula.id]: evento.target.value }))}>
+                                                                    <option value="">Escolher módulo</option>
+                                                                    {modulos.map((modulo) => <option key={modulo.id} value={modulo.id}>{modulo.titulo}</option>)}
+                                                                </select>
+                                                                <button className={css.botaoSecundario} onClick={() => moverAulaParaModulo(aula)}>Mover aula</button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
 
-                            <div className={css.gridAulas}>
-                                {aulas.map((aula) => (
-                                    <ItemCardProfessor
-                                        key={aula.id}
-                                        tipo="aula"
-                                        item={aula}
-                                        api={api}
-                                        usuario={usuario}
-                                        onEditar={() => setModal({ tipo: "aula", item: aula })}
-                                        onExcluir={() => setConfirmacao({ tipo: "aula", item: aula })}
-                                        onStatus={(status) => alterarStatusAula(aula, status)}
-                                    />
-                                ))}
-                            </div>
+                            {idModuloSelecionado && moduloSelecionado && (
+                                <>
+                                    <div className={css.barraTitulo}>
+                                        <div className={css.resumoModuloProfessor}>
+                                            <button className={css.linkVoltar} onClick={() => navigate(`/DashboardProfessor/cursos/${cursoSelecionado.id}/aulas`)}>Voltar aos módulos</button>
+                                            <h2>{moduloSelecionado.titulo}</h2>
+                                            <p className={css.textoApoio}>{moduloSelecionado.descricao}</p>
+                                        </div>
+                                        <button className={css.botaoPrimario} onClick={() => setModal({ tipo: "aula", item: null })}>
+                                            <FaPlus /> Adicionar aula
+                                        </button>
+                                        <div className={css.filtros}>
+                                            <span>Aulas:</span>
+                                            <button className={filtroAulas === "todos" ? css.filtroAtivo : ""} onClick={() => setFiltroAulas("todos")}>Todas</button>
+                                            <button className={filtroAulas === "publicadas" ? css.filtroAtivo : ""} onClick={() => setFiltroAulas("publicadas")}>Publicadas</button>
+                                            <button className={filtroAulas === "privadas" ? css.filtroAtivo : ""} onClick={() => setFiltroAulas("privadas")}>Privadas</button>
+                                        </div>
+                                    </div>
+                                    {carregando && <p className={css.textoApoio}>Carregando aulas...</p>}
+                                    {!carregando && aulas.length === 0 && <EstadoVazioProfessor texto="Nenhuma aula neste módulo ainda." />}
+                                    <div className={css.gridAulas}>
+                                        {aulas.map((aula) => (
+                                            <ItemCardProfessor key={aula.id} tipo="aula" item={aula} api={api} usuario={usuario}
+                                                onEditar={() => setModal({ tipo: "aula", item: aula })}
+                                                onExcluir={() => setConfirmacao({ tipo: "aula", item: aula })}
+                                                onStatus={(status) => alterarStatusAula(aula, status)} />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            {idModuloSelecionado && !moduloSelecionado && !carregando && (
+                                <EstadoVazioProfessor texto="Módulo não encontrado neste curso." />
+                            )}
                         </section>
                     )}
 

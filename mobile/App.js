@@ -14,6 +14,7 @@ import ChatScreen from "./src/screens/ChatScreen";
 import CursosScreen from "./src/screens/CursosScreen";
 import EditarCursoScreen from "./src/screens/EditarCursoScreen";
 import EditarPerfilScreen from "./src/screens/EditarPerfilScreen";
+import ModulosProfessorScreen from "./src/screens/ModulosProfessorScreen";
 import FinanceiroScreen from "./src/screens/FinanceiroScreen";
 import InicioScreen from "./src/screens/InicioScreen";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -39,6 +40,8 @@ export default function App() {
   const [detalheAulaAluno, setDetalheAulaAluno] = useState(null);
   const [tab, setTab] = useState("home");
   const [editingCourse, setEditingCourse] = useState(null);
+  // Sprint item 6: abre o gerenciamento de módulos e aulas para o curso escolhido.
+  const [managingCourse, setManagingCourse] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -539,6 +542,15 @@ export default function App() {
     );
   }
 
+  if (managingCourse) {
+    return (
+      <SafeAreaView style={globalStyles.app}>
+        <StatusBar style="dark" />
+        <ModulosProfessorScreen curso={managingCourse} token={token} onBack={() => setManagingCourse(null)} />
+      </SafeAreaView>
+    );
+  }
+
   if (editingProfile) {
     return (
       <SafeAreaView style={globalStyles.app}>
@@ -572,6 +584,7 @@ export default function App() {
             onRefresh={carregarDados}
             onEdit={setEditingCourse}
             onDelete={excluirCurso}
+            onManage={setManagingCourse}
             tipoUsuario={tipoUsuario}
           />
         )}

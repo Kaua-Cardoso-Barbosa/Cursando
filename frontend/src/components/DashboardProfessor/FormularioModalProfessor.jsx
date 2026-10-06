@@ -18,10 +18,17 @@ const aulaVazia = {
     thumb: null
 };
 
+const moduloVazio = {
+    titulo: "",
+    descricao: "",
+    arquivo: null,
+    thumb: null
+};
+
 export default function FormularioModalProfessor({ tipo, item, salvando, onFechar, onSalvar }) {
     const editando = Boolean(item);
     const [form, setForm] = useState({
-        ...(tipo === "curso" ? cursoVazio : aulaVazia),
+        ...(tipo === "curso" ? cursoVazio : tipo === "modulo" ? moduloVazio : aulaVazia),
         titulo: item?.titulo || "",
         descricao: item?.descricao || "",
         thumb: item?.thumb || null
@@ -32,10 +39,11 @@ export default function FormularioModalProfessor({ tipo, item, salvando, onFecha
         onSalvar(form);
     }
 
-    const titulo = `${editando ? "Editar" : "Adicionar"} ${tipo === "curso" ? "Curso" : "Aula"}`;
-    const arquivoLabel = tipo === "curso" ? "Enviar imagem" : "Enviar vídeo";
+    // Sprint item 6: permite selecionar a capa do módulo do curso.
+    const titulo = `${editando ? "Editar" : "Adicionar"} ${tipo === "curso" ? "Curso" : tipo === "modulo" ? "Módulo" : "Aula"}`;
+    const arquivoLabel = tipo === "aula" ? "Enviar vídeo" : tipo === "modulo" ? "Enviar imagem do módulo" : "Enviar imagem";
     const thumbLabel = "Enviar thumb";
-    const accept = tipo === "curso" ? "image/png,image/jpeg,image/webp" : "video/mp4,video/webm,video/ogg,video/quicktime";
+    const accept = tipo === "aula" ? "video/mp4,video/webm,video/ogg,video/quicktime" : "image/png,image/jpeg,image/webp";
     const thumbAccept = "image/png,image/jpeg,image/webp";
 
     return (

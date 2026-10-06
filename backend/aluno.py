@@ -509,6 +509,9 @@ def detalhe_curso_aluno(id_curso):
         return negado
 
     id_aluno = get_jwt_identity()
+    # Sprint item 6: prepara a coluna de associacao antes de montar a previa publica dos modulos.
+    from sprint import garantir_sprint_schema
+    garantir_sprint_schema()
     con = get_db()
     cursor = con.cursor()
 
@@ -535,7 +538,30 @@ def detalhe_curso_aluno(id_curso):
 
         cursor.execute(
             """
-            SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS,
+            SELECT ID_MODULO, TITULO, DESCRICAO, IMAGEM_URL, ORDEM
+            FROM MODULOS_CURSO
+            WHERE ID_CURSO = ?
+            ORDER BY ORDEM, ID_MODULO
+            """,
+            (id_curso,),
+        )
+        modulos = [
+            {
+                "id": row[0],
+                "id_curso": id_curso,
+                "titulo": row[1],
+                "descricao": de_blob_texto(row[2]),
+                "imagem": row[3],
+                "ordem": row[4] or 0,
+                "aulas": [],
+            }
+            for row in cursor.fetchall()
+        ]
+        modulos_por_id = {int(modulo["id"]): modulo for modulo in modulos}
+
+        cursor.execute(
+            """
+            SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS, V.ID_MODULO,
                    CASE WHEN PA.ID_VIDEO IS NULL THEN 0 ELSE 1 END,
                    COALESCE(PR.POSICAO_SEGUNDOS, 0)
             FROM VIDEOS V
@@ -549,14 +575,21 @@ def detalhe_curso_aluno(id_curso):
         aulas = []
         for aula_row in cursor.fetchall():
             aula = aula_para_dict(aula_row[:6])
-            aula["assistida"] = bool(aula_row[6])
-            aula["progresso_segundos"] = float(aula_row[7] or 0)
+            aula["id_modulo"] = aula_row[6]
+            aula["assistida"] = bool(aula_row[7])
+            aula["progresso_segundos"] = float(aula_row[8] or 0)
             if not curso["matriculado"]:
                 aula["video"] = ""
                 aula["progresso_segundos"] = 0
             aulas.append(aula)
+            modulo = modulos_por_id.get(int(aula["id_modulo"])) if aula["id_modulo"] is not None else None
+            if modulo:
+                modulo["aulas"].append(aula)
 
-        return jsonify({"curso": curso, "aulas": aulas})
+        for modulo in modulos:
+            modulo["total_aulas"] = len(modulo["aulas"])
+
+        return jsonify({"curso": curso, "modulos": modulos, "aulas": aulas})
     except Exception as erro:
         return resposta(f"Erro ao carregar curso: {erro}", 500)
     finally:

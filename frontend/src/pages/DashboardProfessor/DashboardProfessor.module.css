@@ -240,6 +240,107 @@
     gap: 38px 24px;
 }
 
+/* Sprint item 6: apresenta módulos com capa e acesso ao gerenciamento das aulas. */
+.gradeModulos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.cardModuloProfessor {
+    overflow: hidden;
+    border: 1.5px solid #cbd8d1;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.cardModuloProfessor > img {
+    display: block;
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+    background: #eef3ef;
+}
+
+.infoModuloProfessor {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+}
+
+.infoModuloProfessor h3,
+.aulasSemModulo h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.infoModuloProfessor p,
+.resumoModuloProfessor p {
+    margin: 0;
+    color: #4b4b4b;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.infoModuloProfessor small {
+    color: #02693e;
+    font-weight: 600;
+}
+
+.acoesModuloProfessor {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.acoesModuloProfessor button {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+.resumoModuloProfessor {
+    display: grid;
+    gap: 8px;
+}
+
+.aulasSemModulo {
+    margin-top: 34px;
+}
+
+.aulasSemModulo h3 {
+    margin-bottom: 16px;
+}
+
+.aulaSemModuloItem {
+    min-width: 0;
+    display: grid;
+    gap: 9px;
+}
+
+.moverAulaModulo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.moverAulaModulo select {
+    min-height: 38px;
+    flex: 1 1 170px;
+    border: 1px solid #777777;
+    border-radius: 6px;
+    padding: 7px 10px;
+    background: #ffffff;
+    color: #111111;
+}
+
+.moverAulaModulo button {
+    min-height: 38px;
+    padding: 7px 12px;
+}
+
 .cardCurso,
 .cardAula {
     border: 1.5px solid #111111;

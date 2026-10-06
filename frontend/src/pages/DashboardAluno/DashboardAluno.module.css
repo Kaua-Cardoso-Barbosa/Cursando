@@ -703,6 +703,94 @@
     gap: 12px;
 }
 
+/* Sprint item 6: permite ao aluno abrir um módulo e conferir suas aulas antes da inscrição. */
+.gradeModulosAluno {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+}
+
+.cardModuloAluno {
+    padding: 0;
+    overflow: hidden;
+    border: 1.5px solid #cbd8d1;
+    border-radius: 9px;
+    background: #ffffff;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cardModuloAluno:hover,
+.cardModuloAluno:focus-visible {
+    border-color: #02693e;
+    box-shadow: 0 5px 15px rgba(2, 105, 62, 0.12);
+}
+
+.cardModuloAluno > img {
+    display: block;
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    background: #e9f0ec;
+}
+
+.infoCardModuloAluno {
+    display: grid;
+    gap: 7px;
+    padding: 14px;
+}
+
+.infoCardModuloAluno strong {
+    color: #111111;
+    font-size: 1.05rem;
+}
+
+.infoCardModuloAluno small,
+.infoCardModuloAluno em {
+    color: #02693e;
+    font-size: 0.9rem;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.infoCardModuloAluno > span {
+    color: #555555;
+    line-height: 1.4;
+}
+
+.detalheModuloAluno {
+    display: grid;
+    gap: 12px;
+}
+
+.detalheModuloAluno h3 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.detalheModuloAluno h4 {
+    margin: 8px 0 0;
+    font-size: 1.1rem;
+}
+
+.detalheModuloAluno p {
+    color: #4b4b4b;
+    line-height: 1.45;
+}
+
+.capaModuloAluno {
+    width: min(100%, 640px);
+    max-height: 300px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.avisoPreviewModulo {
+    color: #02693e !important;
+    font-weight: 700;
+}
+
 .cardMaterial {
     border: 1.5px solid #666666;
     border-radius: 8px;

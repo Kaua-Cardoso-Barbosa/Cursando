@@ -616,6 +616,9 @@ def listar_aulas_professor(id_curso):
     if negado:
         return negado
 
+    from sprint import garantir_sprint_schema
+    garantir_sprint_schema()
+
     filtro = request.args.get("status", "todos")
     status = AULA_STATUS_FILTRO.get(filtro, None)
     parametros = [id_curso, get_jwt_identity()]
@@ -625,22 +628,37 @@ def listar_aulas_professor(id_curso):
         filtro_status = "AND V.STATUS = ?"
         parametros.append(status)
 
+    id_modulo_param = request.args.get("id_modulo")
+    filtro_modulo = ""
+    if id_modulo_param is not None:
+        try:
+            id_modulo = int(id_modulo_param)
+        except (TypeError, ValueError):
+            return resposta("Modulo invalido.", 400)
+        filtro_modulo = "AND V.ID_MODULO = ?"
+        parametros.append(id_modulo)
+
     con = get_db()
     cursor = con.cursor()
 
     try:
         cursor.execute(
             f"""
-            SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS
+            SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS, V.ID_MODULO
             FROM VIDEOS V
             JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
-            WHERE V.ID_CURSO = ? AND PC.ID_USUARIO = ? AND V.EXCLUIDO = 0 AND C.EXCLUIDO = 0 {filtro_status}
+            WHERE V.ID_CURSO = ? AND PC.ID_USUARIO = ? AND V.EXCLUIDO = 0 AND C.EXCLUIDO = 0 {filtro_status} {filtro_modulo}
             ORDER BY V.DATA_UPLOAD DESC
             """,
             tuple(parametros),
         )
-        return jsonify([aula_para_dict(row) for row in cursor.fetchall()])
+        aulas = []
+        for row in cursor.fetchall():
+            aula = aula_para_dict(row[:6])
+            aula["id_modulo"] = row[6]
+            aulas.append(aula)
+        return jsonify(aulas)
     except Exception as erro:
         if banco_nao_preparado(erro):
             return jsonify([])
@@ -709,11 +727,19 @@ def criar_aula_professor(id_curso):
     if negado:
         return negado
 
+    # Sprint item 6: valida e grava a aula somente no módulo escolhido pelo instrutor.
+    from sprint import garantir_sprint_schema
+    garantir_sprint_schema()
+
     titulo = (request.form.get("titulo") or "").strip()
     descricao = (request.form.get("descricao") or "").strip()
+    id_modulo = request.form.get("id_modulo", type=int)
 
     if not titulo or not descricao:
         return resposta("Título e descrição são obrigatórios.", 400)
+
+    if not id_modulo:
+        return resposta("Selecione um modulo para esta aula.", 400)
 
     con = get_db()
     cursor = con.cursor()
@@ -724,9 +750,10 @@ def criar_aula_professor(id_curso):
             SELECT 1
             FROM CURSOS C
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
-            WHERE C.ID_CURSO = ? AND PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
+            JOIN MODULOS_CURSO M ON M.ID_CURSO = C.ID_CURSO
+            WHERE C.ID_CURSO = ? AND PC.ID_USUARIO = ? AND C.EXCLUIDO = 0 AND M.ID_MODULO = ?
             """,
-            (id_curso, get_jwt_identity()),
+            (id_curso, get_jwt_identity(), id_modulo),
         )
 
         if not cursor.fetchone():
@@ -757,12 +784,12 @@ def criar_aula_professor(id_curso):
         cursor.execute(
             """
             INSERT INTO VIDEOS (
-                ID_VIDEO, ID_CURSO, ID_PUBLICO, TITULO, TITULO_SLUG, DESCRICAO,
+                ID_VIDEO, ID_CURSO, ID_MODULO, ID_PUBLICO, TITULO, TITULO_SLUG, DESCRICAO,
                 POSICAO_PLAYLIST, DURACAO, DATA_UPLOAD, VIDEO_URL, STATUS, EXCLUIDO, ATUALIZADO_EM
             )
-            VALUES (?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP, ?, 0, 0, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP, ?, 0, 0, CURRENT_TIMESTAMP)
             """,
-            (id_aula, id_curso, uuid4().hex, titulo, criar_slug(titulo), para_blob_texto(descricao), video_url),
+            (id_aula, id_curso, id_modulo, uuid4().hex, titulo, criar_slug(titulo), para_blob_texto(descricao), video_url),
         )
         con.commit()
         return resposta("Aula cadastrada como privada.", 201, "sucesso", id_aula=id_aula, thumb=thumb_url)
@@ -881,6 +908,58 @@ def alterar_status_aula(id_aula):
     except Exception as erro:
         con.rollback()
         return resposta(f"Erro ao alterar status da aula: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/aulas/<int:id_aula>/modulo", methods=["PATCH"])
+@jwt_required()
+def mover_aula_para_modulo(id_aula):
+    negado = exigir_professor()
+    if negado:
+        return negado
+
+    from sprint import garantir_sprint_schema
+    garantir_sprint_schema()
+    try:
+        id_modulo = int((request.get_json() or {}).get("id_modulo"))
+    except (TypeError, ValueError):
+        return resposta("Selecione um modulo valido.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT V.ID_CURSO
+            FROM VIDEOS V
+            JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE V.ID_VIDEO = ? AND V.EXCLUIDO = 0 AND C.EXCLUIDO = 0
+              AND PC.ID_USUARIO = ?
+            """,
+            (id_aula, get_jwt_identity()),
+        )
+        curso = cursor.fetchone()
+        if not curso:
+            return resposta("Aula nao encontrada.", 404)
+
+        cursor.execute(
+            "SELECT 1 FROM MODULOS_CURSO WHERE ID_MODULO = ? AND ID_CURSO = ?",
+            (id_modulo, curso[0]),
+        )
+        if not cursor.fetchone():
+            return resposta("Modulo nao pertence a este curso.", 400)
+
+        cursor.execute("UPDATE VIDEOS SET ID_MODULO = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_VIDEO = ?", (id_modulo, id_aula))
+        con.commit()
+        # Sprint item 6: permite incluir aulas antigas em um dos módulos criados pelo instrutor.
+        registrar_log("mover_aula_modulo", f"Aula {id_aula} associada ao modulo {id_modulo}", "VIDEOS")
+        return resposta("Aula movida para o modulo.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao mover aula: {erro}", 500)
     finally:
         cursor.close()
         con.close()

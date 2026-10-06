@@ -12,7 +12,7 @@ from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required, verify_j
 from app import app
 from banco import get_db
 from log_banco import garantir_log_schema, get_log_db
-from professor import de_blob_texto, para_blob_texto
+from professor import de_blob_texto, para_blob_texto, salvar_upload
 from servicos.arkhe import ArkheError, criar_cobranca_pix, consultar_cobranca_pix, solicitar_saque_conta
 
 
@@ -312,6 +312,8 @@ def garantir_sprint_schema():
         _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "RESPOSTA_ARKHE", "RESPOSTA_ARKHE BLOB SUB_TYPE TEXT")
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "CATEGORIA", "CATEGORIA VARCHAR(80)")
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_USUARIO", "ID_USUARIO INTEGER")
+        # Sprint item 6: associa cada videoaula ao modulo do curso.
+        _garantir_coluna(cursor, "VIDEOS", "ID_MODULO", "ID_MODULO INTEGER")
         con.commit()
         garantir_log_schema()
         _schema_pronto = True
@@ -615,10 +617,23 @@ def modulos_professor(id_curso):
     cursor = con.cursor()
 
     try:
+        cursor.execute(
+            """
+            SELECT 1
+            FROM CURSOS C
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE C.ID_CURSO = ? AND PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
+            """,
+            (id_curso, get_jwt_identity()),
+        )
+        if not cursor.fetchone():
+            return resposta("Curso nao encontrado.", 404)
+
         if request.method == "GET":
             cursor.execute(
                 """
-                SELECT M.ID_MODULO, M.ID_CURSO, M.TITULO, M.DESCRICAO, M.IMAGEM_URL, M.ORDEM
+                SELECT M.ID_MODULO, M.ID_CURSO, M.TITULO, M.DESCRICAO, M.IMAGEM_URL, M.ORDEM,
+                       (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_MODULO = M.ID_MODULO AND V.EXCLUIDO = 0)
                 FROM MODULOS_CURSO M
                 JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = M.ID_CURSO
                 WHERE M.ID_CURSO = ? AND PC.ID_USUARIO = ?
@@ -634,26 +649,35 @@ def modulos_professor(id_curso):
                     "descricao": de_blob_texto(row[3]),
                     "imagem": row[4],
                     "ordem": row[5] or 0,
+                    "total_aulas": row[6] or 0,
                 }
                 for row in cursor.fetchall()
             ])
 
-        dados = request.get_json() or {}
+        dados = request.form if request.form else (request.get_json() or {})
         titulo = (dados.get("titulo") or "").strip()
         descricao = (dados.get("descricao") or "").strip()
-        ordem = int(dados.get("ordem") or 0)
+        try:
+            ordem = int(dados.get("ordem") or 0)
+        except (TypeError, ValueError):
+            return resposta("Ordem do modulo invalida.", 400)
 
         if not titulo:
             return resposta("Titulo do modulo e obrigatorio.", 400)
+
+        try:
+            imagem = salvar_upload(request.files.get("imagem"), "modulos", {"jpg", "jpeg", "png", "webp"})
+        except ValueError as erro:
+            return resposta(str(erro), 400)
 
         id_modulo = proximo_id(cursor, "MODULOS_CURSO", "ID_MODULO")
         # Sprint item 6: cadastra modulos para organizar aulas dentro do curso.
         cursor.execute(
             """
-            INSERT INTO MODULOS_CURSO (ID_MODULO, ID_CURSO, TITULO, DESCRICAO, ORDEM)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO MODULOS_CURSO (ID_MODULO, ID_CURSO, TITULO, DESCRICAO, IMAGEM_URL, ORDEM)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (id_modulo, id_curso, titulo, para_blob_texto(descricao), ordem),
+            (id_modulo, id_curso, titulo, para_blob_texto(descricao), imagem["url"] if imagem else None, ordem),
         )
         con.commit()
         registrar_log("criar_modulo", f"Modulo {titulo} criado no curso {id_curso}", "MODULOS_CURSO")
@@ -1875,6 +1899,60 @@ def certificado_aluno(id_curso):
     except Exception as erro:
         con.rollback()
         return resposta(f"Erro ao gerar certificado: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/cursos/<int:id_curso>/modulos/<int:id_modulo>", methods=["PUT"])
+@jwt_required()
+def editar_modulo_professor(id_curso, id_modulo):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    dados = request.form if request.form else (request.get_json() or {})
+    titulo = (dados.get("titulo") or "").strip()
+    descricao = (dados.get("descricao") or "").strip()
+    try:
+        ordem = int(dados.get("ordem") or 0)
+        imagem = salvar_upload(request.files.get("imagem"), "modulos", {"jpg", "jpeg", "png", "webp"})
+    except (TypeError, ValueError) as erro:
+        return resposta(str(erro) or "Ordem do modulo invalida.", 400)
+
+    if not titulo:
+        return resposta("Titulo do modulo e obrigatorio.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        campos = "TITULO = ?, DESCRICAO = ?, ORDEM = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP"
+        parametros = [titulo, para_blob_texto(descricao), ordem]
+        if imagem:
+            campos += ", IMAGEM_URL = ?"
+            parametros.append(imagem["url"])
+        parametros.extend([id_modulo, id_curso, get_jwt_identity()])
+        cursor.execute(
+            f"""
+            UPDATE MODULOS_CURSO M SET {campos}
+            WHERE M.ID_MODULO = ? AND M.ID_CURSO = ?
+              AND EXISTS (
+                  SELECT 1 FROM PROFESSORES_CURSO PC
+                  WHERE PC.ID_CURSO = M.ID_CURSO AND PC.ID_USUARIO = ?
+              )
+            """,
+            tuple(parametros),
+        )
+        if cursor.rowcount == 0:
+            return resposta("Modulo nao encontrado.", 404)
+        con.commit()
+        # Sprint item 6: permite atualizar dados e imagem de um modulo.
+        registrar_log("editar_modulo", f"Modulo {id_modulo} atualizado no curso {id_curso}", "MODULOS_CURSO")
+        return resposta("Modulo atualizado com sucesso.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao atualizar modulo: {erro}", 500)
     finally:
         cursor.close()
         con.close()

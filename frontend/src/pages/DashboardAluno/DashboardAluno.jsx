@@ -141,7 +141,7 @@ function AulaCard({ aula, api, onAbrir }) {
 
     return (
         <article className={css.cardAula}>
-            <button className={css.areaCardClicavel} onClick={() => onAbrir?.(aula)}>
+            <button className={css.areaCardClicavel} onClick={() => onAbrir?.(aula)} disabled={!onAbrir}>
                 <div className={css.previewAula}>
                     <img src={imagem} alt={aula.titulo} />
                     <span className={css.playBadge}><FaPlay /></span>
@@ -190,6 +190,8 @@ export default function DashboardAluno({
     const [protecaoAtiva, setProtecaoAtiva] = useState(false);
     const [carregando, setCarregando] = useState(false);
     const [baixandoCertificado, setBaixandoCertificado] = useState(false);
+    // Sprint item 6: abre a prévia de aulas de um módulo escolhido pelo aluno.
+    const [idModuloAberto, setIdModuloAberto] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
     const [abaCurso, setAbaCurso] = useState("modulos");
@@ -278,6 +280,8 @@ export default function DashboardAluno({
             const [resposta, respostaMateriais] = await Promise.all(requisicoes);
             const dadosCurso = await lerResposta(resposta);
             setDetalheCurso(dadosCurso);
+            setIdModuloAberto(null);
+            setAbaCurso("modulos");
             setMateriaisCurso(await lerResposta(respostaMateriais));
 
             if (dadosCurso?.curso?.matriculado) {
@@ -618,6 +622,9 @@ export default function DashboardAluno({
     const recentes = dashboard?.recentes || [];
     const cursoDetalhe = detalheCurso?.curso;
     const aulasDetalhe = detalheCurso?.aulas || [];
+    const modulosDetalhe = detalheCurso?.modulos || [];
+    const moduloAberto = modulosDetalhe.find((modulo) => Number(modulo.id) === Number(idModuloAberto));
+    const aulasSemModulo = aulasDetalhe.filter((aula) => !aula.id_modulo);
     const videoAula = aulaAtual?.aula;
     const proximas = aulaAtual?.proximas || [];
     const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
@@ -761,9 +768,41 @@ export default function DashboardAluno({
 
                             {abaCurso === "modulos" && (
                                 <div className={css.conteudoCurso}>
-                                    <h2>Módulos</h2>
-
-                                    <EstadoVazio texto="Nenhum módulo disponível neste curso." />
+                                    <h2>Módulos do curso</h2>
+                                    {moduloAberto ? (
+                                        <section className={css.detalheModuloAluno}>
+                                            <button className={css.linkVoltar} onClick={() => setIdModuloAberto(null)}>Voltar aos módulos</button>
+                                            {moduloAberto.imagem && <img className={css.capaModuloAluno} src={resolverUrlMidia(api, moduloAberto.imagem)} alt="" />}
+                                            <h3>{moduloAberto.titulo}</h3>
+                                            {moduloAberto.descricao && <p>{moduloAberto.descricao}</p>}
+                                            <h4>Aulas deste módulo</h4>
+                                            {moduloAberto.aulas?.length === 0 && <EstadoVazio texto="Nenhuma aula publicada neste módulo." />}
+                                            <div className={css.gridAulas}>
+                                                {(moduloAberto.aulas || []).map((aula) => (
+                                                    <AulaCard key={aula.id} aula={aula} api={api}
+                                                        onAbrir={cursoDetalhe.matriculado ? () => navigate(`/DashboardAluno/aulas/${aula.id}`) : undefined} />
+                                                ))}
+                                            </div>
+                                            {!cursoDetalhe.matriculado && <p className={css.avisoPreviewModulo}>Inscreva-se para assistir às aulas.</p>}
+                                        </section>
+                                    ) : (
+                                        <>
+                                            {modulosDetalhe.length === 0 && <EstadoVazio texto="Nenhum módulo disponível neste curso." />}
+                                            <div className={css.gradeModulosAluno}>
+                                                {modulosDetalhe.map((modulo) => (
+                                                    <button key={modulo.id} className={css.cardModuloAluno} onClick={() => setIdModuloAberto(Number(modulo.id))}>
+                                                        <img src={modulo.imagem ? resolverUrlMidia(api, modulo.imagem) : PLACEHOLDER_CURSO} alt="" />
+                                                        <span className={css.infoCardModuloAluno}>
+                                                            <strong>{modulo.titulo}</strong>
+                                                            <small>{modulo.total_aulas || modulo.aulas?.length || 0} aulas</small>
+                                                            {modulo.descricao && <span>{modulo.descricao}</span>}
+                                                            <em>Ver aulas do módulo</em>
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
 
@@ -819,19 +858,29 @@ export default function DashboardAluno({
                                     )}
                                 </>
                             )}
-                            <h2>{cursoDetalhe.matriculado ? "Videoaulas do curso" : "Videoaulas disponíveis após a inscrição"}</h2>
-
-                            {aulasDetalhe.length === 0 && <EstadoVazio texto="Nenhuma aula publicada neste curso." />}
-                            <div className={css.gridAulas}>
-                                {aulasDetalhe.map((aula) => (
-                                    <AulaCard
-                                        key={aula.id}
-                                        aula={aula}
-                                        api={api}
-                                        onAbrir={cursoDetalhe.matriculado ? () => navigate(`/DashboardAluno/aulas/${aula.id}`) : undefined}
-                                    />
-                                ))}
-                            </div>
+                            {modulosDetalhe.length === 0 && (
+                                <>
+                                    <h2>{cursoDetalhe.matriculado ? "Videoaulas do curso" : "Videoaulas disponíveis após a inscrição"}</h2>
+                                    {aulasDetalhe.length === 0 && <EstadoVazio texto="Nenhuma aula publicada neste curso." />}
+                                    <div className={css.gridAulas}>
+                                        {aulasDetalhe.map((aula) => (
+                                            <AulaCard key={aula.id} aula={aula} api={api}
+                                                onAbrir={cursoDetalhe.matriculado ? () => navigate(`/DashboardAluno/aulas/${aula.id}`) : undefined} />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            {modulosDetalhe.length > 0 && aulasSemModulo.length > 0 && (
+                                <section className={css.conteudoCurso}>
+                                    <h2>Aulas sem módulo</h2>
+                                    <div className={css.gridAulas}>
+                                        {aulasSemModulo.map((aula) => (
+                                            <AulaCard key={aula.id} aula={aula} api={api}
+                                                onAbrir={cursoDetalhe.matriculado ? () => navigate(`/DashboardAluno/aulas/${aula.id}`) : undefined} />
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
                         </section>
                     )}
 

@@ -9,7 +9,7 @@ const placeholders = [
   "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900"
 ];
 
-export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, tipoUsuario = 1 }) {
+export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, tipoUsuario = 1 }) {
   // Alunos abrem detalhes e acompanham progresso; professores recebem ações de gestão.
   const aluno = Number(tipoUsuario) === 2;
 
@@ -55,6 +55,11 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
                   </View>
                 ) : (
                   <View style={styles.actions}>
+                    {onManage ? (
+                      <Pressable style={styles.iconButton} onPress={() => onManage(curso)} hitSlop={10} accessibilityLabel="Gerenciar módulos">
+                        <Ionicons name="folder-open-outline" size={22} color={colors.darkGreen} />
+                      </Pressable>
+                    ) : null}
                     <Pressable style={styles.iconButton} onPress={() => onEdit(curso)} hitSlop={10}>
                       <Ionicons name="pencil-outline" size={22} color={colors.black} />
                     </Pressable>
