@@ -29,9 +29,15 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
         method: "POST",
         body: JSON.stringify({})
       }, token, PAYMENT_REQUEST_TIMEOUT_MS, false);
+
+      // Sprint item 10: evita exibir uma tela de pagamento vazia se a resposta vier sem o Pix.
+      if (typeof dados?.codigo_pagamento !== "string" || !dados.codigo_pagamento.trim()) {
+        throw new Error("O servidor não retornou o código Pix. Tente novamente em instantes.");
+      }
+
       setPagamento(dados);
     } catch (error) {
-      setErro(error?.message || "Não foi possível iniciar o pagamento.");
+      setErro(formatarErroPagamento(error, "Não foi possível iniciar o pagamento."));
     } finally {
       setCarregando(false);
     }
@@ -50,7 +56,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
         setErro("O pagamento ainda não foi confirmado.");
       }
     } catch (error) {
-      setErro(error?.message || "Não foi possível verificar o pagamento.");
+      setErro(formatarErroPagamento(error, "Não foi possível verificar o pagamento."));
     } finally {
       setVerificando(false);
     }
@@ -151,6 +157,17 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
       </Pressable>
     </ScrollView>
   );
+}
+
+// Sprint item 10: mostra o motivo devolvido pelo backend sem expor a resposta completa da Arkhé.
+function formatarErroPagamento(error, fallback) {
+  const mensagem = error?.message || fallback;
+  const detalhe = typeof error?.dados?.detalhes === "string"
+    ? error.dados.detalhes.trim().slice(0, 240)
+    : "";
+
+  if (!detalhe || detalhe === mensagem) return mensagem;
+  return `${mensagem}\n${detalhe}`;
 }
 
 const styles = StyleSheet.create({

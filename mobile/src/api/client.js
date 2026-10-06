@@ -6,7 +6,8 @@ const USER_KEY = "cursando_usuario";
 const API_PORT = 5000;
 const REQUEST_TIMEOUT_MS = 3000;
 // Sprint item 1: pagamentos podem aguardar a resposta da Arkhé por até 10 segundos.
-export const PAYMENT_REQUEST_TIMEOUT_MS = 15000;
+// Sprint item 10: tolera o tempo do backend, da Arkhé e da rede móvel sem repetir um POST financeiro.
+export const PAYMENT_REQUEST_TIMEOUT_MS = 30000;
 
 const API_HOSTS = [
   "192.168.137.1",
