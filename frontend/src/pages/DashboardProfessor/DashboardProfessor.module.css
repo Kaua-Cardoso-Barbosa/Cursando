@@ -155,6 +155,11 @@
     margin: 0;
 }
 
+.subtituloSecao {
+    color: #4b4b4b;
+    font-size: 0.98rem;
+}
+
 .botaoPrimario,
 .botaoSecundario,
 .filtros button,
@@ -380,7 +385,7 @@
 .cabecalhoListaAlunos,
 .linhaAlunoCurso {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.2fr);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 18px;
     padding: 14px 18px;
 }
@@ -563,9 +568,13 @@
 .formularioPerfil label {
     color: #111111;
     font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
 }
 
-.formularioPerfil input {
+.formularioPerfil input,
+.formularioPerfil select {
     min-height: 40px;
     border: 2px solid #06a663;
     border-radius: 7px;
@@ -573,6 +582,24 @@
     color: #111111;
     font: inherit;
     padding: 8px 11px;
+}
+
+.formularioPerfil h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.filtrosRelatorio {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    align-items: end;
+}
+
+.tabelaResponsiva {
+    width: 100%;
+    overflow-x: auto;
 }
 
 .formularioPerfil .botaoPrimario {
@@ -711,5 +738,9 @@
 
     .formularioPerfil .botaoPrimario {
         align-self: stretch;
+    }
+
+    .filtrosRelatorio {
+        grid-template-columns: 1fr;
     }
 }

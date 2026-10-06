@@ -54,11 +54,6 @@ export default function DashboardProfessor({
     const [financeiro, setFinanceiro] = useState(null);
     const [relatorio, setRelatorio] = useState(null);
     const [filtrosRelatorio, setFiltrosRelatorio] = useState({ inicio: "", fim: "", id_curso: "" });
-    const [materiais, setMateriais] = useState([]);
-    const [materialForm, setMaterialForm] = useState({ titulo: "", tipo: "link", url: "", descricao: "" });
-    const [prova, setProva] = useState(null);
-    const [provaForm, setProvaForm] = useState({ titulo: "", enunciado: "", tipo: "objetiva", alternativas: "", resposta_esperada: "" });
-    const [respostasProva, setRespostasProva] = useState([]);
     const [valorSaque, setValorSaque] = useState("");
     const [cursoSelecionado, setCursoSelecionado] = useState(null);
     const [modal, setModal] = useState(null);
@@ -131,17 +126,9 @@ export default function DashboardProfessor({
         setCarregando(true);
 
         try {
-            const [resposta, respostaMateriais, respostaProva, respostaCorrecoes] = await Promise.all([
-                fetch(`${api}/professor/cursos/${idCurso}/aulas?status=${status}`, { credentials: "include" }),
-                fetch(`${api}/professor/cursos/${idCurso}/materiais`, { credentials: "include" }),
-                fetch(`${api}/professor/cursos/${idCurso}/prova`, { credentials: "include" }),
-                fetch(`${api}/professor/provas/respostas`, { credentials: "include" })
-            ]);
+            const resposta = await fetch(`${api}/professor/cursos/${idCurso}/aulas?status=${status}`, { credentials: "include" });
             const dados = await lerResposta(resposta);
             setAulas(Array.isArray(dados) ? dados : []);
-            setMateriais(await lerResposta(respostaMateriais));
-            setProva(await lerResposta(respostaProva));
-            setRespostasProva(await lerResposta(respostaCorrecoes));
         } catch (erro) {
             console.error("Erro ao carregar aulas:", erro);
             setAulas([]);
@@ -534,68 +521,6 @@ export default function DashboardProfessor({
         }
     }
 
-    async function salvarMaterial() {
-        try {
-            const resposta = await fetch(`${api}/professor/cursos/${cursoSelecionado.id}/materiais`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(materialForm)
-            });
-            await lerResposta(resposta);
-            setMaterialForm({ titulo: "", tipo: "link", url: "", descricao: "" });
-            await carregarAulas(cursoSelecionado.id, filtroAulas);
-        } catch (erro) {
-            avisar({ tipo: "erro", descricao: erro.message });
-        }
-    }
-
-    async function salvarProva() {
-        try {
-            const resposta = await fetch(`${api}/professor/cursos/${cursoSelecionado.id}/prova`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    titulo: provaForm.titulo,
-                    questoes: [{
-                        enunciado: provaForm.enunciado,
-                        tipo: provaForm.tipo,
-                        alternativas: provaForm.alternativas,
-                        resposta_esperada: provaForm.resposta_esperada
-                    }]
-                })
-            });
-            await lerResposta(resposta);
-            setProvaForm({ titulo: "", enunciado: "", tipo: "objetiva", alternativas: "", resposta_esperada: "" });
-            await carregarAulas(cursoSelecionado.id, filtroAulas);
-        } catch (erro) {
-            avisar({ tipo: "erro", descricao: erro.message });
-        }
-    }
-
-    async function publicarProvaAtual() {
-        if (!prova?.prova?.id) return;
-        const resposta = await fetch(`${api}/professor/provas/${prova.prova.id}/publicar`, {
-            method: "PATCH",
-            credentials: "include"
-        });
-        await lerResposta(resposta);
-        await carregarAulas(cursoSelecionado.id, filtroAulas);
-    }
-
-    async function corrigirResposta(idResposta, aprovado) {
-        const feedback = window.prompt("Feedback para o aluno") || "";
-        const resposta = await fetch(`${api}/professor/provas/respostas/${idResposta}`, {
-            method: "PATCH",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ aprovado, feedback })
-        });
-        await lerResposta(resposta);
-        await carregarAulas(cursoSelecionado.id, filtroAulas);
-    }
-
     function abrirAulas(curso) {
         setCursoSelecionado(curso);
         setFiltroAulas("todos");
@@ -804,32 +729,37 @@ export default function DashboardProfessor({
                                 <CardMetricaProfessor titulo="Já sacado" detalhe="Solicitações registradas" valor={formatarMoeda(financeiro?.ja_sacado)} />
                                 <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} />
                             </div>
-                            <div className={css.formularioPerfil}>
+                            <form className={css.formularioPerfil} onSubmit={(evento) => { evento.preventDefault(); solicitarSaque(); }}>
+                                <h3>Solicitar saque</h3>
                                 <label>
                                     Valor do saque
                                     <input
                                         value={valorSaque}
                                         onChange={(evento) => setValorSaque(evento.target.value)}
                                         type="number"
-                                        min="1"
+                                        min="0.01"
+                                        max={Number(financeiro?.disponivel_saque || 0) || undefined}
                                         step="0.01"
                                         placeholder="0,00"
                                     />
                                 </label>
-                                <button className={css.botaoPrimario} onClick={solicitarSaque} disabled={solicitandoSaque}>
+                                <p className={css.textoApoio}>Disponível: {formatarMoeda(financeiro?.disponivel_saque)}</p>
+                                <button className={css.botaoPrimario} type="submit" disabled={solicitandoSaque || !saqueValido}>
                                     {solicitandoSaque ? "Enviando solicitação..." : "Solicitar saque"}
                                 </button>
-                            </div>
+                            </form>
                             {financeiro?.cursos_receita?.length > 0 && (
                                 <div className={css.listaAlunosCurso}>
                                     <div className={css.cabecalhoListaAlunos}>
                                         <span>Curso</span>
+                                        <span>Atividade</span>
                                         <span>Receita estimada</span>
                                     </div>
                                     {financeiro.cursos_receita.map((curso) => (
                                         <div key={curso.id_curso} className={css.linhaAlunoCurso}>
-                                            <span>{curso.curso} ({curso.views} views)</span>
-                                            <span>R$ {Number(curso.receita_estimativa || 0).toFixed(2).replace(".", ",")}</span>
+                                            <span>{curso.curso}</span>
+                                            <span>{formatarNumero(curso.views)} aulas assistidas</span>
+                                            <span>{formatarMoeda(curso.receita_estimativa)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -846,12 +776,12 @@ export default function DashboardProfessor({
                     {visao === "relatorios" && (
                         <section className={css.secaoCursos}>
                             <div className={css.barraTitulo}>
-                                <h2>Relatorios</h2>
-                                <button className={css.botaoPrimario} onClick={baixarRelatorioPdf}>Baixar PDF</button>
+                                <h2>Relatórios</h2>
+                                <button className={css.botaoPrimario} type="button" onClick={baixarRelatorioPdf}>Baixar PDF</button>
                             </div>
-                            <div className={css.formularioPerfil}>
+                            <form className={`${css.formularioPerfil} ${css.filtrosRelatorio}`} onSubmit={(evento) => { evento.preventDefault(); carregarRelatorio(); }}>
                                 <label>
-                                    Inicio
+                                    Início
                                     <input type="date" value={filtrosRelatorio.inicio} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, inicio: e.target.value })} />
                                 </label>
                                 <label>
@@ -859,47 +789,49 @@ export default function DashboardProfessor({
                                     <input type="date" value={filtrosRelatorio.fim} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, fim: e.target.value })} />
                                 </label>
                                 <label>
-                                    ID do curso
-                                    <input value={filtrosRelatorio.id_curso} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, id_curso: e.target.value })} placeholder="Opcional" />
+                                    Curso
+                                    <select value={filtrosRelatorio.id_curso} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, id_curso: e.target.value })}>
+                                        <option value="">Todos os cursos</option>
+                                        {cursos.map((curso) => (
+                                            <option key={curso.id} value={curso.id}>{curso.titulo}</option>
+                                        ))}
+                                    </select>
                                 </label>
-                                <button className={css.botaoPrimario} onClick={carregarRelatorio}>Filtrar</button>
-                            </div>
+                                <button className={css.botaoPrimario} type="submit">Filtrar</button>
+                            </form>
                             <div className={css.gridMetricas}>
-                                <CardMetricaProfessor titulo="Alunos" valor={relatorio?.resumo?.alunos || 0} />
-                                <CardMetricaProfessor titulo="Cursos" valor={relatorio?.resumo?.cursos || 0} />
-                                <CardMetricaProfessor titulo="Aulas assistidas" valor={relatorio?.resumo?.aulas_assistidas || 0} />
-                                <CardMetricaProfessor titulo="Horas assistidas" valor={relatorio?.resumo?.horas_assistidas || 0} />
+                                <CardMetricaProfessor titulo="Alunos" detalhe="Matrículas ativas" valor={formatarNumero(relatorio?.resumo?.alunos)} />
+                                <CardMetricaProfessor titulo="Cursos" detalhe="Cursos no filtro" valor={formatarNumero(relatorio?.resumo?.cursos)} />
+                                <CardMetricaProfessor titulo="Aulas assistidas" detalhe="Eventos de progresso" valor={formatarNumero(relatorio?.resumo?.aulas_assistidas)} />
+                                <CardMetricaProfessor titulo="Horas assistidas" detalhe="Estimativa total" valor={`${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} />
                             </div>
 
-                            <section className={css.formularioPerfil}>
-                                <h2>Complementos</h2>
-                                <label>Titulo<input value={materialForm.titulo} onChange={(e) => setMaterialForm({ ...materialForm, titulo: e.target.value })} /></label>
-                                <label>Tipo<input value={materialForm.tipo} onChange={(e) => setMaterialForm({ ...materialForm, tipo: e.target.value })} /></label>
-                                <label>URL<input value={materialForm.url} onChange={(e) => setMaterialForm({ ...materialForm, url: e.target.value })} /></label>
-                                <label>Descricao<input value={materialForm.descricao} onChange={(e) => setMaterialForm({ ...materialForm, descricao: e.target.value })} /></label>
-                                <button className={css.botaoPrimario} onClick={salvarMaterial}>Cadastrar complemento</button>
-                                {materiais.map((material) => <p key={material.id}>{material.titulo} - {material.tipo}</p>)}
-                            </section>
-
-                            <section className={css.formularioPerfil}>
-                                <h2>Prova do curso</h2>
-                                {prova?.prova && <p>Atual: {prova.prova.titulo} ({prova.prova.publicada ? "publicada" : "rascunho"})</p>}
-                                <label>Titulo<input value={provaForm.titulo} onChange={(e) => setProvaForm({ ...provaForm, titulo: e.target.value })} /></label>
-                                <label>Enunciado<input value={provaForm.enunciado} onChange={(e) => setProvaForm({ ...provaForm, enunciado: e.target.value })} /></label>
-                                <label>Tipo<input value={provaForm.tipo} onChange={(e) => setProvaForm({ ...provaForm, tipo: e.target.value })} /></label>
-                                <label>Alternativas<input value={provaForm.alternativas} onChange={(e) => setProvaForm({ ...provaForm, alternativas: e.target.value })} /></label>
-                                <label>Resposta esperada<input value={provaForm.resposta_esperada} onChange={(e) => setProvaForm({ ...provaForm, resposta_esperada: e.target.value })} /></label>
-                                <button className={css.botaoPrimario} onClick={salvarProva}>Cadastrar prova</button>
-                                {prova?.prova && !prova.prova.publicada && <button className={css.botaoSecundario} onClick={publicarProvaAtual}>Publicar prova</button>}
-                                {respostasProva.filter((item) => item.curso === cursoSelecionado.titulo).map((resposta) => (
-                                    <article key={resposta.id}>
-                                        <strong>{resposta.aluno}</strong>
-                                        <p>{resposta.respostas}</p>
-                                        <button className={css.botaoPrimario} onClick={() => corrigirResposta(resposta.id, true)}>Aprovar</button>
-                                        <button className={css.botaoSecundario} onClick={() => corrigirResposta(resposta.id, false)}>Reprovar</button>
-                                    </article>
-                                ))}
-                            </section>
+                            <div className={css.tabelaResponsiva}>
+                                <div className={css.listaAlunosCurso}>
+                                    <div className={css.cabecalhoListaAlunos}>
+                                        <span>Curso</span>
+                                        <span>Alunos</span>
+                                        <span>Aulas assistidas</span>
+                                        <span>Horas</span>
+                                    </div>
+                                    {cursosRelatorio.map((curso) => (
+                                        <div key={curso.id_curso} className={css.linhaAlunoCurso}>
+                                            <span>{curso.curso}</span>
+                                            <span>{formatarNumero(curso.alunos)}</span>
+                                            <span>{formatarNumero(curso.aulas_assistidas)}</span>
+                                            <span>{Number(curso.horas_assistidas || 0).toFixed(2).replace(".", ",")}h</span>
+                                        </div>
+                                    ))}
+                                    {cursosRelatorio.length === 0 && (
+                                        <div className={css.linhaAlunoCurso}>
+                                            <span>Nenhum dado encontrado para os filtros.</span>
+                                            <span>0</span>
+                                            <span>0</span>
+                                            <span>0,00h</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </section>
                     )}
                 </main>
