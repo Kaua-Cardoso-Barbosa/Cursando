@@ -20,6 +20,13 @@ _schema_pronto = False
 _faturas_lock = Lock()
 
 
+def valor_assinatura_config():
+    valor = float(current_app.config["VALOR_ASSINATURA"])
+    if valor <= 0:
+        raise ValueError("VALOR_ASSINATURA deve ser maior que zero.")
+    return round(valor, 2)
+
+
 def resposta(descricao, status=200, tipo="erro", **extra):
     payload = {
         "mensagem": {
@@ -2090,7 +2097,7 @@ def financeiro_resumo():
     cursor = con.cursor()
 
     try:
-        valor_assinatura = float(app.config.get("VALOR_ASSINATURA", 0) or 0)
+        valor_assinatura = valor_assinatura_config()
         percentual = percentual_instrutores(cursor)
         cursor.execute("SELECT COUNT(*) FROM ASSINATURAS WHERE STATUS = 1")
         assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
@@ -2303,7 +2310,7 @@ def logs_gravacao_admin():
 
 def _fatura_para_dict(row, numero=None):
     status = int(row[2] or 0)
-    valor_padrao = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
+    valor_padrao = valor_assinatura_config()
     return {
         "id": row[0],
         "numero": numero or row[0],
@@ -2367,7 +2374,7 @@ def faturas_aluno():
             # Sprint item 1: serializa a criacao para evitar cobrancas duplicadas em pedidos simultaneos.
             with _faturas_lock:
                 dados = request.get_json(silent=True) or {}
-                valor = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
+                valor = valor_assinatura_config()
                 meses = max(1, min(int(dados.get("meses") or 1), 12))
                 valor_total = round(valor * meses, 2)
                 cursor.execute(
@@ -2385,17 +2392,19 @@ def faturas_aluno():
                 fatura_aberta = cursor.fetchone()
                 if fatura_aberta:
                     id_assinatura, id_cobranca, valor_fatura = fatura_aberta
-                    cobranca = consultar_cobranca_pix(id_cobranca)
-                    return jsonify({
-                        "id_assinatura": id_assinatura,
-                        "id_cobranca": cobranca["id_cobranca"],
-                        "valor": cobranca.get("valor", valor_fatura),
-                        "codigo_pagamento": cobranca["codigo_pagamento"],
-                        "status": cobranca["status"],
-                        "tipo_cobranca": cobranca["tipo_cobranca"],
-                        "fatura_existente": True,
-                        "mensagem": "Ja existe uma mensalidade em aberto para pagamento.",
-                    }), 200
+                    valor_pendente = float(valor_fatura or 0)
+                    if valor_pendente > 0:
+                        cobranca = consultar_cobranca_pix(id_cobranca)
+                        return jsonify({
+                            "id_assinatura": id_assinatura,
+                            "id_cobranca": cobranca["id_cobranca"],
+                            "valor": valor_pendente,
+                            "codigo_pagamento": cobranca["codigo_pagamento"],
+                            "status": cobranca["status"],
+                            "tipo_cobranca": cobranca["tipo_cobranca"],
+                            "fatura_existente": True,
+                            "mensagem": "Ja existe uma mensalidade em aberto para pagamento.",
+                        }), 200
 
                 cobranca = criar_cobranca_pix(valor_total)
                 agora = datetime.now()
@@ -2416,7 +2425,7 @@ def faturas_aluno():
                 return jsonify({
                     "id_assinatura": id_assinatura,
                     "id_cobranca": cobranca["id_cobranca"],
-                    "valor": cobranca["valor"],
+                    "valor": valor_total,
                     "codigo_pagamento": cobranca["codigo_pagamento"],
                     "status": cobranca["status"],
                     "tipo_cobranca": cobranca["tipo_cobranca"],
@@ -2524,7 +2533,7 @@ def verificar_fatura_aluno(id_assinatura):
                 VALOR = COALESCE(VALOR, ?)
             WHERE ID_ASSINATURA = ? AND ID_USUARIO = ?
             """,
-            (data_inicio, data_expiracao, agora, current_app.config["VALOR_ASSINATURA"], id_assinatura, id_usuario),
+            (data_inicio, data_expiracao, agora, valor_assinatura_config(), id_assinatura, id_usuario),
         )
         con.commit()
 
@@ -2914,7 +2923,7 @@ def solicitar_saque():
 
     try:
         # Sprint item 1: valida o saque contra o saldo disponível calculado no backend.
-        valor_assinatura = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
+        valor_assinatura = valor_assinatura_config()
         percentual = percentual_instrutores(cursor)
         cursor.execute("SELECT COUNT(*) FROM ASSINATURAS WHERE STATUS = 1")
         assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)

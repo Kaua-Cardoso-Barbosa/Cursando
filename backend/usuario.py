@@ -1192,7 +1192,7 @@ def criar_pagamento_pix():
 @app.route("/assinaturas/pix", methods=["POST"])
 @jwt_required()
 def criar_pix_assinatura():
-    from sprint import garantir_sprint_schema
+    from sprint import garantir_sprint_schema, valor_assinatura_config
 
     garantir_sprint_schema()
     con = get_db()
@@ -1220,7 +1220,7 @@ def criar_pix_assinatura():
         # Sprint item 1: reutiliza apenas PIX pendente e dentro do vencimento, sem gerar cobranças duplicadas.
         cursor.execute(
             """
-            SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE
+            SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
             FROM ASSINATURAS
             WHERE ID_USUARIO = ?
               AND STATUS = 0
@@ -1233,20 +1233,22 @@ def criar_pix_assinatura():
         assinatura_pendente = cursor.fetchone()
 
         if assinatura_pendente:
-            id_assinatura, id_cobranca = assinatura_pendente
-            cobranca = consultar_cobranca_pix(id_cobranca)
-            return jsonify({
-                "id_assinatura": id_assinatura,
-                "id_cobranca": cobranca["id_cobranca"],
-                "valor": cobranca["valor"],
-                "codigo_pagamento": cobranca["codigo_pagamento"],
-                "status": cobranca["status"],
-                "tipo_cobranca": cobranca["tipo_cobranca"],
-                "cobranca_existente": True
-            }), 200
+            id_assinatura, id_cobranca, valor_fatura = assinatura_pendente
+            valor_pendente = float(valor_fatura or 0)
+            if valor_pendente > 0:
+                cobranca = consultar_cobranca_pix(id_cobranca)
+                return jsonify({
+                    "id_assinatura": id_assinatura,
+                    "id_cobranca": cobranca["id_cobranca"],
+                    "valor": valor_pendente,
+                    "codigo_pagamento": cobranca["codigo_pagamento"],
+                    "status": cobranca["status"],
+                    "tipo_cobranca": cobranca["tipo_cobranca"],
+                    "cobranca_existente": True
+                }), 200
 
         # Sprint item 1: usa o preco do servidor quando nao houver PIX pendente reutilizavel.
-        valor = current_app.config["VALOR_ASSINATURA"]
+        valor = valor_assinatura_config()
 
         # Solicita à Arkhé uma cobrança PIX vinculada ao valor do plano.
         cobranca = criar_cobranca_pix(valor)
@@ -1287,7 +1289,7 @@ def criar_pix_assinatura():
         return jsonify({
             "id_assinatura": id_assinatura,
             "id_cobranca": cobranca["id_cobranca"],
-            "valor": cobranca["valor"],
+            "valor": valor,
             "codigo_pagamento": cobranca["codigo_pagamento"],
             "status": cobranca["status"],
             "tipo_cobranca": cobranca["tipo_cobranca"]
