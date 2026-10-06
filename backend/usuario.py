@@ -1289,13 +1289,6 @@ def verificar_pagamento_assinatura():
             }), 403
 
         # Sem o identificador da cobrança não é possível confirmar o PIX na Arkhé.
-        if not id_cobranca:
-            return jsonify({
-                "assinatura": False,
-                "status": "pendente",
-                "mensagem": "Assinatura aguardando pagamento."
-            }), 403
-
         # A confirmação é consultada na Arkhé quando esta rota é chamada.
         # Verifica todas as cobranças pendentes para aceitar o pagamento de
         # uma mensalidade antiga caso existam duplicatas no histórico.
@@ -1305,19 +1298,30 @@ def verificar_pagamento_assinatura():
             if assinatura_candidata[2] == 1 or not assinatura_candidata[1]:
                 continue
             cobranca_candidata = consultar_cobranca_pix(assinatura_candidata[1])
-            if str(cobranca_candidata["status"]) == "1":
+            if str(cobranca_candidata["status"]).strip().lower() in {
+                "1", "pago", "paid", "confirmado", "confirmed", "aprovado", "approved"
+            }:
                 assinatura_paga = assinatura_candidata
                 cobranca = cobranca_candidata
                 break
 
-        if cobranca is None:
+        if cobranca is None and id_cobranca:
             cobranca = consultar_cobranca_pix(id_cobranca)
+
+        if cobranca is None:
+            return jsonify({
+                "assinatura": False,
+                "status": "pendente",
+                "mensagem": "Assinatura aguardando pagamento."
+            }), 403
 
         status_cobranca = cobranca["status"]
 
         # STATUS 1 da cobrança indica pagamento confirmado: ativa por 30 dias
         # a partir do momento desta confirmação e salva as duas datas no banco.
-        if str(status_cobranca) == "1":
+        if str(status_cobranca).strip().lower() in {
+            "1", "pago", "paid", "confirmado", "confirmed", "aprovado", "approved"
+        }:
             agora = datetime.now()
             data_expiracao = agora + timedelta(days=30)
 

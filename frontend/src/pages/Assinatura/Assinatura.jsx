@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
 import css from "./Assinatura.module.css";
@@ -10,6 +10,7 @@ export default function Assinatura({ api }) {
     const [verificando, setVerificando] = useState(false);
     const [codigoCopiado, setCodigoCopiado] = useState(false);
     const [erro, setErro] = useState("");
+    const redirecionando = useRef(false);
 
     // Consulta o backend, que confirma o estado da cobrança junto à Arkhé.
     async function consultarAssinatura() {
@@ -19,12 +20,15 @@ export default function Assinatura({ api }) {
         });
         const dados = await resposta.json();
 
-        if (resposta.ok && dados.assinatura) {
-            navigate("/DashboardAluno", { replace: true });
+        if (resposta.ok && dados.assinatura && !redirecionando.current) {
+            redirecionando.current = true;
+            // Recarrega a área autenticada para atualizar o perfil e remover
+            // o estado antigo da página de assinatura.
+            window.location.replace("/DashboardAluno");
             return true;
         }
 
-        return false;
+        return Boolean(resposta.ok && dados.assinatura);
     }
 
     useEffect(() => {
