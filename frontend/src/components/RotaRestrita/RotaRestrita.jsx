@@ -38,7 +38,8 @@ export default function RotaProtegida({
                     const assinatura = await fetch(`${api}/assinaturas/verificar`, {
                         credentials: "include"
                     });
-                    setAssinaturaValida(assinatura.ok);
+                    const dadosAssinatura = await assinatura.json().catch(() => ({}));
+                    setAssinaturaValida(assinatura.ok && dadosAssinatura?.assinatura === true);
                 }
             } catch (erro) {
                 console.error("Erro ao verificar sessao:", erro);

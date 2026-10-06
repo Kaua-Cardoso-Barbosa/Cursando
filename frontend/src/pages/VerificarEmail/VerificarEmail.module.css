@@ -1,12 +1,9 @@
 .pagina {
-    min-height: calc(100svh - 80px);
+    min-height: 100vh;
     display: grid;
     place-items: center;
-    padding: clamp(24px, 5vw, 56px) 20px;
-    background:
-        radial-gradient(ellipse at 10% 12%, rgba(6, 166, 99, .11), transparent 32%),
-        radial-gradient(ellipse at 94% 88%, rgba(2, 105, 62, .08), transparent 34%),
-        #f5f8f6;
+    padding: 50px 20px;
+    background: linear-gradient(135deg, #20b879, #3ac98f, #20b879);
 }
 
 .pagina * {
@@ -18,10 +15,10 @@
     grid-template-columns: minmax(285px, .82fr) minmax(0, 1.18fr);
     width: min(100%, 1000px);
     overflow: hidden;
-    border: 1px solid #e1ebe5;
-    border-radius: 24px;
+    border: 1.5px solid rgba(17, 17, 17, .18);
+    border-radius: 8px;
     background: #fff;
-    box-shadow: 0 24px 70px rgba(22, 66, 45, .12);
+    box-shadow: var(--shadow);
 }
 
 .painelInfo {
@@ -33,7 +30,7 @@
     overflow: hidden;
     padding: 40px 36px;
     color: #fff;
-    background: linear-gradient(150deg, #087c4a 0%, #075132 100%);
+    background: #02693e;
 }
 
 .painelInfo::after {
@@ -43,9 +40,9 @@
     bottom: -155px;
     width: 330px;
     height: 330px;
-    border: 1px solid rgba(255, 255, 255, .12);
+    border: 1px solid rgba(255, 255, 255, .1);
     border-radius: 50%;
-    box-shadow: 0 0 0 28px rgba(255, 255, 255, .035), 0 0 0 62px rgba(255, 255, 255, .025);
+    box-shadow: 0 0 0 28px rgba(255, 255, 255, .035);
     content: "";
 }
 
@@ -54,8 +51,8 @@
     align-items: center;
     gap: 10px;
     font-size: 18px;
-    font-weight: 800;
-    letter-spacing: -.3px;
+    font-weight: 700;
+    letter-spacing: 0;
 }
 
 .marcaSimbolo {
@@ -64,10 +61,10 @@
     height: 36px;
     place-items: center;
     border: 1px solid rgba(255, 255, 255, .45);
-    border-radius: 11px;
+    border-radius: 6px;
     background: rgba(255, 255, 255, .14);
     font-size: 19px;
-    font-weight: 900;
+    font-weight: 700;
 }
 
 .iconeEnvelope {
@@ -77,7 +74,7 @@
     margin: 46px 0 24px;
     place-items: center;
     border: 1px solid rgba(255, 255, 255, .24);
-    border-radius: 19px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, .12);
     color: #e2f8eb;
 }
@@ -91,7 +88,7 @@
     margin: 0 0 10px;
     color: #b7e6cc;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: .12em;
 }
 
@@ -100,8 +97,8 @@
     margin: 0 0 12px;
     color: #fff;
     font-size: clamp(25px, 2.4vw, 32px);
-    font-weight: 750;
-    letter-spacing: -.7px;
+    font-weight: 500;
+    letter-spacing: -.24px;
     line-height: 1.14;
 }
 
@@ -152,10 +149,10 @@
     height: 32px;
     place-items: center;
     border: 1px solid rgba(255, 255, 255, .3);
-    border-radius: 50%;
+    border-radius: 6px;
     color: #fff;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 700;
 }
 
 .passos .concluido,
@@ -177,7 +174,7 @@
 
 .conteudo {
     min-width: 0;
-    padding: clamp(34px, 5vw, 56px);
+    padding: 40px 36px;
 }
 
 .cabecalho {
@@ -191,7 +188,7 @@
 .etapa {
     color: #087044;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
     letter-spacing: .1em;
 }
 
@@ -200,10 +197,10 @@
     align-items: center;
     gap: 7px;
     padding: 7px 10px;
-    border: 1px solid #d9eee1;
-    border-radius: 999px;
-    background: #f1faf4;
-    color: #286746;
+    border: 1px solid #06a663;
+    border-radius: 6px;
+    background: #f6fff9;
+    color: #02693e;
     font-size: 11px;
     font-weight: 700;
 }
@@ -215,24 +212,24 @@
 
 .conteudo h1 {
     margin: 28px 0 12px;
-    color: #173d2b;
+    color: #000;
     font-size: clamp(30px, 3.5vw, 40px);
-    font-weight: 750;
-    letter-spacing: -1.2px;
+    font-weight: 700;
+    letter-spacing: 0;
     line-height: 1.12;
 }
 
 .introducao {
     margin: 0;
-    color: #63736a;
+    color: #555;
     font-size: 15px;
     line-height: 1.65;
     overflow-wrap: anywhere;
 }
 
 .introducao strong {
-    color: #254a35;
-    font-weight: 750;
+    color: #02693e;
+    font-weight: 700;
 }
 
 .formulario,
@@ -243,9 +240,9 @@
 }
 
 .conteudo label {
-    color: #344b3c;
+    color: #000;
     font-size: 13px;
-    font-weight: 750;
+    font-weight: 700;
 }
 
 .dica {
@@ -258,10 +255,10 @@
 .codigo {
     width: 100%;
     min-height: 50px;
-    border: 1px solid #d4e0d8;
-    border-radius: 10px;
+    border: 1px solid var(--verde);
+    border-radius: 6px;
     background: #fff;
-    color: #183a29;
+    color: #000;
     transition: border-color .18s ease, box-shadow .18s ease;
 }
 
@@ -274,10 +271,10 @@
 .codigo {
     min-height: 62px;
     padding: 8px 12px 8px 20px;
-    background: #fbfdfb;
+    background: #fff;
     font-family: var(--mono, ui-monospace, monospace);
     font-size: 26px;
-    font-weight: 750;
+    font-weight: 700;
     letter-spacing: .42em;
     text-align: center;
 }
@@ -285,8 +282,8 @@
 .campo:focus,
 .codigo:focus {
     border-color: #0a9d5c;
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(10, 157, 92, .12);
+    outline: 1px solid var(--verde_escuro);
+    box-shadow: none;
 }
 
 .codigo::placeholder {
@@ -302,12 +299,12 @@
     gap: 12px;
     padding: 0 18px;
     border: 0;
-    border-radius: 10px;
-    background: #087044;
+    border-radius: 6px;
+    background: #00a86b;
     color: #fff;
     font: inherit;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
     transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
 }
@@ -326,7 +323,7 @@
 .botaoPrincipal:hover:not(:disabled),
 .acoesCorrecao button:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: #075b39;
+    background: #008f5b;
     box-shadow: 0 8px 18px rgba(7, 112, 68, .18);
 }
 
@@ -350,7 +347,7 @@
 }
 
 .linkCorrecao strong {
-    color: #087044;
+    color: #008f5b;
     text-decoration: underline;
     text-underline-offset: 3px;
 }
@@ -416,16 +413,16 @@
     gap: 10px;
     margin-top: 23px;
     padding: 18px;
-    border: 1px solid #dce9e0;
-    border-radius: 13px;
-    background: #f8fbf9;
+    border: 1px solid #06a663;
+    border-radius: 6px;
+    background: #f6fff9;
 }
 
 .corrigir h2 {
     margin: 0 0 4px;
-    color: #193d2b;
+    color: #000;
     font-size: 17px;
-    font-weight: 750;
+    font-weight: 700;
 }
 
 .corrigir p {
@@ -448,9 +445,9 @@
 }
 
 .acoesCorrecao .botaoSecundario {
-    border: 1px solid #d4e0d8;
+    border: 1px solid #02693e;
     background: #fff;
-    color: #344b3c;
+    color: #02693e;
 }
 
 .acoesCorrecao .botaoSecundario:hover:not(:disabled) {

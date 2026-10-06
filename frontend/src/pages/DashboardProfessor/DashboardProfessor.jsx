@@ -30,6 +30,14 @@ function resolverUrlMidia(api, caminho) {
     return `${api}${caminho}`;
 }
 
+function formatarMoeda(valor) {
+    return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
+}
+
+function formatarNumero(valor) {
+    return Number(valor || 0).toLocaleString("pt-BR");
+}
+
 export default function DashboardProfessor({
                                                api,
                                                setMensagem,
@@ -335,9 +343,12 @@ export default function DashboardProfessor({
 
     useEffect(() => {
         if (visao === "relatorios") {
+            if (cursos.length === 0) {
+                carregarCursos("todos");
+            }
             carregarRelatorio();
         }
-    }, [carregarRelatorio, visao]);
+    }, [carregarCursos, carregarRelatorio, cursos.length, visao]);
 
     useEffect(() => {
         function sincronizarRelatorio() {
@@ -499,6 +510,10 @@ export default function DashboardProfessor({
     async function solicitarSaque() {
         // Sprint item 1: evita enviar duas solicitações de saque por toques repetidos.
         if (solicitandoSaque) return;
+        if (!saqueValido) {
+            avisar({ tipo: "erro", descricao: "Informe um valor de saque valido dentro do saldo disponivel." });
+            return;
+        }
         setSolicitandoSaque(true);
         try {
             const resposta = await fetch(`${api}/professor/saques`, {
@@ -594,6 +609,11 @@ export default function DashboardProfessor({
 
     const metricas = dashboard?.metricas || {};
     const recentes = dashboard?.recentes || [];
+    const cursosRelatorio = relatorio?.cursos || [];
+    const valorSaqueNumero = Number(valorSaque);
+    const saqueValido = Number.isFinite(valorSaqueNumero)
+        && valorSaqueNumero > 0
+        && valorSaqueNumero <= Number(financeiro?.disponivel_saque || 0);
     const tituloCursos = useMemo(() => {
         if (filtroCursos === "arquivados") return "Cursos Arquivados";
         if (filtroCursos === "privados") return "Cursos Privados";
@@ -775,13 +795,14 @@ export default function DashboardProfessor({
                         <section className={css.secaoCursos}>
                             <div className={css.barraTitulo}>
                                 <h2>Financeiro</h2>
+                                <span className={css.subtituloSecao}>Receita estimada, saldo e solicitações de saque</span>
                             </div>
                             {/* Sprint itens 12, 30, 31 e 32: cards financeiros e solicitacao de saque do instrutor. */}
                             <div className={css.gridMetricas}>
-                                <CardMetricaProfessor titulo="Recebido estimado" detalhe="Pool de receita" valor={`R$ ${Number(financeiro?.recebido_estimado || 0).toFixed(2).replace(".", ",")}`} />
-                                <CardMetricaProfessor titulo="Disponivel para saque" detalhe="Saldo bruto" valor={`R$ ${Number(financeiro?.disponivel_saque || 0).toFixed(2).replace(".", ",")}`} />
-                                <CardMetricaProfessor titulo="Ja sacado" detalhe="Solicitacoes registradas" valor={`R$ ${Number(financeiro?.ja_sacado || 0).toFixed(2).replace(".", ",")}`} />
-                                <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matriculas nos seus cursos" valor={financeiro?.alunos_ativos || 0} />
+                                <CardMetricaProfessor titulo="Recebido estimado" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} />
+                                <CardMetricaProfessor titulo="Disponível para saque" detalhe="Saldo após solicitações" valor={formatarMoeda(financeiro?.disponivel_saque)} />
+                                <CardMetricaProfessor titulo="Já sacado" detalhe="Solicitações registradas" valor={formatarMoeda(financeiro?.ja_sacado)} />
+                                <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} />
                             </div>
                             <div className={css.formularioPerfil}>
                                 <label>

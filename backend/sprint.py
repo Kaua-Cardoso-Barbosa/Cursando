@@ -1795,7 +1795,7 @@ def financeiro_resumo():
                 SELECT
                     C.ID_CURSO,
                     C.TITULO,
-                    COUNT(PA.ID_VIDEO),
+                    COUNT(DISTINCT CAST(PA.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(PA.ID_VIDEO AS VARCHAR(20))),
                     COUNT(DISTINCT M.ID_USUARIO)
                 FROM CURSOS C
                 JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
@@ -2389,7 +2389,7 @@ def relatorio_professor():
                 U.NOME,
                 COUNT(DISTINCT M.ID_USUARIO),
                 COUNT(DISTINCT V.ID_VIDEO),
-                COUNT(DISTINCT PA.ID_VIDEO),
+                COUNT(DISTINCT CAST(PA.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(PA.ID_VIDEO AS VARCHAR(20))),
                 COALESCE(AVG(A.NOTA), 0)
             FROM CURSOS C
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
