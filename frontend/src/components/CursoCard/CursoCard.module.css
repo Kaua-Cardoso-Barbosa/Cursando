@@ -41,3 +41,39 @@
     margin-left: 10px;
     font-size: 16px;
 }
+
+/* Sprint item 9: alinha o cartão compartilhado de curso às superfícies claras dos dashboards. */
+.cardAula {
+    border: 1px solid #dfe9e3;
+    border-radius: 17px;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
+    transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.cardAula:hover {
+    box-shadow: 0 14px 28px rgba(15, 63, 40, 0.1);
+    transform: translateY(-2px);
+}
+
+.containerImagem {
+    background: #e8f1eb;
+}
+
+.infoAula {
+    margin: 0;
+    padding: 15px 17px 18px;
+}
+
+.titulo {
+    color: #173e2c;
+    font-size: 1.08rem;
+    line-height: 1.3;
+    font-weight: 650;
+}
+
+.descricao {
+    margin: 6px 0 0;
+    color: #607468;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}

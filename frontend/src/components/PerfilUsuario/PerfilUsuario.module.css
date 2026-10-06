@@ -123,3 +123,89 @@
         flex-direction: column;
     }
 }
+
+/* Sprint item 9: transforma o perfil compartilhado em um formulário alinhado aos três painéis. */
+.perfil {
+    align-items: flex-start;
+}
+
+.formulario {
+    width: min(640px, 100%);
+    padding: clamp(22px, 3vw, 34px);
+    border: 1px solid #dfe9e3;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 10px 26px rgba(15, 63, 40, 0.06);
+}
+
+.formulario h1 {
+    margin: 0 0 24px;
+    color: #123c2a;
+    font-size: clamp(1.65rem, 3vw, 2.1rem);
+    line-height: 1.15;
+    font-weight: 650;
+    text-align: left;
+    letter-spacing: -0.03em;
+}
+
+.previewPerfil {
+    border: 3px solid #e5f5ec;
+    box-shadow: 0 0 0 1px #bfe3cd;
+}
+
+.campoUpload {
+    color: #365b48;
+    font-size: 0.92rem;
+}
+
+.campoUpload input {
+    border-color: #cbd9d0;
+    border-radius: 10px;
+    background: #f9fbfa;
+    color: #455b4e;
+    font: inherit;
+}
+
+.formulario input {
+    min-height: 44px;
+    border: 1px solid #cbd9d0;
+    border-radius: 10px;
+    padding: 9px 12px;
+    background: #ffffff;
+    color: #21372a;
+    font: inherit;
+}
+
+.formulario input:focus,
+.campoUpload input:focus {
+    outline: 0;
+    border-color: #06a663;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+.textoApoio {
+    color: #607468;
+}
+
+.campoObrigatorio {
+    color: #607468;
+    line-height: 1.45;
+}
+
+.botoes {
+    justify-content: flex-start;
+    margin-top: 24px;
+}
+
+@media (max-width: 600px) {
+    .formulario {
+        padding: 22px 18px;
+        border-radius: 17px;
+    }
+
+    .formulario h1 {
+        margin-bottom: 19px;
+        font-size: 1.7rem;
+        text-align: left;
+    }
+}

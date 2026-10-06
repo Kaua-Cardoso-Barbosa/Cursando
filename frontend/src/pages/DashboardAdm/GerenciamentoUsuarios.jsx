@@ -368,6 +368,13 @@ export default function GerenciamentoUsuarios({
 
                     </header>
 
+                    {/* Sprint item 9: introduz a área de usuários com um resumo dos controles disponíveis. */}
+                    <section className={css.cabecalhoPagina}>
+                        <span className={css.etiquetaPagina}>ADMINISTRAÇÃO</span>
+                        <h2>Gerenciar usuários</h2>
+                        <p>Pesquise alunos, professores e administradores, atualize cadastros e controle o acesso.</p>
+                    </section>
+
                     {erro && <div className={css.erro}>{erro}</div>}
                     {loading && <div className={css.carregando}>Carregando usuarios...</div>}
 

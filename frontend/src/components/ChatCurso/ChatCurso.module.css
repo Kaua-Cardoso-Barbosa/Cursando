@@ -202,3 +202,133 @@
         max-width: 92%;
     }
 }
+
+/* Sprint item 9: suaviza bordas e estados do chat compartilhado em todos os dashboards. */
+.chat {
+    --altura-chat: clamp(500px, calc(100vh - 220px), 680px);
+}
+
+.layout {
+    gap: 16px;
+}
+
+.listaConversas,
+.painelMensagens {
+    border: 1px solid #dfe9e3;
+    border-radius: 17px;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.05);
+}
+
+.listaConversas {
+    background: #ffffff;
+}
+
+.itemConversa {
+    min-height: 72px;
+    border-bottom-color: #edf2ee;
+    padding: 13px 15px;
+}
+
+.itemConversa:hover,
+.itemAtivo {
+    background: #eff8f2;
+}
+
+.avatar {
+    color: #087044;
+}
+
+.badge {
+    background: #087044;
+}
+
+.painelMensagens {
+    background: #ffffff;
+}
+
+.cabecalhoConversa {
+    min-height: 64px;
+    align-content: center;
+    border-bottom-color: #e8efea;
+    padding: 12px 18px;
+}
+
+.cabecalhoConversa strong {
+    color: #173e2c;
+    font-size: 1.03rem;
+}
+
+.mensagens {
+    background: #f7faf8;
+}
+
+.balao {
+    border-color: #e1eae4;
+    border-radius: 14px 14px 14px 4px;
+    box-shadow: 0 3px 9px rgba(15, 63, 40, 0.035);
+}
+
+.meuBalao {
+    border-color: #c6e5d2;
+    border-radius: 14px 14px 4px 14px;
+    background: #eaf7ef;
+}
+
+.compositor {
+    border-top-color: #e8efea;
+    background: #ffffff;
+}
+
+.compositor textarea {
+    border: 1px solid #cbd9d0;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.compositor textarea:focus {
+    outline: 0;
+    border-color: #06a663;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+.compositor button {
+    border-radius: 12px;
+    background: #087044;
+    transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.compositor button:hover:not(:disabled) {
+    background: #055a36;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 900px) {
+    .chat {
+        --altura-chat: min(62vh, 580px);
+    }
+
+    .layout {
+        gap: 12px;
+    }
+
+    .listaConversas {
+        max-height: 220px;
+    }
+}
+
+@media (max-width: 560px) {
+    .chat {
+        --altura-chat: 56vh;
+        min-height: 520px;
+    }
+
+    .compositor {
+        grid-template-columns: minmax(0, 1fr) 44px;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .compositor button {
+        height: 46px;
+    }
+}

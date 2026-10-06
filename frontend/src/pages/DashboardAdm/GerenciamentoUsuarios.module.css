@@ -404,3 +404,199 @@
         padding: 24px 18px;
     }
 }
+
+/* Sprint item 9: transforma as listas de usuários e ações administrativas em painéis legíveis e responsivos. */
+.painelAdmin {
+    background: #f5f8f6;
+}
+
+.areaConteudo {
+    padding: clamp(22px, 3vw, 42px);
+}
+
+.cabecalhoUsuario {
+    margin-bottom: 24px;
+}
+
+.dadosUsuario {
+    border: 0;
+    border-left: 4px solid #06a663;
+    padding: 2px 0 2px 14px;
+}
+
+.dadosUsuario h1 {
+    color: #173e2c;
+    font-size: clamp(1.55rem, 2.3vw, 2rem);
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
+.cargoUsuario {
+    color: #607468;
+}
+
+.cabecalhoPagina {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 22px;
+    padding: clamp(23px, 3vw, 34px);
+    border: 1px solid #dcebe2;
+    border-radius: 21px;
+    background: linear-gradient(115deg, #f0faf4 0%, #ffffff 78%);
+}
+
+.cabecalhoPagina h2 {
+    color: #123c2a;
+    font-size: clamp(1.75rem, 3vw, 2.3rem);
+    line-height: 1.1;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+}
+
+.cabecalhoPagina p {
+    max-width: 700px;
+    color: #53675c;
+    font-size: 0.97rem;
+    line-height: 1.55;
+}
+
+.etiquetaPagina {
+    color: #087044;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: 0.11em;
+}
+
+.secaoLista {
+    margin-bottom: 18px;
+    padding: 19px;
+    border: 1px solid #dfe9e3;
+    border-radius: 17px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
+}
+
+.topoSecao {
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.topoSecao h2 {
+    color: #183d2c;
+    font-size: 1.08rem;
+    font-weight: 650;
+}
+
+.btnIconeAdicionar {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #c6e5d2;
+    border-radius: 10px;
+    background: #eff8f2;
+    color: #087044;
+}
+
+.campoBusca {
+    min-height: 42px;
+    border: 1px solid #cbd9d0;
+    border-radius: 11px;
+    background: #ffffff;
+}
+
+.campoBusca:focus-within {
+    border-color: #06a663;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+.iconeBusca {
+    color: #718279;
+}
+
+.caixaTabela {
+    max-height: 310px;
+    padding: 0 14px;
+    border: 1px solid #e4ece7;
+    border-radius: 13px;
+    background: #fbfdfc;
+}
+
+.caixaTabela::-webkit-scrollbar-thumb {
+    background: #9fcdb1;
+}
+
+.linhaUsuario {
+    gap: 15px;
+    padding: 13px 2px;
+    border-bottom: 1px solid #e8efea;
+}
+
+.nomeUsuario {
+    color: #233c2f;
+    font-size: 0.98rem;
+    font-weight: 650;
+}
+
+.emailUsuario {
+    color: #63756a;
+}
+
+.grupoBotoes button {
+    min-height: 36px;
+    border-radius: 9px;
+    padding: 7px 13px;
+    font-weight: 650;
+}
+
+.btnBloquear {
+    background: #64736a;
+}
+
+.btnDesbloquear {
+    background: #a87314;
+}
+
+.btnEditar {
+    background: #087044;
+}
+
+.avisoPropriaConta {
+    color: #607468;
+}
+
+.modalEdicao {
+    border: 1px solid #dfe9e3;
+    border-radius: 19px;
+}
+
+.modalEdicao h2 {
+    color: #173e2c;
+    font-weight: 650;
+}
+
+.rodapePagina {
+    background: #075132;
+}
+
+@media (max-width: 860px) {
+    .areaConteudo {
+        padding: 22px 18px 30px;
+    }
+
+    .cabecalhoPagina {
+        padding: 22px 19px;
+        border-radius: 17px;
+    }
+
+    .linhaUsuario {
+        align-items: flex-start;
+    }
+
+    .grupoBotoes {
+        width: 100%;
+    }
+
+    .grupoBotoes button {
+        flex: 1 1 auto;
+    }
+}

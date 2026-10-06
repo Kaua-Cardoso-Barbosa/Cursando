@@ -698,8 +698,12 @@ export default function DashboardProfessor({
 
                     {visao === "cursos" && (
                         <section className={css.secaoCursos}>
+                            {/* Sprint item 9: deixa a gestão de cursos com hierarquia clara entre ação, filtro e listagem. */}
                             <div className={css.barraTitulo}>
-                                <h2>{tituloCursos}</h2>
+                                <div>
+                                    <h2>{tituloCursos}</h2>
+                                    <p className={css.subtituloSecao}>Organize cursos, acompanhe as matrículas e mantenha o conteúdo atualizado.</p>
+                                </div>
                                 <button className={css.botaoPrimario} onClick={() => setModal({ tipo: "curso", item: null })}>
                                     <FaPlus /> Cadastrar Curso
                                 </button>
@@ -986,6 +990,14 @@ export default function DashboardProfessor({
 
                     {visao === "chat" && (
                         <section className={css.secaoCursos}>
+                            {/* Sprint item 9: contextualiza o chat compartilhado dentro do painel do professor. */}
+                            <header className={css.cabecalhoPagina}>
+                                <div>
+                                    <span className={css.etiquetaPagina}>COMUNICAÇÃO</span>
+                                    <h2>Conversas dos cursos</h2>
+                                    <p>Responda aos alunos e acompanhe as conversas relacionadas às suas turmas.</p>
+                                </div>
+                            </header>
                             <ChatCurso api={api} perfil="professor" setMensagem={setMensagem} />
                         </section>
                     )}

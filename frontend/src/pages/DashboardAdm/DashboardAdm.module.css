@@ -385,3 +385,271 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Sprint item 9: aproxima dashboard, financeiro e auditoria administrativa da identidade dos demais painéis. */
+.painelAdm {
+    background: #f5f8f6;
+}
+
+.areaConteudo {
+    padding: clamp(22px, 3vw, 42px);
+}
+
+.cabecalhoUsuario {
+    margin-bottom: 24px;
+}
+
+.dadosUsuario {
+    border: 0;
+    border-left: 4px solid #06a663;
+    padding: 2px 0 2px 14px;
+}
+
+.dadosUsuario h1 {
+    color: #173e2c;
+    font-size: clamp(1.55rem, 2.3vw, 2rem);
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
+.cargoUsuario {
+    color: #607468;
+    margin-top: 5px;
+}
+
+.cabecalhoPagina {
+    display: flex;
+    margin-bottom: 22px;
+    padding: clamp(23px, 3vw, 34px);
+    border: 1px solid #dcebe2;
+    border-radius: 21px;
+    background: linear-gradient(115deg, #f0faf4 0%, #ffffff 78%);
+}
+
+.cabecalhoPagina > div {
+    display: grid;
+    gap: 7px;
+}
+
+.cabecalhoPagina h2 {
+    color: #123c2a;
+    font-size: clamp(1.75rem, 3vw, 2.3rem);
+    line-height: 1.1;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+}
+
+.cabecalhoPagina p {
+    max-width: 700px;
+    color: #53675c;
+    font-size: 0.97rem;
+    line-height: 1.55;
+}
+
+.etiquetaPagina {
+    color: #087044;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: 0.11em;
+}
+
+.secaoMetricas {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.paginaFinanceiro {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cardMetrica {
+    min-width: 0;
+    min-height: 150px;
+    padding: 20px;
+    border: 1px solid #dfe9e3;
+    border-radius: 17px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.05);
+}
+
+.paginaFinanceiro .cardMetrica:last-child {
+    grid-column: 1 / -1;
+}
+
+.metricaTopo h2 {
+    color: #244338;
+    font-size: 1rem;
+    line-height: 1.35;
+    font-weight: 650;
+}
+
+.iconeBadge {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #e5f5ec;
+    color: #087044;
+}
+
+.metricaVariacao {
+    color: #607468;
+    font-size: 0.84rem;
+}
+
+.metricaNumero {
+    color: #123c2a;
+    font-size: clamp(1.5rem, 2.3vw, 2rem);
+    line-height: 1.15;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.campoFinanceiro input,
+.formFinanceiro input,
+.filtrosLogs input,
+.filtrosLogs select {
+    border: 1px solid #cbd9d0;
+    border-radius: 10px;
+}
+
+.campoFinanceiro input:focus,
+.formFinanceiro input:focus,
+.filtrosLogs input:focus,
+.filtrosLogs select:focus {
+    outline: 0;
+    border-color: #06a663;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+.botaoFinanceiro {
+    border-radius: 10px;
+    background: #087044;
+    transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.botaoFinanceiro:hover {
+    background: #055a36;
+    transform: translateY(-1px);
+}
+
+.listaCustos {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.listaCustos p {
+    margin: 0;
+    padding: 9px 11px;
+    border-radius: 9px;
+    background: #f5f9f6;
+    color: #455b4e;
+    font-size: 0.87rem;
+    line-height: 1.4;
+}
+
+.paginaFinanceiro .formFinanceiro {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.paginaFinanceiro .formFinanceiro button {
+    grid-column: 1 / -1;
+}
+
+.listaLogs {
+    gap: 15px;
+    padding: 20px;
+    border: 1px solid #dfe9e3;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
+}
+
+.listaLogs h2 {
+    color: #183d2c;
+    font-size: 1.2rem;
+    font-weight: 650;
+}
+
+.filtrosLogs {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+}
+
+.abasLogs {
+    border-color: #dfe9e3;
+    border-radius: 11px;
+    background: #f4f8f6;
+}
+
+.abaAtiva {
+    border-radius: 8px;
+    background: #087044;
+}
+
+.logItem {
+    border: 1px solid #dfe9e3;
+    border-radius: 14px;
+    padding: 16px;
+    background: #fbfdfc;
+}
+
+.logItem strong {
+    color: #087044;
+}
+
+.logDetalhes {
+    border: 1px solid #e2ebe5;
+    border-radius: 10px;
+    background: #f4f8f6;
+}
+
+.rodapePagina {
+    background: #075132;
+}
+
+@media (max-width: 1100px) {
+    .secaoMetricas,
+    .paginaFinanceiro {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 860px) {
+    .areaConteudo {
+        padding: 22px 18px 30px;
+    }
+
+    .cabecalhoPagina {
+        border-radius: 17px;
+    }
+
+    .listaLogs {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 560px) {
+    .secaoMetricas,
+    .paginaFinanceiro {
+        grid-template-columns: 1fr;
+    }
+
+    .cabecalhoPagina {
+        padding: 21px 18px;
+    }
+
+    .cabecalhoPagina h2 {
+        font-size: 1.75rem;
+    }
+
+    .paginaFinanceiro .formFinanceiro {
+        grid-template-columns: 1fr;
+    }
+
+    .paginaFinanceiro .formFinanceiro button {
+        grid-column: auto;
+    }
+}

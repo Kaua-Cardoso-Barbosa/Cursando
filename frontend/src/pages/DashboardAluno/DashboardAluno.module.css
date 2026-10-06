@@ -1033,3 +1033,419 @@
         min-height: 230px;
     }
 }
+
+/* Sprint item 9: unifica cursos, aulas, financeiro e conversa do aluno com o visual claro do painel. */
+.painelAluno {
+    background: #f5f8f6;
+}
+
+.areaConteudo {
+    padding: clamp(22px, 3vw, 42px);
+}
+
+.cabecalhoUsuario {
+    margin-bottom: 24px;
+}
+
+.dadosUsuario {
+    border-bottom: 0;
+    border-left: 4px solid #06a663;
+    padding: 2px 0 2px 14px;
+}
+
+.dadosUsuario h1 {
+    color: #173e2c;
+    font-size: clamp(1.55rem, 2.3vw, 2rem);
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
+.cargoUsuario {
+    color: #607468;
+    margin-top: 5px;
+}
+
+.cabecalhoPagina {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 24px;
+    padding: clamp(23px, 3vw, 34px);
+    border: 1px solid #dcebe2;
+    border-radius: 21px;
+    background: linear-gradient(115deg, #f0faf4 0%, #ffffff 78%);
+}
+
+.cabecalhoPagina h2 {
+    margin: 0;
+    color: #123c2a;
+    font-size: clamp(1.75rem, 3vw, 2.3rem);
+    line-height: 1.1;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+}
+
+.cabecalhoPagina p {
+    max-width: 690px;
+    margin: 0;
+    color: #53675c;
+    font-size: 0.97rem;
+    line-height: 1.55;
+}
+
+.etiquetaPagina {
+    color: #087044;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: 0.11em;
+}
+
+.secaoUltimasAulas,
+.secaoMetricas:not(.paginaFinanceiro) {
+    margin-bottom: 22px;
+    padding: 22px;
+    border: 1px solid #dfe9e3;
+    border-radius: 19px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
+}
+
+.tituloUltimasAulas {
+    align-items: flex-start;
+    border: 0;
+    margin-bottom: 17px;
+    padding: 0;
+}
+
+.tituloUltimasAulas h2 {
+    color: #183d2c;
+    font-size: 1.2rem;
+    font-weight: 650;
+}
+
+.tituloUltimasAulas span {
+    color: #607468;
+    font-size: 0.87rem;
+}
+
+.gridMetricas {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    gap: 15px;
+    margin: 0;
+}
+
+.cardMetrica {
+    min-height: 142px;
+    padding: 19px;
+    border: 1px solid #dfe9e3;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 7px 18px rgba(15, 63, 40, 0.045);
+}
+
+.metricaTopo h2 {
+    color: #244338;
+    font-size: 0.98rem;
+    font-weight: 650;
+}
+
+.iconeBadge {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #e5f5ec;
+    color: #087044;
+}
+
+.metricaVariacao {
+    color: #607468;
+    font-size: 0.82rem;
+}
+
+.metricaNumero {
+    color: #123c2a;
+    font-size: clamp(1.35rem, 2vw, 1.8rem);
+    font-weight: 650;
+}
+
+.secaoCursos > h2,
+.secaoAulaAberta > h2 {
+    color: #183d2c;
+    font-size: 1.25rem;
+    font-weight: 650;
+    margin-bottom: 16px;
+}
+
+.filtrosDescobrir {
+    margin-bottom: 20px;
+    padding: 17px;
+    border: 1px solid #dfe9e3;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 7px 18px rgba(15, 63, 40, 0.04);
+}
+
+.campoBusca,
+.filtroOrdenacao select {
+    border-color: #cbd9d0;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.campoBusca:focus-within,
+.filtroOrdenacao select:focus {
+    outline: 0;
+    border-color: #06a663;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+.gridCursos,
+.gridAulas {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    gap: 20px;
+}
+
+.cardCurso,
+.cardAula,
+.cardModuloAluno,
+.cardMaterial,
+.conteudoCurso,
+.blocoFinanceiro {
+    border: 1px solid #dfe9e3;
+    border-radius: 17px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.05);
+}
+
+.cardCurso,
+.cardAula,
+.cardModuloAluno {
+    transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.cardCurso:hover,
+.cardAula:hover,
+.cardModuloAluno:hover {
+    box-shadow: 0 14px 28px rgba(15, 63, 40, 0.1);
+    transform: translateY(-2px);
+}
+
+.heroCurso {
+    overflow: hidden;
+    border: 1px solid #dce9e1;
+    border-radius: 21px;
+    background: #ffffff;
+    box-shadow: 0 10px 26px rgba(15, 63, 40, 0.06);
+}
+
+.heroCurso img {
+    border-radius: 0;
+}
+
+.resumoCurso {
+    padding: clamp(22px, 3vw, 34px);
+}
+
+.resumoCurso h2 {
+    color: #123c2a;
+    font-weight: 650;
+}
+
+.navegacaoCurso {
+    gap: 8px;
+    margin: 20px 0;
+    padding: 5px;
+    border: 1px solid #dfe9e3;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.abaCurso,
+.abaAtiva {
+    min-height: 42px;
+    border: 0;
+    border-radius: 10px;
+    font-size: 0.94rem;
+    font-weight: 650;
+}
+
+.abaCurso {
+    color: #486355;
+    background: transparent;
+}
+
+.abaAtiva {
+    color: #ffffff;
+    background: #087044;
+}
+
+.conteudoCurso {
+    margin-bottom: 17px;
+    padding: clamp(18px, 2.5vw, 25px);
+}
+
+.conteudoCurso h2,
+.detalheModuloAluno h3 {
+    color: #183d2c;
+    font-size: 1.2rem;
+    font-weight: 650;
+}
+
+.gradeModulosAluno {
+    gap: 17px;
+}
+
+.cardModuloAluno {
+    overflow: hidden;
+    padding: 0;
+}
+
+.cardModuloAluno img {
+    background: #e8f1eb;
+}
+
+.infoCardModuloAluno {
+    gap: 8px;
+    padding: 16px;
+}
+
+.infoCardModuloAluno strong {
+    color: #173e2c;
+    font-size: 1rem;
+}
+
+.infoCardModuloAluno small,
+.infoCardModuloAluno em {
+    color: #087044;
+}
+
+.detalheModuloAluno {
+    border: 1px solid #dfe9e3;
+    border-radius: 15px;
+    padding: 17px;
+    background: #f8fbf9;
+}
+
+.cardMaterial {
+    padding: 17px;
+}
+
+.cardMaterial strong {
+    color: #173e2c;
+}
+
+.estadoVazio {
+    border-color: #cad9cf;
+    border-radius: 15px;
+    background: #ffffff;
+    color: #607468;
+}
+
+.paginaFinanceiro {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.paginaFinanceiro .cabecalhoPagina {
+    width: 100%;
+    margin: 0;
+}
+
+.paginaFinanceiro .gridMetricas {
+    width: 100%;
+}
+
+.blocoFinanceiro {
+    border-top: 1px solid #dfe9e3;
+    padding: 20px;
+}
+
+.blocoFinanceiro h2 {
+    color: #183d2c;
+    font-size: 1.18rem;
+    font-weight: 650;
+}
+
+.cabecalhoBlocoFinanceiro p {
+    margin: 4px 0 0;
+    color: #607468;
+    line-height: 1.5;
+}
+
+.cardPagamentoPix {
+    border-color: #c6e5d2;
+    border-radius: 16px;
+}
+
+.botaoInscrever,
+.botaoCertificado,
+.botaoSecundarioFinanceiro {
+    min-height: 44px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+.botaoInscrever,
+.botaoCertificado {
+    background: #087044;
+}
+
+.secaoPerfil {
+    padding: clamp(18px, 3vw, 30px);
+    border: 1px solid #dfe9e3;
+    border-radius: 20px;
+    background: #ffffff;
+}
+
+.rodapePagina {
+    background: #075132;
+}
+
+@media (max-width: 860px) {
+    .areaConteudo {
+        padding: 22px 18px 30px;
+    }
+
+    .cabecalhoPagina {
+        border-radius: 17px;
+    }
+
+    .secaoUltimasAulas,
+    .secaoMetricas:not(.paginaFinanceiro) {
+        padding: 17px;
+    }
+
+    .navegacaoCurso {
+        display: flex;
+    }
+
+    .botaoInscrever {
+        min-width: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 560px) {
+    .cabecalhoPagina {
+        padding: 21px 18px;
+    }
+
+    .cabecalhoPagina h2 {
+        font-size: 1.75rem;
+    }
+
+    .tituloUltimasAulas {
+        align-items: flex-start;
+    }
+
+    .cardPagamentoPix,
+    .blocoFinanceiro {
+        padding: 15px;
+    }
+
+    .acoesPagamentoPix > button {
+        flex: 1 1 100%;
+    }
+}

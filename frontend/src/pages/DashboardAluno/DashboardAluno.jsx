@@ -640,6 +640,12 @@ export default function DashboardAluno({
 
                     {visao === "inicio" && (
                         <>
+                            {/* Sprint item 9: apresenta ao aluno o foco do painel antes dos indicadores e aulas recentes. */}
+                            <header className={css.cabecalhoPagina}>
+                                <span className={css.etiquetaPagina}>ÁREA DO ALUNO</span>
+                                <h2>Seu aprendizado em andamento</h2>
+                                <p>Retome suas aulas, acompanhe sua assinatura e veja o progresso dos seus cursos.</p>
+                            </header>
                             <section className={css.secaoUltimasAulas}>
                                 <div className={css.tituloUltimasAulas}>
                                     <h2>Últimas aulas vistas:</h2>
@@ -681,7 +687,12 @@ export default function DashboardAluno({
 
                     {visao === "meus-cursos" && !cursoDetalhe && (
                         <section className={css.secaoCursos}>
-                            <h2>Todos os Cursos</h2>
+                            {/* Sprint item 9: padroniza a abertura das páginas de cursos com título e orientação. */}
+                            <header className={css.cabecalhoPagina}>
+                                <span className={css.etiquetaPagina}>MINHA APRENDIZAGEM</span>
+                                <h2>Meus cursos</h2>
+                                <p>Acesse os cursos em que você está inscrito e continue de onde parou.</p>
+                            </header>
                             {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
                             {!carregando && meusCursos.length === 0 && <EstadoVazio texto="Você ainda não se inscreveu em cursos." />}
                             <div className={css.gridCursos}>
@@ -694,6 +705,12 @@ export default function DashboardAluno({
 
                     {visao === "descobrir" && !cursoDetalhe && (
                         <section className={css.secaoCursos}>
+                            {/* Sprint item 9: explica a busca e mantém os filtros agrupados abaixo do cabeçalho. */}
+                            <header className={css.cabecalhoPagina}>
+                                <span className={css.etiquetaPagina}>EXPLORE</span>
+                                <h2>Encontre seu próximo curso</h2>
+                                <p>Pesquise o catálogo, compare opções e abra um curso para ver os módulos e as aulas.</p>
+                            </header>
                             <div className={css.filtrosDescobrir}>
                                 <label className={css.campoBusca}>
                                     <FaSearch />
@@ -895,6 +912,12 @@ export default function DashboardAluno({
 
                             {videoAula && (
                                 <>
+                                    {/* Sprint item 9: identifica a aula aberta antes do player para orientar a retomada. */}
+                                    <header className={css.cabecalhoPagina}>
+                                        <span className={css.etiquetaPagina}>AULA EM ANDAMENTO</span>
+                                        <h2>{videoAula.titulo}</h2>
+                                        <p>{videoAula.descricao || "Continue assistindo e seu progresso será salvo automaticamente."}</p>
+                                    </header>
                                     <div className={protecaoAtiva ? css.playerProtegido : ""}>
                                         {/* O player carrega o manifesto protegido devolvido pelo backend. */}
                                         <PlayerVideo
@@ -934,11 +957,13 @@ export default function DashboardAluno({
                     )}
 
                     {visao === "financeiro" && (
-                        <section className={css.secaoMetricas}>
-                            <div className={css.tituloUltimasAulas}>
+                        <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
+                            {/* Sprint item 9: resume a finalidade da página financeira antes dos valores e cobranças. */}
+                            <header className={css.cabecalhoPagina}>
+                                <span className={css.etiquetaPagina}>ASSINATURA</span>
                                 <h2>Financeiro</h2>
-                                <span>Assinatura</span>
-                            </div>
+                                <p>Acompanhe suas mensalidades, consulte cobranças pendentes e acesse o histórico.</p>
+                            </header>
                             {/* Sprint itens 33 e 34: resumo inicial de gastos e faturas do aluno. */}
                             <div className={css.gridMetricas}>
                                 {/* Sprint item 2: mostra total gasto e historico de faturas do aluno. */}
@@ -1027,6 +1052,12 @@ export default function DashboardAluno({
 
                     {visao === "chat" && (
                         <section className={css.secaoCursos}>
+                            {/* Sprint item 9: dá contexto ao componente de conversa compartilhado. */}
+                            <header className={css.cabecalhoPagina}>
+                                <span className={css.etiquetaPagina}>COMUNICAÇÃO</span>
+                                <h2>Conversas dos cursos</h2>
+                                <p>Fale com seus professores e acompanhe as mensagens relacionadas aos cursos.</p>
+                            </header>
                             <ChatCurso api={api} perfil="aluno" setMensagem={setMensagem} />
                         </section>
                     )}

@@ -1320,3 +1320,287 @@
         padding: 22px 19px;
     }
 }
+
+/* Sprint item 9: aplica o estilo claro do dashboard às listagens, módulos, alunos e formulários do professor. */
+.painelProfessor {
+    background: #f5f8f6;
+}
+
+.areaConteudo {
+    padding: clamp(22px, 3vw, 42px);
+}
+
+.cabecalhoUsuario {
+    margin-bottom: 24px;
+}
+
+.dadosUsuario {
+    border-bottom: 0;
+    border-left: 4px solid #06a663;
+    padding: 2px 0 2px 14px;
+}
+
+.dadosUsuario h1 {
+    color: #173e2c;
+    font-size: clamp(1.55rem, 2.3vw, 2rem);
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
+.cargoUsuario {
+    color: #607468;
+    margin-top: 5px;
+}
+
+.barraTitulo {
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 20px;
+    padding: 21px 23px;
+    border: 1px solid #dce9e1;
+    border-radius: 18px;
+    background: linear-gradient(115deg, #f0faf4 0%, #ffffff 78%);
+}
+
+.barraTitulo h2 {
+    color: #173e2c;
+    font-size: clamp(1.4rem, 2vw, 1.8rem);
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
+.barraTitulo .subtituloSecao {
+    max-width: 610px;
+    margin-top: 6px;
+    color: #607468;
+    line-height: 1.5;
+}
+
+.secaoCursos > .barraTitulo + .gridCursos,
+.secaoCursos > .barraTitulo + .estadoVazio {
+    margin-top: 18px;
+}
+
+.botaoPrimario,
+.botaoSecundario,
+.filtros button,
+.linkVoltar {
+    min-height: 42px;
+    border-radius: 10px;
+    font-size: 0.93rem;
+    font-weight: 650;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.botaoPrimario {
+    border-color: #087044;
+    background: #087044;
+    box-shadow: none;
+}
+
+.botaoPrimario:hover:not(:disabled) {
+    border-color: #055a36;
+    background: #055a36;
+    transform: translateY(-1px);
+}
+
+.botaoSecundario {
+    border-color: #cbd9d0;
+    color: #24533d;
+}
+
+.botaoSecundario:hover,
+.linkVoltar:hover {
+    border-color: #087044;
+    background: #eff8f2;
+}
+
+.linkVoltar {
+    width: fit-content;
+    color: #087044;
+    padding: 8px 12px;
+}
+
+.filtros {
+    gap: 8px;
+}
+
+.filtros span {
+    color: #607468;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.filtros button {
+    min-height: 38px;
+    border-color: #d5e2da;
+    color: #365b48;
+    padding: 8px 12px;
+}
+
+.filtros .filtroAtivo {
+    border-color: #087044;
+    background: #087044;
+}
+
+.gridCursos,
+.gridAulas {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    gap: 20px;
+}
+
+.cardCurso,
+.cardAula,
+.cardModuloProfessor {
+    border: 1px solid #dfe9e3;
+    border-radius: 17px;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
+    transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.cardCurso:hover,
+.cardAula:hover,
+.cardModuloProfessor:hover {
+    box-shadow: 0 14px 28px rgba(15, 63, 40, 0.1);
+    transform: translateY(-2px);
+}
+
+.imagemCurso,
+.videoPreview {
+    background: #e8f1eb;
+    border-bottom-color: #e0e9e3;
+}
+
+.infoCurso,
+.infoAula {
+    padding: 16px 17px 14px;
+}
+
+.infoCurso h3,
+.infoAula h3 {
+    color: #173e2c;
+    font-size: 1.08rem;
+    line-height: 1.3;
+    font-weight: 650;
+}
+
+.infoCurso p,
+.infoAula p,
+.textoApoio {
+    color: #607468;
+    line-height: 1.5;
+}
+
+.acoesCard {
+    padding: 0 15px 15px;
+}
+
+.statusBadge {
+    border-color: #c6e5d2;
+    background: #eff8f2;
+    color: #087044;
+    font-weight: 650;
+}
+
+.gradeModulos {
+    gap: 18px;
+}
+
+.cardModuloProfessor {
+    overflow: hidden;
+}
+
+.cardModuloProfessor > img {
+    height: 185px;
+}
+
+.infoModuloProfessor {
+    gap: 10px;
+    padding: 18px;
+}
+
+.infoModuloProfessor h3,
+.aulasSemModulo h3 {
+    color: #173e2c;
+    font-size: 1.12rem;
+    font-weight: 650;
+}
+
+.listaAlunosCurso {
+    width: 100%;
+    border: 1px solid #dfe9e3;
+    border-radius: 16px;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
+}
+
+.cabecalhoListaAlunos,
+.linhaAlunoCurso {
+    grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
+    padding: 15px 20px;
+}
+
+.cabecalhoListaAlunos {
+    background: #eff8f2;
+    color: #24533d;
+}
+
+.linhaAlunoCurso {
+    border-color: #edf2ee;
+    color: #34483d;
+}
+
+.estadoVazio {
+    border-color: #cad9cf;
+    border-radius: 16px;
+    background: #ffffff;
+    color: #607468;
+}
+
+.formularioModal {
+    border: 1px solid #dfe9e3;
+    border-radius: 18px;
+}
+
+.modalFormulario input,
+.modalFormulario textarea,
+.moverAulaModulo select {
+    border: 1px solid #cbd9d0;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.modalFormulario input:focus,
+.modalFormulario textarea:focus,
+.moverAulaModulo select:focus {
+    outline: 0;
+    border-color: #06a663;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+@media (max-width: 860px) {
+    .areaConteudo {
+        padding: 22px 18px 30px;
+    }
+
+    .barraTitulo {
+        align-items: stretch;
+    }
+
+    .barraTitulo > div:first-child {
+        width: 100%;
+    }
+
+    .filtros {
+        width: 100%;
+    }
+
+    .cabecalhoListaAlunos {
+        display: none;
+    }
+
+    .linhaAlunoCurso {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+}

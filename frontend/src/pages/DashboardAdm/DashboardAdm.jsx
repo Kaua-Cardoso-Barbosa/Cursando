@@ -235,10 +235,27 @@ export default function DashboardAdm({
 
                     </header>
 
+                    {/* Sprint item 9: identifica a área administrativa atual e orienta a leitura da página. */}
+                    <section className={css.cabecalhoPagina}>
+                        <div>
+                            <span className={css.etiquetaPagina}>
+                                {exibindoPerfil ? "CONTA" : exibindoFinanceiro ? "FINANCEIRO" : exibindoLogs ? "AUDITORIA" : "ADMINISTRAÇÃO"}
+                            </span>
+                            <h2>{exibindoPerfil ? "Perfil do administrador" : exibindoFinanceiro ? "Visão financeira" : exibindoLogs ? "Atividade do sistema" : "Visão geral"}</h2>
+                            <p>{exibindoPerfil
+                                ? "Atualize seus dados e mantenha as informações da conta em dia."
+                                : exibindoFinanceiro
+                                    ? "Acompanhe arrecadação, repasses, custos e saldo da plataforma."
+                                    : exibindoLogs
+                                        ? "Consulte eventos e filtre registros para acompanhar as operações da plataforma."
+                                        : "Acompanhe os principais indicadores de cursos e usuários da plataforma."}</p>
+                        </div>
+                    </section>
+
                     {exibindoPerfil ? (
                         <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                     ) : exibindoFinanceiro ? (
-                        <section className={css.secaoMetricas}>
+                        <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
                             {/* Sprint itens 13, 14, 15 e 16: cards de gestao financeira administrativa. */}
                             {[
                                 ["Total arrecadado", financeiro?.total_arrecadado],
