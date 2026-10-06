@@ -58,9 +58,10 @@ export default function Cadastro({api, setMensagem}) {
                 return;
             }
 
-            sessionStorage.setItem("cursando_email_pendente", email.trim().toLowerCase());
+            const emailConfirmacao = (dados.email || email).trim().toLowerCase().replace(/\.+$/, "");
+            sessionStorage.setItem("cursando_email_pendente", emailConfirmacao);
             setMensagem(dados.mensagem || "Enviamos um codigo de verificacao para seu e-mail.");
-            navigate("/verificar-email", { state: { email: email.trim().toLowerCase() } });
+            navigate("/verificar-email", { state: { email: emailConfirmacao, codigo_enviado: dados.codigo_enviado } });
 
         } catch (erro) {
             console.error("Erro ao conectar com o servidor:", erro);

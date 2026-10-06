@@ -15,19 +15,27 @@ import BrandLogo from "../components/BrandLogo";
 import Field from "../components/Field";
 import { colors, globalStyles } from "../styles";
 
-export default function VerificarEmailScreen({ email, onVerified }) {
+export default function VerificarEmailScreen({ email, codigoEnviado, onVerified }) {
+  const emailNormalizado = (email || "").trim().toLowerCase().replace(/\.+$/, "");
+  const [emailAtual, setEmailAtual] = useState(emailNormalizado);
+  const [novoEmail, setNovoEmail] = useState(emailNormalizado);
   const [codigo, setCodigo] = useState("");
+  const [senha, setSenha] = useState("");
+  const [corrigindoEmail, setCorrigindoEmail] = useState(false);
   const [erro, setErro] = useState("");
-  const [mensagem, setMensagem] = useState("");
+  const [mensagem, setMensagem] = useState(codigoEnviado === false
+    ? "O cadastro foi criado, mas nao conseguimos enviar o codigo. Toque em Reenviar codigo."
+    : "");
   const [carregando, setCarregando] = useState(false);
 
   async function verificar() {
     setCarregando(true);
     setErro("");
     try {
+      // Sprint item 1: confirma no app o código do cadastro criado pelo mesmo endpoint usado no site.
       const dados = await apiRequest("/verificar_email_cadastro", {
         method: "POST",
-        body: JSON.stringify({ email, codigo: codigo.trim() })
+        body: JSON.stringify({ email: emailAtual, codigo: codigo.trim() })
       });
       if (!dados?.token || !dados?.usuario) throw new Error("A API nao retornou a sessao verificada.");
       await onVerified(dados.token, dados.usuario);
@@ -42,13 +50,36 @@ export default function VerificarEmailScreen({ email, onVerified }) {
     setErro("");
     setMensagem("");
     try {
+      // Sprint item 1: solicita outro código no fluxo de verificação do cadastro móvel.
       const dados = await apiRequest("/reenviar_codigo_cadastro", {
         method: "POST",
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: emailAtual })
       });
       setMensagem(dados?.mensagem?.descricao || "Enviamos um novo codigo para seu e-mail.");
     } catch (error) {
       setErro(error?.message || "Nao foi possivel reenviar o codigo.");
+    }
+  }
+
+  async function corrigirEmail() {
+    setErro("");
+    setMensagem("");
+    try {
+      const dados = await apiRequest("/corrigir_email_cadastro", {
+        method: "POST",
+        // Sprint item 1: normaliza o novo endereço como no site e remove ponto acidental ao final.
+        body: JSON.stringify({ email_atual: emailAtual, novo_email: novoEmail.trim().toLowerCase().replace(/\.+$/, ""), senha })
+      });
+      setEmailAtual(dados.email);
+      setNovoEmail(dados.email);
+      setCodigo("");
+      setSenha("");
+      setCorrigindoEmail(false);
+      setMensagem(dados.codigo_enviado
+        ? "E-mail corrigido. Enviamos um novo codigo para o endereco informado."
+        : "E-mail corrigido. Nao foi possivel enviar o codigo; use Reenviar codigo.");
+    } catch (error) {
+      setErro(error?.message || "Nao foi possivel corrigir o e-mail.");
     }
   }
 
@@ -59,7 +90,22 @@ export default function VerificarEmailScreen({ email, onVerified }) {
           <BrandLogo />
           <View style={styles.card}>
             <Text style={styles.title}>Verifique seu e-mail</Text>
-            <Text style={styles.description}>Enviamos um codigo de 6 digitos para {email}.</Text>
+            <Text style={styles.description}>Digite o codigo de 6 digitos enviado para {emailAtual || "o e-mail informado"}. Se ele nao chegou, use Reenviar codigo.</Text>
+            {corrigindoEmail ? (
+              <>
+                <Field label="Corrigir email:" value={novoEmail} onChangeText={setNovoEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
+                <Field label="Senha usada no cadastro:" value={senha} onChangeText={setSenha} secureTextEntry />
+                <Pressable style={globalStyles.primaryButton} onPress={corrigirEmail}>
+                  <Text style={globalStyles.buttonText}>Salvar novo email</Text>
+                </Pressable>
+              </>
+            ) : emailAtual ? (
+              <Pressable style={styles.resendButton} onPress={() => { setNovoEmail(emailAtual); setCorrigindoEmail(true); }}>
+                <Text style={styles.resendText}>Corrigir email</Text>
+              </Pressable>
+            ) : (
+              <Field label="E-mail do cadastro:" value={emailAtual} onChangeText={(valor) => setEmailAtual(valor.trim().toLowerCase().replace(/\.+$/, ""))} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
+            )}
             <Field label="Codigo de verificacao:" value={codigo} onChangeText={(valor) => setCodigo(valor.replace(/\D/g, "").slice(0, 6))} keyboardType="number-pad" maxLength={6} />
             {erro ? <Text style={globalStyles.error}>{erro}</Text> : null}
             {mensagem ? <Text style={styles.success}>{mensagem}</Text> : null}

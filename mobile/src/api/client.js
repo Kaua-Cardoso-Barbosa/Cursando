@@ -5,6 +5,8 @@ const USER_KEY = "cursando_usuario";
 
 const API_PORT = 5000;
 const REQUEST_TIMEOUT_MS = 3000;
+// Sprint item 1: pagamentos podem aguardar a resposta da Arkhé por até 10 segundos.
+export const PAYMENT_REQUEST_TIMEOUT_MS = 15000;
 
 const API_HOSTS = [
   "192.168.137.1",
@@ -92,12 +94,12 @@ export function resolverUrlMidia(caminho) {
 }
 
 
-async function fetchWithTimeout(url, options = {}) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
 
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, REQUEST_TIMEOUT_MS);
+  }, timeoutMs);
 
   try {
     return await fetch(url, {
@@ -122,7 +124,9 @@ function isConnectionError(error) {
 export async function apiRequest(
     path,
     options = {},
-    token = null
+    token = null,
+    timeoutMs = REQUEST_TIMEOUT_MS,
+    retryOnAbort = true
 ) {
   // JSON e token Bearer sao enviados nos formatos esperados pela API.
   const headers = {
@@ -166,7 +170,8 @@ export async function apiRequest(
           {
             ...options,
             headers
-          }
+          },
+          timeoutMs
       );
 
       const data = await response
@@ -191,6 +196,11 @@ export async function apiRequest(
       return data;
 
     } catch (error) {
+      // Sprint item 1: não repete POST financeiro se o tempo esgotar após a API talvez ter criado a cobrança.
+      if (error?.name === "AbortError" && !retryOnAbort) {
+        throw new Error("A API demorou para responder. Consulte os pagamentos antes de tentar novamente.");
+      }
+
       if (!isConnectionError(error)) {
         throw error;
       }

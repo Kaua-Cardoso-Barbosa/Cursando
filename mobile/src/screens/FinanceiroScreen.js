@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { apiRequest } from "../api/client";
+import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client";
 import { colors, globalStyles } from "../styles";
 
 function moeda(valor) {
@@ -49,11 +49,12 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
 
   async function pagarProxima() {
     try {
+      // Sprint item 1: aguarda a resposta da Arkhé ao gerar uma cobrança de mensalidade.
       // Sprint item 3: gera PIX de fatura futura pelo financeiro mobile do aluno.
       const dados = await apiRequest("/financeiro/faturas", {
         method: "POST",
         body: JSON.stringify({ meses: 1 })
-      }, token);
+      }, token, PAYMENT_REQUEST_TIMEOUT_MS, false);
       setPagamento(dados);
       await carregarFaturas();
       await onRefresh?.();
@@ -66,9 +67,10 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
     if (!pagamento?.id_assinatura) return;
     try {
       setVerificando(true);
+      // Sprint item 1: confere com a Arkhé se a cobrança de mensalidade foi paga.
       await apiRequest(`/financeiro/faturas/${pagamento.id_assinatura}/verificar`, {
         method: "POST"
-      }, token);
+      }, token, PAYMENT_REQUEST_TIMEOUT_MS);
       setPagamento(null);
       await carregarFaturas();
       await onRefresh?.();

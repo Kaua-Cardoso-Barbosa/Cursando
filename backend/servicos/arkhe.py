@@ -27,12 +27,20 @@ def _url(caminho):
     return f'{_config("ARKHE_BASE_URL").rstrip("/")}{caminho}'
 
 
+def _requisitar_arkhe(metodo, caminho, **opcoes):
+    # Sprint item 1: converte falhas de rede da Arkhé em erro de integração tratável pelas rotas.
+    try:
+        return requests.request(metodo, _url(caminho), timeout=10, **opcoes)
+    except requests.RequestException as erro:
+        raise ArkheError("Não foi possível comunicar com a Arkhé.") from erro
+
+
 def _json_resposta(resposta):
     try:
         return resposta.json()
     except ValueError as erro:
         raise ArkheError(
-            f"Resposta invalida da Arkhe. HTTP {resposta.status_code}: {resposta.text[:200]}"
+            f"Resposta inválida da Arkhé (HTTP {resposta.status_code})."
         ) from erro
 
 
@@ -65,7 +73,8 @@ def _primeiro_valor(dados, *chaves):
     return None
 
 
-def _normalizar_cobranca(dados):
+def _normalizar_cobranca(dados, exigir_codigo_pix=True):
+    # Sprint item 1: padroniza os campos da resposta da Arkhé consumidos pelo site e aplicativo.
     id_cobranca = _primeiro_valor(dados, "id_cobranca", "id", "cobranca_id", "charge_id")
     valor = _primeiro_valor(dados, "valor", "amount")
     codigo_pagamento = _primeiro_valor(
@@ -77,17 +86,27 @@ def _normalizar_cobranca(dados):
         "brcode",
         "emv",
     )
+    # Sprint item 1: impede exibir ou copiar um identificador que não seja o Pix Copia e Cola BR Code.
+    if exigir_codigo_pix and (
+        not isinstance(codigo_pagamento, str)
+        or not codigo_pagamento.startswith("000201")
+    ):
+        raise ArkheError("A Arkhé não retornou um código Pix Copia e Cola válido.")
+
     status = _primeiro_valor(dados, "status", "situacao")
     tipo_cobranca = _primeiro_valor(dados, "tipo_cobranca", "tipo", "type")
 
+    campos_obrigatorios = {
+        "id_cobranca": id_cobranca,
+        "valor": valor,
+        "status": status,
+    }
+    if exigir_codigo_pix:
+        campos_obrigatorios["codigo_pagamento"] = codigo_pagamento
+
     campos_faltando = [
         nome
-        for nome, valor_campo in {
-            "id_cobranca": id_cobranca,
-            "valor": valor,
-            "codigo_pagamento": codigo_pagamento,
-            "status": status,
-        }.items()
+        for nome, valor_campo in campos_obrigatorios.items()
         if valor_campo is None
     ]
 
@@ -108,9 +127,10 @@ def _normalizar_cobranca(dados):
 
 
 def criar_cobranca_pix(valor):
-    # Envia o valor a Arkhe para criar a cobranca PIX.
-    resposta = requests.post(
-        _url("/api/v1/cobrancas/pix"),
+    # Sprint item 1: cria a cobrança PIX na Arkhé para o fluxo de assinatura e financeiro.
+    resposta = _requisitar_arkhe(
+        "POST",
+        "/api/v1/cobrancas/pix",
         headers={
             **_headers(),
             "Content-Type": "application/json",
@@ -118,7 +138,6 @@ def criar_cobranca_pix(valor):
         json={
             "valor": valor,
         },
-        timeout=10,
     )
 
     dados = _json_resposta(resposta)
@@ -129,12 +148,12 @@ def criar_cobranca_pix(valor):
     return _normalizar_cobranca(dados)
 
 
-def consultar_cobranca_pix(id_cobranca):
-    # Busca o estado mais recente de uma cobranca ja criada.
-    resposta = requests.get(
-        _url(f"/api/v1/cobrancas/pix/{id_cobranca}"),
+def consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=True):
+    # Sprint item 1: consulta a cobrança na Arkhé para confirmar o pagamento antes de liberar acesso.
+    resposta = _requisitar_arkhe(
+        "GET",
+        f"/api/v1/cobrancas/pix/{id_cobranca}",
         headers=_headers(),
-        timeout=10,
     )
 
     dados = _json_resposta(resposta)
@@ -142,14 +161,15 @@ def consultar_cobranca_pix(id_cobranca):
     if not resposta.ok:
         raise ArkheError(_mensagem_erro(dados, "Erro ao consultar cobranca Pix"))
 
-    return _normalizar_cobranca(dados)
+    # Sprint item 1: consultas de confirmação precisam do status, mesmo se a Arkhé omitir o código Pix.
+    return _normalizar_cobranca(dados, exigir_codigo_pix=exigir_codigo_pix)
 
 
 def consultar_conta():
-    resposta = requests.get(
-        _url("/api/v1/conta"),
+    resposta = _requisitar_arkhe(
+        "GET",
+        "/api/v1/conta",
         headers=_headers(),
-        timeout=10,
     )
 
     dados = _json_resposta(resposta)
@@ -162,8 +182,9 @@ def consultar_conta():
 
 def solicitar_saque_conta(valor, referencia=None):
     # Sprint item 1: envia a solicitacao de saque para a conta financeira da Arkhe.
-    resposta = requests.post(
-        _url("/api/v1/saques"),
+    resposta = _requisitar_arkhe(
+        "POST",
+        "/api/v1/saques",
         headers={
             **_headers(),
             "Content-Type": "application/json",
@@ -172,7 +193,6 @@ def solicitar_saque_conta(valor, referencia=None):
             "valor": valor,
             "referencia": referencia,
         },
-        timeout=10,
     )
 
     dados = _json_resposta(resposta)
@@ -180,8 +200,10 @@ def solicitar_saque_conta(valor, referencia=None):
     if not resposta.ok:
         raise ArkheError(_mensagem_erro(dados, "Erro ao solicitar saque na Arkhe"))
 
+    id_saque = _primeiro_valor(dados, "id_saque", "id", "saque_id", "withdraw_id")
+
     return {
         **dados,
-        "id_saque": _primeiro_valor(dados, "id_saque", "id", "saque_id", "withdraw_id"),
+        "id_saque": id_saque,
         "status": _primeiro_valor(dados, "status", "situacao") or "solicitado",
     }

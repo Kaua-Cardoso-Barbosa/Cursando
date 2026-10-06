@@ -2,6 +2,7 @@ import io
 import json
 from datetime import datetime, timedelta
 from threading import Lock
+from decimal import Decimal, InvalidOperation
 
 from flask import Response, current_app, g, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required, verify_jwt_in_request
@@ -367,6 +368,19 @@ def pesos_pool_instrutores(cursor):
         """
     )
     return {int(row[0]): int(row[1] or 0) for row in cursor.fetchall()}
+
+
+def calcular_saldo_saque(cursor, id_usuario, pool_instrutores, pesos_instrutores, peso_total):
+    # Sprint item 1: usa o mesmo saldo apresentado no painel para limitar saques enviados à Arkhé.
+    peso_instrutor = pesos_instrutores.get(int(id_usuario), 0)
+    estimado = pool_instrutores * (peso_instrutor / peso_total) if peso_total else 0
+    cursor.execute(
+        "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?",
+        (id_usuario,),
+    )
+    sacado = float((cursor.fetchone() or (0,))[0] or 0)
+    disponivel = round(max(estimado - sacado, 0), 2)
+    return peso_instrutor, estimado, sacado, disponivel
 
 
 def normalizar_taxonomia(valor):
@@ -1768,10 +1782,13 @@ def financeiro_resumo():
                 (id_usuario,),
             )
             alunos = int((cursor.fetchone() or (0,))[0] or 0)
-            peso_instrutor = pesos_instrutores.get(int(id_usuario), 0)
-            estimado = pool_instrutores * (peso_instrutor / peso_total) if peso_total else 0
-            cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?", (id_usuario,))
-            sacado = float((cursor.fetchone() or (0,))[0] or 0)
+            peso_instrutor, estimado, sacado, disponivel_saque = calcular_saldo_saque(
+                cursor,
+                id_usuario,
+                pool_instrutores,
+                pesos_instrutores,
+                peso_total,
+            )
             valor_por_view = (pool_instrutores / peso_total) if peso_total else 0
             cursor.execute(
                 """
@@ -1805,7 +1822,7 @@ def financeiro_resumo():
             return jsonify({
                 "perfil": "instrutor",
                 "recebido_estimado": round(estimado, 2),
-                "disponivel_saque": round(max(estimado - sacado, 0), 2),
+                "disponivel_saque": disponivel_saque,
                 "ja_sacado": round(sacado, 2),
                 "alunos_ativos": alunos,
                 "percentual_pool": round(percentual, 2),
@@ -2004,6 +2021,7 @@ def aluno_tem_fatura_aberta(cursor, id_usuario):
     return cursor.fetchone() is not None
 
 
+# Sprint item 1: gera e lista cobranças PIX de mensalidades usando a Arkhé.
 @app.route("/financeiro/faturas", methods=["GET", "POST"])
 @jwt_required()
 def faturas_aluno():
@@ -2018,8 +2036,9 @@ def faturas_aluno():
 
     try:
         if request.method == "POST":
+            # Sprint item 1: serializa a criacao para evitar cobrancas duplicadas em pedidos simultaneos.
             with _faturas_lock:
-                dados = request.get_json() or {}
+                dados = request.get_json(silent=True) or {}
                 valor = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
                 meses = max(1, min(int(dados.get("meses") or 1), 12))
                 valor_total = round(valor * meses, 2)
@@ -2028,8 +2047,9 @@ def faturas_aluno():
                     SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
                     FROM ASSINATURAS
                     WHERE ID_USUARIO = ?
-                      AND STATUS <> 1
+                      AND STATUS = 0
                       AND ID_COBRANCA_ARKHE IS NOT NULL
+                      AND (DATA_VENCIMENTO IS NULL OR DATA_VENCIMENTO >= CURRENT_TIMESTAMP)
                     ORDER BY ID_ASSINATURA DESC
                     """,
                     (id_usuario,),
@@ -2046,10 +2066,9 @@ def faturas_aluno():
                         "status": cobranca["status"],
                         "tipo_cobranca": cobranca["tipo_cobranca"],
                         "fatura_existente": True,
-                        "mensagem": "Já existe uma mensalidade em aberto para pagamento.",
+                        "mensagem": "Ja existe uma mensalidade em aberto para pagamento.",
                     }), 200
 
-                # Sprint item 3: cria faturas abertas ou futuras usando a Arkhe para pagamento PIX.
                 cobranca = criar_cobranca_pix(valor_total)
                 agora = datetime.now()
                 vencimento = agora + timedelta(days=3)
@@ -2111,6 +2130,7 @@ def faturas_aluno():
         con.close()
 
 
+# Sprint item 1: consulta e baixa a cobrança da mensalidade antes de atualizar a assinatura.
 @app.route("/financeiro/faturas/<int:id_assinatura>/verificar", methods=["POST"])
 @jwt_required()
 def verificar_fatura_aluno(id_assinatura):
@@ -2144,8 +2164,10 @@ def verificar_fatura_aluno(id_assinatura):
         if not id_cobranca:
             return resposta("Mensalidade aguardando codigo de cobranca.", 409)
 
-        cobranca = consultar_cobranca_pix(id_cobranca)
-        if str(cobranca["status"]) != "1":
+        # Sprint item 1: confirma o status remoto sem depender do campo de cópia do Pix.
+        cobranca = consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=False)
+        # Sprint item 1: confirma apenas o status pago informado pela Arkhé, tolerando espaços no retorno.
+        if str(cobranca["status"]).strip() != "1":
             return resposta("Pagamento ainda nao confirmado.", 402, status_cobranca=cobranca["status"])
 
         agora = datetime.now()
@@ -2498,16 +2520,49 @@ def solicitar_saque():
         return negado
 
     garantir_sprint_schema()
-    valor = float((request.get_json() or {}).get("valor") or 0)
-    if valor <= 0:
-        return resposta("Valor de saque invalido.", 400)
+    valor_recebido = (request.get_json(silent=True) or {}).get("valor")
+    try:
+        valor_decimal = Decimal(str(valor_recebido))
+        if not valor_decimal.is_finite() or valor_decimal <= 0:
+            return resposta("Valor de saque invalido.", 400)
+        valor_centavos = valor_decimal.quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError, ValueError):
+        return resposta("Informe um valor de saque valido com ate duas casas decimais.", 400)
+
+    if valor_decimal != valor_centavos:
+        return resposta("O valor do saque deve ter ate duas casas decimais.", 400)
+
+    valor = float(valor_centavos)
 
     con = get_db()
     cursor = con.cursor()
 
     try:
+        # Sprint item 1: valida o saque contra o saldo disponível calculado no backend.
+        valor_assinatura = float(current_app.config.get("VALOR_ASSINATURA", 0) or 0)
+        percentual = percentual_instrutores(cursor)
+        cursor.execute("SELECT COUNT(*) FROM ASSINATURAS WHERE STATUS = 1")
+        assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
+        pool_instrutores = assinaturas_ativas * valor_assinatura * (percentual / 100)
+        pesos_instrutores = pesos_pool_instrutores(cursor)
+        peso_total = sum(pesos_instrutores.values())
+        _, _, _, disponivel_saque = calcular_saldo_saque(
+            cursor,
+            get_jwt_identity(),
+            pool_instrutores,
+            pesos_instrutores,
+            peso_total,
+        )
+
+        if valor > disponivel_saque:
+            return resposta(
+                "O valor solicitado excede o saldo disponível para saque.",
+                400,
+                disponivel_saque=disponivel_saque,
+            )
+
         id_saque = proximo_id(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE")
-        # Sprint item 1: solicita o saque na Arkhe antes de registrar o pedido financeiro local.
+        # Sprint item 1: solicita o saque na Arkhé somente após validar o saldo do instrutor.
         saque_arkhe = solicitar_saque_conta(valor, referencia=f"SAQUE-{id_saque}-{get_jwt_identity()}")
         cursor.execute(
             """

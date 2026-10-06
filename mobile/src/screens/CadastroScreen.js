@@ -68,7 +68,7 @@ export default function CadastroScreen({ onBack, onRegistered }) {
 
     try {
       // Sprint item 1: cadastro de aluno no aplicativo usando o mesmo endpoint do site.
-      await apiRequest("/cadastrar", {
+      const dadosCadastro = await apiRequest("/cadastrar", {
         method: "POST",
         body: JSON.stringify({
           nome: nomeTratado,
@@ -79,7 +79,10 @@ export default function CadastroScreen({ onBack, onRegistered }) {
         })
       });
 
-      onRegistered(emailTratado);
+      onRegistered(
+        (dadosCadastro.email || emailTratado).trim().toLowerCase().replace(/\.+$/, ""),
+        dadosCadastro.codigo_enviado === true
+      );
     } catch (error) {
       setErro(error?.message || "Nao foi possivel realizar o cadastro.");
     } finally {

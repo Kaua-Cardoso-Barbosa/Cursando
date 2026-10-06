@@ -38,8 +38,10 @@ export default function App() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Sprint item 1: controla o formulário de cadastro e a verificação do aluno antes do pagamento.
   const [cadastroAberto, setCadastroAberto] = useState(false);
   const [emailPendente, setEmailPendente] = useState("");
+  const [codigoEmailEnviado, setCodigoEmailEnviado] = useState(null);
 
   async function carregarDados(authToken = token, authUser = usuario) {
     if (!authToken) return;
@@ -134,6 +136,7 @@ export default function App() {
       return;
     }
 
+    // Sprint item 1: após validar o e-mail, envia o aluno sem assinatura para a tela de pagamento.
     setValidandoAssinatura(true);
     try {
       const dados = await apiRequest("/assinaturas/verificar", {}, authToken);
@@ -320,15 +323,19 @@ export default function App() {
   }
 
   if (!token) {
+    // Sprint item 1: mantém o código de verificação como próxima etapa do cadastro no app.
     if (emailPendente) {
       return (
         <SafeAreaView style={[globalStyles.app, styles.loginApp]}>
           <StatusBar style="light" />
           <VerificarEmailScreen
             email={emailPendente}
+            codigoEnviado={codigoEmailEnviado}
             onVerified={async (novoToken, novoUsuario) => {
+              // Sprint item 1: salva a sessão verificada e inicia a validação da assinatura, como no site.
               await salvarSessao(novoToken, novoUsuario);
               setEmailPendente("");
+              setCodigoEmailEnviado(null);
               setToken(novoToken);
               setUsuario(novoUsuario);
               setAssinaturaAtiva(null);
@@ -345,9 +352,11 @@ export default function App() {
           <StatusBar style="light" />
           <CadastroScreen
             onBack={() => setCadastroAberto(false)}
-            onRegistered={(email) => {
+            onRegistered={(email, codigoEnviado) => {
+              // Sprint item 1: cadastro concluído abre a verificação do e-mail antes do pagamento.
               setCadastroAberto(false);
               setEmailPendente(email);
+              setCodigoEmailEnviado(codigoEnviado);
             }}
           />
         </SafeAreaView>
@@ -366,8 +375,14 @@ export default function App() {
           avisarSessaoAtiva().catch(() => {});
           validarAcesso(novoToken, novoUsuario);
         }}
-          onSignup={() => setCadastroAberto(true)}
-          onVerifyEmail={(email) => setEmailPendente(email)}
+          onSignup={() => {
+            // Sprint item 1: o botão da tela de login abre o cadastro de aluno no aplicativo.
+            setCadastroAberto(true);
+          }}
+          onVerifyEmail={(email) => {
+            setCodigoEmailEnviado(null);
+            setEmailPendente(email);
+          }}
         />
       </SafeAreaView>
     );

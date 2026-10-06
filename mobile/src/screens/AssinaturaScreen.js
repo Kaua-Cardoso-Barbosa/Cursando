@@ -9,7 +9,7 @@ import {
   Text,
   View
 } from "react-native";
-import { apiRequest } from "../api/client";
+import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client";
 import { colors, globalStyles } from "../styles";
 
 export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva }) {
@@ -19,7 +19,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
   const [codigoCopiado, setCodigoCopiado] = useState(false);
   const [erro, setErro] = useState("");
 
-  // Cria a cobrança PIX da assinatura usando o endpoint autenticado do backend.
+  // Sprint item 1: cria ou recupera a cobrança da assinatura com tempo suficiente para a Arkhé responder.
   async function iniciarPagamento() {
     setCarregando(true);
     setErro("");
@@ -28,7 +28,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
       const dados = await apiRequest("/assinaturas/pix", {
         method: "POST",
         body: JSON.stringify({})
-      }, token);
+      }, token, PAYMENT_REQUEST_TIMEOUT_MS, false);
       setPagamento(dados);
     } catch (error) {
       setErro(error?.message || "Não foi possível iniciar o pagamento.");
@@ -37,13 +37,13 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
     }
   }
 
-  // Confere o pagamento sob demanda; a tela não consulta o status em segundo plano.
+  // Sprint item 1: confirma sob demanda sem polling e aguarda a consulta remota da Arkhé.
   async function verificarPagamento() {
     setVerificando(true);
     setErro("");
 
     try {
-      const dados = await apiRequest("/assinaturas/verificar", {}, token);
+      const dados = await apiRequest("/assinaturas/verificar", {}, token, PAYMENT_REQUEST_TIMEOUT_MS);
       if (dados?.assinatura === true) {
         await onAssinaturaAtiva();
       } else {

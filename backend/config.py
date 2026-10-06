@@ -28,6 +28,12 @@ DB_LOG_NAME = os.path.join(
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
+SMTP_EMAIL = os.getenv("SMTP_EMAIL", "cursandoemail@gmail.com")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "True").lower() == "true"
+
 
 JWT_SECRET_KEY = SECRET_KEY
 JWT_TOKEN_LOCATION = os.getenv(

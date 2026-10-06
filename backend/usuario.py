@@ -2,6 +2,7 @@ import os
 import re
 import unicodedata
 from uuid import uuid4
+from decimal import Decimal, InvalidOperation
 
 import fdb
 from flask import current_app, jsonify, make_response, request
@@ -76,7 +77,15 @@ def salvar_imagem_perfil(arquivo):
 
 
 def email_valido(email):
-    return re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email or "") is not None
+    return re.fullmatch(
+        r"[^\s@]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+",
+        email or "",
+    ) is not None
+
+
+def normalizar_email(email):
+    # Um ponto final costuma ser incluído por engano ao colar/digitar o endereço.
+    return (email or "").strip().lower().rstrip(".")
 
 
 def cpf_valido(cpf):
@@ -384,7 +393,7 @@ def editar_usuario_admin(id_usuario):
 
     dados = request.get_json() or {}
     nome_recebido = (dados.get("nome") or "").strip()
-    email_recebido = (dados.get("email") or "").lower().strip()
+    email_recebido = normalizar_email(dados.get("email"))
     cpf_recebido = (dados.get("cpf") or "").strip()
     senha = dados.get("senha") or ""
     confirmar_senha = dados.get("confirmar_senha") or ""
@@ -465,11 +474,12 @@ def editar_usuario_admin(id_usuario):
         con.close()
 
 
+# Sprint item 1: endpoint compartilhado pelo site e aplicativo para criar cadastro de aluno pendente de e-mail.
 @app.route("/cadastrar", methods=["POST"])
 def cadastrar():
     dados = request.get_json() or {}
     nome = (dados.get("nome") or "").strip()
-    email = (dados.get("email") or "").lower().strip()
+    email = normalizar_email(dados.get("email"))
     cpf = re.sub(r"\D", "", dados.get("cpf") or "")
     senha = dados.get("senha") or ""
     confirmar_senha = dados.get("confirmar_senha") or ""
@@ -512,15 +522,15 @@ def cadastrar():
             "Seu codigo de confirmacao de e-mail e:",
             "Digite este codigo no aplicativo ou site para concluir seu cadastro.",
         )
-        if tipo_envio != "sucesso":
-            return resposta_mensagem(mensagem, 503)
-
         return resposta_mensagem(
-            "Cadastro iniciado. Enviamos um codigo de verificacao para seu e-mail.",
+            "Cadastro iniciado. Enviamos um codigo de verificacao para seu e-mail."
+            if tipo_envio == "sucesso"
+            else "Cadastro iniciado, mas o codigo nao foi enviado. Toque em Reenviar codigo depois de configurar o envio de e-mail.",
             201,
             "sucesso",
             id_usuario=id_usuario,
             email=email,
+            codigo_enviado=tipo_envio == "sucesso",
         )
     except Exception as erro:
         con.rollback()
@@ -533,7 +543,7 @@ def cadastrar():
 @app.route("/login", methods=["POST"])
 def login():
     dados = request.get_json() or {}
-    email = (dados.get("email") or "").lower().strip()
+    email = normalizar_email(dados.get("email"))
     senha = dados.get("senha") or ""
 
     if not email or not senha:
@@ -654,10 +664,11 @@ def login():
         con.close()
 
 
+# Sprint item 1: valida o código do cadastro e devolve a sessão para o app seguir à etapa de pagamento.
 @app.route("/verificar_email_cadastro", methods=["POST"])
 def verificar_email_cadastro():
     dados = request.get_json() or {}
-    email = (dados.get("email") or "").lower().strip()
+    email = normalizar_email(dados.get("email"))
     codigo = str(dados.get("codigo") or "").strip()
     if not email_valido(email) or not re.fullmatch(r"\d{6}", codigo):
         return resposta_mensagem("Informe um e-mail e um codigo valido de 6 digitos.", 400)
@@ -672,6 +683,12 @@ def verificar_email_cadastro():
         )
         usuario = cursor.fetchone()
         if not usuario:
+            cursor.execute(
+                "SELECT ID_USUARIO, NOME, EMAIL, CPF, TIPO_USUARIO, SITUACAO, EMAIL_VERIFICADO, CODIGO FROM USUARIOS WHERE EMAIL = ?",
+                (email + ".",),
+            )
+            usuario = cursor.fetchone()
+        if not usuario:
             return resposta_mensagem("Cadastro nao encontrado para este e-mail.", 404)
         id_usuario, nome, email, cpf, tipo, situacao, email_verificado, codigo_real = usuario
         if situacao == 1:
@@ -682,8 +699,8 @@ def verificar_email_cadastro():
             return resposta_mensagem("Codigo de verificacao invalido.", 400)
 
         cursor.execute(
-            "UPDATE USUARIOS SET EMAIL_VERIFICADO = 1, CODIGO = NULL WHERE ID_USUARIO = ?",
-            (id_usuario,),
+            "UPDATE USUARIOS SET EMAIL = ?, EMAIL_VERIFICADO = 1, CODIGO = NULL WHERE ID_USUARIO = ?",
+            (normalizar_email(email), id_usuario),
         )
         con.commit()
         duracao_token = current_app.config["JWT_ACCESS_TOKEN_EXPIRES"]
@@ -707,10 +724,11 @@ def verificar_email_cadastro():
         con.close()
 
 
+# Sprint item 1: permite ao site e aplicativo pedir outro código para o cadastro pendente.
 @app.route("/reenviar_codigo_cadastro", methods=["POST"])
 def reenviar_codigo_cadastro():
     dados = request.get_json() or {}
-    email = (dados.get("email") or "").lower().strip()
+    email = normalizar_email(dados.get("email"))
     if not email_valido(email):
         return resposta_mensagem("Informe um e-mail valido.", 400)
 
@@ -720,8 +738,13 @@ def reenviar_codigo_cadastro():
         garantir_coluna_email_verificado(cursor, con)
         cursor.execute("SELECT EMAIL_VERIFICADO FROM USUARIOS WHERE EMAIL = ?", (email,))
         usuario = cursor.fetchone()
+        if not usuario:
+            cursor.execute("SELECT EMAIL_VERIFICADO FROM USUARIOS WHERE EMAIL = ?", (email + ".",))
+            usuario = cursor.fetchone()
         if not usuario or usuario[0]:
             return resposta_mensagem("Nao ha cadastro pendente de verificacao para este e-mail.", 404)
+        cursor.execute("UPDATE USUARIOS SET EMAIL = ? WHERE EMAIL = ?", (email, email + "."))
+        con.commit()
     finally:
         cursor.close()
         con.close()
@@ -733,6 +756,75 @@ def reenviar_codigo_cadastro():
         "Digite este codigo no aplicativo ou site para concluir seu cadastro.",
     )
     return resposta_mensagem(mensagem, 200 if tipo_envio == "sucesso" else 503, tipo_envio)
+
+
+# Sprint item 1: corrige o endereço do cadastro pendente nos dois clientes e dispara nova verificação.
+@app.route("/corrigir_email_cadastro", methods=["POST"])
+def corrigir_email_cadastro():
+    dados = request.get_json() or {}
+    email_atual = (dados.get("email_atual") or "").lower().strip()
+    novo_email = normalizar_email(dados.get("novo_email"))
+    senha = dados.get("senha") or ""
+    if not email_valido(normalizar_email(email_atual)) or not email_valido(novo_email) or not senha:
+        return resposta_mensagem("Informe o e-mail atual, o novo e-mail e a senha do cadastro.", 400)
+    if email_atual == novo_email:
+        return resposta_mensagem("O novo e-mail deve ser diferente do atual.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        garantir_coluna_email_verificado(cursor, con)
+        cursor.execute(
+            "SELECT ID_USUARIO, SENHA, EMAIL_VERIFICADO FROM USUARIOS WHERE EMAIL = ?",
+            (email_atual,),
+        )
+        usuario = cursor.fetchone()
+        if not usuario and normalizar_email(email_atual) != email_atual:
+            cursor.execute(
+                "SELECT ID_USUARIO, SENHA, EMAIL_VERIFICADO FROM USUARIOS WHERE EMAIL = ?",
+                (normalizar_email(email_atual),),
+            )
+            usuario = cursor.fetchone()
+        if not usuario:
+            cursor.execute(
+                "SELECT ID_USUARIO, SENHA, EMAIL_VERIFICADO FROM USUARIOS WHERE EMAIL = ?",
+                (normalizar_email(email_atual) + ".",),
+            )
+            usuario = cursor.fetchone()
+        if not usuario or usuario[2]:
+            return resposta_mensagem("Cadastro pendente nao encontrado.", 404)
+        if not check_password_hash(usuario[1], senha):
+            return resposta_mensagem("Senha do cadastro incorreta.", 401)
+
+        cursor.execute("SELECT 1 FROM USUARIOS WHERE EMAIL = ?", (novo_email,))
+        if cursor.fetchone():
+            return resposta_mensagem("O novo e-mail ja esta cadastrado.", 400)
+
+        cursor.execute(
+            "UPDATE USUARIOS SET EMAIL = ?, CODIGO = NULL WHERE ID_USUARIO = ?",
+            (novo_email, usuario[0]),
+        )
+        con.commit()
+    except Exception as erro:
+        con.rollback()
+        return resposta_mensagem(f"Erro ao corrigir e-mail: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+    mensagem, tipo_envio = email_verificacao(
+        novo_email,
+        "Verificacao de e-mail",
+        "Seu codigo para verificar seu e-mail e",
+        "Digite este codigo no aplicativo ou site para concluir seu cadastro.",
+    )
+    return resposta_mensagem(
+        mensagem,
+        200,
+        tipo_envio,
+        email=novo_email,
+        codigo_enviado=tipo_envio == "sucesso",
+    )
 
 
 @app.route("/perfil", methods=["GET"])
@@ -785,7 +877,7 @@ def editar_perfil():
     else:
         dados = request.get_json() or {}
     nome_recebido = (dados.get("nome") or "").strip()
-    email_recebido = (dados.get("email") or "").lower().strip()
+    email_recebido = normalizar_email(dados.get("email"))
     cpf_recebido = (dados.get("cpf") or "").strip()
     senha = dados.get("senha") or ""
     confirmar_senha = dados.get("confirmar_senha") or ""
@@ -899,7 +991,7 @@ def cadastrar_colaborador():
 
     dados = request.get_json() or {}
     nome = (dados.get("nome") or "").strip()
-    email = (dados.get("email") or "").lower().strip()
+    email = normalizar_email(dados.get("email"))
     cpf = re.sub(r"\D", "", dados.get("cpf") or "")
     senha = dados.get("senha") or ""
     confirmar_senha = dados.get("confirmar_senha") or ""
@@ -967,7 +1059,7 @@ def logout():
 @app.route("/esqueci_minha_senha", methods=["POST"])
 def esqueci_minha_senha():
     dados = request.get_json() or {}
-    destinatario = (dados.get("email") or "").lower().strip()
+    destinatario = normalizar_email(dados.get("email"))
 
     if not destinatario:
         return resposta_mensagem("E-mail e obrigatorio", 400)
@@ -989,7 +1081,7 @@ def esqueci_minha_senha():
 @app.route("/alterar_senha", methods=["POST"])
 def alterar_senha():
     dados = request.get_json() or {}
-    email = (dados.get("email") or "").lower().strip()
+    email = normalizar_email(dados.get("email"))
     codigo = dados.get("codigo")
     nova_senha = dados.get("nova_senha") or ""
     confirmar_nova_senha = dados.get("confirmar_nova_senha") or ""
@@ -1044,19 +1136,35 @@ def criar_pagamento_pix():
         # ela não grava uma assinatura no banco.
         dados = request.get_json() or {}
 
-        valor = dados.get("valor")
+        valor_recebido = dados.get("valor")
 
-        if valor is None:
+        if valor_recebido is None:
             return jsonify({
                 "mensagem": "Valor do pagamento é obrigatório"
             }), 400
 
-        valor = float(valor)
+        # Sprint item 1: rejeita valores PIX inválidos antes de chamar a Arkhé.
+        try:
+            valor_decimal = Decimal(str(valor_recebido))
+            if not valor_decimal.is_finite():
+                raise InvalidOperation
+            valor_centavos = valor_decimal.quantize(Decimal("0.01"))
+        except (InvalidOperation, TypeError, ValueError):
+            return jsonify({
+                "mensagem": "Valor do pagamento deve ser um número válido com até duas casas decimais"
+            }), 400
 
-        if valor <= 0:
+        if valor_decimal <= 0:
             return jsonify({
                 "mensagem": "Valor do pagamento deve ser maior que zero"
             }), 400
+
+        if valor_decimal != valor_centavos:
+            return jsonify({
+                "mensagem": "Valor do pagamento deve ter até duas casas decimais"
+            }), 400
+
+        valor = float(valor_centavos)
 
         # A Arkhé cria a cobrança e retorna o código PIX para o cliente pagar.
         cobranca = criar_cobranca_pix(valor)
@@ -1109,34 +1217,35 @@ def criar_pix_assinatura():
                 "mensagem": "Usuário já possui uma assinatura ativa"
             }), 409
 
-        # O preço é configurado no servidor e não aceito do navegador.
-        # Uma cobrança pendente já representa o pagamento em andamento. Reutilizar
-        # o PIX evita criar duas mensalidades abertas para o mesmo usuário.
+        # Sprint item 1: reutiliza apenas PIX pendente e dentro do vencimento, sem gerar cobranças duplicadas.
         cursor.execute(
             """
-            SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
+            SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE
             FROM ASSINATURAS
             WHERE ID_USUARIO = ?
-              AND STATUS <> 1
+              AND STATUS = 0
               AND ID_COBRANCA_ARKHE IS NOT NULL
+              AND (DATA_VENCIMENTO IS NULL OR DATA_VENCIMENTO >= CURRENT_TIMESTAMP)
             ORDER BY ID_ASSINATURA DESC
             """,
             (id_usuario,)
         )
         assinatura_pendente = cursor.fetchone()
+
         if assinatura_pendente:
-            id_existente, id_cobranca, valor_existente = assinatura_pendente
-            cobranca_existente = consultar_cobranca_pix(id_cobranca)
+            id_assinatura, id_cobranca = assinatura_pendente
+            cobranca = consultar_cobranca_pix(id_cobranca)
             return jsonify({
-                "id_assinatura": id_existente,
-                "id_cobranca": cobranca_existente["id_cobranca"],
-                "valor": cobranca_existente.get("valor", valor_existente),
-                "codigo_pagamento": cobranca_existente["codigo_pagamento"],
-                "status": cobranca_existente["status"],
-                "tipo_cobranca": cobranca_existente["tipo_cobranca"],
-                "fatura_existente": True
+                "id_assinatura": id_assinatura,
+                "id_cobranca": cobranca["id_cobranca"],
+                "valor": cobranca["valor"],
+                "codigo_pagamento": cobranca["codigo_pagamento"],
+                "status": cobranca["status"],
+                "tipo_cobranca": cobranca["tipo_cobranca"],
+                "cobranca_existente": True
             }), 200
 
+        # Sprint item 1: usa o preco do servidor quando nao houver PIX pendente reutilizavel.
         valor = current_app.config["VALOR_ASSINATURA"]
 
         # Solicita à Arkhé uma cobrança PIX vinculada ao valor do plano.
@@ -1297,7 +1406,11 @@ def verificar_pagamento_assinatura():
         for assinatura_candidata in assinaturas:
             if assinatura_candidata[2] == 1 or not assinatura_candidata[1]:
                 continue
-            cobranca_candidata = consultar_cobranca_pix(assinatura_candidata[1])
+            # Sprint item 1: consulta o status sem depender de um novo código para a cobrança existente.
+            cobranca_candidata = consultar_cobranca_pix(
+                assinatura_candidata[1],
+                exigir_codigo_pix=False,
+            )
             if str(cobranca_candidata["status"]).strip().lower() in {
                 "1", "pago", "paid", "confirmado", "confirmed", "aprovado", "approved"
             }:
@@ -1306,7 +1419,8 @@ def verificar_pagamento_assinatura():
                 break
 
         if cobranca is None and id_cobranca:
-            cobranca = consultar_cobranca_pix(id_cobranca)
+            # Sprint item 1: consulta o status sem depender de um novo código para a cobrança existente.
+            cobranca = consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=False)
 
         if cobranca is None:
             return jsonify({
@@ -1317,6 +1431,7 @@ def verificar_pagamento_assinatura():
 
         status_cobranca = cobranca["status"]
 
+        # Sprint item 1: reconhece status numérico ou textual da cobrança confirmada pela Arkhé.
         # STATUS 1 da cobrança indica pagamento confirmado: ativa por 30 dias
         # a partir do momento desta confirmação e salva as duas datas no banco.
         if str(status_cobranca).strip().lower() in {

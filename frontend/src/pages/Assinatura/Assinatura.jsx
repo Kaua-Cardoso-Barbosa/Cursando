@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
+import Button from "../../components/Button/Button.jsx";
 import css from "./Assinatura.module.css";
 
-export default function Assinatura({ api }) {
-    const navigate = useNavigate();
+export default function Assinatura({ api, sair }) {
     const [pagamento, setPagamento] = useState(null);
     const [carregando, setCarregando] = useState(false);
     const [verificando, setVerificando] = useState(false);
@@ -20,22 +19,29 @@ export default function Assinatura({ api }) {
         });
         const dados = await resposta.json();
 
-        if (resposta.ok && dados.assinatura && !redirecionando.current) {
-            redirecionando.current = true;
-            // Recarrega a área autenticada para atualizar o perfil e remover
-            // o estado antigo da página de assinatura.
-            window.location.replace("/DashboardAluno");
+        if (resposta.ok && dados?.assinatura === true) {
+            if (!redirecionando.current) {
+                redirecionando.current = true;
+                // Recarrega a área autenticada para atualizar o perfil e remover
+                // o estado antigo da página de assinatura.
+                window.location.replace("/DashboardAluno");
+            }
             return true;
         }
 
-        return Boolean(resposta.ok && dados.assinatura);
+        // Sprint item 1: só trata ausência/pendência como não pago; falha da Arkhe não inicia outra cobrança.
+        if ((resposta.status === 403 || resposta.ok) && dados?.assinatura === false) {
+            return false;
+        }
+
+        throw new Error(getMensagemErro(dados, "Não foi possível verificar a assinatura."));
     }
 
     useEffect(() => {
         consultarAssinatura().catch(() => {});
     }, [api]);
 
-    // Cria a cobrança PIX da assinatura; o valor é definido pelo backend.
+    // Sprint item 1: cria ou recupera o PIX pelo backend, que mantém o preço e a cobrança no servidor.
     async function iniciarPagamento() {
         setCarregando(true);
         setErro("");
@@ -69,6 +75,7 @@ export default function Assinatura({ api }) {
         }
     }
 
+    // Sprint item 1: confirma a assinatura pelo status consultado na Arkhé.
     // A confirmação é manual pelo botão "Já paguei", sem consulta automática periódica.
     // A consulta é iniciada pelo usuário; esta tela não faz polling automático.
     async function verificarPagamento() {
@@ -100,6 +107,9 @@ export default function Assinatura({ api }) {
 
     return (
         <main className={css.pagina}>
+            <div className={css.acoesTopo}>
+                <Button texto="Sair" fundoCor="vermelho" tamanho="pequeno" onClick={sair} />
+            </div>
             <section className={css.introducao}>
                 <span className={css.eyebrow}>Seu próximo passo</span>
                 <h1>Aprenda no seu ritmo com o Plus.</h1>

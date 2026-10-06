@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from app import app
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, jwt_required
 from flask_bcrypt import Bcrypt
 import fdb
 import requests
@@ -40,23 +40,31 @@ from usuario import *
 from professor import *
 from aluno import *
 from sprint import *
-from servicos.arkhe import consultar_conta
+from servicos.arkhe import ArkheError, consultar_conta
 
 print("\nROTAS REGISTRADAS ANTES DA ROTA ARKHÉ:")
 for regra in app.url_map.iter_rules():
     print(regra, "->", regra.endpoint)
 
+# Sprint item 1: deixa o diagnóstico ARKHÉ restrito a administradores e não retorna dados bancários.
 @app.route("/rodar-teste-arkhe", methods=["GET"])
+@jwt_required()
 def rodar_teste_arkhe():
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+
     try:
-        conta = consultar_conta()
-
-        return jsonify(conta), 200
-
-    except requests.RequestException as erro:
+        consultar_conta()
         return jsonify({
-            "erro": "Erro ao comunicar com a Arkhé",
-            "detalhes": str(erro)
+            "status": "ok",
+            "mensagem": "Conexão com a Arkhé confirmada."
+        }), 200
+
+    except (requests.RequestException, ArkheError):
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Não foi possível validar a conexão com a Arkhé."
         }), 502
 
 

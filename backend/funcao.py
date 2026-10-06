@@ -8,6 +8,7 @@ import smtplib
 import threading
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr
 from flask_bcrypt import check_password_hash
 import qrcode
 import os
@@ -166,35 +167,42 @@ def verificar_token():
 
 
 def email_verificacao(destinatario, assunto, mensagem, mensagem_secundaria=""):
+    if not app.config.get("SMTP_PASSWORD"):
+        return "Configure SMTP_PASSWORD no arquivo backend/.env para enviar codigos.", "erro"
+
     con = get_db()
     cur = con.cursor()
+    try:
+        cur.execute(
+            "SELECT ID_USUARIO, NOME FROM USUARIOS WHERE EMAIL = ?",
+            (destinatario,),
+        )
+        usuario = cur.fetchone()
+        if not usuario:
+            return "Email informado nao encontrado.", "erro"
 
-    cur.execute("""SELECT id_usuario, nome
-                   FROM USUARIOS
-                   WHERE email = ?""", (destinatario,))
-    usuario = cur.fetchone()
-    if usuario:
-        try:
-            id_usuario = usuario[0]
-            nome = usuario[1]
-            assunto_email = f"{assunto}"
-            codigo = random.randint(100000, 999999)
-            cur.execute("""UPDATE USUARIOS SET codigo = ? WHERE id_usuario = ?""", (codigo, id_usuario))
-            con.commit()
+        id_usuario, nome = usuario
+        codigo = random.randint(100000, 999999)
+        cur.execute(
+            "UPDATE USUARIOS SET CODIGO = ? WHERE ID_USUARIO = ?",
+            (codigo, id_usuario),
+        )
+        con.commit()
+    except Exception as erro:
+        con.rollback()
+        print("Erro ao preparar codigo de e-mail:", type(erro).__name__)
+        return "Ocorreu um erro ao preparar o e-mail. Tente novamente.", "erro"
+    finally:
+        cur.close()
+        con.close()
 
-            mensagem_email = f"{mensagem}:"
-            mensagem_secundaria_email = f"{mensagem_secundaria}"
-
-            thread = threading.Thread(target=enviando_email, args=(destinatario, assunto_email, mensagem_email, codigo, nome, mensagem_secundaria_email))
-
-            thread.start()
-            return "Seu código foi enviado para o email informado, por favor verifique sua caixa de entrada.", 'sucesso'
-        except Exception as e:
-            print("Erro ao enviar email:", e)
-            return "Ocorreu um erro ao enviar o email. Por favor, tente novamente mais tarde.", 'erro'
-    else:
-        return "Email informado não encontrado.", 'erro'
-
+    thread = threading.Thread(
+        target=enviando_email,
+        args=(destinatario, assunto, mensagem, codigo, nome, mensagem_secundaria),
+        daemon=True,
+    )
+    thread.start()
+    return "Seu codigo foi enviado para o e-mail informado.", "sucesso"
 
 
 def verificar_codigo(email, codigo):
@@ -215,29 +223,35 @@ def verificar_codigo(email, codigo):
 
 
 def enviando_email(destinatario, assunto, mensagem, codigo, nome, mensagem_secundaria):
-
-    user = "nikola11tech@gmail.com"
-    senha = "crio vxuo ocwh xgjf"
+    user = app.config.get("SMTP_EMAIL", "cursandoemail@gmail.com")
+    senha = app.config.get("SMTP_PASSWORD", "")
+    host = app.config.get("SMTP_HOST", "smtp.gmail.com")
+    porta = app.config.get("SMTP_PORT", 465)
     try:
         with app.app_context():
-            html = render_template("codigo_verificacao.html", mensagem=mensagem, codigo=codigo, nome=nome, mensagem_secundaria=mensagem_secundaria)
+            html = render_template(
+                "codigo_verificacao.html",
+                mensagem=mensagem,
+                codigo=codigo,
+                nome=nome,
+                mensagem_secundaria=mensagem_secundaria,
+            )
 
         msg = MIMEText(html, "html", "utf-8")
         msg["Subject"] = assunto
-        msg["From"] = user
+        msg["From"] = formataddr(("Cursando", user))
         msg["To"] = destinatario
 
-
-
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        # para trocar a porta para 587 que é uma existente deve adicionar essa linha a mais, é uma porta que começa sem criptografia
-        # server = smtplib.SMTP("smtp.gmail.com", 587)
-        # server.starttls()
-        server.login(user, senha)
-        server.send_message(msg)
-        server.quit()
+        if app.config.get("SMTP_USE_SSL", True):
+            server = smtplib.SMTP_SSL(host, porta, timeout=20)
+        else:
+            server = smtplib.SMTP(host, porta, timeout=20)
+            server.starttls()
+        try:
+            server.login(user, senha)
+            server.send_message(msg)
+        finally:
+            server.quit()
         print("Email enviado com sucesso!")
-    except Exception as e:
-        print("Erro ao enviar email:", e)
-
-
+    except Exception as erro:
+        print("Erro ao enviar email. Confira as configuracoes SMTP.", type(erro).__name__)

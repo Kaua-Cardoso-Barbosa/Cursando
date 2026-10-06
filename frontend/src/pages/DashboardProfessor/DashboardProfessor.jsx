@@ -57,6 +57,7 @@ export default function DashboardProfessor({
     const [confirmacao, setConfirmacao] = useState(null);
     const [carregando, setCarregando] = useState(false);
     const [salvando, setSalvando] = useState(false);
+    const [solicitandoSaque, setSolicitandoSaque] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -439,6 +440,9 @@ export default function DashboardProfessor({
     }
 
     async function solicitarSaque() {
+        // Sprint item 1: evita enviar duas solicitações de saque por toques repetidos.
+        if (solicitandoSaque) return;
+        setSolicitandoSaque(true);
         try {
             const resposta = await fetch(`${api}/professor/saques`, {
                 method: "POST",
@@ -453,6 +457,8 @@ export default function DashboardProfessor({
         } catch (erro) {
             console.error("Erro ao solicitar saque:", erro);
             avisar({ tipo: "erro", descricao: erro.message });
+        } finally {
+            setSolicitandoSaque(false);
         }
     }
 
@@ -732,8 +738,8 @@ export default function DashboardProfessor({
                                         placeholder="0,00"
                                     />
                                 </label>
-                                <button className={css.botaoPrimario} onClick={solicitarSaque}>
-                                    Solicitar saque
+                                <button className={css.botaoPrimario} onClick={solicitarSaque} disabled={solicitandoSaque}>
+                                    {solicitandoSaque ? "Enviando solicitação..." : "Solicitar saque"}
                                 </button>
                             </div>
                             {financeiro?.cursos_receita?.length > 0 && (

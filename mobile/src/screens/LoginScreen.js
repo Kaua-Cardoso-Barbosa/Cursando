@@ -143,10 +143,17 @@ export default function LoginScreen({ onLogin, onSignup, onVerifyEmail }) {
               )}
             </Pressable>
 
-            <Pressable style={styles.signupButton} onPress={onSignup}>
-              <Text style={styles.signupText}>Nao tem cadastro? Cadastre-se</Text>
+            {/* Sprint item 1: botão que inicia no app o mesmo cadastro de aluno disponível no site. */}
+            <Pressable
+              style={styles.signupButton}
+              onPress={onSignup}
+              disabled={carregando}
+              accessibilityRole="button"
+              accessibilityLabel="Criar cadastro de aluno"
+            >
+              <Text style={styles.signupText}>Não tem cadastro? Cadastre-se já</Text>
             </Pressable>
-            <Pressable style={styles.signupButton} onPress={() => {
+            <Pressable style={styles.verifyEmailButton} onPress={() => {
               const emailTratado = email.trim().toLowerCase();
               if (!emailTratado) {
                 setErro("Informe seu e-mail para verificar o cadastro.");
@@ -154,7 +161,7 @@ export default function LoginScreen({ onLogin, onSignup, onVerifyEmail }) {
               }
               onVerifyEmail(emailTratado);
             }}>
-              <Text style={styles.signupText}>Verificar e-mail do cadastro</Text>
+              <Text style={styles.verifyEmailText}>Verificar e-mail do cadastro</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -261,11 +268,27 @@ const styles = StyleSheet.create({
   },
   signupButton: {
     alignItems: "center",
-    paddingTop: 16
+    justifyContent: "center",
+    minHeight: 48,
+    marginTop: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: colors.darkGreen,
+    borderRadius: 8,
+    backgroundColor: colors.white
   },
   signupText: {
     color: colors.darkGreen,
     fontSize: 15,
+    fontWeight: "700"
+  },
+  verifyEmailButton: {
+    alignItems: "center",
+    paddingTop: 16
+  },
+  verifyEmailText: {
+    color: colors.darkGreen,
+    fontSize: 14,
     textDecorationLine: "underline"
   }
 });

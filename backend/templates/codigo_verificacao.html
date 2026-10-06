@@ -1,29 +1,38 @@
 <!doctype html>
+<!-- Sprint item 1: modelo responsivo do e-mail de verificação de cadastro. -->
 <html lang="pt-BR">
-<head>
+  <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Código de confirmação | Cursando</title>
-</head>
-<body style="margin:0; padding:0; background:#f2f5f4; font-family:Arial,Helvetica,sans-serif; color:#18352b;">
-    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">Use o código para continuar seu cadastro na Cursando.</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f2f5f4; padding:32px 12px;">
-        <tr><td align="center">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px; background:#ffffff; border:1px solid #dce7e2; border-radius:16px; overflow:hidden;">
-                <tr><td style="background:#063b2b; padding:28px 32px; text-align:center;">
-                    <div style="font-size:25px; line-height:32px; font-weight:700; color:#ffffff;">Cursando</div>
-                    <div style="margin-top:5px; font-size:13px; color:#b9e5d2;">Aprenda no seu ritmo</div>
-                </td></tr>
-                <tr><td style="padding:36px 34px 32px;">
-                    <p style="margin:0 0 18px; font-size:17px; line-height:26px;">Olá, {{ nome|default('') }}!</p>
-                    <p style="margin:0 0 24px; font-size:16px; line-height:25px; color:#40574e;">{{ mensagem|default('Seu código de confirmação é') }}</p>
-                    <div style="margin:0 auto 24px; max-width:300px; padding:18px 14px; border:1px solid #a7d6c2; border-radius:12px; background:#eaf8f1; color:#087344; font-size:34px; line-height:40px; font-weight:700; letter-spacing:8px; text-align:center;">{{ codigo }}</div>
-                    {% if mensagem_secundaria %}<p style="margin:0 0 18px; font-size:14px; line-height:22px; color:#60736b;">{{ mensagem_secundaria }}</p>{% endif %}
-                    <p style="margin:0; font-size:13px; line-height:21px; color:#718078;">Se você não solicitou este código, ignore este e-mail. Nunca compartilhe seu código com outras pessoas.</p>
-                </td></tr>
-                <tr><td style="padding:18px 34px; border-top:1px solid #edf1ef; text-align:center;"><p style="margin:0; font-size:12px; line-height:18px; color:#87958f;">Este e-mail foi enviado automaticamente pela Cursando.</p></td></tr>
-            </table>
-        </td></tr>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Código de verificação | Cursando</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f2f7f4;font-family:Arial,Helvetica,sans-serif;color:#17251e;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f2f7f4;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #d8e8de;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td align="center" style="padding:28px 24px;background:#087044;">
+                <span style="display:inline-block;width:34px;height:34px;line-height:34px;border-radius:10px;background:#ffffff;color:#087044;font-size:22px;font-weight:800;vertical-align:middle;">C</span>
+                <span style="margin-left:10px;color:#ffffff;font-size:25px;font-weight:700;vertical-align:middle;">Cursando</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:36px 32px 24px;">
+                <p style="margin:0 0 10px;color:#087044;font-size:13px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;">Confirmação de e-mail</p>
+                <h1 style="margin:0 0 16px;color:#173b2a;font-size:26px;line-height:1.25;">Olá, {{ nome }}!</h1>
+                <p style="margin:0;color:#52645a;font-size:16px;line-height:1.6;">{{ mensagem }}{% if not mensagem.endswith(':') %}:{% endif %}</p>
+                {% if mensagem_secundaria %}<p style="margin:10px 0 0;color:#52645a;font-size:15px;line-height:1.6;">{{ mensagem_secundaria }}</p>{% endif %}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:26px 0 20px;background:#eaf6ef;border:1px solid #c8e7d3;border-radius:12px;">
+                  <tr><td align="center" style="padding:22px 12px;color:#087044;font-size:34px;font-weight:800;letter-spacing:10px;">{{ codigo }}</td></tr>
+                </table>
+                <p style="margin:0;color:#65756c;font-size:14px;line-height:1.6;">Digite este código na tela de verificação para continuar. Se você não solicitou este código, pode ignorar esta mensagem.</p>
+              </td>
+            </tr>
+            <tr><td style="padding:18px 24px;border-top:1px solid #e6eee9;text-align:center;color:#819087;font-size:12px;">© 2026 Cursando · Aprenda no seu ritmo</td></tr>
+          </table>
+        </td>
+      </tr>
     </table>
-</body>
+  </body>
 </html>
