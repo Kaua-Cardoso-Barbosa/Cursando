@@ -43,7 +43,30 @@ def email_valido(email):
 
 
 def cpf_valido(cpf):
-    return len(re.sub(r"\D", "", cpf or "")) == 11
+    digitos = re.sub(r"\D", "", cpf or "")
+    if len(digitos) != 11 or len(set(digitos)) == 1:
+        return False
+
+    def calcular_digito(base, pesos):
+        resto = sum(int(numero) * peso for numero, peso in zip(base, pesos)) % 11
+        return "0" if resto < 2 else str(11 - resto)
+
+    primeiro = calcular_digito(digitos[:9], range(10, 1, -1))
+    segundo = calcular_digito(digitos[:9] + primeiro, range(11, 1, -1))
+    return digitos[-2:] == primeiro + segundo
+
+
+def garantir_coluna_email_verificado(cursor, con):
+    cursor.execute("""
+        SELECT 1 FROM RDB$RELATION_FIELDS
+        WHERE RDB$RELATION_NAME = 'USUARIOS'
+          AND RDB$FIELD_NAME = 'EMAIL_VERIFICADO'
+    """)
+    if not cursor.fetchone():
+        cursor.execute(
+            "ALTER TABLE USUARIOS ADD EMAIL_VERIFICADO SMALLINT DEFAULT 1 NOT NULL"
+        )
+        con.commit()
 
 
 def nome_valido(nome):
@@ -68,7 +91,7 @@ def nome_valido(nome):
 
 
 def mensagem_senha_invalida():
-    return "A senha deve ter de 8 a 12 caracteres, com letra maiuscula, letra minuscula, numero e caractere especial."
+    return "A senha deve ter no minimo 8 caracteres, com letra maiuscula, letra minuscula, numero e caractere especial."
 
 
 def validar_dados_usuario(nome, email, cpf):
@@ -410,7 +433,7 @@ def cadastrar():
     dados = request.get_json() or {}
     nome = (dados.get("nome") or "").strip()
     email = (dados.get("email") or "").lower().strip()
-    cpf = (dados.get("cpf") or "").strip()
+    cpf = re.sub(r"\D", "", dados.get("cpf") or "")
     senha = dados.get("senha") or ""
     confirmar_senha = dados.get("confirmar_senha") or ""
 
@@ -426,6 +449,7 @@ def cadastrar():
     cursor = con.cursor()
 
     try:
+        garantir_coluna_email_verificado(cursor, con)
         cursor.execute("SELECT 1 FROM USUARIOS WHERE EMAIL = ?", (email,))
         if cursor.fetchone():
             return resposta_mensagem("E-mail ja cadastrado", 400)
@@ -436,8 +460,8 @@ def cadastrar():
 
         cursor.execute(
             """
-            INSERT INTO USUARIOS (NOME, EMAIL, CPF, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS)
-            VALUES (?, ?, ?, ?, 2, 0, 0)
+            INSERT INTO USUARIOS (NOME, EMAIL, CPF, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS, EMAIL_VERIFICADO)
+            VALUES (?, ?, ?, ?, 2, 0, 0, 0)
             RETURNING ID_USUARIO
             """,
             (nome, email, cpf, generate_password_hash(senha)),
@@ -445,7 +469,22 @@ def cadastrar():
         id_usuario = cursor.fetchone()[0]
         con.commit()
 
-        return resposta_mensagem("Aluno cadastrado com sucesso", 201, "sucesso", id_usuario=id_usuario)
+        mensagem, tipo_envio = email_verificacao(
+            email,
+            "Verificacao de e-mail",
+            "Seu codigo para verificar seu e-mail e",
+            "Digite este codigo no aplicativo ou site para concluir seu cadastro.",
+        )
+        if tipo_envio != "sucesso":
+            return resposta_mensagem(mensagem, 503)
+
+        return resposta_mensagem(
+            "Cadastro iniciado. Enviamos um codigo de verificacao para seu e-mail.",
+            201,
+            "sucesso",
+            id_usuario=id_usuario,
+            email=email,
+        )
     except Exception as erro:
         con.rollback()
         return resposta_mensagem(f"Erro ao cadastrar usuario: {erro}", 500)
@@ -467,9 +506,10 @@ def login():
     cursor = con.cursor()
 
     try:
+        garantir_coluna_email_verificado(cursor, con)
         cursor.execute(
             """
-            SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS, CPF
+            SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS, CPF, EMAIL_VERIFICADO
             FROM USUARIOS
             WHERE EMAIL = ?
             """,
@@ -480,11 +520,14 @@ def login():
         if not usuario:
             return resposta_mensagem("E-mail ou senha invalida", 401)
 
-        id_usuario, nome_usuario, email_usuario, senha_banco, tipo, situacao, tentativa, cpf = usuario
+        id_usuario, nome_usuario, email_usuario, senha_banco, tipo, situacao, tentativa, cpf, email_verificado = usuario
         tentativa = tentativa or 0
 
         if situacao == 1:
             return resposta_mensagem("Usuario bloqueado. Entre em contato com o suporte.", 403)
+
+        if not email_verificado:
+            return resposta_mensagem("Verifique seu e-mail usando o codigo enviado para concluir o cadastro.", 403)
 
         if not check_password_hash(senha_banco, senha):
             nova_tentativa = tentativa + 1
@@ -539,6 +582,87 @@ def login():
     finally:
         cursor.close()
         con.close()
+
+
+@app.route("/verificar_email_cadastro", methods=["POST"])
+def verificar_email_cadastro():
+    dados = request.get_json() or {}
+    email = (dados.get("email") or "").lower().strip()
+    codigo = str(dados.get("codigo") or "").strip()
+    if not email_valido(email) or not re.fullmatch(r"\d{6}", codigo):
+        return resposta_mensagem("Informe um e-mail e um codigo valido de 6 digitos.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        garantir_coluna_email_verificado(cursor, con)
+        cursor.execute(
+            "SELECT ID_USUARIO, NOME, EMAIL, CPF, TIPO_USUARIO, SITUACAO, EMAIL_VERIFICADO, CODIGO FROM USUARIOS WHERE EMAIL = ?",
+            (email,),
+        )
+        usuario = cursor.fetchone()
+        if not usuario:
+            return resposta_mensagem("Cadastro nao encontrado para este e-mail.", 404)
+        id_usuario, nome, email, cpf, tipo, situacao, email_verificado, codigo_real = usuario
+        if situacao == 1:
+            return resposta_mensagem("Usuario bloqueado. Entre em contato com o suporte.", 403)
+        if email_verificado:
+            return resposta_mensagem("Este e-mail ja foi verificado.", 400)
+        if str(codigo_real) != codigo:
+            return resposta_mensagem("Codigo de verificacao invalido.", 400)
+
+        cursor.execute(
+            "UPDATE USUARIOS SET EMAIL_VERIFICADO = 1, CODIGO = NULL WHERE ID_USUARIO = ?",
+            (id_usuario,),
+        )
+        con.commit()
+        duracao_token = current_app.config["JWT_ACCESS_TOKEN_EXPIRES"]
+        token = create_access_token(
+            identity=str(id_usuario),
+            expires_delta=duracao_token,
+            additional_claims={"tipo": tipo},
+        )
+        resposta = make_response(jsonify({
+            "mensagem": criar_mensagem("E-mail verificado com sucesso", "sucesso"),
+            "usuario": {"id_usuario": id_usuario, "nome": nome, "email": email, "cpf": cpf, "tipo": tipo},
+            "token": token,
+        }), 200)
+        set_access_cookies(resposta, token)
+        return resposta
+    except Exception as erro:
+        con.rollback()
+        return resposta_mensagem(f"Erro ao verificar e-mail: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/reenviar_codigo_cadastro", methods=["POST"])
+def reenviar_codigo_cadastro():
+    dados = request.get_json() or {}
+    email = (dados.get("email") or "").lower().strip()
+    if not email_valido(email):
+        return resposta_mensagem("Informe um e-mail valido.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        garantir_coluna_email_verificado(cursor, con)
+        cursor.execute("SELECT EMAIL_VERIFICADO FROM USUARIOS WHERE EMAIL = ?", (email,))
+        usuario = cursor.fetchone()
+        if not usuario or usuario[0]:
+            return resposta_mensagem("Nao ha cadastro pendente de verificacao para este e-mail.", 404)
+    finally:
+        cursor.close()
+        con.close()
+
+    mensagem, tipo_envio = email_verificacao(
+        email,
+        "Verificacao de e-mail",
+        "Seu novo codigo para verificar seu e-mail e",
+        "Digite este codigo no aplicativo ou site para concluir seu cadastro.",
+    )
+    return resposta_mensagem(mensagem, 200 if tipo_envio == "sucesso" else 503, tipo_envio)
 
 
 @app.route("/perfil", methods=["GET"])
@@ -687,7 +811,7 @@ def cadastrar_colaborador():
     dados = request.get_json() or {}
     nome = (dados.get("nome") or "").strip()
     email = (dados.get("email") or "").lower().strip()
-    cpf = (dados.get("cpf") or "").strip()
+    cpf = re.sub(r"\D", "", dados.get("cpf") or "")
     senha = dados.get("senha") or ""
     confirmar_senha = dados.get("confirmar_senha") or ""
     tipo = dados.get("tipo")

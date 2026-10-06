@@ -1,9 +1,9 @@
 import { StatusBar } from "expo-status-bar";
+import { isRunningInExpoGo } from "expo";
 import * as LocalAuthentication from "expo-local-authentication";
-import * as Notifications from "expo-notifications";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, Vibration, View } from "react-native";
-import { apiRequest, carregarSessao, limparSessao } from "./src/api/client";
+import { apiRequest, carregarSessao, limparSessao, salvarSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
 import AssinaturaScreen from "./src/screens/AssinaturaScreen";
@@ -17,16 +17,10 @@ import InicioScreen from "./src/screens/InicioScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
 import PlayerAulaScreen from "./src/screens/PlayerAulaScreen";
+import VerificarEmailScreen from "./src/screens/VerificarEmailScreen";
 import { colors, globalStyles } from "./src/styles";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true
-  })
-});
+let notificationHandlerConfigured = false;
 
 export default function App() {
   const [token, setToken] = useState("");
@@ -45,6 +39,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [cadastroAberto, setCadastroAberto] = useState(false);
+  const [emailPendente, setEmailPendente] = useState("");
 
   async function carregarDados(authToken = token, authUser = usuario) {
     if (!authToken) return;
@@ -96,6 +91,24 @@ export default function App() {
 
   async function avisarSessaoAtiva() {
     Vibration.vibrate(60);
+
+    // Expo Go no Android não oferece suporte completo a notificações remotas e
+    // o módulo registra o listener de push assim que é importado. Adie a carga
+    // até builds nativas para evitar o erro durante a inicialização no Expo Go.
+    if (isRunningInExpoGo()) return;
+
+    const Notifications = await import("expo-notifications");
+    if (!notificationHandlerConfigured) {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true
+        })
+      });
+      notificationHandlerConfigured = true;
+    }
 
     const permissao = await Notifications.requestPermissionsAsync();
     if (permissao.status !== "granted") {
@@ -307,11 +320,36 @@ export default function App() {
   }
 
   if (!token) {
+    if (emailPendente) {
+      return (
+        <SafeAreaView style={[globalStyles.app, styles.loginApp]}>
+          <StatusBar style="light" />
+          <VerificarEmailScreen
+            email={emailPendente}
+            onVerified={async (novoToken, novoUsuario) => {
+              await salvarSessao(novoToken, novoUsuario);
+              setEmailPendente("");
+              setToken(novoToken);
+              setUsuario(novoUsuario);
+              setAssinaturaAtiva(null);
+              validarAcesso(novoToken, novoUsuario);
+            }}
+          />
+        </SafeAreaView>
+      );
+    }
+
     if (cadastroAberto) {
       return (
         <SafeAreaView style={[globalStyles.app, styles.loginApp]}>
           <StatusBar style="light" />
-          <CadastroScreen onBack={() => setCadastroAberto(false)} />
+          <CadastroScreen
+            onBack={() => setCadastroAberto(false)}
+            onRegistered={(email) => {
+              setCadastroAberto(false);
+              setEmailPendente(email);
+            }}
+          />
         </SafeAreaView>
       );
     }
@@ -327,7 +365,10 @@ export default function App() {
           setAssinaturaAtiva(null);
           avisarSessaoAtiva().catch(() => {});
           validarAcesso(novoToken, novoUsuario);
-        }} onSignup={() => setCadastroAberto(true)} />
+        }}
+          onSignup={() => setCadastroAberto(true)}
+          onVerifyEmail={(email) => setEmailPendente(email)}
+        />
       </SafeAreaView>
     );
   }
@@ -338,6 +379,15 @@ export default function App() {
     return (
       <SafeAreaView style={[globalStyles.app, styles.loading]}>
         <ActivityIndicator size="large" color={colors.green} />
+      </SafeAreaView>
+    );
+  }
+
+  if (tipoUsuario === 2 && assinaturaAtiva === false) {
+    return (
+      <SafeAreaView style={globalStyles.app}>
+        <StatusBar style="dark" />
+        <AssinaturaScreen token={token} onLogout={sair} onAssinaturaAtiva={concluirAssinatura} />
       </SafeAreaView>
     );
   }

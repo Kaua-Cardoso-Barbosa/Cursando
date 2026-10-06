@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { apiRequest } from "../api/client";
@@ -19,6 +20,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
   const [faturas, setFaturas] = useState([]);
   const [pagamento, setPagamento] = useState(null);
   const [verificando, setVerificando] = useState(false);
+  const [pixCopiado, setPixCopiado] = useState(false);
   const aluno = Number(tipoUsuario) === 2;
   const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
   const faturasPagas = faturas.filter((fatura) => !fatura.aberta);
@@ -77,6 +79,13 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
     }
   }
 
+  async function copiarPix() {
+    if (!pagamento?.codigo_pagamento) return;
+    await Clipboard.setStringAsync(pagamento.codigo_pagamento);
+    setPixCopiado(true);
+    setTimeout(() => setPixCopiado(false), 2500);
+  }
+
   return (
     <ScrollView
       contentContainerStyle={globalStyles.page}
@@ -123,6 +132,9 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
               <View style={styles.invoiceCard}>
                 <Text style={styles.invoiceTitle}>PIX gerado</Text>
                 <Text style={styles.invoiceText}>{pagamento.codigo_pagamento}</Text>
+                <Pressable style={styles.confirmButton} onPress={copiarPix}>
+                  <Text style={styles.payButtonText}>{pixCopiado ? "PIX copiado" : "Copiar pix"}</Text>
+                </Pressable>
                 <Pressable style={styles.confirmButton} onPress={verificarPagamento} disabled={verificando}>
                   <Text style={styles.payButtonText}>{verificando ? "Verificando..." : "Ja paguei"}</Text>
                 </Pressable>

@@ -25,6 +25,11 @@ export default function Cadastro({api, setMensagem}) {
             return;
         }
 
+        if (!validarCpf(cpf)) {
+            setMensagem({ tipo: "erro", descricao: "Informe um CPF valido." });
+            return;
+        }
+
         try {
             const retorno = await fetch(`${api}/cadastrar`, {
                 method: "POST",
@@ -53,11 +58,9 @@ export default function Cadastro({api, setMensagem}) {
                 return;
             }
 
-            setMensagem(
-                dados.mensagem || "Cadastro realizado com sucesso!"
-            );
-
-            navigate("/login");
+            sessionStorage.setItem("cursando_email_pendente", email.trim().toLowerCase());
+            setMensagem(dados.mensagem || "Enviamos um codigo de verificacao para seu e-mail.");
+            navigate("/verificar-email", { state: { email: email.trim().toLowerCase() } });
 
         } catch (erro) {
             console.error("Erro ao conectar com o servidor:", erro);
@@ -144,4 +147,16 @@ export default function Cadastro({api, setMensagem}) {
 
         </main>
     );
+}
+
+function validarCpf(valor) {
+    const cpf = (valor || "").replace(/\D/g, "");
+    if (!/^\d{11}$/.test(cpf) || /^([0-9])\1+$/.test(cpf)) return false;
+    const calcularDigito = (base, pesos) => {
+        const resto = [...base].reduce((soma, numero, indice) => soma + Number(numero) * pesos[indice], 0) % 11;
+        return resto < 2 ? 0 : 11 - resto;
+    };
+    const primeiro = calcularDigito(cpf.slice(0, 9), [10, 9, 8, 7, 6, 5, 4, 3, 2]);
+    const segundo = calcularDigito(`${cpf.slice(0, 9)}${primeiro}`, [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
+    return cpf.endsWith(`${primeiro}${segundo}`);
 }

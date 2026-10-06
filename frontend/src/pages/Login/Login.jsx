@@ -134,6 +134,9 @@ export default function Login({ api, setMensagem, atualizarSessao }) {
                 <p className={css.cadastro}>
                     Não tem cadastro?<Link to={`/cadastro`}> Cadastre-se já</Link>
                 </p>
+                <p className={css.cadastro}>
+                    Precisa verificar o e-mail?<Link to="/verificar-email" state={{ email: email.trim().toLowerCase() }}> Verifique aqui</Link>
+                </p>
             </section>
         </main>
     );

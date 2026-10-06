@@ -1,0 +1,30 @@
+.pagina {
+    min-height: calc(100vh - 80px);
+    display: grid;
+    place-items: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #eef8f2, #fff 56%, #d7f0e2);
+}
+
+.cartao {
+    width: min(100%, 480px);
+    padding: 36px;
+    border: 1px solid #b8d8c5;
+    border-radius: 16px;
+    background: white;
+    box-shadow: 0 18px 50px rgba(12, 77, 54, .12);
+}
+
+.etapa { color: #087044; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.cartao h1 { color: #123d2d; }
+.cartao p { line-height: 1.5; }
+.cartao form { display: grid; gap: 12px; margin-top: 24px; }
+.cartao label { font-weight: 700; }
+.cartao input { min-height: 48px; padding: 10px 14px; border: 1px solid #8cbda0; border-radius: 7px; font-size: 1.2rem; letter-spacing: .2em; }
+.cartao button { min-height: 48px; border: 0; border-radius: 7px; background: #087044; color: white; font-weight: 800; cursor: pointer; }
+.cartao button:disabled { opacity: .6; cursor: wait; }
+.cartao .reenviar { width: 100%; margin-top: 12px; background: transparent; color: #087044; text-decoration: underline; }
+.erro { color: #b42318; }
+.sucesso { color: #087044; }
+
+@media (max-width: 520px) { .cartao { padding: 26px 20px; } }

@@ -15,7 +15,7 @@ import BrandLogo from "../components/BrandLogo";
 import Field from "../components/Field";
 import { colors, globalStyles } from "../styles";
 
-export default function LoginScreen({ onLogin, onSignup }) {
+export default function LoginScreen({ onLogin, onSignup, onVerifyEmail }) {
   // O estado mantem os campos e a interface sincronizados com a digitacao e o envio.
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -137,6 +137,16 @@ export default function LoginScreen({ onLogin, onSignup }) {
 
             <Pressable style={styles.signupButton} onPress={onSignup}>
               <Text style={styles.signupText}>Nao tem cadastro? Cadastre-se</Text>
+            </Pressable>
+            <Pressable style={styles.signupButton} onPress={() => {
+              const emailTratado = email.trim().toLowerCase();
+              if (!emailTratado) {
+                setErro("Informe seu e-mail para verificar o cadastro.");
+                return;
+              }
+              onVerifyEmail(emailTratado);
+            }}>
+              <Text style={styles.signupText}>Verificar e-mail do cadastro</Text>
             </Pressable>
           </View>
         </ScrollView>

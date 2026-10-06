@@ -40,7 +40,7 @@ def validar_senha(senha):
         elif not s.isalnum():
             especial = True
 
-    if len(senha) < 8 or len(senha) > 12:
+    if len(senha) < 8:
         return False
 
     if not (maiuscula and minuscula and numero and especial):

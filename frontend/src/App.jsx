@@ -13,6 +13,7 @@ import ConfirmAlert from "./components/ConfirmAlert/ConfirmAlert.jsx";
 import {useCallback, useEffect, useState} from "react";
 import RotaRestrita from "./components/RotaRestrita/RotaRestrita.jsx";
 import Assinatura from "./pages/Assinatura/Assinatura.jsx";
+import VerificarEmail from "./pages/VerificarEmail/VerificarEmail.jsx";
 
 export default function App() {
     return (
@@ -143,6 +144,7 @@ function AppConteudo() {
                 <Route path="/login" element={<Login api={api} setMensagem={setMensagem} atualizarSessao={atualizarSessao}/>}/>
                 <Route path="*" element={<Pagina404/>}/>
                 <Route path="/cadastro" element={<Cadastro api={api} setMensagem={setMensagem}/>}/>
+                <Route path="/verificar-email" element={<VerificarEmail api={api} atualizarSessao={atualizarSessao}/>}/>
 
                 <Route path="/assinatura" element={
                     <RotaRestrita api={api} tipoPermitido={2}>

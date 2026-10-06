@@ -45,10 +45,6 @@ export default function EditarCursoScreen({ curso, onCancel, onSave, salvando })
           <Field label="Titulo:" value={titulo} onChangeText={setTitulo} />
           <Field label="Descricao:" value={descricao} onChangeText={setDescricao} multiline />
 
-          <Pressable style={styles.archiveButton}>
-            <Text style={styles.archiveText}>Arquivar curso</Text>
-          </Pressable>
-
           <View style={styles.buttons}>
             <Pressable style={globalStyles.secondaryButton} onPress={onCancel}>
               <Text style={globalStyles.secondaryText}>Cancelar</Text>
@@ -126,22 +122,6 @@ const styles = StyleSheet.create({
   uploadIcon: {
     alignItems: "center",
     justifyContent: "center"
-  },
-  archiveButton: {
-    minHeight: 40,
-    borderWidth: 1,
-    borderColor: colors.amber,
-    borderRadius: 6,
-    backgroundColor: colors.amber,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 2,
-    marginBottom: 26
-  },
-  archiveText: {
-    color: colors.black,
-    fontSize: 18,
-    lineHeight: 22
   },
   buttons: {
     flexDirection: "row",

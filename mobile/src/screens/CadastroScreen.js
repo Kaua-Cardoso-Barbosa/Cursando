@@ -15,7 +15,7 @@ import BrandLogo from "../components/BrandLogo";
 import Field from "../components/Field";
 import { colors, globalStyles } from "../styles";
 
-export default function CadastroScreen({ onBack }) {
+export default function CadastroScreen({ onBack, onRegistered }) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
@@ -47,8 +47,8 @@ export default function CadastroScreen({ onBack }) {
       return;
     }
 
-    if (cpfTratado.length !== 11) {
-      setErro("Informe um CPF valido com 11 digitos.");
+    if (!validarCpf(cpfTratado)) {
+      setErro("Informe um CPF valido.");
       return;
     }
 
@@ -58,7 +58,7 @@ export default function CadastroScreen({ onBack }) {
     }
 
     if (!validarSenha(senha)) {
-      setErro("A senha deve ter de 8 a 12 caracteres, com letra maiuscula, letra minuscula, numero e caractere especial.");
+      setErro("A senha deve ter no minimo 8 caracteres, com letra maiuscula, letra minuscula, numero e caractere especial.");
       return;
     }
 
@@ -79,8 +79,7 @@ export default function CadastroScreen({ onBack }) {
         })
       });
 
-      setSucesso("Cadastro realizado. Entre com seu email e senha.");
-      setTimeout(onBack, 1200);
+      onRegistered(emailTratado);
     } catch (error) {
       setErro(error?.message || "Nao foi possivel realizar o cadastro.");
     } finally {
@@ -234,5 +233,16 @@ function validarEmail(valor) {
 }
 
 function validarSenha(valor) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,12}$/.test(valor || "");
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(valor || "");
+}
+
+function validarCpf(valor) {
+  if (!/^\d{11}$/.test(valor) || /^([0-9])\1+$/.test(valor)) return false;
+  const calcularDigito = (base, pesos) => {
+    const resto = [...base].reduce((soma, numero, indice) => soma + Number(numero) * pesos[indice], 0) % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+  const primeiro = calcularDigito(valor.slice(0, 9), [10, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const segundo = calcularDigito(`${valor.slice(0, 9)}${primeiro}`, [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return valor.endsWith(`${primeiro}${segundo}`);
 }
