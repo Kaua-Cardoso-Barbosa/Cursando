@@ -815,11 +815,20 @@ export default function DashboardAluno({
                                     </div>
                                     {pagamentoFatura?.codigo_pagamento && (
                                         <div className={css.cardPagamentoPix}>
-                                            <strong>{pagamentoFatura.fatura_existente ? "Mensalidade pendente" : "PIX gerado"}</strong>
-                                            <p className={css.codigoPixFinanceiro}>{pagamentoFatura.codigo_pagamento}</p>
+                                            <div className={css.pagamentoPixTopo}>
+                                                <div>
+                                                    <span>{pagamentoFatura.fatura_existente ? "Mensalidade pendente" : "PIX gerado"}</span>
+                                                    <strong>R$ {Number(pagamentoFatura.valor || 0).toFixed(2).replace(".", ",")}</strong>
+                                                </div>
+                                                <small>Vencimento em ate 3 dias</small>
+                                            </div>
+                                            <div className={css.caixaCodigoPixFinanceiro}>
+                                                <span>Pix copia e cola</span>
+                                                <p className={css.codigoPixFinanceiro}>{pagamentoFatura.codigo_pagamento}</p>
+                                            </div>
                                             <div className={css.acoesPagamentoPix}>
                                                 <button
-                                                    className={css.botaoSecundarioFinanceiro}
+                                                    className={`${css.botaoSecundarioFinanceiro} ${codigoFaturaCopiado ? css.botaoCodigoCopiado : ""}`}
                                                     type="button"
                                                     onClick={copiarCodigoFatura}
                                                 >

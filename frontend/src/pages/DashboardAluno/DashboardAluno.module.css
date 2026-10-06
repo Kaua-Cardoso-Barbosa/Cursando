@@ -181,32 +181,60 @@
 }
 
 .cardPagamentoPix {
-    background: #ffffff;
-    border: 1.5px solid #111111;
+    background: linear-gradient(135deg, #f2fff7 0%, #ffffff 58%);
+    border: 1.5px solid #06a663;
     border-radius: 8px;
+    box-shadow: 0 16px 34px rgba(6, 166, 99, 0.12);
     display: grid;
-    gap: 12px;
-    padding: 16px;
+    gap: 14px;
+    padding: 18px;
     margin-bottom: 28px;
 }
 
-.cardPagamentoPix strong {
+.pagamentoPixTopo {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.pagamentoPixTopo span,
+.caixaCodigoPixFinanceiro span {
+    color: #02693e;
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.pagamentoPixTopo strong {
     color: #111111;
-    font-size: 1rem;
+    display: block;
+    font-size: 1.6rem;
+    margin-top: 4px;
+}
+
+.pagamentoPixTopo small {
+    color: #555555;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.caixaCodigoPixFinanceiro {
+    background: #ffffff;
+    border: 1px solid #b9e8cd;
+    border-radius: 8px;
+    padding: 12px;
 }
 
 .codigoPixFinanceiro {
-    background: #f5f5f5;
-    border: 1px solid #dddddd;
-    border-radius: 8px;
     color: #202020;
     font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
     font-size: 0.9rem;
     line-height: 1.45;
-    margin: 0;
+    margin: 8px 0 0;
     max-height: 140px;
     overflow: auto;
-    padding: 12px;
     overflow-wrap: anywhere;
 }
 
@@ -226,6 +254,14 @@
     font-size: 0.95rem;
     font-weight: 700;
     padding: 0 16px;
+    transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.botaoSecundarioFinanceiro:hover,
+.botaoCodigoCopiado {
+    background: #02693e;
+    color: #ffffff;
+    transform: translateY(-1px);
 }
 
 .tituloUltimasAulas {

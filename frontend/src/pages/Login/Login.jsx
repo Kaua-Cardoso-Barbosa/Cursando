@@ -30,6 +30,10 @@ export default function Login({ api, setMensagem, atualizarSessao }) {
     }
 
     function getRotaDashboard(dados) {
+        if (dados?.redirecionar) {
+            return dados.redirecionar;
+        }
+
         const payloadToken = getPayloadToken(dados?.token);
         const tipoUsuario = (
             dados?.usuario?.tipo ??

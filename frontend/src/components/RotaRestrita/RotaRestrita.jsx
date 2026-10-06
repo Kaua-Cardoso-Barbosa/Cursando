@@ -1,5 +1,5 @@
 import { cloneElement, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 export default function RotaProtegida({
                                           api,
@@ -10,6 +10,7 @@ export default function RotaProtegida({
     const [carregando, setCarregando] = useState(true);
     const [usuario, setUsuario] = useState(null);
     const [assinaturaValida, setAssinaturaValida] = useState(!exigirAssinatura);
+    const location = useLocation();
 
     useEffect(() => {
         async function verificarSessao() {
@@ -56,6 +57,10 @@ export default function RotaProtegida({
 
     if (!usuario) {
         return <Navigate to="/login" replace />;
+    }
+
+    if (usuario.redirecionar && location.pathname !== usuario.redirecionar) {
+        return <Navigate to={usuario.redirecionar} replace />;
     }
 
     if (exigirAssinatura && !assinaturaValida) {

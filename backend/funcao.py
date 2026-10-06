@@ -114,6 +114,30 @@ def verificar_token():
         """, (id_usuario,))
 
         usuario = cursor.fetchone()
+        redirecionar = None
+
+        if usuario and int(tipo) == 2:
+            cursor.execute(
+                """
+                SELECT
+                    COUNT(*),
+                    SUM(
+                        CASE
+                            WHEN STATUS = 1
+                             AND (DATA_EXPIRACAO IS NULL OR DATA_EXPIRACAO >= CURRENT_TIMESTAMP)
+                            THEN 1
+                            ELSE 0
+                        END
+                    )
+                FROM ASSINATURAS
+                WHERE ID_USUARIO = ?
+                """,
+                (id_usuario,),
+            )
+            total_assinaturas, assinaturas_ativas = cursor.fetchone() or (0, 0)
+
+            if int(total_assinaturas or 0) == 1 and int(assinaturas_ativas or 0) == 0:
+                redirecionar = "/assinatura"
 
         cursor.close()
 
@@ -127,7 +151,8 @@ def verificar_token():
             'id_usuario': id_usuario,
             'nome': usuario[0],
             'imagem_perfil': usuario[1],
-            'tipo': tipo
+            'tipo': tipo,
+            'redirecionar': redirecionar
         }), 200
 
     except Exception as e:

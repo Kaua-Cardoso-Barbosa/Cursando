@@ -122,8 +122,13 @@ export default function Assinatura({ api }) {
                     </button>
                 ) : (
                     <div className={css.pagamento}>
-                        <p className={css.instrucao}>Copie o código PIX, conclua o pagamento no seu banco e verifique o status.</p>
-                        <div className={css.areaCodigoPix}>
+                        <div className={css.pagamentoTopo}>
+                            <span>PIX gerado</span>
+                            <strong>R$ {Number(pagamento.valor || 0).toFixed(2).replace(".", ",")}</strong>
+                        </div>
+                        <p className={css.instrucao}>Copie o código PIX, conclua o pagamento no seu banco e depois confirme por aqui.</p>
+                        <div className={css.areaCodigoPix} aria-label="Codigo PIX copia e cola">
+                            <span className={css.rotuloCodigoPix}>Pix copia e cola</span>
                             <p className={css.codigoPix}>{pagamento.codigo_pagamento}</p>
                         </div>
                         <div className={css.acoes}>

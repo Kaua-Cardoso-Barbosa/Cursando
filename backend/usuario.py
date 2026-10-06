@@ -600,6 +600,31 @@ def login():
             expires_delta=duracao_token,
             additional_claims={"tipo": tipo},
         )
+        redirecionar = None
+
+        if int(tipo) == 2:
+            cursor.execute(
+                """
+                SELECT
+                    COUNT(*),
+                    SUM(
+                        CASE
+                            WHEN STATUS = 1
+                             AND (DATA_EXPIRACAO IS NULL OR DATA_EXPIRACAO >= CURRENT_TIMESTAMP)
+                            THEN 1
+                            ELSE 0
+                        END
+                    )
+                FROM ASSINATURAS
+                WHERE ID_USUARIO = ?
+                """,
+                (id_usuario,),
+            )
+            total_assinaturas, assinaturas_ativas = cursor.fetchone() or (0, 0)
+
+            if int(total_assinaturas or 0) == 1 and int(assinaturas_ativas or 0) == 0:
+                redirecionar = "/assinatura"
+
         resposta = make_response(
             jsonify(
                 {
@@ -612,6 +637,7 @@ def login():
                         "imagem_perfil": imagem_perfil,
                     },
                     "token": token,
+                    "redirecionar": redirecionar,
                 }
             ),
             200,
