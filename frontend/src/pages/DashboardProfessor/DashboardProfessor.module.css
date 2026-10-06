@@ -81,12 +81,14 @@
 }
 
 .cardMetrica {
-    background: #fafafa;
-    border: 1.5px solid #666666;
-    border-radius: 16px;
-    padding: 20px 24px;
+    background: #ffffff;
+    border: 1px solid #dfe9e3;
+    border-radius: 18px;
+    padding: 22px 23px;
     display: flex;
     flex-direction: column;
+    min-height: 148px;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
 }
 
 .metricaTopo {
@@ -99,16 +101,17 @@
 
 .metricaTopo h2 {
     color: #1a1a1a;
-    font-size: 1.35rem;
-    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.35;
+    font-weight: 650;
     margin: 0;
 }
 
 .iconeBadge {
     width: 42px;
-    height: 38px;
-    border-radius: 10px;
-    background: #9fe0c3;
+    height: 42px;
+    border-radius: 13px;
+    background: #e5f5ec;
     color: #004727;
     display: flex;
     align-items: center;
@@ -118,16 +121,18 @@
 }
 
 .metricaVariacao {
-    color: #32b978;
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 12px;
+    color: #507363;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    font-weight: 500;
+    margin-bottom: 10px;
 }
 
 .metricaNumero {
     color: #111111;
-    font-size: 2rem;
-    font-weight: 500;
+    font-size: clamp(1.55rem, 2vw, 1.9rem);
+    line-height: 1.15;
+    font-weight: 650;
 }
 
 .secaoAcessos,
@@ -843,5 +848,475 @@
 
     .filtrosRelatorio {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Sprint item 8: deixa as áreas de início, financeiro e relatórios com hierarquia clara e responsiva. */
+.cabecalhoInicio,
+.cabecalhoPagina {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+    padding: clamp(24px, 3vw, 36px);
+    border: 1px solid #dcebe2;
+    border-radius: 22px;
+    background: linear-gradient(115deg, #f0faf4 0%, #ffffff 78%);
+}
+
+.cabecalhoInicio h2,
+.cabecalhoPagina h2 {
+    margin: 5px 0 8px;
+    color: #123c2a;
+    font-size: clamp(1.8rem, 3vw, 2.35rem);
+    line-height: 1.08;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+}
+
+.cabecalhoInicio p,
+.cabecalhoPagina p {
+    margin: 0;
+    max-width: 620px;
+    color: #53675c;
+    font-size: 0.98rem;
+    line-height: 1.55;
+}
+
+.cabecalhoInicio .botaoPrimario,
+.cabecalhoPagina .botaoPrimario,
+.cabecalhoPagina .botaoSecundario {
+    flex: 0 0 auto;
+    min-height: 46px;
+    border-radius: 11px;
+    box-shadow: none;
+    font-weight: 650;
+}
+
+.etiquetaPagina {
+    display: inline-block;
+    color: #087044;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: 0.11em;
+}
+
+.secaoPainel {
+    margin-bottom: 34px;
+}
+
+.cabecalhoBloco {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 17px;
+}
+
+.cabecalhoBloco h3 {
+    margin: 0 0 5px;
+    color: #183d2c;
+    font-size: 1.2rem;
+    line-height: 1.3;
+    font-weight: 650;
+}
+
+.cabecalhoBloco p {
+    margin: 0;
+    color: #68766e;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.gridMetricasInicio,
+.gridMetricasFinanceiro,
+.gridMetricasRelatorio,
+.gridMetricasSecundarias {
+    display: grid;
+    gap: 16px;
+}
+
+.gridMetricasInicio,
+.gridMetricasFinanceiro {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.gridMetricasSecundarias {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gridMetricasFinanceiro .metricaNumero {
+    font-size: clamp(1.12rem, 1.55vw, 1.65rem);
+    white-space: nowrap;
+}
+
+.gridMetricasRelatorio {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.secaoPainel .topoSecao {
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 17px;
+}
+
+.secaoPainel .topoSecao h3 {
+    margin: 0 0 5px;
+    color: #183d2c;
+    font-size: 1.2rem;
+    font-weight: 650;
+}
+
+.secaoPainel .topoSecao p {
+    margin: 0;
+    color: #68766e;
+    font-size: 0.9rem;
+}
+
+.secaoPainel .carrosselCursos {
+    gap: 18px;
+    padding-bottom: 18px;
+}
+
+.paginaFinanceiro,
+.paginaRelatorios {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cardSaldoDisponivel > :global(article) {
+    height: 100%;
+    border-color: #087044;
+    background: #087044;
+}
+
+.cardSaldoDisponivel > :global(article) h2,
+.cardSaldoDisponivel > :global(article) strong,
+.cardSaldoDisponivel > :global(article) span {
+    color: #ffffff;
+}
+
+.cardSaldoDisponivel > :global(article) .iconeBadge {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+.painelSolicitarSaque {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+    overflow: hidden;
+    margin: 8px 0 30px;
+    border: 1px solid #dce9e1;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.05);
+}
+
+.introducaoSaque {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: clamp(24px, 3vw, 34px);
+    background: #eff8f2;
+}
+
+.iconeSaque {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 22px;
+    place-items: center;
+    border-radius: 14px;
+    background: #d8f0e2;
+    color: #087044;
+    font-size: 1.25rem;
+}
+
+.introducaoSaque h3 {
+    margin: 6px 0 8px;
+    color: #173e2c;
+    font-size: 1.45rem;
+    line-height: 1.2;
+}
+
+.introducaoSaque > p {
+    max-width: 430px;
+    margin: 0;
+    color: #53675c;
+    line-height: 1.55;
+}
+
+.valorDisponivelSaque {
+    display: grid;
+    gap: 5px;
+    margin-top: auto;
+    padding-top: 28px;
+}
+
+.valorDisponivelSaque span {
+    color: #507363;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.valorDisponivelSaque strong {
+    color: #075132;
+    font-size: 1.75rem;
+    line-height: 1.2;
+}
+
+.formularioSaque {
+    width: 100%;
+    justify-content: center;
+    border: 0;
+    border-radius: 0;
+    padding: clamp(24px, 3vw, 38px);
+}
+
+.formularioSaque > label {
+    font-size: 0.92rem;
+    font-weight: 650;
+}
+
+.campoValorSaque {
+    display: flex;
+    min-height: 54px;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    border: 1px solid #cbd9d0;
+    border-radius: 11px;
+    background: #ffffff;
+}
+
+.campoValorSaque:focus-within {
+    border-color: #06a663;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+.campoValorSaque > span {
+    color: #607468;
+    font-weight: 650;
+}
+
+.campoValorSaque input,
+.formularioPerfil .campoValorSaque input {
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 1.12rem;
+}
+
+.formularioSaque .textoApoio {
+    margin: -5px 0 0;
+    color: #66776d;
+    font-size: 0.84rem;
+}
+
+.formularioSaque .botaoPrimario {
+    align-self: stretch;
+    min-height: 46px;
+    border-radius: 10px;
+    box-shadow: none;
+    font-weight: 650;
+}
+
+.painelTabelaFinanceiro,
+.painelFiltrosRelatorio,
+.painelTabelaRelatorio {
+    margin: 0 0 28px;
+    padding: clamp(18px, 2.4vw, 26px);
+    border: 1px solid #dfe9e3;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
+}
+
+.containerTabelaFinanceira,
+.containerTabelaRelatorio {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e1e9e4;
+    border-radius: 12px;
+}
+
+.tabelaFinanceira,
+.tabelaRelatorio {
+    width: 100%;
+    border-collapse: collapse;
+    color: #26372e;
+    text-align: left;
+}
+
+.tabelaFinanceira {
+    min-width: 540px;
+}
+
+.tabelaRelatorio {
+    min-width: 840px;
+}
+
+.tabelaFinanceira th,
+.tabelaRelatorio th {
+    padding: 14px 16px;
+    background: #f0f7f3;
+    color: #315342;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.tabelaFinanceira td,
+.tabelaRelatorio td {
+    padding: 15px 16px;
+    border-top: 1px solid #e8eee9;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.tabelaFinanceira tbody tr:hover,
+.tabelaRelatorio tbody tr:hover {
+    background: #f9fcfa;
+}
+
+.tabelaFinanceira td:last-child,
+.tabelaRelatorio td:not(:first-child) {
+    font-variant-numeric: tabular-nums;
+}
+
+.celulaVazia {
+    padding: 30px 18px !important;
+    color: #718076;
+    text-align: center;
+}
+
+.painelFiltrosRelatorio .cabecalhoBloco {
+    margin-bottom: 20px;
+}
+
+.filtrosRelatorio {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: 14px;
+}
+
+.filtrosRelatorio label {
+    display: grid;
+    gap: 7px;
+    color: #334a3c;
+    font-size: 0.84rem;
+    font-weight: 650;
+}
+
+.filtrosRelatorio input,
+.filtrosRelatorio select {
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 11px;
+    border: 1px solid #cbd9d0;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #24372b;
+    font: inherit;
+}
+
+.filtrosRelatorio input:focus,
+.filtrosRelatorio select:focus {
+    border-color: #06a663;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+.filtrosRelatorio .botaoPrimario {
+    min-height: 44px;
+    padding-inline: 18px;
+    border-radius: 9px;
+    box-shadow: none;
+    font-size: 0.92rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+    .gridMetricasInicio,
+    .gridMetricasFinanceiro,
+    .gridMetricasSecundarias,
+    .gridMetricasRelatorio {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 860px) {
+    .cabecalhoInicio,
+    .cabecalhoPagina {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .cabecalhoInicio .botaoPrimario,
+    .cabecalhoPagina .botaoPrimario,
+    .cabecalhoPagina .botaoSecundario {
+        width: 100%;
+    }
+
+    .painelSolicitarSaque {
+        grid-template-columns: 1fr;
+    }
+
+    .secaoPainel .topoSecao {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .valorDisponivelSaque {
+        padding-top: 20px;
+    }
+
+    .filtrosRelatorio {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .filtrosRelatorio .botaoPrimario {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 560px) {
+    .gridMetricasInicio,
+    .gridMetricasFinanceiro,
+    .gridMetricasSecundarias,
+    .gridMetricasRelatorio,
+    .filtrosRelatorio {
+        grid-template-columns: 1fr;
+    }
+
+    .cabecalhoInicio,
+    .cabecalhoPagina {
+        padding: 22px 19px;
+        border-radius: 17px;
+    }
+
+    .cabecalhoInicio h2,
+    .cabecalhoPagina h2 {
+        font-size: 1.8rem;
+    }
+
+    .filtrosRelatorio .botaoPrimario {
+        grid-column: auto;
+    }
+
+    .introducaoSaque,
+    .formularioSaque {
+        padding: 22px 19px;
     }
 }

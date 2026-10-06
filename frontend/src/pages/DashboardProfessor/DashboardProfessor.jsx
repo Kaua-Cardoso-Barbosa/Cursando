@@ -4,11 +4,13 @@ import {
     FaBookOpen,
     FaCheckCircle,
     FaClock,
+    FaFilePdf,
     FaFolderOpen,
     FaGraduationCap,
     FaListAlt,
     FaPlayCircle,
     FaPlus,
+    FaWallet,
     FaUsers
 } from "react-icons/fa";
 import MenuLateralProf from "../../components/MenuLateral/MenuLateralProf.jsx";
@@ -635,23 +637,54 @@ export default function DashboardProfessor({
 
                     {visao === "inicio" && (
                         <>
-                            <section className={css.gridMetricas}>
-                                <CardMetricaProfessor titulo="Cursos cadastrados" detalhe="Total criado por você" valor={metricas.cursos_cadastrados || 0} icone={<FaGraduationCap />} />
-                                <CardMetricaProfessor titulo="Total de alunos" detalhe="Matrículas em seus cursos" valor={metricas.total_alunos || 0} icone={<FaUsers />} />
-                                <CardMetricaProfessor titulo="Aulas publicadas" detalhe="Vídeo-aulas disponíveis" valor={metricas.aulas_publicadas || 0} icone={<FaPlayCircle />} />
-                                <CardMetricaProfessor titulo="Cursos privados" detalhe="Aguardando publicação" valor={metricas.cursos_privados || 0} icone={<FaFolderOpen />} />
-                                {/* Sprint item 7: exibe conclusões e horas registradas pelo player no painel do instrutor. */}
-                                <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(metricas.cursos_concluidos)} icone={<FaCheckCircle />} />
-                                <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(metricas.modulos_concluidos)} icone={<FaListAlt />} />
-                                <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(metricas.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} icone={<FaClock />} />
+                            {/* Sprint item 8: organiza a abertura do painel em desempenho, conteúdo e atalhos claros. */}
+                            <section className={css.cabecalhoInicio}>
+                                <div>
+                                    <span className={css.etiquetaPagina}>PAINEL DO PROFESSOR</span>
+                                    <h2>Visão geral</h2>
+                                    <p>Acompanhe o engajamento dos alunos e a atividade dos seus cursos.</p>
+                                </div>
+                                <button className={css.botaoPrimario} onClick={() => navigate("/DashboardProfessor/cursos")}>
+                                    <FaBookOpen /> Gerenciar cursos
+                                </button>
                             </section>
 
-                            <section className={css.secaoAcessos}>
+                            <section className={css.secaoPainel}>
+                                <div className={css.cabecalhoBloco}>
+                                    <div>
+                                        <h3>Engajamento dos alunos</h3>
+                                        <p>Veja quantos alunos estão ativos e quanto do conteúdo já foi concluído.</p>
+                                    </div>
+                                </div>
+                                <div className={css.gridMetricasInicio}>
+                                    <CardMetricaProfessor titulo="Total de alunos" detalhe="Alunos matriculados nos seus cursos" valor={formatarNumero(metricas.total_alunos)} icone={<FaUsers />} />
+                                    {/* Sprint item 7: exibe conclusões e horas registradas pelo player no painel do instrutor. */}
+                                    <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(metricas.cursos_concluidos)} icone={<FaCheckCircle />} />
+                                    <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(metricas.modulos_concluidos)} icone={<FaListAlt />} />
+                                    <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(metricas.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} icone={<FaClock />} />
+                                </div>
+                            </section>
+
+                            <section className={css.secaoPainel}>
+                                <div className={css.cabecalhoBloco}>
+                                    <div>
+                                        <h3>Seus cursos</h3>
+                                        <p>Resumo do conteúdo que você criou e mantém disponível.</p>
+                                    </div>
+                                </div>
+                                <div className={css.gridMetricasSecundarias}>
+                                    <CardMetricaProfessor titulo="Cursos cadastrados" detalhe="Total criado por você" valor={formatarNumero(metricas.cursos_cadastrados)} icone={<FaGraduationCap />} />
+                                    <CardMetricaProfessor titulo="Aulas publicadas" detalhe="Vídeo-aulas disponíveis" valor={formatarNumero(metricas.aulas_publicadas)} icone={<FaPlayCircle />} />
+                                    <CardMetricaProfessor titulo="Cursos privados" detalhe="Aguardando publicação" valor={formatarNumero(metricas.cursos_privados)} icone={<FaFolderOpen />} />
+                                </div>
+                            </section>
+
+                            <section className={`${css.secaoAcessos} ${css.secaoPainel}`}>
                                 <div className={css.topoSecao}>
-                                    <h2>Acessos Recentes</h2>
-                                    <button className={css.botaoPrimario} onClick={() => navigate("/DashboardProfessor/cursos")}>
-                                        <FaBookOpen /> Meus cursos
-                                    </button>
+                                    <div>
+                                        <h3>Cursos atualizados recentemente</h3>
+                                        <p>Continue organizando suas aulas e módulos.</p>
+                                    </div>
                                 </div>
                                 <div className={css.carrosselCursos}>
                                     {recentes.length === 0 && <EstadoVazioProfessor texto="Nenhum curso criado ainda." />}
@@ -861,53 +894,93 @@ export default function DashboardProfessor({
                     )}
 
                     {visao === "financeiro" && (
-                        <section className={css.secaoCursos}>
-                            <div className={css.barraTitulo}>
-                                <h2>Financeiro</h2>
-                                <span className={css.subtituloSecao}>Receita estimada, saldo e solicitações de saque</span>
-                            </div>
-                            {/* Sprint itens 12, 30, 31 e 32: cards financeiros e solicitacao de saque do instrutor. */}
-                            <div className={css.gridMetricas}>
-                                <CardMetricaProfessor titulo="Recebido estimado" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} />
-                                <CardMetricaProfessor titulo="Disponível para saque" detalhe="Saldo após solicitações" valor={formatarMoeda(financeiro?.disponivel_saque)} />
-                                <CardMetricaProfessor titulo="Já sacado" detalhe="Solicitações registradas" valor={formatarMoeda(financeiro?.ja_sacado)} />
-                                <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} />
-                            </div>
-                            <form className={css.formularioPerfil} onSubmit={(evento) => { evento.preventDefault(); solicitarSaque(); }}>
-                                <h3>Solicitar saque</h3>
-                                <label>
-                                    Valor do saque
-                                    <input
-                                        value={valorSaque}
-                                        onChange={(evento) => setValorSaque(evento.target.value)}
-                                        type="number"
-                                        min="0.01"
-                                        max={Number(financeiro?.disponivel_saque || 0) || undefined}
-                                        step="0.01"
-                                        placeholder="0,00"
-                                    />
-                                </label>
-                                <p className={css.textoApoio}>Disponível: {formatarMoeda(financeiro?.disponivel_saque)}</p>
-                                <button className={css.botaoPrimario} type="submit" disabled={solicitandoSaque || !saqueValido}>
-                                    {solicitandoSaque ? "Enviando solicitação..." : "Solicitar saque"}
-                                </button>
-                            </form>
-                            {financeiro?.cursos_receita?.length > 0 && (
-                                <div className={css.listaAlunosCurso}>
-                                    <div className={css.cabecalhoListaAlunos}>
-                                        <span>Curso</span>
-                                        <span>Atividade</span>
-                                        <span>Receita estimada</span>
-                                    </div>
-                                    {financeiro.cursos_receita.map((curso) => (
-                                        <div key={curso.id_curso} className={css.linhaAlunoCurso}>
-                                            <span>{curso.curso}</span>
-                                            <span>{formatarNumero(curso.views)} aulas assistidas</span>
-                                            <span>{formatarMoeda(curso.receita_estimativa)}</span>
-                                        </div>
-                                    ))}
+                        <section className={`${css.secaoCursos} ${css.paginaFinanceiro}`}>
+                            {/* Sprint item 8: separa resumo financeiro, ação de saque e detalhamento por curso. */}
+                            <header className={css.cabecalhoPagina}>
+                                <div>
+                                    <span className={css.etiquetaPagina}>PAGAMENTOS</span>
+                                    <h2>Financeiro</h2>
+                                    <p>Consulte seus valores e solicite um saque do saldo disponível.</p>
                                 </div>
-                            )}
+                            </header>
+                            {/* Sprint itens 12, 30, 31 e 32: cards financeiros e solicitacao de saque do instrutor. */}
+                            <section className={css.secaoPainel}>
+                                <div className={css.cabecalhoBloco}>
+                                    <div>
+                                        <h3>Resumo financeiro</h3>
+                                        <p>Valores estimados e atividade atual dos seus cursos.</p>
+                                    </div>
+                                </div>
+                                <div className={css.gridMetricasFinanceiro}>
+                                    <CardMetricaProfessor titulo="Recebido estimado" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} />
+                                    <div className={css.cardSaldoDisponivel}>
+                                        <CardMetricaProfessor titulo="Disponível para saque" detalhe="Saldo após solicitações" valor={formatarMoeda(financeiro?.disponivel_saque)} />
+                                    </div>
+                                    <CardMetricaProfessor titulo="Já sacado" detalhe="Solicitações registradas" valor={formatarMoeda(financeiro?.ja_sacado)} />
+                                    <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} />
+                                </div>
+                            </section>
+
+                            <section className={css.painelSolicitarSaque}>
+                                <div className={css.introducaoSaque}>
+                                    <span className={css.iconeSaque}><FaWallet /></span>
+                                    <span className={css.etiquetaPagina}>SALDO DISPONÍVEL</span>
+                                    <h3>Solicitar saque</h3>
+                                    <p>Informe quanto deseja transferir. O valor não pode ultrapassar seu saldo disponível.</p>
+                                    <div className={css.valorDisponivelSaque}>
+                                        <span>Disponível para saque</span>
+                                        <strong>{formatarMoeda(financeiro?.disponivel_saque)}</strong>
+                                    </div>
+                                </div>
+                                <form className={`${css.formularioPerfil} ${css.formularioSaque}`} onSubmit={(evento) => { evento.preventDefault(); solicitarSaque(); }}>
+                                    <label htmlFor="valor-saque">Valor do saque</label>
+                                    <div className={css.campoValorSaque}>
+                                        <span>R$</span>
+                                        <input
+                                            id="valor-saque"
+                                            value={valorSaque}
+                                            onChange={(evento) => setValorSaque(evento.target.value)}
+                                            type="number"
+                                            min="0.01"
+                                            max={Number(financeiro?.disponivel_saque || 0) || undefined}
+                                            step="0.01"
+                                            placeholder="0,00"
+                                        />
+                                    </div>
+                                    <p className={css.textoApoio}>Você poderá solicitar até {formatarMoeda(financeiro?.disponivel_saque)}.</p>
+                                    <button className={css.botaoPrimario} type="submit" disabled={solicitandoSaque || !saqueValido}>
+                                        {solicitandoSaque ? "Enviando solicitação..." : "Solicitar saque"}
+                                    </button>
+                                </form>
+                            </section>
+
+                            <section className={css.painelTabelaFinanceiro}>
+                                <div className={css.cabecalhoBloco}>
+                                    <div>
+                                        <h3>Receita estimada por curso</h3>
+                                        <p>Consulte a atividade e o valor associado a cada curso.</p>
+                                    </div>
+                                </div>
+                                <div className={css.containerTabelaFinanceira}>
+                                    <table className={css.tabelaFinanceira}>
+                                        <thead>
+                                            <tr><th>Curso</th><th>Atividade</th><th>Receita estimada</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {financeiro?.cursos_receita?.map((curso) => (
+                                                <tr key={curso.id_curso}>
+                                                    <td>{curso.curso}</td>
+                                                    <td>{formatarNumero(curso.views)} aulas concluídas</td>
+                                                    <td>{formatarMoeda(curso.receita_estimativa)}</td>
+                                                </tr>
+                                            ))}
+                                            {!financeiro?.cursos_receita?.length && (
+                                                <tr><td className={css.celulaVazia} colSpan="3">Ainda não há receita estimada para exibir.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
                         </section>
                     )}
 
@@ -918,73 +991,99 @@ export default function DashboardProfessor({
                     )}
 
                     {visao === "relatorios" && (
-                        <section className={css.secaoCursos}>
-                            <div className={css.barraTitulo}>
-                                <h2>Relatórios</h2>
-                                <button className={css.botaoPrimario} type="button" onClick={baixarRelatorioPdf}>Baixar PDF</button>
-                            </div>
-                            <form className={`${css.formularioPerfil} ${css.filtrosRelatorio}`} onSubmit={(evento) => { evento.preventDefault(); carregarRelatorio(); }}>
-                                <label>
-                                    Início
-                                    <input type="date" value={filtrosRelatorio.inicio} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, inicio: e.target.value })} />
-                                </label>
-                                <label>
-                                    Fim
-                                    <input type="date" value={filtrosRelatorio.fim} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, fim: e.target.value })} />
-                                </label>
-                                <label>
-                                    Curso
-                                    <select value={filtrosRelatorio.id_curso} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, id_curso: e.target.value })}>
-                                        <option value="">Todos os cursos</option>
-                                        {cursos.map((curso) => (
-                                            <option key={curso.id} value={curso.id}>{curso.titulo}</option>
-                                        ))}
-                                    </select>
-                                </label>
-                                <button className={css.botaoPrimario} type="submit">Filtrar</button>
-                            </form>
-                            <div className={css.gridMetricas}>
-                                <CardMetricaProfessor titulo="Alunos" detalhe="Matrículas ativas" valor={formatarNumero(relatorio?.resumo?.alunos)} />
-                                <CardMetricaProfessor titulo="Cursos" detalhe="Cursos no filtro" valor={formatarNumero(relatorio?.resumo?.cursos)} />
-                                <CardMetricaProfessor titulo="Aulas assistidas" detalhe="Aulas concluídas pelos alunos" valor={formatarNumero(relatorio?.resumo?.aulas_assistidas)} />
-                                {/* Sprint item 7: mostra no relatório as conclusões e o tempo real registrado pelo player. */}
-                                <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.conclusoes)} />
-                                <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.modulos)} />
-                                <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} />
-                            </div>
-
-                            <div className={css.tabelaResponsiva}>
-                                <div className={css.listaAlunosCurso}>
-                                    <div className={css.cabecalhoListaAlunos}>
-                                        <span>Curso</span>
-                                        <span>Alunos</span>
-                                        <span>Cursos concluídos</span>
-                                        <span>Módulos concluídos</span>
-                                        <span>Aulas assistidas</span>
-                                        <span>Horas</span>
-                                    </div>
-                                    {cursosRelatorio.map((curso) => (
-                                        <div key={curso.id_curso} className={css.linhaAlunoCurso}>
-                                            <span>{curso.curso}</span>
-                                            <span>{formatarNumero(curso.alunos)}</span>
-                                            <span>{formatarNumero(curso.conclusoes)}</span>
-                                            <span>{formatarNumero(curso.modulos)}</span>
-                                            <span>{formatarNumero(curso.aulas_assistidas)}</span>
-                                            <span>{Number(curso.horas_assistidas || 0).toFixed(2).replace(".", ",")}h</span>
-                                        </div>
-                                    ))}
-                                    {cursosRelatorio.length === 0 && (
-                                        <div className={css.linhaAlunoCurso}>
-                                            <span>Nenhum dado encontrado para os filtros.</span>
-                                            <span>0</span>
-                                            <span>0</span>
-                                            <span>0</span>
-                                            <span>0</span>
-                                            <span>0,00h</span>
-                                        </div>
-                                    )}
+                        <section className={`${css.secaoCursos} ${css.paginaRelatorios}`}>
+                            {/* Sprint item 8: agrupa filtros, indicadores e tabela em uma leitura contínua do relatório. */}
+                            <header className={css.cabecalhoPagina}>
+                                <div>
+                                    <span className={css.etiquetaPagina}>ACOMPANHAMENTO</span>
+                                    <h2>Relatórios</h2>
+                                    <p>Analise matrículas, conclusões e atividade dos seus cursos.</p>
                                 </div>
-                            </div>
+                                <button className={css.botaoSecundario} type="button" onClick={baixarRelatorioPdf}>
+                                    <FaFilePdf /> Baixar PDF
+                                </button>
+                            </header>
+
+                            <section className={css.painelFiltrosRelatorio}>
+                                <div className={css.cabecalhoBloco}>
+                                    <div>
+                                        <h3>Filtrar relatório</h3>
+                                        <p>As datas consideram quando os cursos foram criados.</p>
+                                    </div>
+                                </div>
+                                <form className={css.filtrosRelatorio} onSubmit={(evento) => { evento.preventDefault(); carregarRelatorio(); }}>
+                                    <label>
+                                        Criado a partir de
+                                        <input type="date" value={filtrosRelatorio.inicio} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, inicio: e.target.value })} />
+                                    </label>
+                                    <label>
+                                        Criado até
+                                        <input type="date" value={filtrosRelatorio.fim} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, fim: e.target.value })} />
+                                    </label>
+                                    <label>
+                                        Curso
+                                        <select value={filtrosRelatorio.id_curso} onChange={(e) => setFiltrosRelatorio({ ...filtrosRelatorio, id_curso: e.target.value })}>
+                                            <option value="">Todos os cursos</option>
+                                            {cursos.map((curso) => (
+                                                <option key={curso.id} value={curso.id}>{curso.titulo}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                    <button className={css.botaoPrimario} type="submit">Aplicar filtros</button>
+                                </form>
+                            </section>
+
+                            <section className={css.secaoPainel}>
+                                <div className={css.cabecalhoBloco}>
+                                    <div>
+                                        <h3>Resumo dos cursos filtrados</h3>
+                                        <p>Indicadores calculados para os cursos que atendem aos filtros acima.</p>
+                                    </div>
+                                </div>
+                                <div className={css.gridMetricasRelatorio}>
+                                    <CardMetricaProfessor titulo="Matrículas" detalhe="Inscrições ativas nos cursos" valor={formatarNumero(relatorio?.resumo?.alunos)} />
+                                    <CardMetricaProfessor titulo="Cursos" detalhe="Cursos incluídos no filtro" valor={formatarNumero(relatorio?.resumo?.cursos)} />
+                                    <CardMetricaProfessor titulo="Aulas concluídas" detalhe="Concluídas pelos alunos" valor={formatarNumero(relatorio?.resumo?.aulas_assistidas)} />
+                                    {/* Sprint item 7: mantém visíveis as conclusões e o tempo registrado pelo player. */}
+                                    <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.conclusoes)} />
+                                    <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.modulos)} />
+                                    <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} />
+                                </div>
+                            </section>
+
+                            <section className={css.painelTabelaRelatorio}>
+                                <div className={css.cabecalhoBloco}>
+                                    <div>
+                                        <h3>Detalhamento por curso</h3>
+                                        <p>Compare alunos, conclusões e horas entre os cursos.</p>
+                                    </div>
+                                </div>
+                                <div className={css.containerTabelaRelatorio}>
+                                    <table className={css.tabelaRelatorio}>
+                                        <thead>
+                                            <tr>
+                                                <th>Curso</th><th>Matrículas</th><th>Cursos concluídos</th>
+                                                <th>Módulos concluídos</th><th>Aulas concluídas</th><th>Horas</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {cursosRelatorio.map((curso) => (
+                                                <tr key={curso.id_curso}>
+                                                    <td>{curso.curso}</td>
+                                                    <td>{formatarNumero(curso.alunos)}</td>
+                                                    <td>{formatarNumero(curso.conclusoes)}</td>
+                                                    <td>{formatarNumero(curso.modulos)}</td>
+                                                <td>{formatarNumero(curso.aulas_assistidas)}</td>
+                                                    <td>{Number(curso.horas_assistidas || 0).toFixed(2).replace(".", ",")}h</td>
+                                                </tr>
+                                            ))}
+                                            {!cursosRelatorio.length && (
+                                                <tr><td className={css.celulaVazia} colSpan="6">Nenhum curso encontrado com os filtros selecionados.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
                         </section>
                     )}
                 </main>
