@@ -122,6 +122,26 @@ def garantir_tabela_progresso(con):
                 """
             )
 
+        # Sprint item 7: acumula o tempo de reprodução confirmado pelos avanços do player.
+        cursor.execute(
+            """
+            SELECT 1
+            FROM RDB$RELATIONS
+            WHERE RDB$RELATION_NAME = 'TEMPO_ASSISTIDO_AULAS'
+            """
+        )
+        if not cursor.fetchone():
+            cursor.execute(
+                """
+                CREATE TABLE TEMPO_ASSISTIDO_AULAS (
+                    ID_USUARIO INTEGER NOT NULL,
+                    ID_VIDEO INTEGER NOT NULL,
+                    SEGUNDOS_ASSISTIDOS DOUBLE PRECISION DEFAULT 0 NOT NULL,
+                    CONSTRAINT PK_TEMPO_ASSISTIDO_AULAS PRIMARY KEY (ID_USUARIO, ID_VIDEO)
+                )
+                """
+            )
+
         for nome, ddl in {
             "CATEGORIAS_CURSO": """
                 CREATE TABLE CATEGORIAS_CURSO (
@@ -792,7 +812,40 @@ def salvar_progresso_aula(id_aula):
         if not cursor.fetchone():
             return resposta("Aula nao encontrada para seus cursos.", 404)
 
-        # Sprint item 4: app e site gravam a posicao na mesma tabela e retomam do valor mais recente.
+        # Sprint item 7: estima tempo assistido pelo avanço do player e limita saltos ao tempo real transcorrido.
+        cursor.execute(
+            """
+            SELECT POSICAO_SEGUNDOS,
+                   DATEDIFF(MILLISECOND FROM ATUALIZADO_EM TO CURRENT_TIMESTAMP)
+            FROM PROGRESSO_REPRODUCAO
+            WHERE ID_USUARIO = ? AND ID_VIDEO = ?
+            """,
+            (id_aluno, id_aula),
+        )
+        progresso_anterior = cursor.fetchone()
+        if progresso_anterior:
+            posicao_anterior = float(progresso_anterior[0] or 0)
+            segundos_transcorridos = max(0, float(progresso_anterior[1] or 0) / 1000)
+            segundos_novos = min(max(0.0, posicao - posicao_anterior), segundos_transcorridos)
+            if segundos_novos > 0:
+                cursor.execute(
+                    """
+                    UPDATE TEMPO_ASSISTIDO_AULAS
+                    SET SEGUNDOS_ASSISTIDOS = SEGUNDOS_ASSISTIDOS + ?
+                    WHERE ID_USUARIO = ? AND ID_VIDEO = ?
+                    """,
+                    (segundos_novos, id_aluno, id_aula),
+                )
+                if cursor.rowcount == 0:
+                    cursor.execute(
+                        """
+                        INSERT INTO TEMPO_ASSISTIDO_AULAS (ID_USUARIO, ID_VIDEO, SEGUNDOS_ASSISTIDOS)
+                        VALUES (?, ?, ?)
+                        """,
+                        (id_aluno, id_aula, segundos_novos),
+                    )
+
+        # Sprint item 4: app e site gravam a posição na mesma tabela e retomam do valor mais recente.
         cursor.execute(
             """
             UPDATE OR INSERT INTO PROGRESSO_REPRODUCAO (

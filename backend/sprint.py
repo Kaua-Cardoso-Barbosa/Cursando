@@ -2691,6 +2691,10 @@ def relatorio_professor():
     cursor = con.cursor()
 
     try:
+        # Sprint item 7: prepara progresso e tempo de reprodução para o relatório do instrutor.
+        from aluno import garantir_tabela_progresso
+        garantir_tabela_progresso(con)
+
         params = []
         where = ["C.EXCLUIDO = 0"]
 
@@ -2718,7 +2722,42 @@ def relatorio_professor():
                 COUNT(DISTINCT M.ID_USUARIO),
                 COUNT(DISTINCT V.ID_VIDEO),
                 COUNT(DISTINCT CAST(PA.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(PA.ID_VIDEO AS VARCHAR(20))),
-                COALESCE(AVG(A.NOTA), 0)
+                COALESCE(AVG(A.NOTA), 0),
+                (SELECT COUNT(DISTINCT CAST(MC.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(C.ID_CURSO AS VARCHAR(20)))
+                 FROM MATRICULAS MC
+                 WHERE MC.ID_CURSO = C.ID_CURSO AND MC.STATUS_MATRICULA = 1
+                   AND EXISTS (
+                       SELECT 1 FROM VIDEOS VC
+                       WHERE VC.ID_CURSO = C.ID_CURSO AND VC.EXCLUIDO = 0 AND VC.STATUS = 1
+                   )
+                   AND NOT EXISTS (
+                       SELECT 1 FROM VIDEOS VC
+                       WHERE VC.ID_CURSO = C.ID_CURSO AND VC.EXCLUIDO = 0 AND VC.STATUS = 1
+                         AND NOT EXISTS (
+                             SELECT 1 FROM PROGRESSO_AULAS PAC
+                             WHERE PAC.ID_VIDEO = VC.ID_VIDEO AND PAC.ID_USUARIO = MC.ID_USUARIO
+                         )
+                   )),
+                (SELECT COUNT(DISTINCT CAST(MM.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(MO.ID_MODULO AS VARCHAR(20)))
+                 FROM MATRICULAS MM
+                 JOIN MODULOS_CURSO MO ON MO.ID_CURSO = MM.ID_CURSO
+                 WHERE MM.ID_CURSO = C.ID_CURSO AND MM.STATUS_MATRICULA = 1
+                   AND EXISTS (
+                       SELECT 1 FROM VIDEOS VM
+                       WHERE VM.ID_MODULO = MO.ID_MODULO AND VM.EXCLUIDO = 0 AND VM.STATUS = 1
+                   )
+                   AND NOT EXISTS (
+                       SELECT 1 FROM VIDEOS VM
+                       WHERE VM.ID_MODULO = MO.ID_MODULO AND VM.EXCLUIDO = 0 AND VM.STATUS = 1
+                         AND NOT EXISTS (
+                             SELECT 1 FROM PROGRESSO_AULAS PAM
+                             WHERE PAM.ID_VIDEO = VM.ID_VIDEO AND PAM.ID_USUARIO = MM.ID_USUARIO
+                         )
+                   )),
+                (SELECT COALESCE(SUM(TA.SEGUNDOS_ASSISTIDOS), 0)
+                 FROM TEMPO_ASSISTIDO_AULAS TA
+                 JOIN VIDEOS VT ON VT.ID_VIDEO = TA.ID_VIDEO
+                 WHERE VT.ID_CURSO = C.ID_CURSO AND VT.EXCLUIDO = 0)
             FROM CURSOS C
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
             JOIN USUARIOS U ON U.ID_USUARIO = PC.ID_USUARIO
@@ -2738,10 +2777,11 @@ def relatorio_professor():
                 "curso": row[1],
                 "instrutor": row[2],
                 "alunos": int(row[3] or 0),
-                "modulos": 0,
+                "modulos": int(row[8] or 0),
                 "aulas": int(row[4] or 0),
                 "aulas_assistidas": int(row[5] or 0),
-                "horas_assistidas": round((int(row[5] or 0) * 10) / 60, 2),
+                "conclusoes": int(row[7] or 0),
+                "horas_assistidas": round(float(row[9] or 0) / 3600, 2),
                 "avaliacao_media": round(float(row[6] or 0), 2),
             }
             for row in cursor.fetchall()
@@ -2750,6 +2790,8 @@ def relatorio_professor():
         total_alunos = sum(item["alunos"] for item in cursos)
         total_aulas_assistidas = sum(item["aulas_assistidas"] for item in cursos)
         total_horas = sum(item["horas_assistidas"] for item in cursos)
+        total_conclusoes = sum(item["conclusoes"] for item in cursos)
+        total_modulos_concluidos = sum(item["modulos"] for item in cursos)
 
         payload = {
             "filtros": {
@@ -2761,7 +2803,8 @@ def relatorio_professor():
             "resumo": {
                 "alunos": total_alunos,
                 "cursos": len(cursos),
-                "modulos": 0,
+                "modulos": total_modulos_concluidos,
+                "conclusoes": total_conclusoes,
                 "aulas_assistidas": total_aulas_assistidas,
                 "horas_assistidas": round(total_horas, 2),
             },
@@ -2772,13 +2815,17 @@ def relatorio_professor():
             linhas = [
                 f"Alunos: {payload['resumo']['alunos']}",
                 f"Cursos: {payload['resumo']['cursos']}",
+                f"Cursos concluídos: {payload['resumo']['conclusoes']}",
+                f"Módulos concluídos: {payload['resumo']['modulos']}",
                 f"Aulas assistidas: {payload['resumo']['aulas_assistidas']}",
                 f"Horas assistidas: {payload['resumo']['horas_assistidas']}",
                 "",
             ]
             for curso in cursos:
                 linhas.append(
-                    f"{curso['curso']} | Instrutor: {curso['instrutor']} | Alunos: {curso['alunos']} | Horas: {curso['horas_assistidas']}"
+                    f"{curso['curso']} | Instrutor: {curso['instrutor']} | Alunos: {curso['alunos']} | "
+                    f"Cursos concluídos: {curso['conclusoes']} | Módulos concluídos: {curso['modulos']} | "
+                    f"Horas: {curso['horas_assistidas']}"
                 )
 
             return Response(

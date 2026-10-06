@@ -26,6 +26,7 @@ export default function PlayerVideo({
         let ultimaPosicaoSalva = posicaoInicial;
         let filaSalvamentos = Promise.resolve();
         let aulaConcluida = false;
+        let progressoInicialRegistrado = false;
 
         function salvarPosicao(forcar = false) {
             if (aulaConcluida) return filaSalvamentos;
@@ -34,7 +35,8 @@ export default function PlayerVideo({
             if (!Number.isFinite(posicao) || posicao < 0) return filaSalvamentos;
 
             const diferenca = Math.abs(posicao - ultimaPosicaoSalva);
-            if (diferenca < 0.5 || (!forcar && diferenca < 10)) return filaSalvamentos;
+            // Sprint item 7: atualizações forçadas também renovam o relógio quando uma pausa não moveu o vídeo.
+            if (!forcar && diferenca < 10) return filaSalvamentos;
 
             ultimaPosicaoSalva = posicao;
             const idAula = videoAula.id;
@@ -113,11 +115,20 @@ export default function PlayerVideo({
 
         const quandoTerminar = () => {
             if (aulaConcluida) return;
+            // Sprint item 7: registra o último intervalo assistido antes de encerrar a aula.
+            salvarPosicao(true);
             aulaConcluida = true;
             const aulaAtual = callbacksRef.current.videoAula;
             filaSalvamentos.then(() => callbacksRef.current.marcarAssistida?.(aulaAtual));
         };
 
+        // Sprint item 7: grava o ponto inicial quando o aluno realmente começa a reproduzir a aula.
+        const quandoIniciar = () => {
+            if (progressoInicialRegistrado || aulaConcluida) return;
+            progressoInicialRegistrado = true;
+            ultimaPosicaoSalva = Number(video.currentTime) - 0.5;
+            salvarPosicao(true);
+        };
         const quandoPausar = () => salvarPosicao(true);
         const quandoAtualizar = () => salvarPosicao(false);
         const quandoBuscar = () => salvarPosicao(true);
@@ -130,6 +141,7 @@ export default function PlayerVideo({
             quandoTerminar
         );
         video.addEventListener("timeupdate", quandoAtualizar);
+        video.addEventListener("playing", quandoIniciar);
         video.addEventListener("pause", quandoPausar);
         video.addEventListener("seeked", quandoBuscar);
         document.addEventListener("visibilitychange", quandoOcultar);
@@ -198,6 +210,7 @@ export default function PlayerVideo({
                 quandoTerminar
             );
             video.removeEventListener("timeupdate", quandoAtualizar);
+            video.removeEventListener("playing", quandoIniciar);
             video.removeEventListener("pause", quandoPausar);
             video.removeEventListener("seeked", quandoBuscar);
             document.removeEventListener("visibilitychange", quandoOcultar);

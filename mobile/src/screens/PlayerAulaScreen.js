@@ -26,16 +26,17 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
   const onSaveProgressRef = useRef(onSaveProgress);
   const onFinishRef = useRef(onFinish);
   const aulaIdRef = useRef(aula?.id);
-  const progressoAtualRef = useRef({ idAula: aula?.id, posicaoMillis: Number(aula?.progresso_segundos || 0) * 1000, carregado: false, concluido: false });
+  const progressoAtualRef = useRef({ idAula: aula?.id, posicaoMillis: Number(aula?.progresso_segundos || 0) * 1000, carregado: false, concluido: false, inicioRegistrado: false });
   const ultimaPosicaoEnviadaRef = useRef(Number(aula?.progresso_segundos || 0));
   const filaSalvamentosRef = useRef(Promise.resolve());
   onSaveProgressRef.current = onSaveProgress;
   onFinishRef.current = onFinish;
 
-  function enfileirarProgresso(idAula, posicaoMillis) {
+  function enfileirarProgresso(idAula, posicaoMillis, forcar = false) {
     const posicaoSegundos = Math.max(0, Number(posicaoMillis || 0) / 1000);
     if (!idAula || !Number.isFinite(posicaoSegundos)) return filaSalvamentosRef.current;
-    if (Math.abs(posicaoSegundos - ultimaPosicaoEnviadaRef.current) < 0.5) return filaSalvamentosRef.current;
+    // Sprint item 7: deixa passar heartbeats de pausa e início mesmo sem alteração na posição.
+    if (!forcar && Math.abs(posicaoSegundos - ultimaPosicaoEnviadaRef.current) < 0.5) return filaSalvamentosRef.current;
 
     ultimaPosicaoEnviadaRef.current = posicaoSegundos;
     // Sprint item 4: serializa os salvamentos para que uma resposta lenta nao sobrescreva uma posicao mais recente.
@@ -45,13 +46,14 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
     return filaSalvamentosRef.current;
   }
 
-  function salvarPosicaoAtual(forcar = false) {
+  function salvarPosicaoAtual(forcar = false, registrarMesmoPonto = false) {
     const atual = progressoAtualRef.current;
     if (!atual.idAula || !atual.carregado || atual.concluido) return filaSalvamentosRef.current;
 
     const diferenca = Math.abs(atual.posicaoMillis / 1000 - ultimaPosicaoEnviadaRef.current);
-    if (diferenca < 0.5 || (!forcar && diferenca < 10)) return filaSalvamentosRef.current;
-    return enfileirarProgresso(atual.idAula, atual.posicaoMillis);
+    // Sprint item 7: renova o relógio ao pausar, mesmo quando o ponto de reprodução não mudou.
+    if ((!forcar && diferenca < 10) || (diferenca < 0.5 && !registrarMesmoPonto)) return filaSalvamentosRef.current;
+    return enfileirarProgresso(atual.idAula, atual.posicaoMillis, registrarMesmoPonto);
   }
 
   useEffect(() => {
@@ -62,12 +64,13 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
         idAula: aula?.id,
         posicaoMillis: posicaoInicial * 1000,
         carregado: false,
-        concluido: false
+        concluido: false,
+        inicioRegistrado: false
       };
       ultimaPosicaoEnviadaRef.current = posicaoInicial;
     }
 
-    return () => salvarPosicaoAtual(true);
+    return () => salvarPosicaoAtual(true, true);
   }, [aula?.id]);
 
   useEffect(() => {
@@ -81,12 +84,12 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
 
   useEffect(() => {
     const inscricao = AppState.addEventListener("change", (estado) => {
-      if (estado !== "active") salvarPosicaoAtual(true);
+      if (estado !== "active") salvarPosicaoAtual(true, true);
     });
 
     return () => {
       inscricao.remove();
-      salvarPosicaoAtual(true);
+      salvarPosicaoAtual(true, true);
     };
   }, []);
 
@@ -120,11 +123,26 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
     if (!status?.isLoaded || atual.idAula !== aula?.id || !atual.carregado) return;
 
     atual.posicaoMillis = Number(status.positionMillis || 0);
+    const estavaReproduzindo = Boolean(atual.estavaReproduzindo);
+    atual.estavaReproduzindo = Boolean(status.isPlaying);
+    // Sprint item 7: grava o ponto inicial ao começar a reprodução para contar desde os primeiros segundos.
+    if (status.isPlaying && !atual.inicioRegistrado) {
+      atual.inicioRegistrado = true;
+      ultimaPosicaoEnviadaRef.current = atual.posicaoMillis / 1000 - 0.5;
+      enfileirarProgresso(atual.idAula, atual.posicaoMillis, true);
+    }
     if (status.didJustFinish) {
       if (atual.concluido) return;
+      // Sprint item 7: registra o último intervalo assistido antes de encerrar a aula.
+      salvarPosicaoAtual(true, true);
       atual.concluido = true;
       const aulaConcluida = aula;
       filaSalvamentosRef.current.then(() => onFinishRef.current?.(aulaConcluida));
+      return;
+    }
+
+    if (estavaReproduzindo && !status.isPlaying) {
+      salvarPosicaoAtual(true, true);
       return;
     }
 

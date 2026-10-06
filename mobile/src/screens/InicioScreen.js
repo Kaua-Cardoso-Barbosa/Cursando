@@ -15,7 +15,11 @@ const professorMetrics = [
   ["Cursos cadastrados", "Total criado por voce", "cursos_cadastrados", "albums-outline"],
   ["Total de alunos", "Matriculas em seus cursos", "total_alunos", "people-outline"],
   ["Aulas publicadas", "Video-aulas disponiveis", "aulas_publicadas", "play-circle-outline"],
-  ["Cursos em rascunho", "Aguardando publicacao", "cursos_privados", "document-text-outline"]
+  ["Cursos em rascunho", "Aguardando publicacao", "cursos_privados", "document-text-outline"],
+  // Sprint item 7: apresenta conclusões e horas registradas pelo player no painel do instrutor mobile.
+  ["Cursos concluídos", "Conclusões por aluno", "cursos_concluidos", "checkmark-done-outline"],
+  ["Módulos concluídos", "Conclusões por aluno", "modulos_concluidos", "layers-outline"],
+  ["Horas assistidas", "Tempo registrado pelo player", "horas_assistidas", "time-outline", "horas"]
 ];
 
 const alunoMetrics = [
@@ -44,7 +48,9 @@ export default function InicioScreen({ usuario, dashboard, carregando, onRefresh
         {metrics.map(([titulo, detalhe, chave, icon, tipoValor]) => {
           const valor = tipoValor === "data"
             ? formatarData(dashboard?.assinatura?.[chave])
-            : metricas[chave] || 0;
+            : tipoValor === "horas"
+              ? `${Number(metricas[chave] || 0).toFixed(2).replace(".", ",")} h`
+              : metricas[chave] || 0;
 
           return (
             <View key={chave} style={[globalStyles.metricCard, styles.card]}>

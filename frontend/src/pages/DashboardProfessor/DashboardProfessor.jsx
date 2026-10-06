@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     FaBookOpen,
+    FaCheckCircle,
+    FaClock,
     FaFolderOpen,
     FaGraduationCap,
+    FaListAlt,
     FaPlayCircle,
     FaPlus,
     FaUsers
@@ -102,7 +105,10 @@ export default function DashboardProfessor({
                     cursos_cadastrados: 0,
                     total_alunos: 0,
                     aulas_publicadas: 0,
-                    cursos_privados: 0
+                    cursos_privados: 0,
+                    cursos_concluidos: 0,
+                    modulos_concluidos: 0,
+                    horas_assistidas: 0
                 },
                 recentes: []
             });
@@ -634,6 +640,10 @@ export default function DashboardProfessor({
                                 <CardMetricaProfessor titulo="Total de alunos" detalhe="Matrículas em seus cursos" valor={metricas.total_alunos || 0} icone={<FaUsers />} />
                                 <CardMetricaProfessor titulo="Aulas publicadas" detalhe="Vídeo-aulas disponíveis" valor={metricas.aulas_publicadas || 0} icone={<FaPlayCircle />} />
                                 <CardMetricaProfessor titulo="Cursos privados" detalhe="Aguardando publicação" valor={metricas.cursos_privados || 0} icone={<FaFolderOpen />} />
+                                {/* Sprint item 7: exibe conclusões e horas registradas pelo player no painel do instrutor. */}
+                                <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(metricas.cursos_concluidos)} icone={<FaCheckCircle />} />
+                                <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(metricas.modulos_concluidos)} icone={<FaListAlt />} />
+                                <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(metricas.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} icone={<FaClock />} />
                             </section>
 
                             <section className={css.secaoAcessos}>
@@ -936,8 +946,11 @@ export default function DashboardProfessor({
                             <div className={css.gridMetricas}>
                                 <CardMetricaProfessor titulo="Alunos" detalhe="Matrículas ativas" valor={formatarNumero(relatorio?.resumo?.alunos)} />
                                 <CardMetricaProfessor titulo="Cursos" detalhe="Cursos no filtro" valor={formatarNumero(relatorio?.resumo?.cursos)} />
-                                <CardMetricaProfessor titulo="Aulas assistidas" detalhe="Eventos de progresso" valor={formatarNumero(relatorio?.resumo?.aulas_assistidas)} />
-                                <CardMetricaProfessor titulo="Horas assistidas" detalhe="Estimativa total" valor={`${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} />
+                                <CardMetricaProfessor titulo="Aulas assistidas" detalhe="Aulas concluídas pelos alunos" valor={formatarNumero(relatorio?.resumo?.aulas_assistidas)} />
+                                {/* Sprint item 7: mostra no relatório as conclusões e o tempo real registrado pelo player. */}
+                                <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.conclusoes)} />
+                                <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.modulos)} />
+                                <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} />
                             </div>
 
                             <div className={css.tabelaResponsiva}>
@@ -945,6 +958,8 @@ export default function DashboardProfessor({
                                     <div className={css.cabecalhoListaAlunos}>
                                         <span>Curso</span>
                                         <span>Alunos</span>
+                                        <span>Cursos concluídos</span>
+                                        <span>Módulos concluídos</span>
                                         <span>Aulas assistidas</span>
                                         <span>Horas</span>
                                     </div>
@@ -952,6 +967,8 @@ export default function DashboardProfessor({
                                         <div key={curso.id_curso} className={css.linhaAlunoCurso}>
                                             <span>{curso.curso}</span>
                                             <span>{formatarNumero(curso.alunos)}</span>
+                                            <span>{formatarNumero(curso.conclusoes)}</span>
+                                            <span>{formatarNumero(curso.modulos)}</span>
                                             <span>{formatarNumero(curso.aulas_assistidas)}</span>
                                             <span>{Number(curso.horas_assistidas || 0).toFixed(2).replace(".", ",")}h</span>
                                         </div>
@@ -959,6 +976,8 @@ export default function DashboardProfessor({
                                     {cursosRelatorio.length === 0 && (
                                         <div className={css.linhaAlunoCurso}>
                                             <span>Nenhum dado encontrado para os filtros.</span>
+                                            <span>0</span>
+                                            <span>0</span>
                                             <span>0</span>
                                             <span>0</span>
                                             <span>0,00h</span>

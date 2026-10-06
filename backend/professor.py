@@ -268,10 +268,16 @@ def professor_dashboard():
         return negado
 
     id_professor = get_jwt_identity()
+    # Sprint item 7: garante as tabelas de módulos e progresso usadas pelas métricas do painel.
+    from sprint import garantir_sprint_schema
+    from aluno import garantir_tabela_progresso
+
+    garantir_sprint_schema()
     con = get_db()
     cursor = con.cursor()
 
     try:
+        garantir_tabela_progresso(con)
         cursor.execute(
             """
             SELECT
@@ -313,6 +319,73 @@ def professor_dashboard():
         )
         total_alunos = (cursor.fetchone() or (0,))[0] or 0
 
+        # Sprint item 7: conta cada conclusão de curso por aluno usando somente aulas publicadas.
+        cursor.execute(
+            """
+            SELECT COUNT(DISTINCT CAST(M.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(C.ID_CURSO AS VARCHAR(20)))
+            FROM MATRICULAS M
+            JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE PC.ID_USUARIO = ? AND C.EXCLUIDO = 0 AND M.STATUS_MATRICULA = 1
+              AND EXISTS (
+                  SELECT 1 FROM VIDEOS V
+                  WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM VIDEOS V
+                  WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1
+                    AND NOT EXISTS (
+                        SELECT 1 FROM PROGRESSO_AULAS PA
+                        WHERE PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = M.ID_USUARIO
+                    )
+              )
+            """,
+            (id_professor,),
+        )
+        cursos_concluidos = (cursor.fetchone() or (0,))[0] or 0
+
+        # Sprint item 7: conta módulos concluídos por aluno, exigindo ao menos uma aula publicada.
+        cursor.execute(
+            """
+            SELECT COUNT(DISTINCT CAST(M.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(MC.ID_MODULO AS VARCHAR(20)))
+            FROM MATRICULAS M
+            JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            JOIN MODULOS_CURSO MC ON MC.ID_CURSO = C.ID_CURSO
+            WHERE PC.ID_USUARIO = ? AND C.EXCLUIDO = 0 AND M.STATUS_MATRICULA = 1
+              AND EXISTS (
+                  SELECT 1 FROM VIDEOS V
+                  WHERE V.ID_MODULO = MC.ID_MODULO AND V.EXCLUIDO = 0 AND V.STATUS = 1
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM VIDEOS V
+                  WHERE V.ID_MODULO = MC.ID_MODULO AND V.EXCLUIDO = 0 AND V.STATUS = 1
+                    AND NOT EXISTS (
+                        SELECT 1 FROM PROGRESSO_AULAS PA
+                        WHERE PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = M.ID_USUARIO
+                    )
+              )
+            """,
+            (id_professor,),
+        )
+        modulos_concluidos = (cursor.fetchone() or (0,))[0] or 0
+
+        # Sprint item 7: transforma os segundos efetivamente registrados em horas assistidas.
+        cursor.execute(
+            """
+            SELECT COALESCE(SUM(T.SEGUNDOS_ASSISTIDOS), 0)
+            FROM TEMPO_ASSISTIDO_AULAS T
+            JOIN VIDEOS V ON V.ID_VIDEO = T.ID_VIDEO
+            JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE PC.ID_USUARIO = ? AND C.EXCLUIDO = 0 AND V.EXCLUIDO = 0
+            """,
+            (id_professor,),
+        )
+        horas_assistidas = round(float((cursor.fetchone() or (0,))[0] or 0) / 3600, 2)
+
         cursor.execute(
             """
             SELECT FIRST 6
@@ -343,6 +416,9 @@ def professor_dashboard():
                     "aulas_total": aulas[0] or 0,
                     "aulas_publicadas": aulas[1] or 0,
                     "total_alunos": total_alunos,
+                    "cursos_concluidos": cursos_concluidos,
+                    "modulos_concluidos": modulos_concluidos,
+                    "horas_assistidas": horas_assistidas,
                 },
                 "recentes": recentes,
             }
@@ -359,6 +435,9 @@ def professor_dashboard():
                         "aulas_total": 0,
                         "aulas_publicadas": 0,
                         "total_alunos": 0,
+                        "cursos_concluidos": 0,
+                        "modulos_concluidos": 0,
+                        "horas_assistidas": 0,
                     },
                     "recentes": [],
                     "mensagem": criar_mensagem("Banco ainda não preparado para a dashboard do professor.", "erro"),
