@@ -55,20 +55,20 @@ export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
 const styles = StyleSheet.create({
   nav: {
     position: "absolute",
-    left: 12,
-    right: 12,
+    left: 14,
+    right: 14,
     bottom: 12 + systemNavigationInset,
-    height: 70,
+    height: 74,
     flexDirection: "row",
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.black,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 8,
     overflow: "hidden",
     shadowColor: colors.black,
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 5
   },
   item: {
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 3,
     borderRightWidth: 1,
-    borderRightColor: "#d9d9d9",
+    borderRightColor: colors.border,
     paddingHorizontal: 4
   },
   lastItem: {
@@ -88,9 +88,10 @@ const styles = StyleSheet.create({
     borderRightColor: colors.darkGreen
   },
   label: {
-    color: colors.black,
+    color: colors.textMuted,
     fontSize: 12,
-    lineHeight: 16
+    lineHeight: 16,
+    fontWeight: "700"
   },
   labelActive: {
     color: colors.white

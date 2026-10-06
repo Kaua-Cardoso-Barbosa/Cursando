@@ -128,6 +128,16 @@ def _normalizar_cobranca(dados, exigir_codigo_pix=True):
 
 def criar_cobranca_pix(valor):
     # Sprint item 1: cria a cobrança PIX na Arkhé para o fluxo de assinatura e financeiro.
+    try:
+        valor = round(float(valor), 2)
+    except (TypeError, ValueError) as erro:
+        raise ArkheError("Valor do Pix invalido.") from erro
+
+    if valor <= 0:
+        raise ArkheError(
+            f"Valor do Pix deve ser maior que zero. Valor configurado: {valor}."
+        )
+
     resposta = _requisitar_arkhe(
         "POST",
         "/api/v1/cobrancas/pix",

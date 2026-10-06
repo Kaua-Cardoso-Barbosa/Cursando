@@ -667,6 +667,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    backgroundColor: colors.white
+    backgroundColor: colors.gray
   }
 });

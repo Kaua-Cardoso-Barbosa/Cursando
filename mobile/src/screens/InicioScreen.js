@@ -3,10 +3,10 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native
 import { colors, globalStyles } from "../styles";
 
 function formatarData(data) {
-  if (!data) return "Não disponível";
+  if (!data) return "Nao disponivel";
 
   const [ano, mes, dia] = String(data).slice(0, 10).split("-").map(Number);
-  if (![ano, mes, dia].every(Number.isInteger)) return "Não disponível";
+  if (![ano, mes, dia].every(Number.isInteger)) return "Nao disponivel";
 
   return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${ano}`;
 }
@@ -16,15 +16,14 @@ const professorMetrics = [
   ["Total de alunos", "Matriculas em seus cursos", "total_alunos", "people-outline"],
   ["Aulas publicadas", "Video-aulas disponiveis", "aulas_publicadas", "play-circle-outline"],
   ["Cursos em rascunho", "Aguardando publicacao", "cursos_privados", "document-text-outline"],
-  // Sprint item 7: apresenta conclusões e horas registradas pelo player no painel do instrutor mobile.
-  ["Cursos concluídos", "Conclusões por aluno", "cursos_concluidos", "checkmark-done-outline"],
-  ["Módulos concluídos", "Conclusões por aluno", "modulos_concluidos", "layers-outline"],
+  ["Cursos concluidos", "Conclusoes por aluno", "cursos_concluidos", "checkmark-done-outline"],
+  ["Modulos concluidos", "Conclusoes por aluno", "modulos_concluidos", "layers-outline"],
   ["Horas assistidas", "Tempo registrado pelo player", "horas_assistidas", "time-outline", "horas"]
 ];
 
 const alunoMetrics = [
-  ["Iniciada em", "Data de início da assinatura", "data_inicio", "calendar-outline", "data"],
-  ["Válida até", "Data de término da assinatura", "data_expiracao", "calendar-outline", "data"],
+  ["Iniciada em", "Data de inicio da assinatura", "data_inicio", "calendar-outline", "data"],
+  ["Valida ate", "Data de termino da assinatura", "data_expiracao", "calendar-outline", "data"],
   ["Cursos inscritos", "+1 nesse mes", "inscritos", "library-outline"],
   ["Cursos finalizados", "+2 nesse mes", "finalizados", "checkmark-circle-outline"]
 ];
@@ -39,9 +38,15 @@ export default function InicioScreen({ usuario, dashboard, carregando, onRefresh
       refreshControl={<RefreshControl refreshing={carregando} onRefresh={onRefresh} />}
     >
       <View style={styles.header}>
-        <Text style={globalStyles.title}>Olá {usuario?.nome || (Number(tipoUsuario) === 2 ? "Aluno" : "Professor")}</Text>
-        <Text style={globalStyles.eyebrow}>{Number(tipoUsuario) === 2 ? "Aluno(a)" : "Professor(a)"}</Text>
-        <View style={globalStyles.divider} />
+        <View style={styles.headerTextos}>
+          <Text style={styles.kicker}>{Number(tipoUsuario) === 2 ? "Aluno(a)" : "Professor(a)"}</Text>
+          <Text style={[globalStyles.title, styles.headerTitle]}>
+            Ola {usuario?.nome || (Number(tipoUsuario) === 2 ? "Aluno" : "Professor")}
+          </Text>
+        </View>
+        <View style={styles.headerBadge}>
+          <Ionicons name="sparkles-outline" size={24} color={colors.white} />
+        </View>
       </View>
 
       <View style={styles.cards}>
@@ -57,7 +62,7 @@ export default function InicioScreen({ usuario, dashboard, carregando, onRefresh
               <View style={styles.cardTop}>
                 <Text style={styles.cardTitle}>{titulo}</Text>
                 <View style={styles.iconBadge}>
-                  <Ionicons name={icon} size={24} color={colors.black} />
+                  <Ionicons name={icon} size={24} color={colors.darkGreen} />
                 </View>
               </View>
               <Text style={styles.cardDetail}>{detalhe}</Text>
@@ -72,7 +77,36 @@ export default function InicioScreen({ usuario, dashboard, carregando, onRefresh
 
 const styles = StyleSheet.create({
   header: {
-    marginBottom: 28
+    minHeight: 150,
+    marginBottom: 22,
+    borderRadius: 8,
+    backgroundColor: colors.darkGreen,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16
+  },
+  headerTextos: {
+    flex: 1
+  },
+  headerTitle: {
+    color: colors.white
+  },
+  kicker: {
+    color: colors.mint,
+    fontSize: 13,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    marginBottom: 8
+  },
+  headerBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    alignItems: "center",
+    justifyContent: "center"
   },
   cards: {
     gap: 18
@@ -84,15 +118,15 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     alignItems: "flex-start",
-    justifyContent: "center",
+    justifyContent: "space-between",
     gap: 14
   },
   cardTitle: {
-    color: colors.black,
+    color: colors.ink,
     flex: 1,
-    fontSize: 24,
-    lineHeight: 28,
-    textAlign: "center"
+    fontSize: 22,
+    lineHeight: 27,
+    fontWeight: "800"
   },
   iconBadge: {
     width: 48,
@@ -103,24 +137,23 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   cardDetail: {
-    color: "#56c991",
+    color: colors.textMuted,
     fontSize: 16,
     fontWeight: "600",
-    textAlign: "center",
-    marginTop: 0
+    marginTop: 10
   },
   number: {
-    color: colors.black,
+    color: colors.darkGreen,
     fontSize: 44,
     lineHeight: 50,
-    textAlign: "center",
+    fontWeight: "800",
     marginTop: 10
   },
   dateValue: {
-    color: colors.black,
-    fontSize: 32,
+    color: colors.darkGreen,
+    fontSize: 30,
     lineHeight: 38,
-    textAlign: "center",
+    fontWeight: "800",
     marginTop: 10
   }
 });

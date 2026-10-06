@@ -1,20 +1,21 @@
 import { Platform, StyleSheet } from "react-native";
 
 export const colors = {
-  green: "#06a663",
-  darkGreen: "#02693e",
-  tabGreen: "#08ad6a",
+  green: "#2fbf83",
+  darkGreen: "#0c4d36",
+  deepGreen: "#073525",
+  tabGreen: "#159b66",
   black: "#090909",
-  ink: "#111111",
+  ink: "#123126",
   white: "#ffffff",
-  gray: "#f8f8f8",
-  softGray: "#eeeeee",
-  border: "#111111",
-  muted: "#7b7b7b",
-  textMuted: "#555555",
+  gray: "#f5f8f6",
+  softGray: "#eef5f1",
+  border: "#cfe0d7",
+  muted: "#6c7f76",
+  textMuted: "#53645c",
   red: "#e21d0b",
   amber: "#f6b72f",
-  mint: "#9fe0c3"
+  mint: "#c7f0df"
 };
 
 export const systemNavigationInset = Platform.OS === "android" ? 24 : 0;
@@ -22,21 +23,21 @@ export const systemNavigationInset = Platform.OS === "android" ? 24 : 0;
 export const globalStyles = StyleSheet.create({
   app: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.gray,
     paddingBottom: systemNavigationInset
   },
   page: {
     flexGrow: 1,
-    paddingHorizontal: 18,
-    paddingTop: 24,
+    paddingHorizontal: 20,
+    paddingTop: 26,
     paddingBottom: 112,
-    backgroundColor: colors.white
+    backgroundColor: colors.gray
   },
   title: {
     color: colors.ink,
-    fontSize: 31,
+    fontSize: 30,
     lineHeight: 36,
-    fontWeight: "400"
+    fontWeight: "800"
   },
   eyebrow: {
     color: colors.darkGreen,
@@ -45,26 +46,37 @@ export const globalStyles = StyleSheet.create({
     marginTop: 3
   },
   divider: {
-    height: 4,
+    height: 3,
     backgroundColor: colors.green,
     marginTop: 10,
-    width: "100%"
+    width: 82,
+    borderRadius: 999
   },
   card: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
     backgroundColor: colors.white,
-    overflow: "hidden"
+    overflow: "hidden",
+    shadowColor: colors.black,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2
   },
   metricCard: {
     minHeight: 150,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: colors.gray,
+    backgroundColor: colors.white,
     paddingHorizontal: 18,
-    paddingVertical: 20
+    paddingVertical: 20,
+    shadowColor: colors.black,
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2
   },
   label: {
     color: colors.muted,
@@ -76,9 +88,9 @@ export const globalStyles = StyleSheet.create({
     width: "100%",
     minHeight: 46,
     borderWidth: 2,
-    borderColor: colors.green,
+    borderColor: colors.border,
     borderRadius: 7,
-    backgroundColor: colors.softGray,
+    backgroundColor: colors.white,
     color: colors.black,
     fontSize: 17,
     paddingHorizontal: 12,
@@ -94,7 +106,7 @@ export const globalStyles = StyleSheet.create({
     borderRadius: 7,
     borderWidth: 1.4,
     borderColor: colors.green,
-    backgroundColor: colors.green,
+    backgroundColor: colors.darkGreen,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
@@ -108,7 +120,7 @@ export const globalStyles = StyleSheet.create({
     minHeight: 42,
     borderRadius: 7,
     borderWidth: 1.4,
-    borderColor: colors.black,
+    borderColor: colors.border,
     backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",

@@ -234,7 +234,7 @@ function decodeBase64(input) {
 const styles = StyleSheet.create({
   bg: {
     flex: 1,
-    backgroundColor: colors.green
+    backgroundColor: colors.darkGreen
   },
   keyboard: {
     flex: 1,
@@ -245,26 +245,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 22,
     paddingVertical: 24,
-    gap: 20
+    gap: 18
   },
   title: {
-    color: colors.black,
+    color: colors.white,
     fontSize: 34,
     lineHeight: 40,
-    fontWeight: "700",
+    fontWeight: "800",
     textAlign: "center"
   },
   card: {
     width: "100%",
     maxWidth: 440,
-    borderWidth: 1.5,
-    borderColor: colors.black,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.45)",
     borderRadius: 8,
     backgroundColor: colors.white,
     paddingHorizontal: 22,
     paddingTop: 24,
     paddingBottom: 22,
-    alignItems: "stretch"
+    alignItems: "stretch",
+    shadowColor: colors.black,
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 4
   },
   signupButton: {
     alignItems: "center",
@@ -272,10 +277,10 @@ const styles = StyleSheet.create({
     minHeight: 48,
     marginTop: 14,
     paddingHorizontal: 14,
-    borderWidth: 1.5,
-    borderColor: colors.darkGreen,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: colors.white
+    backgroundColor: colors.softGray
   },
   signupText: {
     color: colors.darkGreen,
