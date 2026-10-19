@@ -7,6 +7,7 @@ export default function PlayerVideo({
                                         videoAula,
                                         videoUrl,
                                         posterUrl,
+                                        marcaDagua,
                                         marcarAssistida,
                                         salvarProgresso,
                                     }) {
@@ -186,21 +187,23 @@ export default function PlayerVideo({
 
         carregarVideo();
 
+        // Sprint item 10: dificulta salvar ou arrastar o vídeo pelo menu e pelos gestos do navegador.
         const bloquearEvento = (evento) => {
             evento.preventDefault();
         };
 
         const bloquearTeclas = (evento) => {
-            if (
-                evento.key === "PrintScreen" ||
-                (evento.ctrlKey && evento.shiftKey) ||
-                (evento.metaKey && evento.shiftKey)
-            ) {
+            const tecla = evento.key.toLowerCase();
+            const atalhoCaptura = evento.key === "PrintScreen"
+                || (evento.shiftKey && evento.metaKey && ["3", "4", "5"].includes(tecla))
+                || (evento.shiftKey && evento.ctrlKey && tecla === "s");
+            if (atalhoCaptura) {
                 evento.preventDefault();
             }
         };
 
         container.addEventListener("contextmenu", bloquearEvento);
+        container.addEventListener("dragstart", bloquearEvento);
         document.addEventListener("keydown", bloquearTeclas);
 
         return () => {
@@ -223,6 +226,7 @@ export default function PlayerVideo({
 
             ui.destroy();
             container.removeEventListener("contextmenu", bloquearEvento);
+            container.removeEventListener("dragstart", bloquearEvento);
             document.removeEventListener("keydown", bloquearTeclas);
         };
     }, [videoUrl, posterUrl, videoAula?.id]);
@@ -241,6 +245,8 @@ export default function PlayerVideo({
                 disablePictureInPicture
                 onContextMenu={(evento) => evento.preventDefault()}
             />
+            {/* Sprint item 10: identifica visualmente a sessão do aluno para desencorajar a redistribuição de gravações. */}
+            {marcaDagua && <span className={css.marcaDagua} aria-hidden="true">{marcaDagua}</span>}
         </div>
     );
 }

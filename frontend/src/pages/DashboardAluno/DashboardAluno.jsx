@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     FaCheck,
@@ -190,6 +190,7 @@ export default function DashboardAluno({
     const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
     const [aulaAtual, setAulaAtual] = useState(null);
     const [protecaoAtiva, setProtecaoAtiva] = useState(false);
+    const temporizadorProtecaoRef = useRef(null);
     const [carregando, setCarregando] = useState(false);
     const [baixandoCertificado, setBaixandoCertificado] = useState(false);
     // Sprint item 6: abre a prévia de aulas de um módulo escolhido pelo aluno.
@@ -401,29 +402,44 @@ export default function DashboardAluno({
     }, [carregarFinanceiro, visao]);
 
     useEffect(() => {
+        if (visao !== "aula") {
+            setProtecaoAtiva(false);
+            return undefined;
+        }
+
         function ativarProtecao(evento) {
             if (visao !== "aula") return;
-            if (evento?.key === "PrintScreen" || (evento?.ctrlKey && evento?.shiftKey) || evento?.type === "contextmenu") {
-                evento.preventDefault();
-            }
+            const tecla = evento?.key?.toLowerCase();
+            const atalhoCaptura = evento?.key === "PrintScreen"
+                || (evento?.shiftKey && evento?.metaKey && ["3", "4", "5"].includes(tecla))
+                || (evento?.shiftKey && evento?.ctrlKey && tecla === "s");
+            if (!atalhoCaptura) return;
+
+            // Sprint item 10: cancela atalhos de captura detectáveis e oculta o vídeo como defesa complementar do site.
+            evento.preventDefault();
+            evento.stopPropagation();
             setProtecaoAtiva(true);
-            window.setTimeout(() => setProtecaoAtiva(false), 1800);
+            window.clearTimeout(temporizadorProtecaoRef.current);
+            temporizadorProtecaoRef.current = window.setTimeout(() => setProtecaoAtiva(false), 2500);
         }
 
         function aoVisibilidade() {
-            if (document.hidden && visao === "aula") setProtecaoAtiva(true);
+            if (visao !== "aula") return;
+            if (document.hidden) {
+                setProtecaoAtiva(true);
+                return;
+            }
+            window.clearTimeout(temporizadorProtecaoRef.current);
+            temporizadorProtecaoRef.current = window.setTimeout(() => setProtecaoAtiva(false), 500);
         }
 
-        window.addEventListener("keydown", ativarProtecao);
-        window.addEventListener("blur", ativarProtecao);
+        document.addEventListener("keydown", ativarProtecao);
         document.addEventListener("visibilitychange", aoVisibilidade);
-        document.addEventListener("contextmenu", ativarProtecao);
 
         return () => {
-            window.removeEventListener("keydown", ativarProtecao);
-            window.removeEventListener("blur", ativarProtecao);
+            window.clearTimeout(temporizadorProtecaoRef.current);
+            document.removeEventListener("keydown", ativarProtecao);
             document.removeEventListener("visibilitychange", aoVisibilidade);
-            document.removeEventListener("contextmenu", ativarProtecao);
         };
     }, [visao]);
 
@@ -930,13 +946,14 @@ export default function DashboardAluno({
                                                     ? resolverUrlMidia(api, videoAula.thumb)
                                                     : undefined
                                             }
+                                            marcaDagua={`${usuario?.nome || "Aluno"} · #${usuario?.id_usuario || "conta"}`}
                                             marcarAssistida={marcarAssistida}
                                             salvarProgresso={salvarProgressoAula}
                                         />
                                         {protecaoAtiva && (
                                             <div className={css.avisoProtecao}>
                                                 <FaShieldAlt />
-                                                <span>Conteúdo protegido contra captura.</span>
+                                                <span>Reprodução temporariamente ocultada.</span>
                                             </div>
                                         )}
                                     </div>

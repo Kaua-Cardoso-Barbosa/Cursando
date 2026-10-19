@@ -1,7 +1,7 @@
 import AppIcon from "../components/AppIcon";
 import { ResizeMode, Video } from "expo-av";
 import { useEffect, useRef } from "react";
-import * as ScreenCapture from "expo-screen-capture";
+import { usePreventScreenCapture } from "expo-screen-capture";
 import { AppState, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { resolverUrlMidia } from "../api/client";
 import { colors, globalStyles } from "../styles";
@@ -19,6 +19,8 @@ function formatarPosicaoAula(milissegundos) {
 }
 
 export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFinish, onSaveProgress }) {
+  // Sprint item 10: ativa a proteção nativa do Android (FLAG_SECURE) durante a exibição da aula.
+  usePreventScreenCapture("aula-protegida");
   // Reproduz a URL de mídia autenticada e registra a conclusão enviada pelo player nativo.
   const aula = detalhe?.aula;
   const proximas = detalhe?.proximas || [];
@@ -72,15 +74,6 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
 
     return () => salvarPosicaoAtual(true, true);
   }, [aula?.id]);
-
-  useEffect(() => {
-    // Sprint item 10/26: bloqueia captura e gravacao de tela enquanto o aluno assiste aula no app.
-    ScreenCapture.preventScreenCaptureAsync("aula-protegida").catch(() => {});
-
-    return () => {
-      ScreenCapture.allowScreenCaptureAsync("aula-protegida").catch(() => {});
-    };
-  }, []);
 
   useEffect(() => {
     const inscricao = AppState.addEventListener("change", (estado) => {
