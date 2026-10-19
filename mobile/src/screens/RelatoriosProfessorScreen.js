@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { apiRequest } from "../api/client";
+import { apiRequest, getApiBaseUrl } from "../api/client";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
@@ -16,6 +18,7 @@ export default function RelatoriosProfessorScreen({ token, cursos = [], carregan
   const [fim, setFim] = useState("");
   const [idCurso, setIdCurso] = useState("");
   const [loading, setLoading] = useState(false);
+  const [baixandoPdf, setBaixandoPdf] = useState(false);
 
   async function carregar() {
     setLoading(true);
@@ -39,6 +42,24 @@ export default function RelatoriosProfessorScreen({ token, cursos = [], carregan
 
   const resumo = relatorio?.resumo || {};
   const linhas = relatorio?.cursos || [];
+  const mensal = relatorio?.mensal || [];
+
+  // Sprint item 23: baixa e compartilha o PDF com os totais mensais de alunos, cursos, módulos e horas.
+  async function baixarPdf() {
+    setBaixandoPdf(true);
+    try {
+      const params = new URLSearchParams({ formato: "pdf" });
+      if (inicio) params.set("inicio", inicio);
+      if (fim) params.set("fim", fim);
+      if (idCurso) params.set("id_curso", idCurso);
+      const uri = `${FileSystem.documentDirectory}relatorio-professor-${Date.now()}.pdf`;
+      const download = await FileSystem.downloadAsync(`${getApiBaseUrl()}/relatorios/professor?${params.toString()}`, uri, { headers: { Authorization: `Bearer ${token}` } });
+      if (download.status < 200 || download.status >= 300) throw new Error("Não foi possível baixar o relatório PDF.");
+      if (!(await Sharing.isAvailableAsync())) throw new Error("O compartilhamento de arquivos não está disponível neste aparelho.");
+      await Sharing.shareAsync(download.uri, { mimeType: "application/pdf", dialogTitle: "Relatório mensal do professor", UTI: "com.adobe.pdf" });
+    } catch (error) { mostrarAlerta("Relatório", error.message, "erro"); }
+    finally { setBaixandoPdf(false); }
+  }
 
   return (
     <ScrollView
@@ -47,6 +68,7 @@ export default function RelatoriosProfessorScreen({ token, cursos = [], carregan
     >
       <View style={styles.header}>
         <Text style={globalStyles.title}>Relatorios</Text>
+        <Pressable style={globalStyles.primaryButton} onPress={baixarPdf} disabled={baixandoPdf}><Text style={globalStyles.buttonText}>{baixandoPdf ? "Preparando PDF..." : "Baixar relatório PDF"}</Text></Pressable>
         <Text style={globalStyles.eyebrow}>Matrículas, conclusões e atividade por período e curso</Text>
         <View style={globalStyles.divider} />
       </View>
@@ -98,6 +120,21 @@ export default function RelatoriosProfessorScreen({ token, cursos = [], carregan
           </View>
         ))}
         {!loading && linhas.length === 0 ? <Text style={globalStyles.message}>Nenhum curso encontrado com os filtros selecionados.</Text> : null}
+      </View>
+      <View style={styles.table}>
+        {/* Sprint item 23: mostra cada competência mensal com alunos inscritos, cursos e módulos criados e horas. */}
+        <Text style={styles.sectionTitle}>Resumo mensal</Text>
+        <Text style={styles.periodHint}>Horas acumuladas antigas sem competência mensal: {numero(relatorio?.horas_sem_competencia).toFixed(2).replace(".", ",")}h.</Text>
+        {mensal.map((item) => (
+          <View key={item.mes} style={[globalStyles.card, styles.courseRow]}>
+            <Text style={styles.courseTitle}>{new Date(`${item.mes}-01T00:00:00`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</Text>
+            <Text style={styles.courseText}>Alunos inscritos: {numero(item.alunos)}</Text>
+            <Text style={styles.courseText}>Cursos criados: {numero(item.cursos)}</Text>
+            <Text style={styles.courseText}>Módulos criados: {numero(item.modulos)}</Text>
+            <Text style={styles.courseText}>Horas assistidas: {numero(item.horas_assistidas).toFixed(2).replace(".", ",")}h</Text>
+          </View>
+        ))}
+        {!loading && mensal.length === 0 ? <Text style={globalStyles.message}>Nenhum dado mensal no período selecionado.</Text> : null}
       </View>
     </ScrollView>
   );

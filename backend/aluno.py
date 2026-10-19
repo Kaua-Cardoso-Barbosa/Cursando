@@ -1,5 +1,6 @@
 import fdb
 import math
+from datetime import datetime
 from flask import current_app, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
@@ -139,6 +140,26 @@ def garantir_tabela_progresso(con):
                     ID_VIDEO INTEGER NOT NULL,
                     SEGUNDOS_ASSISTIDOS DOUBLE PRECISION DEFAULT 0 NOT NULL,
                     CONSTRAINT PK_TEMPO_ASSISTIDO_AULAS PRIMARY KEY (ID_USUARIO, ID_VIDEO)
+                )
+                """
+            )
+
+        # Sprint item 23: guarda segundos assistidos por mês para que os relatórios preservem a distribuição mensal.
+        cursor.execute(
+            """
+            SELECT 1 FROM RDB$RELATIONS
+            WHERE RDB$RELATION_NAME = 'TEMPO_ASSISTIDO_AULAS_MENSAL'
+            """
+        )
+        if not cursor.fetchone():
+            cursor.execute(
+                """
+                CREATE TABLE TEMPO_ASSISTIDO_AULAS_MENSAL (
+                    ID_USUARIO INTEGER NOT NULL,
+                    ID_VIDEO INTEGER NOT NULL,
+                    MES_REFERENCIA DATE NOT NULL,
+                    SEGUNDOS_ASSISTIDOS DOUBLE PRECISION DEFAULT 0 NOT NULL,
+                    CONSTRAINT PK_TEMPO_ASSISTIDO_MES PRIMARY KEY (ID_USUARIO, ID_VIDEO, MES_REFERENCIA)
                 )
                 """
             )
@@ -861,6 +882,25 @@ def salvar_progresso_aula(id_aula):
                         VALUES (?, ?, ?)
                         """,
                         (id_aluno, id_aula, segundos_novos),
+                    )
+                # Sprint item 23: registra o mesmo tempo na competência mensal para relatórios mensais do instrutor.
+                mes_referencia = datetime.now().date().replace(day=1)
+                cursor.execute(
+                    """
+                    UPDATE TEMPO_ASSISTIDO_AULAS_MENSAL
+                    SET SEGUNDOS_ASSISTIDOS = SEGUNDOS_ASSISTIDOS + ?
+                    WHERE ID_USUARIO = ? AND ID_VIDEO = ? AND MES_REFERENCIA = ?
+                    """,
+                    (segundos_novos, id_aluno, id_aula, mes_referencia),
+                )
+                if cursor.rowcount == 0:
+                    cursor.execute(
+                        """
+                        INSERT INTO TEMPO_ASSISTIDO_AULAS_MENSAL
+                            (ID_USUARIO, ID_VIDEO, MES_REFERENCIA, SEGUNDOS_ASSISTIDOS)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (id_aluno, id_aula, mes_referencia, segundos_novos),
                     )
 
         # Sprint item 4: app e site gravam a posição na mesma tabela e retomam do valor mais recente.

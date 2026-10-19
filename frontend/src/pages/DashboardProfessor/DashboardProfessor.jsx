@@ -673,6 +673,8 @@ export default function DashboardProfessor({
     }, [analiticosMensais]);
     const recentes = dashboard?.recentes || [];
     const cursosRelatorio = relatorio?.cursos || [];
+    // Sprint item 23: apresenta os totais de alunos, cursos, módulos e horas assistidas por competência mensal.
+    const relatorioMensal = relatorio?.mensal || [];
     const moduloSelecionado = modulos.find((modulo) => Number(modulo.id) === Number(idModuloSelecionado));
     const valorSaqueNumero = Number(valorSaque);
     const saqueValido = Number.isFinite(valorSaqueNumero)
@@ -1197,6 +1199,19 @@ export default function DashboardProfessor({
                                             {!cursosRelatorio.length && (
                                                 <tr><td className={css.celulaVazia} colSpan="6">Nenhum curso encontrado com os filtros selecionados.</td></tr>
                                             )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                            <section className={css.painelTabelaRelatorio}>
+                                {/* Sprint item 23: detalha mês a mês alunos inscritos, cursos, módulos e horas assistidas. */}
+                                <div className={css.cabecalhoBloco}><div><h3>Resumo mensal</h3><p>Alunos inscritos, cursos e módulos criados e horas assistidas em cada mês.</p><p>Horas antigas sem data mensal: {Number(relatorio?.horas_sem_competencia || 0).toFixed(2).replace(".", ",")}h.</p></div></div>
+                                <div className={css.containerTabelaRelatorio}>
+                                    <table className={css.tabelaRelatorio}>
+                                        <thead><tr><th>Mês</th><th>Alunos inscritos</th><th>Cursos</th><th>Módulos</th><th>Horas assistidas</th></tr></thead>
+                                        <tbody>
+                                            {relatorioMensal.map((item) => <tr key={item.mes}><td>{new Date(`${item.mes}-01T00:00:00`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</td><td>{formatarNumero(item.alunos)}</td><td>{formatarNumero(item.cursos)}</td><td>{formatarNumero(item.modulos)}</td><td>{Number(item.horas_assistidas || 0).toFixed(2).replace(".", ",")}h</td></tr>)}
+                                            {!relatorioMensal.length && <tr><td className={css.celulaVazia} colSpan="5">Nenhum dado mensal no período selecionado.</td></tr>}
                                         </tbody>
                                     </table>
                                 </div>

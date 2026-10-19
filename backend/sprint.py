@@ -2844,6 +2844,93 @@ def relatorio_professor():
             for row in cursor.fetchall()
         ]
 
+        # Sprint item 23: agrupa alunos inscritos, cursos e módulos criados e horas assistidas por mês.
+        mensal = {}
+        def linha_mensal(ano, mes):
+            chave = f"{int(ano):04d}-{int(mes):02d}"
+            if chave not in mensal:
+                mensal[chave] = {"mes": chave, "alunos": 0, "cursos": 0, "modulos": 0, "horas_assistidas": 0.0}
+            return mensal[chave]
+
+        cursor.execute(
+            f"""
+            SELECT EXTRACT(YEAR FROM E.MES_REFERENCIA), EXTRACT(MONTH FROM E.MES_REFERENCIA), COUNT(DISTINCT E.ID_USUARIO)
+            FROM EVENTOS_CURSOS E
+            JOIN CURSOS C ON C.ID_CURSO = E.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE {' AND '.join(where)} AND E.TIPO_EVENTO = ?
+            GROUP BY EXTRACT(YEAR FROM E.MES_REFERENCIA), EXTRACT(MONTH FROM E.MES_REFERENCIA)
+            """,
+            tuple(params + ["INSCRICAO"]),
+        )
+        for ano, mes, quantidade in cursor.fetchall():
+            linha_mensal(ano, mes)["alunos"] = int(quantidade or 0)
+
+        cursor.execute(
+            f"""
+            SELECT EXTRACT(YEAR FROM C.CRIADO_EM), EXTRACT(MONTH FROM C.CRIADO_EM), COUNT(DISTINCT C.ID_CURSO)
+            FROM CURSOS C
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE {' AND '.join(where)}
+            GROUP BY EXTRACT(YEAR FROM C.CRIADO_EM), EXTRACT(MONTH FROM C.CRIADO_EM)
+            """,
+            tuple(params),
+        )
+        for ano, mes, quantidade in cursor.fetchall():
+            linha_mensal(ano, mes)["cursos"] = int(quantidade or 0)
+
+        cursor.execute(
+            f"""
+            SELECT EXTRACT(YEAR FROM MC.CRIADO_EM), EXTRACT(MONTH FROM MC.CRIADO_EM), COUNT(DISTINCT MC.ID_MODULO)
+            FROM MODULOS_CURSO MC
+            JOIN CURSOS C ON C.ID_CURSO = MC.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE {' AND '.join(where)}
+            GROUP BY EXTRACT(YEAR FROM MC.CRIADO_EM), EXTRACT(MONTH FROM MC.CRIADO_EM)
+            """,
+            tuple(params),
+        )
+        for ano, mes, quantidade in cursor.fetchall():
+            linha_mensal(ano, mes)["modulos"] = int(quantidade or 0)
+
+        cursor.execute(
+            f"""
+            SELECT EXTRACT(YEAR FROM TM.MES_REFERENCIA), EXTRACT(MONTH FROM TM.MES_REFERENCIA),
+                   COALESCE(SUM(TM.SEGUNDOS_ASSISTIDOS), 0)
+            FROM TEMPO_ASSISTIDO_AULAS_MENSAL TM
+            JOIN VIDEOS V ON V.ID_VIDEO = TM.ID_VIDEO
+            JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE {' AND '.join(where)}
+            GROUP BY EXTRACT(YEAR FROM TM.MES_REFERENCIA), EXTRACT(MONTH FROM TM.MES_REFERENCIA)
+            """,
+            tuple(params),
+        )
+        for ano, mes, segundos in cursor.fetchall():
+            linha_mensal(ano, mes)["horas_assistidas"] = round(float(segundos or 0) / 3600, 2)
+        mensal = [mensal[chave] for chave in sorted(mensal)]
+
+        # Sprint item 23: identifica tempo acumulado antes da captura mensal, cuja competência antiga não pode ser recuperada.
+        cursor.execute(
+            f"""
+            SELECT COALESCE(SUM(TA.SEGUNDOS_ASSISTIDOS), 0) - COALESCE((
+                SELECT SUM(TM.SEGUNDOS_ASSISTIDOS)
+                FROM TEMPO_ASSISTIDO_AULAS_MENSAL TM
+                JOIN VIDEOS VM ON VM.ID_VIDEO = TM.ID_VIDEO
+                JOIN CURSOS CM ON CM.ID_CURSO = VM.ID_CURSO
+                JOIN PROFESSORES_CURSO PCM ON PCM.ID_CURSO = CM.ID_CURSO
+                WHERE {' AND '.join(where).replace('C.', 'CM.').replace('PC.', 'PCM.')}
+            ), 0)
+            FROM TEMPO_ASSISTIDO_AULAS TA
+            JOIN VIDEOS V ON V.ID_VIDEO = TA.ID_VIDEO
+            JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE {' AND '.join(where)}
+            """,
+            tuple(params + params),
+        )
+        segundos_sem_competencia = max(float((cursor.fetchone() or (0,))[0] or 0), 0)
+
         total_alunos = sum(item["alunos"] for item in cursos)
         total_aulas_assistidas = sum(item["aulas_assistidas"] for item in cursos)
         total_horas = sum(item["horas_assistidas"] for item in cursos)
@@ -2866,6 +2953,8 @@ def relatorio_professor():
                 "horas_assistidas": round(total_horas, 2),
             },
             "cursos": cursos,
+            "mensal": mensal,
+            "horas_sem_competencia": round(segundos_sem_competencia / 3600, 2),
         }
 
         if formato == "pdf":
@@ -2876,6 +2965,7 @@ def relatorio_professor():
                 f"Módulos concluídos: {payload['resumo']['modulos']}",
                 f"Aulas assistidas: {payload['resumo']['aulas_assistidas']}",
                 f"Horas assistidas: {payload['resumo']['horas_assistidas']}",
+                f"Horas sem competência mensal anterior ao registro: {payload['horas_sem_competencia']}",
                 "",
             ]
             for curso in cursos:
@@ -2883,6 +2973,12 @@ def relatorio_professor():
                     f"{curso['curso']} | Instrutor: {curso['instrutor']} | Alunos: {curso['alunos']} | "
                     f"Cursos concluídos: {curso['conclusoes']} | Módulos concluídos: {curso['modulos']} | "
                     f"Horas: {curso['horas_assistidas']}"
+                )
+            linhas.extend(["", "Detalhamento mensal:"])
+            for item in mensal:
+                linhas.append(
+                    f"{item['mes']} | Alunos inscritos: {item['alunos']} | Cursos: {item['cursos']} | "
+                    f"Modulos: {item['modulos']} | Horas assistidas: {item['horas_assistidas']}"
                 )
 
             return Response(
