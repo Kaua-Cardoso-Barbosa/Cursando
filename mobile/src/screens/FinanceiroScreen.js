@@ -11,6 +11,7 @@ function moeda(valor) {
 }
 
 // Sprint item 12: define os cards de receita do instrutor no app usando o resumo do Revenue Pool.
+// Sprint item 15: inclui o saldo do instrutor que pode ser solicitado para saque.
 const cards = [
   ["Recebido estimado", "Pool de receita", "recebido_estimado", "cash-outline", "money"],
   ["Disponivel para saque", "Saldo bruto", "disponivel_saque", "wallet-outline", "money"],

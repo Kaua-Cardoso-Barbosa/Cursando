@@ -425,6 +425,7 @@ def pesos_pool_instrutores(cursor):
 
 
 def calcular_saldo_saque(cursor, id_usuario, pool_instrutores, pesos_instrutores, peso_total):
+    # Sprint item 15: calcula o saldo bruto do instrutor e desconta as solicitações de saque registradas.
     # Sprint item 1: usa o mesmo saldo apresentado no painel para limitar saques enviados à Arkhé.
     peso_instrutor = pesos_instrutores.get(int(id_usuario), 0)
     estimado = pool_instrutores * (peso_instrutor / peso_total) if peso_total else 0
@@ -1944,8 +1945,8 @@ def financeiro_resumo():
         assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
         cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
         total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
-        # Sprint item 13: calcula o pool mensal estimado a partir das assinaturas atualmente ativas.
-        pool_instrutores = assinaturas_ativas * valor_assinatura * (percentual / 100)
+        # Sprint item 15: reparte o total de mensalidades efetivamente pagas pelo percentual do pool e pelo peso das aulas assistidas.
+        pool_instrutores = total_arrecadado * (percentual / 100)
         pesos_instrutores = pesos_pool_instrutores(cursor)
         peso_total = sum(pesos_instrutores.values())
 
@@ -2017,7 +2018,9 @@ def financeiro_resumo():
             faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
             ticket_medio = (float(total_pago or 0) / int(faturas_pagas or 0)) if int(faturas_pagas or 0) else 0
             # Sprint item 14: calcula o pool acumulado estimado usando a porcentagem definida pelo administrador.
+            # Sprint item 15: reserva a comissão dos instrutores e as despesas antes de calcular o caixa sacável do administrador.
             pool_historico_instrutores = total_arrecadado * (percentual / 100)
+            disponivel_saque_admin = max(total_arrecadado - pool_historico_instrutores - custos, 0)
             cursor.execute(
                 "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE STATUS = 1"
             )
@@ -2029,6 +2032,7 @@ def financeiro_resumo():
                 "total_repassado_estimado": round(pool_historico_instrutores, 2),
                 "custos": round(custos, 2),
                 "saldo_caixa": round(total_arrecadado - pool_historico_instrutores - custos, 2),
+                "disponivel_saque_admin": round(disponivel_saque_admin, 2),
                 "assinaturas_ativas": assinaturas_ativas,
                 "faturas_pagas": int(faturas_pagas or 0),
                 "percentual_instrutores": round(percentual, 2),
@@ -2966,11 +2970,11 @@ def solicitar_saque():
 
     try:
         # Sprint item 1: valida o saque contra o saldo disponível calculado no backend.
-        valor_assinatura = valor_assinatura_config()
         percentual = percentual_instrutores(cursor)
-        cursor.execute("SELECT COUNT(*) FROM ASSINATURAS WHERE STATUS = 1")
-        assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
-        pool_instrutores = assinaturas_ativas * valor_assinatura * (percentual / 100)
+        cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
+        total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
+        # Sprint item 15: valida o saque usando o mesmo pool baseado em pagamentos reais mostrado aos dois perfis.
+        pool_instrutores = total_arrecadado * (percentual / 100)
         pesos_instrutores = pesos_pool_instrutores(cursor)
         peso_total = sum(pesos_instrutores.values())
         _, _, _, disponivel_saque = calcular_saldo_saque(

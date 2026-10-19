@@ -288,13 +288,13 @@ export default function DashboardAdm({
                     ) : exibindoFinanceiro ? (
                         <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
                             {/* Sprint itens 13, 14, 15 e 16: cards de gestao financeira administrativa. */}
-                            {/* Sprint item 14: mostra mensalidades arrecadadas, repasses concluídos e o pool calculado pelo percentual configurado. */}
+                            {/* Sprint item 15: mostra o caixa administrativo após reservar comissões do Revenue Pool e custos. */}
                             {[
                                 ["Assinaturas pagas (total)", financeiro?.total_arrecadado, "Soma das mensalidades confirmadas"],
                                 ["Saques concluídos", financeiro?.total_repassado, "Transferências registradas como concluídas"],
                                 ["Total do Revenue Pool (estimado)", financeiro?.total_repassado_estimado, "Percentual aplicado sobre mensalidades pagas"],
                                 ["Despesas cadastradas", financeiro?.custos, "Total de despesas registradas"],
-                                ["Saldo histórico estimado", financeiro?.saldo_caixa, "Arrecadação menos pool estimado e despesas"]
+                                ["Disponível para saque (admin)", financeiro?.disponivel_saque_admin, "Receita paga menos comissão dos instrutores e despesas"]
                             ].map(([titulo, valor, detalhe]) => (
                                 <div key={titulo} className={css.cardMetrica}>
                                     <div className={css.metricaTopo}>

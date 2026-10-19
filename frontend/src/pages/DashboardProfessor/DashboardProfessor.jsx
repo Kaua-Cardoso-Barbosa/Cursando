@@ -1005,6 +1005,7 @@ export default function DashboardProfessor({
                                 </div>
                                 <div className={css.gridMetricasFinanceiro}>
                                     <CardMetricaProfessor titulo="Recebido estimado" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} />
+                                    {/* Sprint item 15: apresenta ao instrutor o saldo bruto restante que pode solicitar para saque. */}
                                     <div className={css.cardSaldoDisponivel}>
                                         <CardMetricaProfessor titulo="Disponível para saque" detalhe="Saldo após solicitações" valor={formatarMoeda(financeiro?.disponivel_saque)} />
                                     </div>
