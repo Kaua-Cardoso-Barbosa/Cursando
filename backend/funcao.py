@@ -2,6 +2,7 @@ import jwt
 import datetime
 from app import app
 from banco import get_db
+from auditoria import garantir_gatilhos_auditoria
 from flask import request, render_template, jsonify
 import random
 import smtplib
@@ -78,7 +79,7 @@ def pegar_token_requisicao():
     return None
 
 
-def garantir_coluna_imagem_perfil(cursor):
+def garantir_coluna_imagem_perfil(cursor, con):
     cursor.execute(
         """
         SELECT 1
@@ -91,6 +92,8 @@ def garantir_coluna_imagem_perfil(cursor):
         return False
 
     cursor.execute("ALTER TABLE USUARIOS ADD IMAGEM_PERFIL VARCHAR(500)")
+    con.commit()
+    garantir_gatilhos_auditoria({"USUARIOS"}, force=True)
     return True
 
 
@@ -105,7 +108,7 @@ def verificar_token():
         con = get_db()
         cursor = con.cursor()
 
-        if garantir_coluna_imagem_perfil(cursor):
+        if garantir_coluna_imagem_perfil(cursor, con):
             con.commit()
 
         cursor.execute("""

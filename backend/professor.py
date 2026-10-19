@@ -3,12 +3,12 @@ import re
 import subprocess
 from uuid import uuid4
 import shutil
-import fdb
 from flask import current_app, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from werkzeug.utils import secure_filename
 
 from app import app
+from banco import get_db
 
 
 STATUS_PRIVADO = 0
@@ -33,16 +33,6 @@ AULA_STATUS_FILTRO = {
     "privadas": STATUS_PRIVADO,
     "publicadas": STATUS_PUBLICADO,
 }
-
-
-def get_db():
-    return fdb.connect(
-        host=current_app.config["DB_HOST"],
-        database=current_app.config["DB_NAME"],
-        user=current_app.config["DB_USER"],
-        password=current_app.config["DB_PASSWORD"],
-        charset="UTF8",
-    )
 
 
 def criar_mensagem(descricao, tipo="erro"):
@@ -1034,7 +1024,6 @@ def mover_aula_para_modulo(id_aula):
         cursor.execute("UPDATE VIDEOS SET ID_MODULO = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_VIDEO = ?", (id_modulo, id_aula))
         con.commit()
         # Sprint item 6: permite incluir aulas antigas em um dos módulos criados pelo instrutor.
-        registrar_log("mover_aula_modulo", f"Aula {id_aula} associada ao modulo {id_modulo}", "VIDEOS")
         return resposta("Aula movida para o modulo.", 200, "sucesso")
     except Exception as erro:
         con.rollback()

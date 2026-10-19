@@ -5,6 +5,7 @@ from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
 from app import app
 from banco import get_db
+from auditoria import garantir_gatilhos_auditoria
 from professor import (
     STATUS_PUBLICADO,
     aula_para_dict,
@@ -172,6 +173,12 @@ def garantir_tabela_progresso(con):
             if not cursor.fetchone():
                 cursor.execute(ddl)
         con.commit()
+        garantir_gatilhos_auditoria({
+            "PROGRESSO_AULAS",
+            "CATEGORIAS_CURSO",
+            "TEMAS_CURSO",
+            "CURSO_TAXONOMIA",
+        })
     except Exception:
         con.rollback()
         raise

@@ -27,6 +27,8 @@ DB_LOG_NAME = os.path.join(
 )
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
+AUDIT_LOG_USER = os.getenv("AUDIT_LOG_USER") or DB_USER
+AUDIT_LOG_PASSWORD = os.getenv("AUDIT_LOG_PASSWORD") or DB_PASSWORD
 
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))

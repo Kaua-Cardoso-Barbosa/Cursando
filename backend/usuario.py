@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 from funcao import email_verificacao, validar_senha, verificar_codigo
 from app import app
 from banco import get_db
+from auditoria import definir_ator_auditoria, garantir_gatilhos_auditoria
 from functools import wraps
 import requests
 from werkzeug.utils import secure_filename
@@ -41,7 +42,7 @@ def resposta_mensagem(descricao, status=200, tipo="erro", **extra):
     return jsonify(payload), status
 
 
-def garantir_coluna_imagem_perfil(cursor):
+def garantir_coluna_imagem_perfil(cursor, con):
     cursor.execute(
         """
         SELECT 1
@@ -54,6 +55,8 @@ def garantir_coluna_imagem_perfil(cursor):
         return False
 
     cursor.execute("ALTER TABLE USUARIOS ADD IMAGEM_PERFIL VARCHAR(500)")
+    con.commit()
+    garantir_gatilhos_auditoria({"USUARIOS"}, force=True)
     return True
 
 
@@ -113,6 +116,7 @@ def garantir_coluna_email_verificado(cursor, con):
             "ALTER TABLE USUARIOS ADD EMAIL_VERIFICADO SMALLINT DEFAULT 1 NOT NULL"
         )
         con.commit()
+        garantir_gatilhos_auditoria({"USUARIOS"}, force=True)
 
 
 def nome_valido(nome):
@@ -554,7 +558,7 @@ def login():
 
     try:
         garantir_coluna_email_verificado(cursor, con)
-        if garantir_coluna_imagem_perfil(cursor):
+        if garantir_coluna_imagem_perfil(cursor, con):
             con.commit()
 
         cursor.execute(
@@ -597,6 +601,7 @@ def login():
             con.commit()
             return resposta_mensagem("E-mail ou senha invalida", 401)
 
+        definir_ator_auditoria(con, id_usuario, tipo)
         cursor.execute("UPDATE USUARIOS SET TENTATIVAS = 0 WHERE ID_USUARIO = ?", (id_usuario,))
         con.commit()
 
@@ -835,7 +840,7 @@ def buscar_perfil():
     cursor = con.cursor()
 
     try:
-        if garantir_coluna_imagem_perfil(cursor):
+        if garantir_coluna_imagem_perfil(cursor, con):
             con.commit()
 
         cursor.execute(
@@ -893,7 +898,7 @@ def editar_perfil():
     cursor = con.cursor()
 
     try:
-        if garantir_coluna_imagem_perfil(cursor):
+        if garantir_coluna_imagem_perfil(cursor, con):
             con.commit()
 
         cursor.execute(

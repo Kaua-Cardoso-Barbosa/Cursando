@@ -6,10 +6,11 @@ from datetime import datetime, timedelta
 from threading import Lock
 from decimal import Decimal, InvalidOperation
 
-from flask import Response, current_app, g, jsonify, request
-from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required, verify_jwt_in_request
+from flask import Response, current_app, jsonify, request
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
 from app import app
+from auditoria import garantir_gatilhos_auditoria
 from banco import get_db
 from log_banco import garantir_log_schema, get_log_db
 from professor import de_blob_texto, para_blob_texto, salvar_upload
@@ -203,20 +204,6 @@ def garantir_sprint_schema():
         )
         _criar_tabela(
             cursor,
-            "LOG_GRAVACAO",
-            """
-            CREATE TABLE LOG_GRAVACAO (
-                ID_LOG INTEGER NOT NULL PRIMARY KEY,
-                ID_USUARIO INTEGER,
-                ACAO VARCHAR(20) NOT NULL,
-                TABELA_AFETADA VARCHAR(80),
-                DETALHES BLOB SUB_TYPE TEXT,
-                CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """,
-        )
-        _criar_tabela(
-            cursor,
             "CUSTOS_PLATAFORMA",
             """
             CREATE TABLE CUSTOS_PLATAFORMA (
@@ -323,6 +310,24 @@ def garantir_sprint_schema():
         _garantir_coluna(cursor, "VIDEOS", "ID_MODULO", "ID_MODULO INTEGER")
         con.commit()
         garantir_log_schema()
+        garantir_gatilhos_auditoria({
+            "MODULOS_CURSO",
+            "MATERIAIS_CURSO",
+            "AVALIACOES_CURSO",
+            "PROVAS_CURSO",
+            "QUESTOES_PROVA",
+            "RESPOSTAS_PROVA",
+            "CERTIFICADOS",
+            "CUSTOS_PLATAFORMA",
+            "SAQUES_INSTRUTOR",
+            "FINANCEIRO_CONFIG",
+            "MENSAGENS_CHAT",
+            "CATEGORIAS_CURSO",
+            "TEMAS_CURSO",
+            "CURSO_TAXONOMIA",
+            "VIDEOS",
+            "ASSINATURAS",
+        }, force=True)
         _schema_pronto = True
     except Exception:
         con.rollback()
@@ -398,87 +403,6 @@ def normalizar_taxonomia(valor):
     return " ".join((valor or "").strip().lower().split())
 
 
-_CAMPOS_SENSIVEIS_LOG = {
-    "senha",
-    "confirmar_senha",
-    "nova_senha",
-    "confirmar_nova_senha",
-    "token",
-    "access_token",
-    "authorization",
-    "codigo",
-    "codigo_pagamento",
-}
-
-
-def _mascarar_valor_log(valor):
-    if isinstance(valor, dict):
-        return {
-            chave: "***" if str(chave).lower() in _CAMPOS_SENSIVEIS_LOG else _mascarar_valor_log(conteudo)
-            for chave, conteudo in valor.items()
-        }
-
-    if isinstance(valor, list):
-        return [_mascarar_valor_log(item) for item in valor]
-
-    return valor
-
-
-def _payload_requisicao_log():
-    dados = {}
-
-    json_recebido = request.get_json(silent=True)
-    if isinstance(json_recebido, dict):
-        dados["json"] = _mascarar_valor_log(json_recebido)
-    elif json_recebido is not None:
-        dados["json"] = "[payload_json_nao_objeto]"
-
-    if request.form:
-        dados["form"] = _mascarar_valor_log(request.form.to_dict(flat=False))
-
-    if request.files:
-        dados["arquivos"] = [
-            {
-                "campo": nome,
-                "nome": arquivo.filename,
-                "tipo": arquivo.mimetype,
-            }
-            for nome, arquivo in request.files.items()
-        ]
-
-    return dados
-
-
-def _texto_detalhes_log(valor):
-    if isinstance(valor, (dict, list)):
-        return json.dumps(valor, ensure_ascii=False, default=str, indent=2)
-
-    return str(valor or "")
-
-
-def _montar_detalhes_log(acao, detalhes, tabela, status_code=None):
-    return {
-        "acao": acao,
-        "descricao": detalhes or "",
-        "tabela_afetada": tabela,
-        "usuario": {
-            "id": get_jwt_identity(),
-            "tipo": get_jwt().get("tipo") if get_jwt() else None,
-        },
-        "requisicao": {
-            "metodo": request.method,
-            "rota": request.path,
-            "endpoint": request.endpoint,
-            "status_http": status_code,
-            "ip": request.headers.get("X-Forwarded-For", request.remote_addr),
-            "user_agent": request.headers.get("User-Agent"),
-        },
-        "parametros_rota": request.view_args or {},
-        "query": request.args.to_dict(flat=False),
-        "corpo": _payload_requisicao_log(),
-    }
-
-
 def _resumo_detalhes_log(detalhes):
     try:
         dados = json.loads(detalhes)
@@ -500,116 +424,6 @@ def _resumo_detalhes_log(detalhes):
         if parte
     ]
     return " | ".join(partes)
-
-
-def _acao_gravacao(metodo):
-    return {
-        "POST": "CRIACAO",
-        "PUT": "ALTERACAO",
-        "PATCH": "ALTERACAO",
-        "DELETE": "EXCLUSAO",
-    }.get(metodo, metodo)[:20]
-
-
-
-def registrar_log(acao, detalhes="", tabela=None, status_code=None):
-    cursor = None
-    con = None
-    try:
-        garantir_sprint_schema()
-        id_usuario = get_jwt_identity()
-        tipo = get_jwt().get("tipo") if get_jwt() else None
-        detalhes_contexto = _montar_detalhes_log(acao, detalhes, tabela, status_code)
-        detalhes_texto = _texto_detalhes_log(detalhes_contexto)
-        con = get_db()
-        cursor = con.cursor()
-        nome = email = None
-
-        if id_usuario:
-            cursor.execute("SELECT NOME, EMAIL FROM USUARIOS WHERE ID_USUARIO = ?", (id_usuario,))
-            usuario = cursor.fetchone()
-            if usuario:
-                nome, email = usuario
-
-        cursor.execute(
-            """
-            INSERT INTO LOG_ACOES (
-                ID_LOG, ID_USUARIO, TIPO_USUARIO, NOME, EMAIL, ACAO, ROTA, METODO, DETALHES
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                proximo_id(cursor, "LOG_ACOES", "ID_LOG"),
-                id_usuario,
-                tipo,
-                nome,
-                email,
-                acao,
-                request.path[:300],
-                request.method,
-                para_blob_texto(detalhes_texto),
-            ),
-        )
-
-        con.commit()
-        g.log_manual_registrado = True
-
-        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-            # Sprint item 6: grava operacoes de criacao, edicao e exclusao em banco separado de auditoria.
-            log_con = get_log_db()
-            log_cursor = log_con.cursor()
-            try:
-                log_cursor.execute("SELECT COALESCE(MAX(ID_LOG), 0) + 1 FROM LOG_GRAVACAO")
-                id_log = log_cursor.fetchone()[0]
-                log_cursor.execute(
-                    """
-                    INSERT INTO LOG_GRAVACAO (ID_LOG, ID_USUARIO, ACAO, TABELA_AFETADA, ROTA, METODO, DETALHES)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        id_log,
-                        id_usuario,
-                        _acao_gravacao(request.method),
-                        tabela,
-                        request.path[:300],
-                        request.method,
-                        para_blob_texto(detalhes_texto),
-                    ),
-                )
-                log_con.commit()
-            except Exception:
-                log_con.rollback()
-                raise
-            finally:
-                log_cursor.close()
-                log_con.close()
-    except Exception as erro:
-        print("Erro ao registrar log:", erro)
-    finally:
-        try:
-            cursor.close()
-            con.close()
-        except Exception:
-            pass
-
-
-@app.after_request
-def registrar_modificacoes(response):
-    if request.path.startswith("/static") or request.path.startswith("/admin/logs"):
-        return response
-
-    if request.method in {"POST", "PUT", "PATCH", "DELETE"} and response.status_code < 400 and not getattr(g, "log_manual_registrado", False):
-        try:
-            verify_jwt_in_request(optional=True)
-            registrar_log(
-                "requisicao_modificacao",
-                "Requisicao de modificacao concluida sem log especifico da rota.",
-                status_code=response.status_code,
-            )
-        except Exception as erro:
-            print("Erro no log automatico:", erro)
-
-    return response
 
 
 @app.route("/professor/cursos/<int:id_curso>/modulos", methods=["GET", "POST"])
@@ -687,7 +501,6 @@ def modulos_professor(id_curso):
             (id_modulo, id_curso, titulo, para_blob_texto(descricao), imagem["url"] if imagem else None, ordem),
         )
         con.commit()
-        registrar_log("criar_modulo", f"Modulo {titulo} criado no curso {id_curso}", "MODULOS_CURSO")
         return resposta("Modulo criado com sucesso.", 201, "sucesso", id_modulo=id_modulo)
     except Exception as erro:
         con.rollback()
@@ -749,7 +562,6 @@ def materiais_professor(id_curso):
             (id_material, id_curso, titulo, tipo, url, para_blob_texto(descricao)),
         )
         con.commit()
-        registrar_log("criar_material", f"Material {titulo} criado no curso {id_curso}", "MATERIAIS_CURSO")
         return resposta("Material cadastrado com sucesso.", 201, "sucesso", id_material=id_material)
     except Exception as erro:
         con.rollback()
@@ -881,7 +693,6 @@ def avaliar_curso(id_curso):
             ),
         )
         con.commit()
-        registrar_log("avaliar_curso", f"Curso {id_curso} avaliado com nota {nota}", "AVALIACOES_CURSO")
         return resposta("Avaliacao registrada com sucesso.", 201, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -1238,7 +1049,6 @@ def taxonomias(tipo):
             (novo_id, nome, normalizado),
         )
         con.commit()
-        registrar_log("criar_taxonomia", f"{tipo}: {nome}", tabela)
         return resposta("Taxonomia cadastrada.", 201, "sucesso", id=novo_id, nome=nome)
     except Exception as erro:
         con.rollback()
@@ -1295,7 +1105,6 @@ def taxonomia_curso_professor(id_curso):
             (id_curso, id_categoria, id_tema),
         )
         con.commit()
-        registrar_log("atualizar_taxonomia_curso", f"Curso {id_curso}", "CURSO_TAXONOMIA")
         return resposta("Taxonomia do curso atualizada.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -1395,7 +1204,6 @@ def chat_mensagens(id_curso):
             ),
         )
         con.commit()
-        registrar_log("enviar_mensagem_chat", f"Mensagem enviada no curso {id_curso}", "MENSAGENS_CHAT")
         return resposta("Mensagem enviada.", 201, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -1507,7 +1315,6 @@ def prova_professor(id_curso):
             )
 
         con.commit()
-        registrar_log("criar_prova", f"Prova {titulo} criada no curso {id_curso}", "PROVAS_CURSO")
         return resposta("Prova cadastrada como rascunho.", 201, "sucesso", id_prova=id_prova)
     except Exception as erro:
         con.rollback()
@@ -1547,7 +1354,6 @@ def publicar_prova(id_prova):
 
         cursor.execute("UPDATE PROVAS_CURSO SET PUBLICADA = 1 WHERE ID_PROVA = ?", (id_prova,))
         con.commit()
-        registrar_log("publicar_prova", f"Prova {id_prova} publicada", "PROVAS_CURSO")
         return resposta("Prova publicada com sucesso.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -1661,7 +1467,6 @@ def prova_aluno(id_curso):
             ),
         )
         con.commit()
-        registrar_log("enviar_prova", f"Aluno enviou prova {prova[0]}", "RESPOSTAS_PROVA")
         return resposta("Prova enviada para correcao.", 201, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -1757,7 +1562,6 @@ def corrigir_resposta_prova(id_resposta):
             (1 if aprovado else 2, para_blob_texto(feedback), id_resposta),
         )
         con.commit()
-        registrar_log("corrigir_prova", f"Resposta {id_resposta} corrigida", "RESPOSTAS_PROVA")
         return resposta("Correcao registrada.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -1955,7 +1759,6 @@ def editar_modulo_professor(id_curso, id_modulo):
             return resposta("Modulo nao encontrado.", 404)
         con.commit()
         # Sprint item 6: permite atualizar dados e imagem de um modulo.
-        registrar_log("editar_modulo", f"Modulo {id_modulo} atualizado no curso {id_curso}", "MODULOS_CURSO")
         return resposta("Modulo atualizado com sucesso.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -2273,13 +2076,39 @@ def logs_gravacao_admin():
         filtros = []
         params = []
         if termo:
-            filtros.append("(LOWER(ACAO) LIKE ? OR LOWER(TABELA_AFETADA) LIKE ? OR LOWER(DETALHES) LIKE ?)")
-            params.extend([f"%{termo}%", f"%{termo}%", f"%{termo}%"])
+            filtros.append(
+                "(LOWER(ACAO) LIKE ? OR LOWER(TABELA_AFETADA) LIKE ? "
+                "OR LOWER(ID_REGISTRO) LIKE ? OR LOWER(DETALHES) LIKE ?)"
+            )
+            params.extend([f"%{termo}%", f"%{termo}%", f"%{termo}%", f"%{termo}%"])
+        tipo_usuario = request.args.get("tipo")
+        if tipo_usuario not in (None, ""):
+            filtros.append("TIPO_USUARIO = ?")
+            params.append(int(tipo_usuario))
+        acao = (request.args.get("acao") or "").strip()
+        if acao:
+            filtros.append("ACAO = ?")
+            params.append(acao.upper())
+        id_usuario = request.args.get("id_usuario")
+        if id_usuario:
+            filtros.append("ID_USUARIO = ?")
+            params.append(int(id_usuario))
+        inicio = request.args.get("inicio")
+        if inicio:
+            filtros.append("CAST(CRIADO_EM AS DATE) >= ?")
+            params.append(inicio)
+        fim = request.args.get("fim")
+        if fim:
+            filtros.append("CAST(CRIADO_EM AS DATE) <= ?")
+            params.append(fim)
 
         where = f"WHERE {' AND '.join(filtros)}" if filtros else ""
         cursor.execute(
             f"""
-            SELECT FIRST 200 ID_LOG, ID_USUARIO, ACAO, TABELA_AFETADA, ROTA, METODO, DETALHES, CRIADO_EM
+            SELECT FIRST 200
+                ID_LOG, ID_USUARIO, TIPO_USUARIO, ACAO, TABELA_AFETADA, ID_REGISTRO,
+                ROTA, METODO, CAMPOS_ALTERADOS, VALORES_ANTES, VALORES_DEPOIS,
+                DETALHES, IP, USER_AGENT, REQUEST_ID, ORIGEM, USUARIO_BANCO, CRIADO_EM
             FROM LOG_GRAVACAO
             {where}
             ORDER BY ID_LOG DESC
@@ -2291,13 +2120,23 @@ def logs_gravacao_admin():
             {
                 "id": row[0],
                 "id_usuario": row[1],
-                "acao": row[2],
-                "tabela": row[3],
-                "rota": row[4],
-                "metodo": row[5],
-                "detalhes": de_blob_texto(row[6]),
-                "resumo": _resumo_detalhes_log(de_blob_texto(row[6])),
-                "criado_em": row[7].isoformat() if row[7] else None,
+                "tipo_usuario": row[2],
+                "acao": row[3],
+                "tabela": row[4],
+                "id_registro": row[5],
+                "rota": row[6],
+                "metodo": row[7],
+                "campos_alterados": de_blob_texto(row[8]),
+                "valores_antes": de_blob_texto(row[9]),
+                "valores_depois": de_blob_texto(row[10]),
+                "detalhes": de_blob_texto(row[11]),
+                "resumo": _resumo_detalhes_log(de_blob_texto(row[11])),
+                "ip": row[12],
+                "user_agent": row[13],
+                "request_id": row[14],
+                "origem": row[15],
+                "usuario_banco": row[16],
+                "criado_em": row[17].isoformat() if row[17] else None,
             }
             for row in cursor.fetchall()
         ])
@@ -2421,7 +2260,6 @@ def faturas_aluno():
                     (id_assinatura, id_usuario, cobranca["id_cobranca"], valor_total, vencimento, agora),
                 )
                 con.commit()
-                registrar_log("criar_fatura", f"Fatura {id_assinatura} criada para {meses} mes(es)", "ASSINATURAS")
                 return jsonify({
                     "id_assinatura": id_assinatura,
                     "id_cobranca": cobranca["id_cobranca"],
@@ -2636,7 +2474,6 @@ def custos_plataforma_admin():
                 (proximo_id(cursor, "CUSTOS_PLATAFORMA", "ID_CUSTO"), descricao, valor, data_custo, categoria, get_jwt_identity()),
             )
             con.commit()
-            registrar_log("criar_custo", f"Custo {descricao} cadastrado no valor {valor}", "CUSTOS_PLATAFORMA")
             return resposta("Custo cadastrado com sucesso.", 201, "sucesso")
 
         cursor.execute(
@@ -2883,7 +2720,6 @@ def financeiro_config_admin():
             (percentual,),
         )
         con.commit()
-        registrar_log("atualizar_pool_receita", f"Percentual dos instrutores alterado para {percentual}%", "FINANCEIRO_CONFIG")
         return resposta("Percentual do pool atualizado com sucesso.", 200, "sucesso", percentual_instrutores=round(percentual, 2))
     except (TypeError, ValueError):
         con.rollback()
@@ -2956,7 +2792,6 @@ def solicitar_saque():
             (id_saque, get_jwt_identity(), valor, saque_arkhe.get("id_saque"), para_blob_texto(str(saque_arkhe))),
         )
         con.commit()
-        registrar_log("solicitar_saque", f"Saque solicitado no valor {valor}", "SAQUES_INSTRUTOR")
         return resposta("Solicitacao de saque registrada.", 201, "sucesso")
     except ArkheError as erro:
         con.rollback()

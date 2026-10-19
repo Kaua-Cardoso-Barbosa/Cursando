@@ -30,7 +30,7 @@ export default function DashboardAdm({
     const [novoCusto, setNovoCusto] = useState({ descricao: "", categoria: "", valor: "", data_custo: "" });
     const [logs, setLogs] = useState([]);
     const [logsGravacao, setLogsGravacao] = useState([]);
-    const [abaLogs, setAbaLogs] = useState("sistema");
+    const [abaLogs, setAbaLogs] = useState("gravacao");
     const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "", acao: "", inicio: "", fim: "" });
 
     function detalhesLog(log) {
@@ -39,6 +39,10 @@ export default function DashboardAdm({
         } catch {
             return null;
         }
+    }
+
+    function rotuloAcaoLog(acao) {
+        return ({ INSERT: "Inclusao", UPDATE: "Alteracao", DELETE: "Exclusao" })[acao] || acao;
     }
 
     function formatarDataLog(valor) {
@@ -337,11 +341,11 @@ export default function DashboardAdm({
                         <section className={css.listaLogs}>
                             <h2>Logs do sistema</h2>
                             <div className={css.abasLogs}>
-                                <button className={abaLogs === "sistema" ? css.abaAtiva : css.abaLog} onClick={() => setAbaLogs("sistema")} type="button">Logs gerais</button>
+                                <button className={abaLogs === "sistema" ? css.abaAtiva : css.abaLog} onClick={() => setAbaLogs("sistema")} type="button">Histórico anterior</button>
                                 <button className={abaLogs === "gravacao" ? css.abaAtiva : css.abaLog} onClick={() => setAbaLogs("gravacao")} type="button">Log de gravação</button>
                             </div>
                             <div className={css.filtrosLogs}>
-                                <input placeholder="Buscar nome, email ou acao" value={filtrosLogs.busca} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, busca: e.target.value })} />
+                                <input placeholder={abaLogs === "gravacao" ? "Buscar ação, tabela ou registro" : "Buscar nome, e-mail ou ação"} value={filtrosLogs.busca} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, busca: e.target.value })} />
                                 <select value={filtrosLogs.tipo} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, tipo: e.target.value })}>
                                     <option value="">Todos</option>
                                     <option value="0">Admins</option>
@@ -350,12 +354,22 @@ export default function DashboardAdm({
                                 </select>
                                 <select value={filtrosLogs.acao} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, acao: e.target.value })}>
                                     <option value="">Todas as acoes</option>
-                                    <option value="criar_prova">Professor criou prova</option>
-                                    <option value="criar_material">Professor criou material</option>
-                                    <option value="enviar_prova">Aluno enviou prova</option>
-                                    <option value="avaliar_curso">Aluno avaliou curso</option>
-                                    <option value="solicitar_saque">Professor solicitou saque</option>
-                                    <option value="requisicao_modificacao">Modificacoes gerais</option>
+                                    {abaLogs === "gravacao" ? (
+                                        <>
+                                            <option value="INSERT">Registro criado</option>
+                                            <option value="UPDATE">Registro alterado</option>
+                                            <option value="DELETE">Registro excluido</option>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <option value="criar_prova">Professor criou prova</option>
+                                            <option value="criar_material">Professor criou material</option>
+                                            <option value="enviar_prova">Aluno enviou prova</option>
+                                            <option value="avaliar_curso">Aluno avaliou curso</option>
+                                            <option value="solicitar_saque">Professor solicitou saque</option>
+                                            <option value="requisicao_modificacao">Modificacoes gerais</option>
+                                        </>
+                                    )}
                                 </select>
                                 <input type="date" value={filtrosLogs.inicio} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, inicio: e.target.value })} />
                                 <input type="date" value={filtrosLogs.fim} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, fim: e.target.value })} />
@@ -366,14 +380,15 @@ export default function DashboardAdm({
                                 const detalhes = detalhesLog(log);
                                 const requisicao = detalhes?.requisicao || {};
                                 const corpo = detalhes?.corpo?.json;
+                                const perfilUsuario = { 0: "Administrador", 1: "Professor", 2: "Aluno" }[log.tipo_usuario];
 
                                 return (
                                     <article key={log.id} className={css.logItem}>
                                         <div className={css.logTopo}>
-                                            <strong>{log.acao}</strong>
+                                            <strong>{rotuloAcaoLog(log.acao)}</strong>
                                             <small>{formatarDataLog(log.criado_em)}</small>
                                         </div>
-                                        <span>{log.nome || `Usuario ${log.id_usuario || "nao identificado"}`} - {log.email || "sem email"}</span>
+                                        <span>{log.nome || `Usuario ${log.id_usuario || "nao identificado"}`} - {log.email || "e-mail nao armazenado"}{perfilUsuario ? ` - ${perfilUsuario}` : ""}</span>
                                         <small>{log.metodo} {log.rota} {requisicao.status_http ? `- status ${requisicao.status_http}` : ""}</small>
                                         <p>{log.resumo || log.detalhes}</p>
                                         {log.tabela && <small>Tabela afetada: {log.tabela}</small>}
