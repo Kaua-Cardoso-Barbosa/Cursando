@@ -23,6 +23,7 @@ import EstadoVazioProfessor from "../../components/DashboardProfessor/EstadoVazi
 import RodapeProfessor from "../../components/DashboardProfessor/RodapeProfessor.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import ChatCurso from "../../components/ChatCurso/ChatCurso.jsx";
+import ProvasProfessor from "../../components/ProvasProfessor/ProvasProfessor.jsx";
 import GoogleChart from "../../components/GoogleChart/GoogleChart.jsx";
 import css from "./DashboardProfessor.module.css";
 
@@ -267,6 +268,12 @@ export default function DashboardProfessor({
             return;
         }
 
+        if (location.pathname.endsWith("/provas")) {
+            setVisao("provas");
+            setCursoSelecionado(null);
+            return;
+        }
+
         if (location.pathname.endsWith("/relatorios")) {
             setVisao("relatorios");
             setCursoSelecionado(null);
@@ -302,8 +309,8 @@ export default function DashboardProfessor({
     }, [carregarAnaliticosMensais, visao]);
 
     useEffect(() => {
-        if (visao === "cursos") {
-            carregarCursos(filtroCursos);
+        if (visao === "cursos" || visao === "provas") {
+            carregarCursos(visao === "provas" ? "todos" : filtroCursos);
         }
     }, [carregarCursos, filtroCursos, visao]);
 
@@ -675,7 +682,7 @@ export default function DashboardProfessor({
 
     return (
         <div className={css.painelProfessor}>
-            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "relatorios" ? "relatorios" : "meus-cursos"} />
+            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "provas" ? "provas" : visao === "relatorios" ? "relatorios" : "meus-cursos"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
@@ -1081,6 +1088,12 @@ export default function DashboardProfessor({
                         <section className={css.secaoCursos}>
                             {/* Sprint item 9: contextualiza o chat compartilhado dentro do painel do professor. */}
                             <ChatCurso api={api} perfil="professor" setMensagem={setMensagem} />
+                        </section>
+                    )}
+
+                    {visao === "provas" && (
+                        <section className={css.secaoCursos}>
+                            <ProvasProfessor api={api} cursos={cursos} setMensagem={setMensagem} />
                         </section>
                     )}
 

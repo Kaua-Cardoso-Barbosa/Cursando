@@ -10,7 +10,7 @@ const placeholders = [
   "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900"
 ];
 
-export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onStudents, tipoUsuario = 1 }) {
+export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onExams, onStudents, tipoUsuario = 1 }) {
   // Alunos abrem detalhes e acompanham progresso; professores recebem ações de gestão.
   const aluno = Number(tipoUsuario) === 2;
   const { confirmar } = useFeedback();
@@ -60,6 +60,11 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
                   </View>
                 ) : (
                   <View style={styles.actions}>
+                    {onExams ? (
+                      <Pressable style={styles.iconButton} onPress={() => onExams(curso)} hitSlop={10} accessibilityLabel="Gerenciar prova do curso">
+                        <AppIcon name="document-text-outline" size={20} color={colors.darkGreen} />
+                      </Pressable>
+                    ) : null}
                     {onManage ? (
                       <Pressable style={styles.iconButton} onPress={() => onManage(curso)} hitSlop={10} accessibilityLabel="Gerenciar módulos">
                         <AppIcon name="folder-open-outline" size={20} color={colors.darkGreen} />

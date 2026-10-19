@@ -619,6 +619,7 @@ def alterar_status_curso(id_curso):
         status_anterior, titulo_curso = curso_atual
 
         if status == STATUS_PUBLICADO:
+            # Sprint item 20: só libera o status público se a prova final do curso já estiver publicada.
             try:
                 cursor.execute(
                     """

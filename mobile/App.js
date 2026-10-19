@@ -22,6 +22,7 @@ import InicioScreen from "./src/screens/InicioScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
 import PlayerAulaScreen from "./src/screens/PlayerAulaScreen";
+import ProvasProfessorScreen from "./src/screens/ProvasProfessorScreen";
 import RelatoriosProfessorScreen from "./src/screens/RelatoriosProfessorScreen";
 import VerificarEmailScreen from "./src/screens/VerificarEmailScreen";
 import { colors, globalStyles } from "./src/styles";
@@ -55,6 +56,8 @@ function AppContent() {
   const [studentsCourse, setStudentsCourse] = useState(null);
   // Sprint item 6: abre o gerenciamento de módulos e aulas para o curso escolhido.
   const [managingCourse, setManagingCourse] = useState(null);
+  // Sprint item 20: guarda o curso selecionado para configurar sua prova e corrigir envios no app.
+  const [examCourse, setExamCourse] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -341,6 +344,7 @@ function AppContent() {
     }
   }
 
+  // Sprint item 20: envia as respostas do aluno ao servidor para correção pelo instrutor.
   async function enviarProvaAluno(respostas) {
     if (!detalheCursoAluno?.curso?.id) return;
 
@@ -351,6 +355,7 @@ function AppContent() {
     await abrirCursoAluno(detalheCursoAluno.curso);
   }
 
+  // Sprint item 20: solicita o PDF ao servidor, que só o emite após aprovação na prova final.
   async function baixarCertificadoAluno() {
     const idCurso = detalheCursoAluno?.curso?.id;
     if (!idCurso || !token) return;
@@ -584,6 +589,15 @@ function AppContent() {
     );
   }
 
+  if (examCourse) {
+    return (
+      <SafeAreaView style={globalStyles.app}>
+        <StatusBar style="dark" />
+        <ProvasProfessorScreen curso={examCourse} cursos={cursos} token={token} onBack={() => setExamCourse(null)} />
+      </SafeAreaView>
+    );
+  }
+
   if (editingProfile) {
     return (
       <SafeAreaView style={globalStyles.app}>
@@ -618,6 +632,7 @@ function AppContent() {
             onEdit={setEditingCourse}
             onDelete={excluirCurso}
             onManage={setManagingCourse}
+            onExams={setExamCourse}
             onStudents={setStudentsCourse}
             tipoUsuario={tipoUsuario}
           />

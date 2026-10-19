@@ -143,20 +143,21 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
               Status: {prova.envio.status === 1 ? "Aprovado" : prova.envio.status === 2 ? "Reprovado" : "Aguardando correcao"}
             </Text>
           ) : null}
-          {prova.questoes?.map((questao) => (
+          {/* Sprint item 20: mostra reprovação, feedback e prazo e só aceita nova tentativa após um dia. */}
+          {prova.envio?.status === 2 ? <Text style={styles.locked}>Você foi reprovado. {prova.envio.feedback ? `Feedback: ${prova.envio.feedback}. ` : ""}{prova.envio.pode_tentar_em ? `Tente novamente após ${new Date(prova.envio.pode_tentar_em).toLocaleString("pt-BR")}.` : "Tente novamente após 1 dia da correção."}</Text> : null}
+          {(!prova.envio || (prova.envio.status === 2 && (!prova.envio.pode_tentar_em || Date.now() >= new Date(prova.envio.pode_tentar_em).getTime()))) && prova.questoes?.map((questao) => (
             <View key={questao.id} style={[globalStyles.card, styles.materialCard]}>
               <Text style={styles.materialTitle}>{questao.enunciado}</Text>
-              <TextInput
-                value={respostas[questao.id] || ""}
-                onChangeText={(valor) => setRespostas({ ...respostas, [questao.id]: valor })}
-                style={globalStyles.input}
-                multiline
-              />
+              {questao.tipo === "objetiva" ? (questao.alternativas || []).map((opcao) => (
+                <Pressable key={opcao} onPress={() => setRespostas({ ...respostas, [questao.id]: opcao })} style={[styles.examOption, respostas[questao.id] === opcao && styles.examOptionSelected]}>
+                  <Text style={respostas[questao.id] === opcao ? styles.examOptionTextSelected : styles.examOptionText}>{opcao}</Text>
+                </Pressable>
+              )) : <TextInput value={respostas[questao.id] || ""} onChangeText={(valor) => setRespostas({ ...respostas, [questao.id]: valor })} style={globalStyles.input} multiline />}
             </View>
           ))}
-          <Pressable style={globalStyles.primaryButton} onPress={() => onSubmitExam?.(respostas)}>
+          {(!prova.envio || (prova.envio.status === 2 && (!prova.envio.pode_tentar_em || Date.now() >= new Date(prova.envio.pode_tentar_em).getTime()))) ? <Pressable style={globalStyles.primaryButton} onPress={() => onSubmitExam?.(respostas)}>
             <Text style={globalStyles.buttonText}>Enviar prova</Text>
-          </Pressable>
+          </Pressable> : null}
           {prova.envio?.status === 1 ? (
             <>
               {/* Sprint item 5: libera o PDF no app depois da conclusao e aprovacao na prova final. */}
@@ -359,6 +360,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700"
   },
+  examOption: { padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: colors.white, marginTop: 8 },
+  examOptionSelected: { borderColor: colors.green, backgroundColor: colors.softGray },
+  examOptionText: { color: colors.black },
+  examOptionTextSelected: { color: colors.darkGreen, fontWeight: "800" },
   materialType: {
     color: colors.darkGreen,
     fontSize: 13,

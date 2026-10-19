@@ -1,4 +1,5 @@
 import io
+import ast
 import json
 import secrets
 import unicodedata
@@ -323,6 +324,8 @@ def garantir_sprint_schema():
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_USUARIO", "ID_USUARIO INTEGER")
         # Sprint item 6: associa cada videoaula ao modulo do curso.
         _garantir_coluna(cursor, "VIDEOS", "ID_MODULO", "ID_MODULO INTEGER")
+        # Sprint item 20: guarda quando o instrutor corrigiu a prova para aplicar o intervalo de nova tentativa.
+        _garantir_coluna(cursor, "RESPOSTAS_PROVA", "CORRIGIDO_EM", "CORRIGIDO_EM TIMESTAMP")
         # Sprint item 19: garante a foto de perfil usada para identificar os participantes do chat.
         _garantir_coluna(cursor, "USUARIOS", "IMAGEM_PERFIL", "IMAGEM_PERFIL VARCHAR(500)")
         con.commit()
@@ -357,6 +360,30 @@ def garantir_sprint_schema():
 def proximo_id(cursor, tabela, coluna):
     cursor.execute(f"SELECT COALESCE(MAX({coluna}), 0) + 1 FROM {tabela}")
     return cursor.fetchone()[0]
+
+
+def _decodificar_respostas_prova(valor):
+    texto = de_blob_texto(valor)
+    if not texto:
+        return {}
+    try:
+        return json.loads(texto)
+    except (TypeError, ValueError):
+        try:
+            return ast.literal_eval(texto)
+        except (ValueError, SyntaxError):
+            return {}
+
+
+def _decodificar_alternativas(valor):
+    texto = de_blob_texto(valor)
+    if not texto:
+        return []
+    try:
+        dados = json.loads(texto)
+        return dados if isinstance(dados, list) else []
+    except (TypeError, ValueError):
+        return [item.strip() for item in texto.splitlines() if item.strip()]
 
 
 def registrar_evento_curso(cursor, id_curso, id_usuario, tipo_evento):
@@ -1263,6 +1290,7 @@ def chat_mensagens(id_curso):
         con.close()
 
 
+# Sprint item 20: cria ou atualiza o rascunho da prova e publica questões objetivas e dissertativas.
 @app.route("/professor/cursos/<int:id_curso>/prova", methods=["GET", "POST"])
 @jwt_required()
 def prova_professor(id_curso):
@@ -1312,7 +1340,7 @@ def prova_professor(id_curso):
                         "id": row[0],
                         "enunciado": de_blob_texto(row[1]),
                         "tipo": row[2],
-                        "alternativas": de_blob_texto(row[3]),
+                        "alternativas": _decodificar_alternativas(row[3]),
                         "resposta_esperada": de_blob_texto(row[4]),
                     }
                     for row in cursor.fetchall()
@@ -1329,15 +1357,7 @@ def prova_professor(id_curso):
         if not isinstance(questoes, list) or len(questoes) == 0:
             return resposta("Cadastre ao menos uma questao.", 400)
 
-        id_prova = proximo_id(cursor, "PROVAS_CURSO", "ID_PROVA")
-        cursor.execute(
-            """
-            INSERT INTO PROVAS_CURSO (ID_PROVA, ID_CURSO, TITULO, PUBLICADA)
-            VALUES (?, ?, ?, 0)
-            """,
-            (id_prova, id_curso, titulo),
-        )
-
+        questoes_validadas = []
         for questao in questoes:
             enunciado = (questao.get("enunciado") or "").strip()
             tipo = (questao.get("tipo") or "objetiva").strip().lower()
@@ -1346,6 +1366,36 @@ def prova_professor(id_curso):
 
             if not enunciado or tipo not in {"objetiva", "dissertativa"}:
                 return resposta("Questao invalida.", 400)
+
+            if tipo == "objetiva":
+                if isinstance(alternativas, str):
+                    alternativas = [opcao.strip() for opcao in alternativas.splitlines() if opcao.strip()]
+                if not isinstance(alternativas, list) or len(alternativas) < 2:
+                    return resposta("Cada questao objetiva precisa ter ao menos duas alternativas.", 400)
+                alternativas = [str(opcao).strip() for opcao in alternativas if str(opcao).strip()]
+                if len(alternativas) < 2:
+                    return resposta("Cada questao objetiva precisa ter ao menos duas alternativas.", 400)
+            else:
+                alternativas = []
+            questoes_validadas.append((enunciado, tipo, alternativas, str(resposta_esperada).strip()))
+
+        cursor.execute("SELECT FIRST 1 ID_PROVA, PUBLICADA FROM PROVAS_CURSO WHERE ID_CURSO = ? ORDER BY ID_PROVA DESC", (id_curso,))
+        prova_existente = cursor.fetchone()
+        if prova_existente and int(prova_existente[1] or 0) == 1:
+            return resposta("A prova publicada nao pode ser alterada.", 409)
+
+        if prova_existente:
+            id_prova = prova_existente[0]
+            cursor.execute("UPDATE PROVAS_CURSO SET TITULO = ? WHERE ID_PROVA = ?", (titulo, id_prova))
+            cursor.execute("DELETE FROM QUESTOES_PROVA WHERE ID_PROVA = ?", (id_prova,))
+        else:
+            id_prova = proximo_id(cursor, "PROVAS_CURSO", "ID_PROVA")
+            cursor.execute(
+                "INSERT INTO PROVAS_CURSO (ID_PROVA, ID_CURSO, TITULO, PUBLICADA) VALUES (?, ?, ?, 0)",
+                (id_prova, id_curso, titulo),
+            )
+
+        for enunciado, tipo, alternativas, resposta_esperada in questoes_validadas:
 
             cursor.execute(
                 """
@@ -1359,7 +1409,7 @@ def prova_professor(id_curso):
                     id_prova,
                     para_blob_texto(enunciado),
                     tipo,
-                    para_blob_texto(alternativas if isinstance(alternativas, str) else "\n".join(alternativas)),
+                    para_blob_texto(json.dumps(alternativas, ensure_ascii=False)),
                     para_blob_texto(resposta_esperada),
                 ),
             )
@@ -1413,6 +1463,7 @@ def publicar_prova(id_prova):
         con.close()
 
 
+# Sprint item 20: libera a avaliação após a conclusão e bloqueia reenvio até um dia após uma reprovação.
 @app.route("/aluno/cursos/<int:id_curso>/prova", methods=["GET", "POST"])
 @jwt_required()
 def prova_aluno(id_curso):
@@ -1460,7 +1511,7 @@ def prova_aluno(id_curso):
         if request.method == "GET":
             cursor.execute(
                 """
-                SELECT FIRST 1 STATUS, FEEDBACK, CRIADO_EM, CORRIGIDO_EM
+                SELECT FIRST 1 STATUS, FEEDBACK, CRIADO_EM, CORRIGIDO_EM, RESPOSTAS
                 FROM RESPOSTAS_PROVA
                 WHERE ID_PROVA = ? AND ID_USUARIO = ?
                 ORDER BY ID_RESPOSTA DESC
@@ -1468,6 +1519,8 @@ def prova_aluno(id_curso):
                 (prova[0], id_aluno),
             )
             envio = cursor.fetchone()
+            data_reprovacao = (envio[3] or envio[2]) if envio and int(envio[0] or 0) == 2 else None
+            reaplicar_em = data_reprovacao + timedelta(days=1) if data_reprovacao else None
             cursor.execute(
                 """
                 SELECT ID_QUESTAO, ENUNCIADO, TIPO, ALTERNATIVAS
@@ -1487,13 +1540,15 @@ def prova_aluno(id_curso):
                     "feedback": de_blob_texto(envio[1]),
                     "criado_em": envio[2].isoformat() if envio and envio[2] else None,
                     "corrigido_em": envio[3].isoformat() if envio and envio[3] else None,
+                    "pode_tentar_em": reaplicar_em.isoformat() if reaplicar_em else None,
+                    "respostas": _decodificar_respostas_prova(envio[4]) if envio else None,
                 } if envio else None,
                 "questoes": [
                     {
                         "id": row[0],
                         "enunciado": de_blob_texto(row[1]),
                         "tipo": row[2],
-                        "alternativas": de_blob_texto(row[3]),
+                        "alternativas": _decodificar_alternativas(row[3]),
                     }
                     for row in cursor.fetchall()
                 ],
@@ -1501,8 +1556,37 @@ def prova_aluno(id_curso):
 
         dados = request.get_json() or {}
         respostas = dados.get("respostas")
-        if not respostas:
+        if not isinstance(respostas, dict) or not respostas:
             return resposta("Envie as respostas da prova.", 400)
+
+        cursor.execute(
+            "SELECT FIRST 1 STATUS, CORRIGIDO_EM FROM RESPOSTAS_PROVA WHERE ID_PROVA = ? AND ID_USUARIO = ? ORDER BY ID_RESPOSTA DESC",
+            (prova[0], id_aluno),
+        )
+        envio_anterior = cursor.fetchone()
+        if envio_anterior:
+            if int(envio_anterior[0] or 0) == 0:
+                return resposta("Sua prova ainda aguarda correcao do instrutor.", 409)
+            if int(envio_anterior[0] or 0) == 1:
+                return resposta("Esta prova ja foi aprovada.", 409)
+            pode_tentar_em = envio_anterior[1] + timedelta(days=1) if envio_anterior[1] else datetime.now() + timedelta(days=1)
+            if datetime.now() < pode_tentar_em:
+                return resposta("Voce podera refazer a prova apos 1 dia da reprovacao.", 429, pode_tentar_em=pode_tentar_em.isoformat())
+
+        cursor.execute("SELECT ID_QUESTAO, TIPO, ALTERNATIVAS FROM QUESTOES_PROVA WHERE ID_PROVA = ?", (prova[0],))
+        questoes_da_prova = cursor.fetchall()
+        chaves_questoes = {str(row[0]) for row in questoes_da_prova}
+        if set(respostas) != chaves_questoes or any(not str(valor).strip() for valor in respostas.values()):
+            return resposta("Responda todas as questoes antes de enviar.", 400)
+        for id_questao, tipo_questao, alternativas_salvas in questoes_da_prova:
+            if tipo_questao != "objetiva":
+                continue
+            try:
+                alternativas = json.loads(de_blob_texto(alternativas_salvas) or "[]")
+            except (TypeError, ValueError):
+                alternativas = [item.strip() for item in de_blob_texto(alternativas_salvas).splitlines() if item.strip()]
+            if str(respostas.get(str(id_questao))) not in [str(opcao) for opcao in alternativas]:
+                return resposta("Selecione uma alternativa valida para cada questao objetiva.", 400)
 
         cursor.execute(
             """
@@ -1513,7 +1597,7 @@ def prova_aluno(id_curso):
                 proximo_id(cursor, "RESPOSTAS_PROVA", "ID_RESPOSTA"),
                 prova[0],
                 id_aluno,
-                para_blob_texto(str(respostas)),
+                para_blob_texto(json.dumps(respostas, ensure_ascii=False)),
             ),
         )
         con.commit()
@@ -1526,6 +1610,7 @@ def prova_aluno(id_curso):
         con.close()
 
 
+# Sprint item 20: entrega ao instrutor as respostas dos alunos com as perguntas correspondentes para correção manual.
 @app.route("/professor/provas/respostas", methods=["GET"])
 @jwt_required()
 def respostas_prova_professor():
@@ -1541,8 +1626,8 @@ def respostas_prova_professor():
         cursor.execute(
             """
             SELECT FIRST 200
-                R.ID_RESPOSTA, P.ID_PROVA, P.TITULO, C.TITULO, U.NOME, U.EMAIL,
-                R.RESPOSTAS, R.STATUS, R.FEEDBACK, R.CRIADO_EM
+                R.ID_RESPOSTA, P.ID_PROVA, P.ID_CURSO, P.TITULO, C.TITULO, U.NOME, U.EMAIL,
+                R.RESPOSTAS, R.STATUS, R.FEEDBACK, R.CRIADO_EM, R.ID_USUARIO
             FROM RESPOSTAS_PROVA R
             JOIN PROVAS_CURSO P ON P.ID_PROVA = R.ID_PROVA
             JOIN CURSOS C ON C.ID_CURSO = P.ID_CURSO
@@ -1553,20 +1638,34 @@ def respostas_prova_professor():
             """,
             (get_jwt_identity(),),
         )
+        envios = cursor.fetchall()
+        questoes_por_prova = {}
+        for envio in envios:
+            if envio[1] in questoes_por_prova:
+                continue
+            cursor.execute("SELECT ID_QUESTAO, ENUNCIADO, TIPO FROM QUESTOES_PROVA WHERE ID_PROVA = ? ORDER BY ID_QUESTAO", (envio[1],))
+            questoes_por_prova[envio[1]] = [
+                {"id": q[0], "enunciado": de_blob_texto(q[1]), "tipo": q[2]}
+                for q in cursor.fetchall()
+            ]
+
         return jsonify([
             {
                 "id": row[0],
                 "id_prova": row[1],
-                "prova": row[2],
-                "curso": row[3],
-                "aluno": row[4],
-                "email": row[5],
-                "respostas": de_blob_texto(row[6]),
-                "status": row[7],
-                "feedback": de_blob_texto(row[8]),
-                "criado_em": row[9].isoformat() if row[9] else None,
+                "id_curso": row[2],
+                "prova": row[3],
+                "curso": row[4],
+                "aluno": row[5],
+                "email": row[6],
+                "respostas": _decodificar_respostas_prova(row[7]),
+                "status": row[8],
+                "feedback": de_blob_texto(row[9]),
+                "criado_em": row[10].isoformat() if row[10] else None,
+                "id_aluno": row[11],
+                "questoes": questoes_por_prova.get(row[1], []),
             }
-            for row in cursor.fetchall()
+            for row in envios
         ])
     except Exception as erro:
         return resposta(f"Erro ao listar respostas: {erro}", 500)
@@ -1575,6 +1674,7 @@ def respostas_prova_professor():
         con.close()
 
 
+# Sprint item 20: salva aprovação/reprovação e dispara o aviso de e-mail ao aluno reprovado.
 @app.route("/professor/provas/respostas/<int:id_resposta>", methods=["PATCH"])
 @jwt_required()
 def corrigir_resposta_prova(id_resposta):
@@ -1584,6 +1684,8 @@ def corrigir_resposta_prova(id_resposta):
 
     garantir_sprint_schema()
     dados = request.get_json() or {}
+    if not isinstance(dados.get("aprovado"), bool):
+        return resposta("Informe se a prova foi aprovada ou reprovada.", 400)
     aprovado = bool(dados.get("aprovado"))
     feedback = (dados.get("feedback") or "").strip()
     con = get_db()
@@ -1592,16 +1694,21 @@ def corrigir_resposta_prova(id_resposta):
     try:
         cursor.execute(
             """
-            SELECT 1
+            SELECT U.EMAIL, C.TITULO, R.STATUS
             FROM RESPOSTAS_PROVA R
             JOIN PROVAS_CURSO P ON P.ID_PROVA = R.ID_PROVA
+            JOIN CURSOS C ON C.ID_CURSO = P.ID_CURSO
+            JOIN USUARIOS U ON U.ID_USUARIO = R.ID_USUARIO
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = P.ID_CURSO
             WHERE R.ID_RESPOSTA = ? AND PC.ID_USUARIO = ?
             """,
             (id_resposta, get_jwt_identity()),
         )
-        if not cursor.fetchone():
+        aluno_e_curso = cursor.fetchone()
+        if not aluno_e_curso:
             return resposta("Resposta nao encontrada para este instrutor.", 404)
+        if int(aluno_e_curso[2] or 0) != 0:
+            return resposta("Esta resposta ja foi corrigida.", 409)
 
         cursor.execute(
             """
@@ -1612,6 +1719,9 @@ def corrigir_resposta_prova(id_resposta):
             (1 if aprovado else 2, para_blob_texto(feedback), id_resposta),
         )
         con.commit()
+        if not aprovado and aluno_e_curso[0]:
+            from email_cursos import notificar_reprovacao_prova
+            notificar_reprovacao_prova(aluno_e_curso[0], aluno_e_curso[1], feedback)
         return resposta("Correcao registrada.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -1666,6 +1776,7 @@ def certificado_aluno(id_curso):
         if not total_aulas or aulas_concluidas != total_aulas:
             return resposta("Certificado liberado somente apos concluir todas as aulas do curso.", 403)
 
+        # Sprint item 20: exige uma submissão aprovada na prova final antes de emitir ou baixar o PDF.
         cursor.execute(
             """
             SELECT FIRST 1 P.ID_PROVA, R.STATUS, R.FEEDBACK

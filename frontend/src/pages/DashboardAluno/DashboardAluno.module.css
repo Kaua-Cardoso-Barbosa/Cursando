@@ -532,6 +532,27 @@
     color: #111111;
 }
 
+/* Sprint item 20: formata as respostas dissertativas e a mensagem de prazo após reprovação. */
+.campoBusca textarea,
+.campoBusca select {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    padding: 8px 0;
+    background: transparent;
+    color: #111111;
+    font: inherit;
+}
+
+.avisoReprovacao {
+    border-left: 4px solid #bd7b19;
+    border-radius: 5px;
+    background: #fff7e8;
+    color: #61420c;
+    padding: 12px 14px;
+}
+
 .campoBuscaButton {
     border: none;
     background: #06a663;

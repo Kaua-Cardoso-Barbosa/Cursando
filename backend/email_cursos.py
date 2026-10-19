@@ -32,6 +32,55 @@ def notificar_alunos_novo_curso(destinatarios, titulo_curso):
     thread.start()
 
 
+# Sprint item 20: comunica ao aluno a reprovação e informa quando poderá refazer a avaliação.
+def notificar_reprovacao_prova(destinatario, titulo_curso, feedback=""):
+    if not destinatario:
+        return
+    config = {
+        "SMTP_HOST": current_app.config.get("SMTP_HOST", "smtp.gmail.com"),
+        "SMTP_PORT": current_app.config.get("SMTP_PORT", 465),
+        "SMTP_EMAIL": current_app.config.get("SMTP_EMAIL", ""),
+        "SMTP_PASSWORD": current_app.config.get("SMTP_PASSWORD", ""),
+        "SMTP_USE_SSL": current_app.config.get("SMTP_USE_SSL", True),
+    }
+    if not config["SMTP_PASSWORD"]:
+        current_app.logger.warning("Aviso de reprovacao nao enviado: SMTP_PASSWORD nao configurada.")
+        return
+    thread = threading.Thread(
+        target=_enviar_aviso_reprovacao,
+        args=(destinatario, titulo_curso, feedback, config),
+        daemon=True,
+    )
+    thread.start()
+
+
+def _enviar_aviso_reprovacao(destinatario, titulo_curso, feedback, config):
+    try:
+        if config["SMTP_USE_SSL"]:
+            servidor = smtplib.SMTP_SSL(config["SMTP_HOST"], config["SMTP_PORT"], timeout=20)
+        else:
+            servidor = smtplib.SMTP(config["SMTP_HOST"], config["SMTP_PORT"], timeout=20)
+            servidor.starttls()
+        try:
+            servidor.login(config["SMTP_EMAIL"], config["SMTP_PASSWORD"])
+            mensagem = MIMEMultipart("alternative")
+            mensagem["Subject"] = f"Resultado da prova: {titulo_curso}"
+            mensagem["From"] = formataddr(("Cursando", config["SMTP_EMAIL"]))
+            mensagem["To"] = destinatario
+            motivo = f"\nFeedback do instrutor: {feedback}" if feedback else ""
+            mensagem.attach(MIMEText(
+                f"Sua prova do curso {titulo_curso} foi corrigida e voce foi reprovado. "
+                f"Voce podera tentar novamente depois de 1 dia da correcao.{motivo}",
+                "plain",
+                "utf-8",
+            ))
+            servidor.send_message(mensagem)
+        finally:
+            servidor.quit()
+    except Exception:
+        print("Erro ao enviar aviso de reprovacao; confira as configuracoes SMTP.")
+
+
 def _enviar_avisos(destinatarios, titulo_curso, config):
     try:
         if config["SMTP_USE_SSL"]:

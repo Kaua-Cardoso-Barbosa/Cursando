@@ -589,6 +589,7 @@ export default function DashboardAluno({
         }
     }, [api, carregarDashboard, lerResposta]);
 
+    // Sprint item 20: baixa o certificado somente após o servidor confirmar a aprovação na prova.
     async function baixarCertificado(curso) {
         setBaixandoCertificado(true);
         try {
@@ -615,6 +616,7 @@ export default function DashboardAluno({
         }
     }
 
+    // Sprint item 20: envia a avaliação final para correção manual pelo instrutor.
     async function enviarProvaAluno() {
         const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/prova`, {
             method: "POST",
@@ -869,13 +871,15 @@ export default function DashboardAluno({
                                         <section className={css.conteudoCurso}>
                                             <h2>Prova final</h2>
                                             {provaAluno.envio && <p>Status: {provaAluno.envio.status === 1 ? "Aprovado" : provaAluno.envio.status === 2 ? "Reprovado" : "Aguardando correção"}</p>}
-                                            {provaAluno.questoes?.map((questao) => (
+                                            {/* Sprint item 20: informa reprovação e feedback e aplica o prazo antes de permitir nova tentativa. */}
+                                            {provaAluno.envio?.status === 2 && <p className={css.avisoReprovacao}>Você foi reprovado. {provaAluno.envio.feedback ? `Feedback: ${provaAluno.envio.feedback}. ` : ""}{provaAluno.envio.pode_tentar_em ? `Tente novamente após ${new Date(provaAluno.envio.pode_tentar_em).toLocaleString("pt-BR")}.` : "Tente novamente após 1 dia da correção."}</p>}
+                                            {(!provaAluno.envio || (provaAluno.envio.status === 2 && (!provaAluno.envio.pode_tentar_em || Date.now() >= new Date(provaAluno.envio.pode_tentar_em).getTime()))) && provaAluno.questoes?.map((questao) => (
                                                 <label key={questao.id} className={css.campoBusca}>
                                                     {questao.enunciado}
-                                                    <input value={respostasProva[questao.id] || ""} onChange={(e) => setRespostasProva({ ...respostasProva, [questao.id]: e.target.value })} />
+                                                    {questao.tipo === "objetiva" ? <select value={respostasProva[questao.id] || ""} onChange={(e) => setRespostasProva({ ...respostasProva, [questao.id]: e.target.value })}><option value="">Selecione uma alternativa</option>{(questao.alternativas || []).map((opcao) => <option key={opcao} value={opcao}>{opcao}</option>)}</select> : <textarea value={respostasProva[questao.id] || ""} onChange={(e) => setRespostasProva({ ...respostasProva, [questao.id]: e.target.value })} />}
                                                 </label>
                                             ))}
-                                            <button className={css.botaoInscrever} onClick={enviarProvaAluno}>Enviar prova</button>
+                                            {(!provaAluno.envio || (provaAluno.envio.status === 2 && (!provaAluno.envio.pode_tentar_em || Date.now() >= new Date(provaAluno.envio.pode_tentar_em).getTime()))) && <button className={css.botaoInscrever} onClick={enviarProvaAluno}>Enviar prova</button>}
                                             {provaAluno.envio?.status === 1 && (
                                                 <>
                                                     <button className={css.botaoCertificado} type="button" onClick={() => baixarCertificado(cursoDetalhe)} disabled={baixandoCertificado}>
