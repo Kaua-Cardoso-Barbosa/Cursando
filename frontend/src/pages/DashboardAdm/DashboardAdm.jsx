@@ -24,6 +24,8 @@ export default function DashboardAdm({
     const exibindoPerfil = location.pathname.endsWith("/perfil");
     const exibindoFinanceiro = location.pathname.endsWith("/Financeiro");
     const exibindoLogs = location.pathname.endsWith("/Logs");
+    // Sprint item 22: identifica a tela administrativa de relatórios e seus filtros selecionados.
+    const exibindoRelatorios = location.pathname.endsWith("/Relatorios");
     const [dashboard, setDashboard] = useState(null);
     const [financeiro, setFinanceiro] = useState(null);
     const [percentualInstrutores, setPercentualInstrutores] = useState("");
@@ -34,6 +36,11 @@ export default function DashboardAdm({
     const [logsGravacao, setLogsGravacao] = useState([]);
     const [abaLogs, setAbaLogs] = useState("gravacao");
     const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "", acao: "", inicio: "", fim: "" });
+    const [relatorio, setRelatorio] = useState(null);
+    const [cursosRelatorio, setCursosRelatorio] = useState([]);
+    const [instrutoresRelatorio, setInstrutoresRelatorio] = useState([]);
+    const [filtrosRelatorio, setFiltrosRelatorio] = useState({ inicio: "", fim: "", id_instrutor: "", id_curso: "" });
+    const [carregandoRelatorio, setCarregandoRelatorio] = useState(false);
 
     function detalhesLog(log) {
         try {
@@ -54,7 +61,7 @@ export default function DashboardAdm({
 
     // Busca as métricas agregadas no endpoint administrativo ao abrir o dashboard.
     useEffect(() => {
-        if (exibindoPerfil || exibindoFinanceiro || exibindoLogs) {
+        if (exibindoPerfil || exibindoFinanceiro || exibindoLogs || exibindoRelatorios) {
             return;
         }
 
@@ -86,7 +93,46 @@ export default function DashboardAdm({
         }
 
         carregarDashboard();
-    }, [api, exibindoFinanceiro, exibindoLogs, exibindoPerfil, setMensagem]);
+    }, [api, exibindoFinanceiro, exibindoLogs, exibindoPerfil, exibindoRelatorios, setMensagem]);
+
+    // Sprint item 22: carrega as opções administrativas e gera relatório geral filtrável por período, instrutor e curso.
+    useEffect(() => {
+        if (!exibindoRelatorios) return;
+        let ativo = true;
+        async function carregarOpcoes() {
+            try {
+                const [respostaUsuarios, respostaRelatorio] = await Promise.all([
+                    fetch(`${api}/usuarios`, { credentials: "include" }),
+                    fetch(`${api}/relatorios/professor`, { credentials: "include" })
+                ]);
+                const [usuarios, dadosRelatorio] = await Promise.all([
+                    respostaUsuarios.json().catch(() => []),
+                    respostaRelatorio.json().catch(() => ({}))
+                ]);
+                if (!respostaUsuarios.ok) throw new Error(usuarios?.mensagem?.descricao || "Não foi possível carregar instrutores.");
+                if (!respostaRelatorio.ok) throw new Error(dadosRelatorio?.mensagem?.descricao || "Não foi possível carregar os cursos.");
+                if (!ativo) return;
+                setInstrutoresRelatorio((Array.isArray(usuarios) ? usuarios : []).filter((item) => Number(item.tipo_usuario ?? item.tipo) === 1));
+                setCursosRelatorio(dadosRelatorio.cursos || []);
+                setRelatorio(dadosRelatorio);
+            } catch (erro) { setMensagem?.({ tipo: "erro", descricao: erro.message }); }
+        }
+        carregarOpcoes();
+        return () => { ativo = false; };
+    }, [api, exibindoRelatorios, setMensagem]);
+
+    async function carregarRelatorio() {
+        setCarregandoRelatorio(true);
+        try {
+            const params = new URLSearchParams();
+            Object.entries(filtrosRelatorio).forEach(([chave, valor]) => { if (valor) params.set(chave, valor); });
+            const resposta = await fetch(`${api}/relatorios/professor?${params.toString()}`, { credentials: "include" });
+            const dados = await resposta.json().catch(() => ({}));
+            if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Não foi possível gerar o relatório.");
+            setRelatorio(dados);
+        } catch (erro) { setMensagem?.({ tipo: "erro", descricao: erro.message }); }
+        finally { setCarregandoRelatorio(false); }
+    }
 
     useEffect(() => {
         if (!exibindoFinanceiro) return;
@@ -250,7 +296,7 @@ export default function DashboardAdm({
 
     return (
         <div className={css.painelAdm}>
-            <MenuLateralAdm itemAtivo={exibindoPerfil ? "perfil" : exibindoFinanceiro ? "financeiro" : exibindoLogs ? "logs" : "inicio"} />
+            <MenuLateralAdm itemAtivo={exibindoPerfil ? "perfil" : exibindoFinanceiro ? "financeiro" : exibindoLogs ? "logs" : exibindoRelatorios ? "relatorios" : "inicio"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
@@ -270,15 +316,17 @@ export default function DashboardAdm({
                     <section className={css.cabecalhoPagina}>
                         <div>
                             <span className={css.etiquetaPagina}>
-                                {exibindoPerfil ? "CONTA" : exibindoFinanceiro ? "FINANCEIRO" : exibindoLogs ? "AUDITORIA" : "ADMINISTRAÇÃO"}
+                                {exibindoPerfil ? "CONTA" : exibindoFinanceiro ? "FINANCEIRO" : exibindoLogs ? "AUDITORIA" : exibindoRelatorios ? "RELATÓRIOS" : "ADMINISTRAÇÃO"}
                             </span>
-                            <h2>{exibindoPerfil ? "Perfil do administrador" : exibindoFinanceiro ? "Visão financeira" : exibindoLogs ? "Atividade do sistema" : "Visão geral"}</h2>
+                            <h2>{exibindoPerfil ? "Perfil do administrador" : exibindoFinanceiro ? "Visão financeira" : exibindoLogs ? "Atividade do sistema" : exibindoRelatorios ? "Relatórios da plataforma" : "Visão geral"}</h2>
                             <p>{exibindoPerfil
                                 ? "Atualize seus dados e mantenha as informações da conta em dia."
                                 : exibindoFinanceiro
                                     ? "Acompanhe arrecadação, repasses, custos e saldo da plataforma."
                                     : exibindoLogs
                                         ? "Consulte eventos e filtre registros para acompanhar as operações da plataforma."
+                                        : exibindoRelatorios
+                                            ? "Analise matrículas, conclusões e atividade por período, instrutor e curso."
                                         : "Acompanhe os principais indicadores de cursos e usuários da plataforma."}</p>
                         </div>
                     </section>
@@ -391,6 +439,27 @@ export default function DashboardAdm({
                                     </table>
                                 </div>
                             </section>
+                        </section>
+                    ) : exibindoRelatorios ? (
+                        <section className={css.listaTransacoes}>
+                            {/* Sprint item 22: aplica os filtros de período, instrutor e curso ao relatório geral da plataforma. */}
+                            <h2>Filtros do relatório</h2>
+                            <p>O período considera a data de criação dos cursos.</p>
+                            <form className={css.formFinanceiro} onSubmit={(evento) => { evento.preventDefault(); carregarRelatorio(); }}>
+                                <label>Início do período<input type="date" value={filtrosRelatorio.inicio} onChange={(evento) => setFiltrosRelatorio({ ...filtrosRelatorio, inicio: evento.target.value })} /></label>
+                                <label>Fim do período<input type="date" value={filtrosRelatorio.fim} onChange={(evento) => setFiltrosRelatorio({ ...filtrosRelatorio, fim: evento.target.value })} /></label>
+                                <label>Instrutor<select value={filtrosRelatorio.id_instrutor} onChange={(evento) => setFiltrosRelatorio({ ...filtrosRelatorio, id_instrutor: evento.target.value })}><option value="">Todos</option>{instrutoresRelatorio.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select></label>
+                                <label>Curso<select value={filtrosRelatorio.id_curso} onChange={(evento) => setFiltrosRelatorio({ ...filtrosRelatorio, id_curso: evento.target.value })}><option value="">Todos</option>{cursosRelatorio.map((item) => <option key={item.id_curso} value={item.id_curso}>{item.curso} — {item.instrutor}</option>)}</select></label>
+                                <button className={css.botaoFinanceiro} type="submit" disabled={carregandoRelatorio}>{carregandoRelatorio ? "Gerando..." : "Aplicar filtros"}</button>
+                            </form>
+                            <div className={css.secaoMetricas}>
+                                {[["Matrículas", relatorio?.resumo?.alunos], ["Cursos", relatorio?.resumo?.cursos], ["Aulas concluídas", relatorio?.resumo?.aulas_assistidas], ["Cursos concluídos", relatorio?.resumo?.conclusoes], ["Módulos concluídos", relatorio?.resumo?.modulos], ["Horas assistidas", `${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`]].map(([titulo, valor]) => <div className={css.cardMetrica} key={titulo}><h2>{titulo}</h2><div className={css.metricaNumero}>{valor ?? 0}</div></div>)}
+                            </div>
+                            <h2>Detalhamento por curso</h2>
+                            <div className={css.tabelaTransacoes}><table><thead><tr><th>Curso</th><th>Instrutor</th><th>Matrículas</th><th>Aulas concluídas</th><th>Conclusões</th><th>Horas</th><th>Avaliação</th></tr></thead><tbody>
+                                {(relatorio?.cursos || []).map((curso) => <tr key={curso.id_curso}><td>{curso.curso}</td><td>{curso.instrutor}</td><td>{curso.alunos}</td><td>{curso.aulas_assistidas}</td><td>{curso.conclusoes}</td><td>{Number(curso.horas_assistidas || 0).toFixed(2).replace(".", ",")}</td><td>{Number(curso.avaliacao_media || 0).toFixed(2)}</td></tr>)}
+                                {!relatorio?.cursos?.length && <tr><td colSpan="7">Nenhum resultado para os filtros selecionados.</td></tr>}
+                            </tbody></table></div>
                         </section>
                     ) : exibindoLogs ? (
                         <section className={css.listaLogs}>

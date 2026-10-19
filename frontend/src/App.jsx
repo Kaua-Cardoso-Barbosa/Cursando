@@ -197,6 +197,13 @@ function AppConteudo() {
                     </RotaRestrita>
                 }/>
 
+                {/* Sprint item 22: protege a consulta administrativa de relatórios por período, instrutor e curso. */}
+                <Route path="/DashboardAdm/Relatorios" element={
+                    <RotaRestrita api={api} tipoPermitido={0}>
+                        <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
+                    </RotaRestrita>
+                }/>
+
                 <Route path="/DashboardAdm/Logs" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
                         <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>

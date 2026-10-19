@@ -2730,6 +2730,7 @@ def _filtros_periodo(prefixo=""):
     return filtros, params
 
 
+# Sprint item 22: fornece relatórios por período de criação do curso, instrutor e curso; instrutores ficam limitados aos próprios cursos.
 @app.route("/relatorios/professor", methods=["GET"])
 @jwt_required()
 def relatorio_professor():

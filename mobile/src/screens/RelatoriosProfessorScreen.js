@@ -8,6 +8,7 @@ function numero(valor) {
   return Number(valor || 0);
 }
 
+// Sprint item 22: filtra os relatórios do instrutor autenticado por período de criação dos cursos e curso escolhido.
 export default function RelatoriosProfessorScreen({ token, cursos = [], carregando }) {
   const { mostrarAlerta } = useFeedback();
   const [relatorio, setRelatorio] = useState(null);
@@ -46,7 +47,7 @@ export default function RelatoriosProfessorScreen({ token, cursos = [], carregan
     >
       <View style={styles.header}>
         <Text style={globalStyles.title}>Relatorios</Text>
-        <Text style={globalStyles.eyebrow}>Matriculas, conclusoes e atividade</Text>
+        <Text style={globalStyles.eyebrow}>Matrículas, conclusões e atividade por período e curso</Text>
         <View style={globalStyles.divider} />
       </View>
 

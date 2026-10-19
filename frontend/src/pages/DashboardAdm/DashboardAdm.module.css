@@ -180,7 +180,8 @@
     margin-top: 14px;
 }
 
-.formFinanceiro input {
+.formFinanceiro input,
+.formFinanceiro select {
     min-height: 40px;
     border: 1.5px solid #139a58;
     border-radius: 8px;
@@ -558,6 +559,7 @@
 
 .campoFinanceiro input,
 .formFinanceiro input,
+.formFinanceiro select,
 .filtrosLogs input,
 .filtrosLogs select {
     border: 1px solid #cbd9d0;
@@ -566,6 +568,7 @@
 
 .campoFinanceiro input:focus,
 .formFinanceiro input:focus,
+.formFinanceiro select:focus,
 .filtrosLogs input:focus,
 .filtrosLogs select:focus {
     outline: 0;

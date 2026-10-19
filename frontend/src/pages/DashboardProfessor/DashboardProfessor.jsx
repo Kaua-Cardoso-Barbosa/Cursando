@@ -68,6 +68,7 @@ export default function DashboardProfessor({
     const [alunos, setAlunos] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
     const [relatorio, setRelatorio] = useState(null);
+    // Sprint item 22: aplica período e curso ao relatório restrito aos cursos do instrutor autenticado.
     const [filtrosRelatorio, setFiltrosRelatorio] = useState({ inicio: "", fim: "", id_curso: "" });
     const [valorSaque, setValorSaque] = useState("");
     const [cursoSelecionado, setCursoSelecionado] = useState(null);
@@ -1124,7 +1125,7 @@ export default function DashboardProfessor({
                                 <div className={css.cabecalhoBloco}>
                                     <div>
                                         <h3>Filtrar relatório</h3>
-                                        <p>As datas consideram quando os cursos foram criados.</p>
+                                        <p>O período considera a data de criação do curso.</p>
                                     </div>
                                 </div>
                                 <form className={css.filtrosRelatorio} onSubmit={(evento) => { evento.preventDefault(); carregarRelatorio(); }}>
