@@ -135,6 +135,7 @@ export async function apiRequest(
     timeoutMs = REQUEST_TIMEOUT_MS,
     retryOnAbort = true
 ) {
+  // Sprint item 17: centraliza a conexão autenticada do aplicativo com a API e reaproveita o primeiro endereço que responder.
   // JSON e token Bearer sao enviados nos formatos esperados pela API.
   const headers = {
     Accept: "application/json",
