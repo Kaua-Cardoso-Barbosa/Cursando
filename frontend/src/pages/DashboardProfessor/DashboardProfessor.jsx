@@ -23,6 +23,7 @@ import EstadoVazioProfessor from "../../components/DashboardProfessor/EstadoVazi
 import RodapeProfessor from "../../components/DashboardProfessor/RodapeProfessor.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import ChatCurso from "../../components/ChatCurso/ChatCurso.jsx";
+import GoogleChart from "../../components/GoogleChart/GoogleChart.jsx";
 import css from "./DashboardProfessor.module.css";
 
 const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
@@ -614,6 +615,22 @@ export default function DashboardProfessor({
     }
 
     const metricas = dashboard?.metricas || {};
+    // Sprint item 8: transforma os dados de engajamento da API em séries para o gráfico único do instrutor.
+    const dadosGraficoInstrutor = useMemo(() => [
+        ["Indicador", "Quantidade"],
+        ["Alunos", Number(metricas.total_alunos || 0)],
+        ["Cursos concluídos", Number(metricas.cursos_concluidos || 0)],
+        ["Módulos concluídos", Number(metricas.modulos_concluidos || 0)]
+    ], [metricas.total_alunos, metricas.cursos_concluidos, metricas.modulos_concluidos]);
+    const opcoesGraficoInstrutor = useMemo(() => ({
+        legend: { position: "none" },
+        colors: ["#06a663"],
+        chartArea: { left: 55, top: 12, width: "86%", height: "76%" },
+        height: 300,
+        vAxis: { minValue: 0, format: "0", textStyle: { color: "#4c5b53" } },
+        hAxis: { textStyle: { color: "#4c5b53" } },
+        backgroundColor: "transparent"
+    }), []);
     const recentes = dashboard?.recentes || [];
     const cursosRelatorio = relatorio?.cursos || [];
     const moduloSelecionado = modulos.find((modulo) => Number(modulo.id) === Number(idModuloSelecionado));
@@ -664,6 +681,9 @@ export default function DashboardProfessor({
                                     <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(metricas.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} icone={<FaClock />} />
                                 </div>
                             </section>
+
+                            {/* Sprint item 8: exibe o gráfico de alunos e conclusões para resumir o engajamento dos cursos do instrutor. */}
+                            <GoogleChart titulo="Engajamento dos alunos" data={dadosGraficoInstrutor} options={opcoesGraficoInstrutor} />
 
                             <section className={css.secaoPainel}>
                                 <div className={css.cabecalhoBloco}>

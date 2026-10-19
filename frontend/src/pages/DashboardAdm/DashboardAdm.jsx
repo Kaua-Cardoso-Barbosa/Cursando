@@ -12,6 +12,7 @@ import {
 import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm.jsx";
 import css from "./DashboardAdm.module.css";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
+import GoogleChart from "../../components/GoogleChart/GoogleChart.jsx";
 
 export default function DashboardAdm({
                                          api,
@@ -221,6 +222,24 @@ export default function DashboardAdm({
         ];
     }, [dashboard]);
 
+    // Sprint item 8: prepara os indicadores administrativos para o gráfico único de resumo da plataforma.
+    const dadosGraficoAdmin = useMemo(() => [
+        ["Indicador", "Quantidade"],
+        ["Professores", Number(dashboard?.total_professores || 0)],
+        ["Alunos", Number(dashboard?.total_alunos || 0)],
+        ["Aulas publicadas", Number(dashboard?.aulas_publicadas || 0)],
+        ["Cursos", Number(dashboard?.cursos || 0)]
+    ], [dashboard]);
+    const opcoesGraficoAdmin = useMemo(() => ({
+        legend: { position: "none" },
+        colors: ["#139a58"],
+        chartArea: { left: 55, top: 12, width: "86%", height: "76%" },
+        height: 300,
+        vAxis: { minValue: 0, format: "0", textStyle: { color: "#4c5b53" } },
+        hAxis: { textStyle: { color: "#4c5b53" } },
+        backgroundColor: "transparent"
+    }), []);
+
     return (
         <div className={css.painelAdm}>
             <MenuLateralAdm itemAtivo={exibindoPerfil ? "perfil" : exibindoFinanceiro ? "financeiro" : exibindoLogs ? "logs" : "inicio"} />
@@ -403,18 +422,22 @@ export default function DashboardAdm({
                             })}
                         </section>
                     ) : (
-                        <section className={css.secaoMetricas}>
-                            {metricas.map((metrica) => (
-                                <div key={metrica.id} className={css.cardMetrica}>
-                                    <div className={css.metricaTopo}>
-                                        <h2>{metrica.titulo}</h2>
-                                        <div className={css.iconeBadge}>{metrica.icone}</div>
+                        <>
+                            {/* Sprint item 8: apresenta um gráfico único com os totais principais disponíveis para o administrador. */}
+                            <GoogleChart titulo="Indicadores da plataforma" data={dadosGraficoAdmin} options={opcoesGraficoAdmin} />
+                            <section className={css.secaoMetricas}>
+                                {metricas.map((metrica) => (
+                                    <div key={metrica.id} className={css.cardMetrica}>
+                                        <div className={css.metricaTopo}>
+                                            <h2>{metrica.titulo}</h2>
+                                            <div className={css.iconeBadge}>{metrica.icone}</div>
+                                        </div>
+                                        <span className={css.metricaVariacao}>{metrica.textoMes}</span>
+                                        <div className={css.metricaNumero}>{metrica.quantidade}</div>
                                     </div>
-                                    <span className={css.metricaVariacao}>{metrica.textoMes}</span>
-                                    <div className={css.metricaNumero}>{metrica.quantidade}</div>
-                                </div>
-                            ))}
-                        </section>
+                                ))}
+                            </section>
+                        </>
                     )}
                 </main>
 

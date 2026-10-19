@@ -1,0 +1,39 @@
+/* Sprint item 8: mantém cada gráfico legível, responsivo e alinhado ao visual dos painéis. */
+.graficoGoogle {
+    width: 100%;
+    min-width: 0;
+    padding: 22px 24px;
+    border: 1px solid #dfe9e3;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
+    margin-bottom: 24px;
+}
+
+.graficoGoogle h3 {
+    margin: 0 0 12px;
+    color: #1a1a1a;
+    font-size: 1.1rem;
+}
+
+.graficoGoogle p {
+    min-height: 280px;
+    display: grid;
+    place-items: center;
+    color: #6a7770;
+}
+
+.graficoGoogleCanvas {
+    width: 100%;
+    min-height: 300px;
+}
+
+@media (max-width: 560px) {
+    .graficoGoogle {
+        padding: 18px 12px;
+    }
+
+    .graficoGoogleCanvas {
+        min-height: 260px;
+    }
+}
