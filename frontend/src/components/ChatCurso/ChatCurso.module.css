@@ -50,6 +50,39 @@
     font-size: 1.6rem;
 }
 
+/* Sprint item 19: exibe a foto e a identidade de cada participante ao lado das conversas e mensagens. */
+.avatar img,
+.identidadeMensagem img,
+.fotoCabecalho {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.identidadeConversa,
+.identidadeMensagem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.identidadeMensagem {
+    margin-bottom: 4px;
+}
+
+.identidadeMensagem img,
+.identidadeMensagem svg {
+    width: 24px;
+    height: 24px;
+}
+
+.fotoCabecalhoFallback {
+    width: 38px;
+    height: 38px;
+    color: #087044;
+}
+
 .resumoConversa {
     display: grid;
     gap: 3px;

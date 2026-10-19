@@ -13,6 +13,13 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
     const textoRef = useRef(null);
     const enviandoRef = useRef(false);
 
+    // Sprint item 19: resolve a foto de perfil da conversa usando a mesma origem da API.
+    function urlImagem(caminho) {
+        if (!caminho) return "";
+        if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) return caminho;
+        return `${api}${caminho}`;
+    }
+
     const lerResposta = useCallback(async (resposta) => {
         const dados = await resposta.json().catch(() => ({}));
         if (dados.mensagem && typeof dados.mensagem === "object") setMensagem?.(dados.mensagem);
@@ -30,30 +37,9 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
         if (!silencioso) setCarregando(true);
         try {
             if (perfil === "aluno") {
-                const [cursosResposta, conversasResposta] = await Promise.all([
-                    fetch(`${api}/aluno/cursos`, { credentials: "include" }),
-                    fetch(`${api}/chat/conversas`, { credentials: "include" })
-                ]);
-                const cursos = await lerResposta(cursosResposta);
-                const conversasExistentes = await lerResposta(conversasResposta);
-                const porCurso = new Map();
-
-                for (const curso of Array.isArray(cursos) ? cursos : []) {
-                    porCurso.set(Number(curso.id), {
-                        id_curso: curso.id,
-                        id_aluno: null,
-                        curso: curso.titulo,
-                        nome: "Instrutor",
-                        email: "",
-                        nao_lidas: 0
-                    });
-                }
-
-                for (const conversa of Array.isArray(conversasExistentes) ? conversasExistentes : []) {
-                    porCurso.set(Number(conversa.id_curso), conversa);
-                }
-
-                setConversas([...porCurso.values()]);
+                const resposta = await fetch(`${api}/chat/conversas`, { credentials: "include" });
+                const dados = await lerResposta(resposta);
+                setConversas(Array.isArray(dados) ? dados : []);
                 return;
             }
 
@@ -164,7 +150,11 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
                                 className={`${css.itemConversa} ${ativo ? css.itemAtivo : ""}`}
                                 onClick={() => setSelecionada(conversa)}
                             >
-                                <span className={css.avatar}><FaUserCircle /></span>
+                                <span className={css.avatar}>
+                                    {conversa.imagem_perfil
+                                        ? <img src={urlImagem(conversa.imagem_perfil)} alt="" />
+                                        : <FaUserCircle />}
+                                </span>
                                 <span className={css.resumoConversa}>
                                     <strong>{conversa.nome}</strong>
                                     <small>{conversa.curso}</small>
@@ -177,7 +167,12 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
 
                 <div className={css.painelMensagens}>
                     <div className={css.cabecalhoConversa}>
-                        <strong>{selecionada ? selecionada.nome : "Selecione uma conversa"}</strong>
+                        <div className={css.identidadeConversa}>
+                            {selecionada?.imagem_perfil
+                                ? <img className={css.fotoCabecalho} src={urlImagem(selecionada.imagem_perfil)} alt="" />
+                                : selecionada ? <FaUserCircle className={css.fotoCabecalhoFallback} /> : null}
+                            <strong>{selecionada ? selecionada.nome : "Selecione uma conversa"}</strong>
+                        </div>
                         {selecionada && <small>{selecionada.curso}</small>}
                     </div>
 
@@ -189,7 +184,12 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
                                 key={mensagem.id}
                                 className={`${css.balao} ${mensagem.minha ? css.meuBalao : ""}`}
                             >
-                                <strong>{mensagem.nome}</strong>
+                                <div className={css.identidadeMensagem}>
+                                    {mensagem.imagem_perfil
+                                        ? <img src={urlImagem(mensagem.imagem_perfil)} alt="" />
+                                        : <FaUserCircle />}
+                                    <strong>{mensagem.nome}</strong>
+                                </div>
                                 <p>{mensagem.texto}</p>
                                 <small>{mensagem.criado_em ? new Date(mensagem.criado_em).toLocaleString("pt-BR") : ""}</small>
                             </article>

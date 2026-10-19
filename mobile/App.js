@@ -690,6 +690,7 @@ function AppContent() {
           />
         )}
         {tab === "profile" && <PerfilScreen perfil={perfil} onEdit={() => setEditingProfile(true)} onLogout={sair} />}
+        {/* Sprint item 19: disponibiliza a caixa de mensagens do curso para alunos e instrutores no app. */}
         {tab === "chat" && (
           <ChatScreen
             token={token}

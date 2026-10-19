@@ -4,6 +4,7 @@ import {
   AppState,
   Keyboard,
   KeyboardAvoidingView,
+  Image,
   Pressable,
   Platform,
   RefreshControl,
@@ -13,7 +14,7 @@ import {
   TextInput,
   View
 } from "react-native";
-import { apiRequest } from "../api/client";
+import { apiRequest, resolverUrlMidia } from "../api/client";
 import AppIcon from "../components/AppIcon";
 import { colors, globalStyles } from "../styles";
 
@@ -28,6 +29,13 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
   const enviandoRef = useRef(false);
   const aluno = Number(tipoUsuario) === 2;
 
+  // Sprint item 19: apresenta a foto cadastrada do participante e usa um ícone quando não há foto.
+  function Avatar({ imagem, tamanho = 38 }) {
+    return imagem
+      ? <Image source={{ uri: resolverUrlMidia(imagem) }} style={{ width: tamanho, height: tamanho, borderRadius: tamanho / 2 }} />
+      : <AppIcon name="person-circle-outline" size={tamanho} color={colors.darkGreen} />;
+  }
+
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
@@ -39,28 +47,12 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
     };
   }, []);
 
-  async function carregarConversas() {
-    setLoading(true);
+  async function carregarConversas({ silencioso = false } = {}) {
+    if (!silencioso) setLoading(true);
     try {
       if (aluno) {
         const existentes = await apiRequest("/chat/conversas", {}, token);
-        const porCurso = new Map();
-
-        for (const curso of cursos) {
-          porCurso.set(Number(curso.id), {
-            id_curso: curso.id,
-            id_aluno: null,
-            curso: curso.titulo,
-            nome: "Instrutor",
-            nao_lidas: 0
-          });
-        }
-
-        for (const conversa of Array.isArray(existentes) ? existentes : []) {
-          porCurso.set(Number(conversa.id_curso), conversa);
-        }
-
-        setConversas([...porCurso.values()]);
+        setConversas(Array.isArray(existentes) ? existentes : []);
         return;
       }
 
@@ -69,7 +61,7 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
     } catch {
       setConversas([]);
     } finally {
-      setLoading(false);
+      if (!silencioso) setLoading(false);
     }
   }
 
@@ -107,6 +99,16 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
   useEffect(() => {
     carregarConversas();
   }, [token, tipoUsuario, cursos]);
+
+  // Sprint item 19: atualiza a caixa de entrada e a conversa aberta periodicamente no app.
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      if (AppState.currentState !== "active") return;
+      carregarConversas({ silencioso: true });
+      if (selecionada) carregarMensagens(selecionada).catch(() => setMensagens([]));
+    }, 5000);
+    return () => clearInterval(intervalo);
+  }, [token, tipoUsuario, cursos, selecionada]);
 
   useEffect(() => {
     carregarMensagens(selecionada).catch(() => setMensagens([]));
@@ -162,7 +164,7 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
                 style={[styles.conversation, active && styles.conversationActive]}
                 onPress={() => setSelecionada(conversa)}
               >
-                <AppIcon name="person-circle-outline" size={30} color={colors.darkGreen} />
+                <Avatar imagem={conversa.imagem_perfil} tamanho={38} />
                 <View style={styles.conversationText}>
                   <Text style={styles.name}>{conversa.nome}</Text>
                   <Text style={styles.course}>{conversa.curso}</Text>
@@ -174,11 +176,23 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
         </View>
 
         <View style={[styles.messages, tecladoAberto && styles.keyboardMessages]}>
+          {selecionada ? (
+            <View style={styles.chatIdentity}>
+              <Avatar imagem={selecionada.imagem_perfil} tamanho={32} />
+              <View>
+                <Text style={styles.name}>{selecionada.nome}</Text>
+                <Text style={styles.course}>{selecionada.curso}</Text>
+              </View>
+            </View>
+          ) : null}
           {!selecionada ? <Text style={styles.empty}>Selecione uma conversa.</Text> : null}
           {selecionada && mensagens.length === 0 ? <Text style={styles.empty}>Nenhuma mensagem enviada ainda.</Text> : null}
           {mensagens.map((mensagem) => (
             <View key={mensagem.id} style={[styles.bubble, mensagem.minha && styles.mine]}>
-              <Text style={styles.sender}>{mensagem.nome}</Text>
+              <View style={styles.senderRow}>
+                <Avatar imagem={mensagem.imagem_perfil} tamanho={24} />
+                <Text style={styles.sender}>{mensagem.nome}</Text>
+              </View>
               <Text style={styles.messageText}>{mensagem.texto}</Text>
             </View>
           ))}
@@ -287,6 +301,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 4
   },
+  chatIdentity: { flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  senderRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
   messageText: {
     color: colors.black,
     fontSize: 15,

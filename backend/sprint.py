@@ -323,6 +323,8 @@ def garantir_sprint_schema():
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_USUARIO", "ID_USUARIO INTEGER")
         # Sprint item 6: associa cada videoaula ao modulo do curso.
         _garantir_coluna(cursor, "VIDEOS", "ID_MODULO", "ID_MODULO INTEGER")
+        # Sprint item 19: garante a foto de perfil usada para identificar os participantes do chat.
+        _garantir_coluna(cursor, "USUARIOS", "IMAGEM_PERFIL", "IMAGEM_PERFIL VARCHAR(500)")
         con.commit()
         garantir_log_schema()
         garantir_gatilhos_auditoria({
@@ -965,6 +967,7 @@ def _professor_responsavel(cursor, id_curso):
     return row[0] if row else None
 
 
+# Sprint item 19: lista cursos matriculados para alunos e conversas recebidas para instrutores, com nome e avatar do contato.
 @app.route("/chat/conversas", methods=["GET"])
 @jwt_required()
 def chat_conversas():
@@ -984,13 +987,14 @@ def chat_conversas():
                     C.TITULO,
                     U.NOME,
                     U.EMAIL,
+                    U.IMAGEM_PERFIL,
                     MAX(M.CRIADO_EM),
                     SUM(CASE WHEN M.ID_DESTINATARIO = ? AND M.LIDA = 0 THEN 1 ELSE 0 END)
                 FROM MENSAGENS_CHAT M
                 JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
                 JOIN USUARIOS U ON U.ID_USUARIO = M.ID_ALUNO
                 JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = M.ID_CURSO AND PC.ID_USUARIO = ?
-                GROUP BY M.ID_CURSO, M.ID_ALUNO, C.TITULO, U.NOME, U.EMAIL
+                GROUP BY M.ID_CURSO, M.ID_ALUNO, C.TITULO, U.NOME, U.EMAIL, U.IMAGEM_PERFIL
                 ORDER BY MAX(M.CRIADO_EM) DESC
                 """,
                 (id_usuario, id_usuario),
@@ -1002,8 +1006,9 @@ def chat_conversas():
                     "curso": row[2],
                     "nome": row[3],
                     "email": row[4],
-                    "ultima_mensagem_em": row[5].isoformat() if row[5] else None,
-                    "nao_lidas": int(row[6] or 0),
+                    "imagem_perfil": row[5],
+                    "ultima_mensagem_em": row[6].isoformat() if row[6] else None,
+                    "nao_lidas": int(row[7] or 0),
                 }
                 for row in cursor.fetchall()
             ])
@@ -1012,19 +1017,22 @@ def chat_conversas():
             cursor.execute(
                 """
                 SELECT
-                    M.ID_CURSO,
-                    M.ID_ALUNO,
+                    C.ID_CURSO,
+                    MT.ID_USUARIO,
                     C.TITULO,
                     U.NOME,
                     U.EMAIL,
+                    U.IMAGEM_PERFIL,
                     MAX(M.CRIADO_EM),
                     SUM(CASE WHEN M.ID_DESTINATARIO = ? AND M.LIDA = 0 THEN 1 ELSE 0 END)
-                FROM MENSAGENS_CHAT M
-                JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
-                JOIN USUARIOS U ON U.ID_USUARIO = M.ID_DESTINATARIO
-                WHERE M.ID_ALUNO = ?
-                GROUP BY M.ID_CURSO, M.ID_ALUNO, C.TITULO, U.NOME, U.EMAIL
-                ORDER BY MAX(M.CRIADO_EM) DESC
+                FROM MATRICULAS MT
+                JOIN CURSOS C ON C.ID_CURSO = MT.ID_CURSO AND C.EXCLUIDO = 0
+                JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+                JOIN USUARIOS U ON U.ID_USUARIO = PC.ID_USUARIO
+                LEFT JOIN MENSAGENS_CHAT M ON M.ID_CURSO = C.ID_CURSO AND M.ID_ALUNO = MT.ID_USUARIO
+                WHERE MT.ID_USUARIO = ? AND MT.STATUS_MATRICULA = 1
+                GROUP BY C.ID_CURSO, MT.ID_USUARIO, C.TITULO, U.NOME, U.EMAIL, U.IMAGEM_PERFIL
+                ORDER BY MAX(M.CRIADO_EM) DESC, C.TITULO
                 """,
                 (id_usuario, id_usuario),
             )
@@ -1035,8 +1043,9 @@ def chat_conversas():
                     "curso": row[2],
                     "nome": row[3],
                     "email": row[4],
-                    "ultima_mensagem_em": row[5].isoformat() if row[5] else None,
-                    "nao_lidas": int(row[6] or 0),
+                    "imagem_perfil": row[5],
+                    "ultima_mensagem_em": row[6].isoformat() if row[6] else None,
+                    "nao_lidas": int(row[7] or 0),
                 }
                 for row in cursor.fetchall()
             ])
@@ -1153,6 +1162,7 @@ def taxonomia_curso_professor(id_curso):
         con.close()
 
 
+# Sprint item 19: valida matrícula e autoria, registra mensagens e retorna identidade visual de cada remetente.
 @app.route("/chat/cursos/<int:id_curso>/mensagens", methods=["GET", "POST"])
 @jwt_required()
 def chat_mensagens(id_curso):
@@ -1190,7 +1200,7 @@ def chat_mensagens(id_curso):
             )
             cursor.execute(
                 """
-                SELECT M.ID_MENSAGEM, M.ID_REMETENTE, U.NOME, U.EMAIL, M.TEXTO, M.LIDA, M.CRIADO_EM
+                SELECT M.ID_MENSAGEM, M.ID_REMETENTE, U.NOME, U.EMAIL, U.IMAGEM_PERFIL, M.TEXTO, M.LIDA, M.CRIADO_EM
                 FROM MENSAGENS_CHAT M
                 JOIN USUARIOS U ON U.ID_USUARIO = M.ID_REMETENTE
                 WHERE M.ID_CURSO = ? AND M.ID_ALUNO = ?
@@ -1204,9 +1214,10 @@ def chat_mensagens(id_curso):
                     "id_remetente": row[1],
                     "nome": row[2],
                     "email": row[3],
-                    "texto": de_blob_texto(row[4]),
-                    "lida": row[5] == 1,
-                    "criado_em": row[6].isoformat() if row[6] else None,
+                    "imagem_perfil": row[4],
+                    "texto": de_blob_texto(row[5]),
+                    "lida": row[6] == 1,
+                    "criado_em": row[7].isoformat() if row[7] else None,
                     "minha": int(row[1]) == id_usuario,
                 }
                 for row in cursor.fetchall()
