@@ -28,6 +28,7 @@ export default function DashboardAdm({
     const [financeiro, setFinanceiro] = useState(null);
     const [percentualInstrutores, setPercentualInstrutores] = useState("");
     const [custos, setCustos] = useState([]);
+    const [transacoes, setTransacoes] = useState([]);
     const [novoCusto, setNovoCusto] = useState({ descricao: "", categoria: "", valor: "", data_custo: "" });
     const [logs, setLogs] = useState([]);
     const [logsGravacao, setLogsGravacao] = useState([]);
@@ -100,6 +101,10 @@ export default function DashboardAdm({
                 const respostaCustos = await fetch(`${api}/admin/custos-plataforma`, { credentials: "include" });
                 const dadosCustos = await respostaCustos.json().catch(() => ([]));
                 if (respostaCustos.ok) setCustos(Array.isArray(dadosCustos) ? dadosCustos : []);
+                // Sprint item 13: carrega o livro de entradas, despesas e saques para auditoria financeira do administrador.
+                const respostaTransacoes = await fetch(`${api}/admin/financeiro/transacoes`, { credentials: "include" });
+                const dadosTransacoes = await respostaTransacoes.json().catch(() => ([]));
+                if (respostaTransacoes.ok) setTransacoes(Array.isArray(dadosTransacoes) ? dadosTransacoes : []);
             } catch (erro) {
                 console.error("Erro ao carregar financeiro:", erro);
                 setMensagem?.({ tipo: "erro", descricao: erro.message });
@@ -156,6 +161,9 @@ export default function DashboardAdm({
             const lista = await fetch(`${api}/admin/custos-plataforma`, { credentials: "include" });
             const custosAtualizados = await lista.json().catch(() => ([]));
             if (lista.ok) setCustos(Array.isArray(custosAtualizados) ? custosAtualizados : []);
+            const respostaTransacoes = await fetch(`${api}/admin/financeiro/transacoes`, { credentials: "include" });
+            const dadosTransacoes = await respostaTransacoes.json().catch(() => ([]));
+            if (respostaTransacoes.ok) setTransacoes(Array.isArray(dadosTransacoes) ? dadosTransacoes : []);
         } catch (erro) {
             setMensagem?.({ tipo: "erro", descricao: erro.message });
         }
@@ -281,17 +289,17 @@ export default function DashboardAdm({
                         <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
                             {/* Sprint itens 13, 14, 15 e 16: cards de gestao financeira administrativa. */}
                             {[
-                                ["Total arrecadado", financeiro?.total_arrecadado],
-                                ["Total repassado", financeiro?.total_repassado_estimado],
-                                ["Custos", financeiro?.custos],
-                                ["Saldo em caixa", financeiro?.saldo_caixa]
-                            ].map(([titulo, valor]) => (
+                                ["Assinaturas pagas (total)", financeiro?.total_arrecadado, "Soma das mensalidades confirmadas"],
+                                ["Pool estimado dos instrutores", financeiro?.total_repassado_estimado, "Percentual aplicado sobre mensalidades pagas"],
+                                ["Despesas cadastradas", financeiro?.custos, "Total de despesas registradas"],
+                                ["Saldo histórico estimado", financeiro?.saldo_caixa, "Arrecadação menos pool estimado e despesas"]
+                            ].map(([titulo, valor, detalhe]) => (
                                 <div key={titulo} className={css.cardMetrica}>
                                     <div className={css.metricaTopo}>
                                         <h2>{titulo}</h2>
                                         <div className={css.iconeBadge}><FaFolder /></div>
                                     </div>
-                                    <span className={css.metricaVariacao}>Resumo financeiro</span>
+                                    <span className={css.metricaVariacao}>{detalhe}</span>
                                     <div className={css.metricaNumero}>R$ {Number(valor || 0).toFixed(2).replace(".", ",")}</div>
                                 </div>
                             ))}
@@ -325,7 +333,7 @@ export default function DashboardAdm({
                                 <span className={css.metricaVariacao}>Margem apos repasses e custos</span>
                                 <div className={css.metricaNumero}>{Number(financeiro?.margem_caixa_percentual || 0).toFixed(2).replace(".", ",")}%</div>
                                 <p className={css.textoFinanceiro}>
-                                    {financeiro?.assinaturas_ativas || 0} assinaturas ativas, ticket de R$ {Number(financeiro?.receita_media_assinatura || 0).toFixed(2).replace(".", ",")}.
+                                    {financeiro?.faturas_pagas || 0} mensalidades pagas, ticket base de R$ {Number(financeiro?.receita_media_assinatura || 0).toFixed(2).replace(".", ",")}.
                                 </p>
                             </div>
                             <div className={css.cardMetrica}>
@@ -355,6 +363,31 @@ export default function DashboardAdm({
                                     ))}
                                 </div>
                             </div>
+                            <section className={css.listaTransacoes}>
+                                {/* Sprint item 13: exibe as assinaturas pagas ou pendentes, despesas e saques enviados ao administrador. */}
+                                <h2>Transações financeiras</h2>
+                                <div className={css.tabelaTransacoes}>
+                                    <table>
+                                        <thead>
+                                            <tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {transacoes.map((transacao) => (
+                                                <tr key={transacao.id}>
+                                                    <td>{transacao.data ? new Date(transacao.data).toLocaleDateString("pt-BR") : "—"}</td>
+                                                    <td>{transacao.tipo}</td>
+                                                    <td>{transacao.descricao}</td>
+                                                    <td>{transacao.status}</td>
+                                                    <td className={transacao.direcao === "saida" ? css.valorSaida : transacao.direcao === "entrada" ? css.valorEntrada : ""}>
+                                                        {transacao.direcao === "saida" ? "− " : transacao.direcao === "entrada" ? "+ " : ""}R$ {Number(transacao.valor || 0).toFixed(2).replace(".", ",")}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {!transacoes.length && <tr><td colSpan="5">Nenhuma transação registrada.</td></tr>}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
                         </section>
                     ) : exibindoLogs ? (
                         <section className={css.listaLogs}>

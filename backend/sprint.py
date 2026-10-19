@@ -1942,8 +1942,10 @@ def financeiro_resumo():
         percentual = percentual_instrutores(cursor)
         cursor.execute("SELECT COUNT(*) FROM ASSINATURAS WHERE STATUS = 1")
         assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
-        total_arrecadado = assinaturas_ativas * valor_assinatura
-        pool_instrutores = total_arrecadado * (percentual / 100)
+        cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
+        total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
+        # Sprint item 13: calcula o pool mensal estimado a partir das assinaturas atualmente ativas.
+        pool_instrutores = assinaturas_ativas * valor_assinatura * (percentual / 100)
         pesos_instrutores = pesos_pool_instrutores(cursor)
         peso_total = sum(pesos_instrutores.values())
 
@@ -2014,19 +2016,21 @@ def financeiro_resumo():
             cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
             faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
             ticket_medio = (float(total_pago or 0) / int(faturas_pagas or 0)) if int(faturas_pagas or 0) else 0
-            # Sprint itens 13, 14, 15 e 16: indicadores financeiros administrativos iniciais.
+            # Sprint item 13: apresenta arrecadação efetiva acumulada e estima o pool dos instrutores sobre as mensalidades pagas.
+            pool_historico_instrutores = total_arrecadado * (percentual / 100)
             return jsonify({
                 "perfil": "admin",
                 "total_arrecadado": round(total_arrecadado, 2),
-                "total_repassado_estimado": round(pool_instrutores, 2),
+                "total_repassado_estimado": round(pool_historico_instrutores, 2),
                 "custos": round(custos, 2),
-                "saldo_caixa": round(total_arrecadado - pool_instrutores - custos, 2),
+                "saldo_caixa": round(total_arrecadado - pool_historico_instrutores - custos, 2),
                 "assinaturas_ativas": assinaturas_ativas,
+                "faturas_pagas": int(faturas_pagas or 0),
                 "percentual_instrutores": round(percentual, 2),
                 "peso_total_pool": peso_total,
                 "receita_media_assinatura": round(valor_assinatura, 2),
                 "ticket_medio_aluno": round(ticket_medio, 2),
-                "margem_caixa_percentual": round(((total_arrecadado - pool_instrutores - custos) / total_arrecadado) * 100, 2) if total_arrecadado else 0,
+                "margem_caixa_percentual": round(((total_arrecadado - pool_historico_instrutores - custos) / total_arrecadado) * 100, 2) if total_arrecadado else 0,
             })
 
         cursor.execute(
@@ -2800,6 +2804,87 @@ def analiticos_mensais_professor():
         })
     except Exception as erro:
         return resposta(f"Erro ao carregar os indicadores mensais: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/admin/financeiro/transacoes", methods=["GET"])
+@jwt_required()
+def transacoes_financeiras_admin():
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        transacoes = []
+        # Sprint item 13: reúne pagamentos de assinaturas, despesas e saques numa visão administrativa única.
+        cursor.execute(
+            """
+            SELECT A.ID_ASSINATURA, A.ID_USUARIO, U.NOME, A.VALOR, A.STATUS,
+                   A.DATA_PAGAMENTO, A.DATA_VENCIMENTO, A.CRIADO_EM
+            FROM ASSINATURAS A
+            LEFT JOIN USUARIOS U ON U.ID_USUARIO = A.ID_USUARIO
+            ORDER BY COALESCE(A.DATA_PAGAMENTO, A.CRIADO_EM) DESC
+            """
+        )
+        for row in cursor.fetchall():
+            data = row[5] or row[7] or row[6]
+            transacoes.append({
+                "id": f"assinatura-{row[0]}",
+                "data": data.isoformat() if data else None,
+                "tipo": "Assinatura",
+                "descricao": f"Mensalidade de {row[2] or 'aluno'}",
+                "status": "Paga" if int(row[4] or 0) == 1 else "Pendente",
+                "valor": float(row[3] or 0),
+                "direcao": "entrada" if int(row[4] or 0) == 1 else "pendente",
+            })
+
+        cursor.execute(
+            """
+            SELECT ID_CUSTO, DESCRICAO, CATEGORIA, VALOR, DATA_CUSTO, CRIADO_EM
+            FROM CUSTOS_PLATAFORMA
+            """
+        )
+        for row in cursor.fetchall():
+            data = row[4] or row[5]
+            transacoes.append({
+                "id": f"despesa-{row[0]}",
+                "data": data.isoformat() if data else None,
+                "tipo": "Despesa",
+                "descricao": row[1],
+                "status": row[2] or "Registrada",
+                "valor": float(row[3] or 0),
+                "direcao": "saida",
+            })
+
+        cursor.execute(
+            """
+            SELECT S.ID_SAQUE, U.NOME, S.VALOR, S.STATUS, S.CRIADO_EM
+            FROM SAQUES_INSTRUTOR S
+            LEFT JOIN USUARIOS U ON U.ID_USUARIO = S.ID_USUARIO
+            """
+        )
+        for row in cursor.fetchall():
+            status = int(row[3] or 0)
+            transacoes.append({
+                "id": f"saque-{row[0]}",
+                "data": row[4].isoformat() if row[4] else None,
+                "tipo": "Saque de instrutor",
+                "descricao": f"Solicitação de {row[1] or 'instrutor'}",
+                "status": "Concluído" if status == 1 else "Solicitado",
+                "valor": float(row[2] or 0),
+                "direcao": "saida",
+            })
+
+        transacoes.sort(key=lambda item: item["data"] or "", reverse=True)
+        return jsonify(transacoes)
+    except Exception as erro:
+        return resposta(f"Erro ao listar transações financeiras: {erro}", 500)
     finally:
         cursor.close()
         con.close()

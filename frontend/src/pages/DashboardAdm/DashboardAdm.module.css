@@ -201,6 +201,56 @@
     overflow-wrap: anywhere;
 }
 
+.listaTransacoes {
+    grid-column: 1 / -1;
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid #dfe9e3;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
+}
+
+.listaTransacoes h2 {
+    margin-bottom: 16px;
+    color: #183d2c;
+    font-size: 1.2rem;
+}
+
+.tabelaTransacoes {
+    overflow-x: auto;
+}
+
+.tabelaTransacoes table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.tabelaTransacoes th,
+.tabelaTransacoes td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #e5eee8;
+    color: #354a3d;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.tabelaTransacoes th {
+    color: #183d2c;
+    font-weight: 650;
+}
+
+.valorEntrada {
+    color: #087044 !important;
+    font-weight: 650;
+}
+
+.valorSaida {
+    color: #a13c32 !important;
+    font-weight: 650;
+}
+
 .rodapePagina {
     background-color: #006338;
     color: #ffffff;
