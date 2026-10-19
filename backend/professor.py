@@ -604,6 +604,20 @@ def alterar_status_curso(id_curso):
     cursor = con.cursor()
 
     try:
+        cursor.execute(
+            """
+            SELECT C.STATUS, C.TITULO
+            FROM CURSOS C
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE C.ID_CURSO = ? AND PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
+            """,
+            (id_curso, get_jwt_identity()),
+        )
+        curso_atual = cursor.fetchone()
+        if not curso_atual:
+            return resposta("Curso não encontrado.", 404)
+        status_anterior, titulo_curso = curso_atual
+
         if status == STATUS_PUBLICADO:
             try:
                 cursor.execute(
@@ -619,6 +633,26 @@ def alterar_status_curso(id_curso):
             except Exception:
                 return resposta("Cadastre e publique uma prova antes de publicar o curso.", 400)
 
+        # Sprint item 11: seleciona uma única vez os alunos ativos dos outros cursos do instrutor ao publicar um curso novo.
+        destinatarios = []
+        if status == STATUS_PUBLICADO and status_anterior != STATUS_PUBLICADO:
+            cursor.execute(
+                """
+                SELECT DISTINCT U.EMAIL
+                FROM USUARIOS U
+                JOIN MATRICULAS M ON M.ID_USUARIO = U.ID_USUARIO
+                JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = M.ID_CURSO
+                JOIN CURSOS C ON C.ID_CURSO = PC.ID_CURSO
+                WHERE PC.ID_USUARIO = ?
+                  AND M.STATUS_MATRICULA = 1
+                  AND C.EXCLUIDO = 0
+                  AND U.EMAIL IS NOT NULL
+                  AND TRIM(U.EMAIL) <> ''
+                """,
+                (get_jwt_identity(),),
+            )
+            destinatarios = [row[0] for row in cursor.fetchall()]
+
         cursor.execute(
             """
             UPDATE CURSOS
@@ -632,6 +666,10 @@ def alterar_status_curso(id_curso):
             (status, id_curso, get_jwt_identity()),
         )
         con.commit()
+        if status == STATUS_PUBLICADO and status_anterior != STATUS_PUBLICADO:
+            # Sprint item 11: envia o aviso depois do commit, sem deixar falhas SMTP reverterem a publicação.
+            from email_cursos import notificar_alunos_novo_curso
+            notificar_alunos_novo_curso(destinatarios, titulo_curso)
         return resposta(f"Curso definido como {STATUS_NOMES[status]}.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
