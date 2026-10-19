@@ -54,6 +54,7 @@ export default function DashboardProfessor({
     const [filtroCursos, setFiltroCursos] = useState("publicados");
     const [filtroAulas, setFiltroAulas] = useState("todos");
     const [dashboard, setDashboard] = useState(null);
+    const [analiticosMensais, setAnaliticosMensais] = useState(null);
     const [cursos, setCursos] = useState([]);
     const [aulas, setAulas] = useState([]);
     // Sprint item 6: mantém módulos do curso e o módulo aberto no painel do professor.
@@ -115,6 +116,15 @@ export default function DashboardProfessor({
                 },
                 recentes: []
             });
+        }
+    }, [api, lerResposta]);
+
+    const carregarAnaliticosMensais = useCallback(async () => {
+        try {
+            const resposta = await fetch(`${api}/professor/analiticos-mensais`, { credentials: "include" });
+            setAnaliticosMensais(await lerResposta(resposta));
+        } catch (erro) {
+            console.error("Erro ao carregar os indicadores mensais:", erro);
         }
     }, [api, lerResposta]);
 
@@ -273,6 +283,25 @@ export default function DashboardProfessor({
     }, [carregarDashboard]);
 
     useEffect(() => {
+        if (visao !== "inicio") return undefined;
+
+        // Sprint item 9: atualiza os indicadores durante o mês e congela o período quando o calendário muda de mês.
+        carregarAnaliticosMensais();
+        const dataInicial = new Date();
+        const mesInicial = `${dataInicial.getFullYear()}-${String(dataInicial.getMonth() + 1).padStart(2, "0")}`;
+        const intervalo = window.setInterval(() => {
+            const agora = new Date();
+            const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
+            if (mesAtual !== mesInicial) {
+                window.clearInterval(intervalo);
+                return;
+            }
+            if (!document.hidden) carregarAnaliticosMensais();
+        }, 60000);
+        return () => window.clearInterval(intervalo);
+    }, [carregarAnaliticosMensais, visao]);
+
+    useEffect(() => {
         if (visao === "cursos") {
             carregarCursos(filtroCursos);
         }
@@ -318,6 +347,7 @@ export default function DashboardProfessor({
 
             try {
                 const tarefas = [carregarDashboard()];
+                if (visao === "inicio") tarefas.push(carregarAnaliticosMensais());
                 if (visao === "cursos") tarefas.push(carregarCursos(filtroCursos));
                 if (visao === "aulas" && cursoSelecionado) {
                     tarefas.push(carregarAulas(cursoSelecionado.id, filtroAulas, idModuloSelecionado));
@@ -347,6 +377,7 @@ export default function DashboardProfessor({
         carregarAulas,
         carregarCursos,
         carregarDashboard,
+        carregarAnaliticosMensais,
         cursoSelecionado,
         idModuloSelecionado,
         filtroAulas,
@@ -615,22 +646,20 @@ export default function DashboardProfessor({
     }
 
     const metricas = dashboard?.metricas || {};
-    // Sprint item 8: transforma os dados de engajamento da API em séries para o gráfico único do instrutor.
-    const dadosGraficoInstrutor = useMemo(() => [
-        ["Indicador", "Quantidade"],
-        ["Alunos", Number(metricas.total_alunos || 0)],
-        ["Cursos concluídos", Number(metricas.cursos_concluidos || 0)],
-        ["Módulos concluídos", Number(metricas.modulos_concluidos || 0)]
-    ], [metricas.total_alunos, metricas.cursos_concluidos, metricas.modulos_concluidos]);
     const opcoesGraficoInstrutor = useMemo(() => ({
-        legend: { position: "none" },
-        colors: ["#06a663"],
+        legend: { position: "bottom", textStyle: { color: "#4c5b53" } },
+        colors: ["#168a55", "#f0a43c"],
         chartArea: { left: 55, top: 12, width: "86%", height: "76%" },
         height: 300,
         vAxis: { minValue: 0, format: "0", textStyle: { color: "#4c5b53" } },
         hAxis: { textStyle: { color: "#4c5b53" } },
         backgroundColor: "transparent"
     }), []);
+    // Sprint item 9: prepara acessos e novas inscrições do mês atual para o gráfico de conversão por curso.
+    const dadosGraficoMensal = useMemo(() => {
+        const linhas = (analiticosMensais?.cursos || []).map((curso) => [curso.curso, curso.acessos, curso.inscricoes_mes]);
+        return [["Curso", "Acessos no mês", "Inscrições no mês"], ...(linhas.length ? linhas : [["Sem dados no mês", 0, 0]])];
+    }, [analiticosMensais]);
     const recentes = dashboard?.recentes || [];
     const cursosRelatorio = relatorio?.cursos || [];
     const moduloSelecionado = modulos.find((modulo) => Number(modulo.id) === Number(idModuloSelecionado));
@@ -682,8 +711,47 @@ export default function DashboardProfessor({
                                 </div>
                             </section>
 
-                            {/* Sprint item 8: exibe o gráfico de alunos e conclusões para resumir o engajamento dos cursos do instrutor. */}
-                            <GoogleChart titulo="Engajamento dos alunos" data={dadosGraficoInstrutor} options={opcoesGraficoInstrutor} />
+                            <section className={css.secaoPainel}>
+                                {/* Sprint item 9: mostra visitas, inscrições convertidas e conversão acumuladas no mês vigente. */}
+                                <div className={css.cabecalhoBloco}>
+                                    <div>
+                                        <h3>Resultados do mês</h3>
+                                        <p>{analiticosMensais?.inicio && analiticosMensais?.fim
+                                            ? `${analiticosMensais.inicio.split("-").reverse().join("/")} a ${analiticosMensais.fim.split("-").reverse().join("/")}`
+                                            : "Carregando período mensal..."}</p>
+                                    </div>
+                                </div>
+                                <div className={css.gridMetricasFinanceiro}>
+                                    <CardMetricaProfessor titulo="Acessos aos cursos" detalhe="Alunos únicos neste mês" valor={formatarNumero(analiticosMensais?.total_acessos)} />
+                                    <CardMetricaProfessor titulo="Inscrições no mês" detalhe="Novas matrículas convertidas" valor={formatarNumero(analiticosMensais?.inscricoes_mes)} />
+                                    <CardMetricaProfessor titulo="Taxa de conversão" detalhe="Inscrições ÷ acessos únicos" valor={`${Number(analiticosMensais?.conversao_percentual || 0).toFixed(2).replace(".", ",")}%`} />
+                                    <CardMetricaProfessor titulo="Alunos inscritos" detalhe="Matrículas ativas nos cursos" valor={formatarNumero(analiticosMensais?.alunos_inscritos)} />
+                                </div>
+                                {/* Sprint item 9: compara por curso os acessos únicos e as inscrições obtidos durante o mês. */}
+                                <GoogleChart titulo="Acessos e conversões por curso" data={dadosGraficoMensal} options={opcoesGraficoInstrutor} />
+                                <p className={css.textoApoio}>O Cursando cobra uma assinatura geral, não compras por curso. As inscrições são exibidas como conversões; a contagem mensal fica associada ao mês em que ocorreu.</p>
+                                <div className={css.containerTabelaRelatorio}>
+                                    <table className={css.tabelaRelatorio}>
+                                        <thead>
+                                            <tr><th>Curso</th><th>Acessos no mês</th><th>Inscrições no mês</th><th>Conversão</th><th>Alunos inscritos</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {(analiticosMensais?.cursos || []).map((curso) => (
+                                                <tr key={curso.id_curso}>
+                                                    <td>{curso.curso}</td>
+                                                    <td>{formatarNumero(curso.acessos)}</td>
+                                                    <td>{formatarNumero(curso.inscricoes_mes)}</td>
+                                                    <td>{Number(curso.conversao_percentual || 0).toFixed(2).replace(".", ",")}%</td>
+                                                    <td>{formatarNumero(curso.alunos_inscritos)}</td>
+                                                </tr>
+                                            ))}
+                                            {!analiticosMensais?.cursos?.length && (
+                                                <tr><td className={css.celulaVazia} colSpan="5">Nenhum acesso ou inscrição registrado neste mês.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
 
                             <section className={css.secaoPainel}>
                                 <div className={css.cabecalhoBloco}>

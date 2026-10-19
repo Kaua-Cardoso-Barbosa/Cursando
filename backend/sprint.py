@@ -288,6 +288,21 @@ def garantir_sprint_schema():
             )
             """,
         )
+        # Sprint item 9: guarda visitas e inscrições únicas por aluno e mês para medir conversão por curso.
+        _criar_tabela(
+            cursor,
+            "EVENTOS_CURSOS",
+            """
+            CREATE TABLE EVENTOS_CURSOS (
+                ID_CURSO INTEGER NOT NULL,
+                ID_USUARIO INTEGER NOT NULL,
+                TIPO_EVENTO VARCHAR(20) NOT NULL,
+                MES_REFERENCIA DATE NOT NULL,
+                CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT PK_EVENTOS_CURSOS PRIMARY KEY (ID_CURSO, ID_USUARIO, TIPO_EVENTO, MES_REFERENCIA)
+            )
+            """,
+        )
         con.commit()
         cursor.execute("SELECT COUNT(*) FROM FINANCEIRO_CONFIG")
         if int((cursor.fetchone() or (0,))[0] or 0) == 0:
@@ -340,6 +355,29 @@ def garantir_sprint_schema():
 def proximo_id(cursor, tabela, coluna):
     cursor.execute(f"SELECT COALESCE(MAX({coluna}), 0) + 1 FROM {tabela}")
     return cursor.fetchone()[0]
+
+
+def registrar_evento_curso(cursor, id_curso, id_usuario, tipo_evento):
+    # Sprint item 9: registra uma visita ou inscrição uma vez por aluno, curso e mês para manter taxas mensais consistentes.
+    mes_referencia = datetime.now().date().replace(day=1)
+    cursor.execute(
+        """
+        SELECT 1 FROM EVENTOS_CURSOS
+        WHERE ID_CURSO = ? AND ID_USUARIO = ? AND TIPO_EVENTO = ? AND MES_REFERENCIA = ?
+        """,
+        (id_curso, id_usuario, tipo_evento, mes_referencia),
+    )
+    if cursor.fetchone():
+        return False
+
+    cursor.execute(
+        """
+        INSERT INTO EVENTOS_CURSOS (ID_CURSO, ID_USUARIO, TIPO_EVENTO, MES_REFERENCIA)
+        VALUES (?, ?, ?, ?)
+        """,
+        (id_curso, id_usuario, tipo_evento, mes_referencia),
+    )
+    return True
 
 
 def exigir_tipo(*tipos):
@@ -2683,6 +2721,85 @@ def relatorio_professor():
         return jsonify(payload)
     except Exception as erro:
         return resposta(f"Erro ao gerar relatorio: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/analiticos-mensais", methods=["GET"])
+@jwt_required()
+def analiticos_mensais_professor():
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    id_instrutor = int(get_jwt_identity())
+    hoje = datetime.now().date()
+    inicio_mes = hoje.replace(day=1)
+    inicio_proximo_mes = (inicio_mes.replace(day=28) + timedelta(days=4)).replace(day=1)
+    fim_mes = inicio_proximo_mes - timedelta(days=1)
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        # Sprint item 9: reúne visitas, inscrições convertidas e alunos ativos apenas no mês civil atual para o instrutor autenticado.
+        cursor.execute(
+            """
+            SELECT
+                C.ID_CURSO,
+                C.TITULO,
+                (SELECT COUNT(*) FROM EVENTOS_CURSOS E
+                 WHERE E.ID_CURSO = C.ID_CURSO AND E.TIPO_EVENTO = 'ACESSO' AND E.MES_REFERENCIA = ?),
+                (SELECT COUNT(*) FROM EVENTOS_CURSOS E
+                 WHERE E.ID_CURSO = C.ID_CURSO AND E.TIPO_EVENTO = 'INSCRICAO' AND E.MES_REFERENCIA = ?),
+                (SELECT COUNT(DISTINCT M.ID_USUARIO) FROM MATRICULAS M
+                 WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1)
+            FROM CURSOS C
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
+            ORDER BY C.TITULO
+            """,
+            (inicio_mes, inicio_mes, id_instrutor),
+        )
+        cursos = []
+        for row in cursor.fetchall():
+            acessos = int(row[2] or 0)
+            inscricoes = int(row[3] or 0)
+            cursos.append({
+                "id_curso": int(row[0]),
+                "curso": row[1],
+                "acessos": acessos,
+                "inscricoes_mes": inscricoes,
+                "alunos_inscritos": int(row[4] or 0),
+                "conversao_percentual": round((inscricoes / acessos) * 100, 2) if acessos else 0,
+            })
+
+        total_acessos = sum(curso["acessos"] for curso in cursos)
+        total_inscricoes = sum(curso["inscricoes_mes"] for curso in cursos)
+        cursor.execute(
+            """
+            SELECT COUNT(DISTINCT M.ID_USUARIO)
+            FROM MATRICULAS M
+            JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO AND C.EXCLUIDO = 0
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE PC.ID_USUARIO = ? AND M.STATUS_MATRICULA = 1
+            """,
+            (id_instrutor,),
+        )
+        total_alunos_inscritos = int((cursor.fetchone() or (0,))[0] or 0)
+        return jsonify({
+            "mes": inicio_mes.strftime("%Y-%m"),
+            "inicio": inicio_mes.isoformat(),
+            "fim": fim_mes.isoformat(),
+            "total_acessos": total_acessos,
+            "inscricoes_mes": total_inscricoes,
+            "alunos_inscritos": total_alunos_inscritos,
+            "conversao_percentual": round((total_inscricoes / total_acessos) * 100, 2) if total_acessos else 0,
+            "cursos": cursos,
+        })
+    except Exception as erro:
+        return resposta(f"Erro ao carregar os indicadores mensais: {erro}", 500)
     finally:
         cursor.close()
         con.close()

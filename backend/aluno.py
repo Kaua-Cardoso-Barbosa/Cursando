@@ -537,7 +537,7 @@ def detalhe_curso_aluno(id_curso):
 
     id_aluno = get_jwt_identity()
     # Sprint item 6: prepara a coluna de associacao antes de montar a previa publica dos modulos.
-    from sprint import garantir_sprint_schema
+    from sprint import garantir_sprint_schema, registrar_evento_curso
     garantir_sprint_schema()
     con = get_db()
     cursor = con.cursor()
@@ -552,6 +552,8 @@ def detalhe_curso_aluno(id_curso):
 
         if not row:
             return resposta("Curso nao encontrado.", 404)
+
+        registrar_evento_curso(cursor, id_curso, id_aluno, "ACESSO")
 
         curso = curso_publico_para_dict(row)
         if curso["matriculado"]:
@@ -616,6 +618,7 @@ def detalhe_curso_aluno(id_curso):
         for modulo in modulos:
             modulo["total_aulas"] = len(modulo["aulas"])
 
+        con.commit()
         return jsonify({"curso": curso, "modulos": modulos, "aulas": aulas})
     except Exception as erro:
         return resposta(f"Erro ao carregar curso: {erro}", 500)
@@ -633,6 +636,8 @@ def inscrever_curso(id_curso):
         return negado
 
     id_aluno = get_jwt_identity()
+    from sprint import garantir_sprint_schema, registrar_evento_curso
+    garantir_sprint_schema()
     con = get_db()
     cursor = con.cursor()
 
@@ -652,6 +657,9 @@ def inscrever_curso(id_curso):
 
         if not cursor.fetchone():
             return resposta("Curso nao encontrado ou indisponivel.", 404)
+
+        # Sprint item 9: contabiliza como acesso mensal a abertura direta do fluxo de inscrição quando não houve detalhe antes.
+        registrar_evento_curso(cursor, id_curso, id_aluno, "ACESSO")
 
         cursor.execute(
             "SELECT STATUS_MATRICULA FROM MATRICULAS WHERE ID_USUARIO = ? AND ID_CURSO = ?",
@@ -674,6 +682,9 @@ def inscrever_curso(id_curso):
                 "INSERT INTO MATRICULAS (ID_USUARIO, ID_CURSO, STATUS_MATRICULA, PROGRESSO) VALUES (?, ?, 1, 0)",
                 (id_aluno, id_curso),
             )
+
+        if not matricula or int(matricula[0] or 0) != 1:
+            registrar_evento_curso(cursor, id_curso, id_aluno, "INSCRICAO")
 
         con.commit()
         return resposta("Inscricao realizada com sucesso.", 200, "sucesso")
