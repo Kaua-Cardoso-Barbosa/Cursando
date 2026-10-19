@@ -62,6 +62,9 @@ def garantir_log_schema():
                 )
                 """
             )
+            # O Firebird nao disponibiliza a tabela ao restante da transacao
+            # ate que a alteracao de metadados seja confirmada.
+            con.commit()
 
         colunas = {
             "TIPO_USUARIO": "TIPO_USUARIO SMALLINT",
@@ -89,6 +92,7 @@ def garantir_log_schema():
             )
             if not cursor.fetchone():
                 cursor.execute(f"ALTER TABLE LOG_GRAVACAO ADD {ddl}")
+                con.commit()
 
         cursor.execute(
             """
@@ -99,6 +103,7 @@ def garantir_log_schema():
         )
         if not cursor.fetchone():
             cursor.execute("CREATE GENERATOR GEN_LOG_GRAVACAO")
+            con.commit()
 
         cursor.execute("SELECT COALESCE(MAX(ID_LOG), 0) FROM LOG_GRAVACAO")
         maior_id = int((cursor.fetchone() or (0,))[0] or 0)

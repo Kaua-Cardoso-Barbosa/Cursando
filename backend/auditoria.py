@@ -160,7 +160,7 @@ def preparar_auditoria_antes_de_modificar():
         return jsonify({
             "mensagem": {
                 "tipo": "erro",
-                "descricao": "A auditoria do banco está indisponível; a alteração não foi executada.",
+                "descricao": "Nao foi possivel concluir sua solicitacao agora. Tente novamente em instantes.",
             }
         }), 503
 
@@ -263,8 +263,12 @@ def _campos_tabela(cursor, tabela):
             TRIM(RF.RDB$FIELD_NAME),
             F.RDB$FIELD_TYPE,
             F.RDB$FIELD_SUB_TYPE,
-            RF.RDB$COMPUTED_BLR,
-            F.RDB$FIELD_DIMENSIONS
+            F.RDB$COMPUTED_BLR,
+            (
+                SELECT FIRST 1 D.RDB$DIMENSION
+                FROM RDB$FIELD_DIMENSIONS D
+                WHERE D.RDB$FIELD_NAME = RF.RDB$FIELD_SOURCE
+            )
         FROM RDB$RELATION_FIELDS RF
         JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = RF.RDB$FIELD_SOURCE
         WHERE RF.RDB$RELATION_NAME = ?
@@ -390,12 +394,12 @@ def _ddl_gatilho(tabela, campos, chaves):
                 "  BEGIN",
                 "    v_antes = v_antes || ',';",
                 "    v_depois = v_depois || ',';",
-                "  END;",
+                "  END",
                 f"  v_antes = v_antes || {_json_campo('OLD', campo)};",
                 f"  v_depois = v_depois || {_json_campo('NEW', campo)};",
                 "  v_contagem = v_contagem + 1;",
             ])
-        linhas_alteracao.append("END;")
+        linhas_alteracao.append("END")
 
     log_path = str(current_app.config["DB_LOG_NAME"]).replace("'", "''")
     operations = _OPERACOES_LIMITADAS.get(tabela, "AFTER INSERT OR UPDATE OR DELETE")
@@ -511,8 +515,8 @@ BEGIN
         BEGIN
             v_antes = v_antes || '}}';
             v_depois = v_depois || '}}';
-        END;
-    END;
+        END
+    END
 
     v_detalhes = '{{"acao":"' || v_operacao || '","descricao":"' || v_operacao || ' em {tabela}",'
         || '"tabela_afetada":"{tabela}",'
