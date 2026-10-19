@@ -2016,11 +2016,16 @@ def financeiro_resumo():
             cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
             faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
             ticket_medio = (float(total_pago or 0) / int(faturas_pagas or 0)) if int(faturas_pagas or 0) else 0
-            # Sprint item 13: apresenta arrecadação efetiva acumulada e estima o pool dos instrutores sobre as mensalidades pagas.
+            # Sprint item 14: calcula o pool acumulado estimado usando a porcentagem definida pelo administrador.
             pool_historico_instrutores = total_arrecadado * (percentual / 100)
+            cursor.execute(
+                "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE STATUS = 1"
+            )
+            total_repassado = float((cursor.fetchone() or (0,))[0] or 0)
             return jsonify({
                 "perfil": "admin",
                 "total_arrecadado": round(total_arrecadado, 2),
+                "total_repassado": round(total_repassado, 2),
                 "total_repassado_estimado": round(pool_historico_instrutores, 2),
                 "custos": round(custos, 2),
                 "saldo_caixa": round(total_arrecadado - pool_historico_instrutores - custos, 2),
