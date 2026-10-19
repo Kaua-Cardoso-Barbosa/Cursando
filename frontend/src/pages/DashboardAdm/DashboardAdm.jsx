@@ -327,12 +327,13 @@ export default function DashboardAdm({
                                     Salvar percentual
                                 </button>
                             </div>
+                            {/* Sprint item 16: apresenta a margem histórica da empresa depois das comissões do pool e dos custos. */}
                             <div className={css.cardMetrica}>
                                 <div className={css.metricaTopo}>
                                     <h2>Saude financeira</h2>
                                     <div className={css.iconeBadge}><FaFolder /></div>
                                 </div>
-                                <span className={css.metricaVariacao}>Margem apos repasses e custos</span>
+                                <span className={css.metricaVariacao}>Margem histórica estimada após pool e custos</span>
                                 <div className={css.metricaNumero}>{Number(financeiro?.margem_caixa_percentual || 0).toFixed(2).replace(".", ",")}%</div>
                                 <p className={css.textoFinanceiro}>
                                     {financeiro?.faturas_pagas || 0} mensalidades pagas, ticket base de R$ {Number(financeiro?.receita_media_assinatura || 0).toFixed(2).replace(".", ",")}.

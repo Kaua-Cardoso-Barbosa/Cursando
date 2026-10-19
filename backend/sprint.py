@@ -2039,6 +2039,7 @@ def financeiro_resumo():
                 "peso_total_pool": peso_total,
                 "receita_media_assinatura": round(valor_assinatura, 2),
                 "ticket_medio_aluno": round(ticket_medio, 2),
+                # Sprint item 16: calcula a margem financeira histórica após pool de instrutores e despesas registradas.
                 "margem_caixa_percentual": round(((total_arrecadado - pool_historico_instrutores - custos) / total_arrecadado) * 100, 2) if total_arrecadado else 0,
             })
 
