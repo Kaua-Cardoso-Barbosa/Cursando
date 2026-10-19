@@ -26,7 +26,21 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Cursando acessa suas fotos para adicionar imagens a cursos e módulos.",
+          "cameraPermission": "O Cursando usa a câmera para fotografar capas de cursos e módulos.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Cursando usa o Face ID para confirmar o acesso à sua sessão."
+        }
+      ]
     ]
   }
 }

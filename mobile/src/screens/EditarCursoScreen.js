@@ -1,7 +1,7 @@
 import AppIcon from "../components/AppIcon";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { resolverUrlMidia } from "../api/client";
 import BrandLogo from "../components/BrandLogo";
 import Field from "../components/Field";
@@ -24,6 +24,21 @@ export default function EditarCursoScreen({ curso, onCancel, onSave, salvando })
     }
   }
 
+  // Sprint item 18: solicita acesso à câmera e usa a foto capturada como capa do curso.
+  async function tirarFoto() {
+    const permissao = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissao.granted) {
+      Alert.alert("Permissão da câmera", "Permita o acesso à câmera nas configurações do aparelho para tirar uma foto.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85
+    });
+    if (!result.canceled) setImagem(result.assets[0]);
+  }
+
   return (
     <ImageBackground source={require("../../assets/bg.png")} resizeMode="cover" style={styles.bg}>
       <ScrollView contentContainerStyle={styles.page}>
@@ -40,6 +55,9 @@ export default function EditarCursoScreen({ curso, onCancel, onSave, salvando })
             <View style={styles.uploadIcon}>
               <AppIcon name="cloud-upload-outline" size={42} color={colors.white} />
             </View>
+          </Pressable>
+          <Pressable style={styles.cameraButton} onPress={tirarFoto}>
+            <Text style={styles.cameraButtonText}>Tirar foto da capa</Text>
           </Pressable>
 
           <Field label="Titulo:" value={titulo} onChangeText={setTitulo} />
@@ -123,6 +141,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
+  cameraButton: {
+    alignSelf: "flex-start",
+    marginTop: -18,
+    marginBottom: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: colors.darkGreen
+  },
+  cameraButtonText: { color: colors.white, fontWeight: "700" },
   buttons: {
     flexDirection: "row",
     justifyContent: "space-between",

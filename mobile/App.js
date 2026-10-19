@@ -1,5 +1,4 @@
 import { StatusBar } from "expo-status-bar";
-import { isRunningInExpoGo } from "expo";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as LocalAuthentication from "expo-local-authentication";
@@ -98,6 +97,7 @@ function AppContent() {
     }
   }
 
+  // Sprint item 18: pede biometria do aparelho ao restaurar uma sessão salva, quando disponível.
   async function confirmarBiometriaDisponivel() {
     const compativel = await LocalAuthentication.hasHardwareAsync();
     const cadastrado = compativel ? await LocalAuthentication.isEnrolledAsync() : false;
@@ -115,13 +115,9 @@ function AppContent() {
     return resultado.success === true;
   }
 
+  // Sprint item 18: confirma o início da sessão com vibração e uma notificação local.
   async function avisarSessaoAtiva() {
     Vibration.vibrate(60);
-
-    // Expo Go no Android não oferece suporte completo a notificações remotas e
-    // o módulo registra o listener de push assim que é importado. Adie a carga
-    // até builds nativas para evitar o erro durante a inicialização no Expo Go.
-    if (isRunningInExpoGo()) return;
 
     const Notifications = await import("expo-notifications");
     if (!notificationHandlerConfigured) {

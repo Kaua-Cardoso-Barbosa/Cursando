@@ -59,6 +59,21 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
     if (!result.canceled) setImagemModulo(result.assets[0]);
   }
 
+  // Sprint item 18: abre a câmera para capturar a imagem de capa do módulo.
+  async function tirarFotoModulo() {
+    const permissao = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissao.granted) {
+      mostrarAlerta("Permissão da câmera", "Permita o acesso à câmera nas configurações do aparelho para tirar uma foto.", "erro");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85
+    });
+    if (!result.canceled) setImagemModulo(result.assets[0]);
+  }
+
   async function criarModulo() {
     if (!tituloModulo.trim()) {
       mostrarAlerta("Módulo", "Informe o nome do módulo.", "erro");
@@ -161,6 +176,10 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
               <AppIcon name="image-outline" size={20} color={colors.darkGreen} />
               <Text style={styles.actionText}>{imagemModulo?.fileName || "Selecionar imagem do módulo"}</Text>
             </Pressable>
+            <Pressable style={styles.cameraButton} onPress={tirarFotoModulo}>
+              <AppIcon name="camera-outline" size={20} color={colors.darkGreen} />
+              <Text style={styles.actionText}>Tirar foto do módulo</Text>
+            </Pressable>
             <Pressable style={globalStyles.primaryButton} onPress={criarModulo} disabled={salvando}>
               <Text style={globalStyles.buttonText}>{salvando ? "Salvando..." : "Criar módulo"}</Text>
             </Pressable>
@@ -218,6 +237,7 @@ const styles = StyleSheet.create({
   formCard: { gap: 12, marginBottom: 20 },
   sectionTitle: { color: colors.black, fontSize: 20, fontWeight: "800" },
   imagePicker: { minHeight: 48, borderWidth: 1, borderColor: colors.darkGreen, borderRadius: 8, padding: 10, flexDirection: "row", alignItems: "center", gap: 9, overflow: "hidden" },
+  cameraButton: { minHeight: 44, borderWidth: 1, borderColor: colors.darkGreen, borderRadius: 8, padding: 10, flexDirection: "row", alignItems: "center", gap: 9 },
   moduleImage: { width: "100%", height: 150, backgroundColor: "#e7ede9" },
   list: { gap: 14 },
   moduleCard: { overflow: "hidden", padding: 0 },
