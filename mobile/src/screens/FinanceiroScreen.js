@@ -10,6 +10,7 @@ function moeda(valor) {
   return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
 }
 
+// Sprint item 12: define os cards de receita do instrutor no app usando o resumo do Revenue Pool.
 const cards = [
   ["Recebido estimado", "Pool de receita", "recebido_estimado", "cash-outline", "money"],
   ["Disponivel para saque", "Saldo bruto", "disponivel_saque", "wallet-outline", "money"],
