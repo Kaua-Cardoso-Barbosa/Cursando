@@ -17,7 +17,7 @@ function formatarPosicaoAula(segundos) {
     : `${minutos}:${String(restante).padStart(2, "0")}`;
 }
 
-export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onEnroll, onSubmitExam, onDownloadCertificate, onReview }) {
+export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onOpenMaterial, onEnroll, onSubmitExam, onDownloadCertificate, onReview }) {
   // Exibe apenas as aulas disponibilizadas pelo detalhe do curso retornado pela API.
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
@@ -124,11 +124,15 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
             <Text style={styles.materialType}>{material.tipo}</Text>
             <Text style={styles.description}>{material.descricao}</Text>
             {material.bloqueado ? (
-              <Text style={styles.locked}>Disponivel apos inscricao no curso.</Text>
-            ) : (
+              <Text style={styles.locked}>Prévia: disponível após inscrição. Links e arquivos ficam bloqueados.</Text>
+            ) : material.arquivo_url ? (
+              <Pressable onPress={() => onOpenMaterial?.(material)}><Text style={styles.openLink}>Baixar {material.nome_arquivo || "arquivo"}</Text></Pressable>
+            ) : material.url ? (
               <Pressable onPress={() => Linking.openURL(material.url)}>
                 <Text style={styles.openLink}>Abrir material</Text>
               </Pressable>
+            ) : (
+              <Text style={styles.locked}>Material indisponível.</Text>
             )}
           </View>
         ))}

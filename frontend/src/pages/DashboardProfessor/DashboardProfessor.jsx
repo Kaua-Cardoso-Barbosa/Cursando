@@ -24,6 +24,7 @@ import RodapeProfessor from "../../components/DashboardProfessor/RodapeProfessor
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import ChatCurso from "../../components/ChatCurso/ChatCurso.jsx";
 import ProvasProfessor from "../../components/ProvasProfessor/ProvasProfessor.jsx";
+import MateriaisProfessor from "../../components/MateriaisProfessor/MateriaisProfessor.jsx";
 import GoogleChart from "../../components/GoogleChart/GoogleChart.jsx";
 import css from "./DashboardProfessor.module.css";
 
@@ -61,6 +62,8 @@ export default function DashboardProfessor({
     // Sprint item 6: mantém módulos do curso e o módulo aberto no painel do professor.
     const [modulos, setModulos] = useState([]);
     const [idModuloSelecionado, setIdModuloSelecionado] = useState(null);
+    // Sprint item 21: alterna entre a estrutura das aulas e os materiais complementares do curso.
+    const [abaGestaoCurso, setAbaGestaoCurso] = useState("modulos");
     const [destinosModulo, setDestinosModulo] = useState({});
     const [alunos, setAlunos] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
@@ -855,7 +858,13 @@ export default function DashboardProfessor({
                                 </div>
                             </div>
 
-                            {!idModuloSelecionado && (
+                            <div className={css.barraTitulo}>
+                                <button className={abaGestaoCurso === "modulos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("modulos"); setIdModuloSelecionado(null); }}>Módulos e aulas</button>
+                                <button className={abaGestaoCurso === "complementos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("complementos"); setIdModuloSelecionado(null); }}>Complementos</button>
+                            </div>
+
+                            {abaGestaoCurso === "complementos" && <MateriaisProfessor api={api} idCurso={cursoSelecionado.id} avisar={avisar} />}
+                            {abaGestaoCurso === "modulos" && !idModuloSelecionado && (
                                 <>
                                     <div className={css.barraTitulo}>
                                         <h2>Módulos do curso</h2>
@@ -908,7 +917,7 @@ export default function DashboardProfessor({
                                 </>
                             )}
 
-                            {idModuloSelecionado && moduloSelecionado && (
+                            {abaGestaoCurso === "modulos" && idModuloSelecionado && moduloSelecionado && (
                                 <>
                                     <div className={css.barraTitulo}>
                                         <div className={css.resumoModuloProfessor}>
@@ -938,7 +947,7 @@ export default function DashboardProfessor({
                                     </div>
                                 </>
                             )}
-                            {idModuloSelecionado && !moduloSelecionado && !carregando && (
+                            {abaGestaoCurso === "modulos" && idModuloSelecionado && !moduloSelecionado && !carregando && (
                                 <EstadoVazioProfessor texto="Módulo não encontrado neste curso." />
                             )}
                         </section>

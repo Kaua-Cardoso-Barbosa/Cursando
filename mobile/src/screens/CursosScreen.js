@@ -10,7 +10,7 @@ const placeholders = [
   "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900"
 ];
 
-export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onExams, onStudents, tipoUsuario = 1 }) {
+export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onExams, onComplements, onStudents, tipoUsuario = 1 }) {
   // Alunos abrem detalhes e acompanham progresso; professores recebem ações de gestão.
   const aluno = Number(tipoUsuario) === 2;
   const { confirmar } = useFeedback();
@@ -63,6 +63,12 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
                     {onExams ? (
                       <Pressable style={styles.iconButton} onPress={() => onExams(curso)} hitSlop={10} accessibilityLabel="Gerenciar prova do curso">
                         <AppIcon name="document-text-outline" size={20} color={colors.darkGreen} />
+                      </Pressable>
+                    ) : null}
+                    {/* Sprint item 21: abre a gestao de links e arquivos complementares do curso. */}
+                    {onComplements ? (
+                      <Pressable style={styles.iconButton} onPress={() => onComplements(curso)} hitSlop={10} accessibilityLabel="Gerenciar complementos do curso">
+                        <AppIcon name="attach-outline" size={20} color={colors.darkGreen} />
                       </Pressable>
                     ) : null}
                     {onManage ? (

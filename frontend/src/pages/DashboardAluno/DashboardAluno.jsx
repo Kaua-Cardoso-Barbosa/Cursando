@@ -590,6 +590,26 @@ export default function DashboardAluno({
     }, [api, carregarDashboard, lerResposta]);
 
     // Sprint item 20: baixa o certificado somente após o servidor confirmar a aprovação na prova.
+    // Sprint item 21: baixa arquivos privados de complemento somente após autorização da API para aluno matriculado.
+    async function baixarMaterial(material) {
+        try {
+            const resposta = await fetch(`${api}${material.arquivo_url}`, { credentials: "include" });
+            if (!resposta.ok) {
+                const dados = await resposta.json().catch(() => ({}));
+                throw new Error(dados?.mensagem?.descricao || dados?.mensagem || "Não foi possível acessar este material.");
+            }
+            const blob = await resposta.blob();
+            const urlTemporaria = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = urlTemporaria;
+            link.download = material.nome_arquivo || material.titulo || "complemento";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(urlTemporaria);
+        } catch (error) { avisar({ tipo: "erro", descricao: error.message }); }
+    }
+
     async function baixarCertificado(curso) {
         setBaixandoCertificado(true);
         try {
@@ -857,7 +877,7 @@ export default function DashboardAluno({
                                                 {material.bloqueado ? (
                                                     <small>Disponível após inscrição no curso.</small>
                                                 ) : (
-                                                    <a href={material.url} target="_blank" rel="noreferrer">Abrir material</a>
+                                                    {material.arquivo_url ? <button type="button" onClick={() => baixarMaterial(material)}>Baixar {material.nome_arquivo || "arquivo"}</button> : material.url ? <a href={material.url} target="_blank" rel="noreferrer">Abrir material</a> : <small>Material indisponível.</small>}
                                                 )}
                                             </article>
                                         ))}

@@ -1,0 +1,20 @@
+.area { display: grid; gap: 18px; }
+.area header h2 { margin: 0 0 5px; color: #173e2c; }
+.area header p { margin: 0; color: #607268; }
+.formulario { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 18px; border: 1px solid #dfe9e3; border-radius: 15px; background: #fff; }
+.formulario label { display: grid; gap: 6px; color: #173e2c; font-weight: 700; }
+.formulario input, .formulario select, .formulario textarea { width: 100%; min-height: 42px; border: 1px solid #cbd9d0; border-radius: 8px; padding: 9px 11px; color: #18241d; font: inherit; }
+.formulario textarea { min-height: 76px; resize: vertical; }
+.formulario label:nth-of-type(3), .formulario label:nth-of-type(4), .formulario label:nth-of-type(5), .selecionado { grid-column: 1 / -1; }
+.formulario button { grid-column: 1 / -1; justify-self: start; display: inline-flex; gap: 8px; align-items: center; border: 0; border-radius: 9px; padding: 11px 16px; background: #087044; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.formulario button:disabled { opacity: .6; cursor: wait; }
+.selecionado { margin: -8px 0 0; color: #087044; }
+.lista { display: grid; gap: 10px; }
+.item { display: flex; align-items: flex-start; gap: 12px; padding: 15px; border: 1px solid #dfe9e3; border-radius: 13px; background: #fff; }
+.icone { color: #087044; font-size: 1.25rem; padding-top: 3px; }
+.detalhe { display: grid; gap: 5px; min-width: 0; flex: 1; color: #173e2c; }
+.detalhe span { color: #607268; font-size: .9rem; }
+.detalhe p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.detalhe a { display: inline-flex; align-items: center; gap: 7px; color: #087044; font-weight: 700; width: fit-content; }
+.excluir { border: 0; background: transparent; color: #b32323; cursor: pointer; padding: 7px; }
+@media (max-width: 650px) { .formulario { grid-template-columns: 1fr; padding: 14px; } .formulario label, .formulario label:nth-of-type(3), .formulario label:nth-of-type(4), .formulario label:nth-of-type(5) { grid-column: 1; } }

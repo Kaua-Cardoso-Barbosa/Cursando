@@ -23,6 +23,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
 import PlayerAulaScreen from "./src/screens/PlayerAulaScreen";
 import ProvasProfessorScreen from "./src/screens/ProvasProfessorScreen";
+import MateriaisProfessorScreen from "./src/screens/MateriaisProfessorScreen";
 import RelatoriosProfessorScreen from "./src/screens/RelatoriosProfessorScreen";
 import VerificarEmailScreen from "./src/screens/VerificarEmailScreen";
 import { colors, globalStyles } from "./src/styles";
@@ -58,6 +59,7 @@ function AppContent() {
   const [managingCourse, setManagingCourse] = useState(null);
   // Sprint item 20: guarda o curso selecionado para configurar sua prova e corrigir envios no app.
   const [examCourse, setExamCourse] = useState(null);
+  const [materialsCourse, setMaterialsCourse] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -589,6 +591,17 @@ function AppContent() {
     );
   }
 
+  // Sprint item 21: baixa complemento privado com o token da matrícula e permite abri-lo no dispositivo.
+  async function abrirMaterialCurso(material) {
+    try {
+      const destino = `${FileSystem.documentDirectory}${encodeURIComponent(material.nome_arquivo || `complemento-${material.id}`)}`;
+      const download = await FileSystem.downloadAsync(`${getApiBaseUrl()}${material.arquivo_url}`, destino, { headers: { Authorization: `Bearer ${token}` } });
+      if (download.status < 200 || download.status >= 300) throw new Error("Não foi possível acessar este material.");
+      if (!(await Sharing.isAvailableAsync())) throw new Error("O compartilhamento de arquivos não está disponível neste aparelho.");
+      await Sharing.shareAsync(download.uri, { dialogTitle: material.nome_arquivo || material.titulo });
+    } catch (error) { mostrarAlerta("Complemento", error.message, "erro"); }
+  }
+
   if (examCourse) {
     return (
       <SafeAreaView style={globalStyles.app}>
@@ -596,6 +609,10 @@ function AppContent() {
         <ProvasProfessorScreen curso={examCourse} cursos={cursos} token={token} onBack={() => setExamCourse(null)} />
       </SafeAreaView>
     );
+  }
+
+  if (materialsCourse) {
+    return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><MateriaisProfessorScreen curso={materialsCourse} token={token} onBack={() => setMaterialsCourse(null)} /></SafeAreaView>;
   }
 
   if (editingProfile) {
@@ -633,6 +650,7 @@ function AppContent() {
             onDelete={excluirCurso}
             onManage={setManagingCourse}
             onExams={setExamCourse}
+            onComplements={setMaterialsCourse}
             onStudents={setStudentsCourse}
             tipoUsuario={tipoUsuario}
           />
@@ -664,6 +682,7 @@ function AppContent() {
             onSubmitExam={enviarProvaAluno}
             onDownloadCertificate={baixarCertificadoAluno}
             onReview={avaliarCursoAluno}
+            onOpenMaterial={abrirMaterialCurso}
           />
         )}
         {tab === "courses" && tipoUsuario === 2 && detalheAulaAluno && (
@@ -693,6 +712,7 @@ function AppContent() {
             onSubmitExam={enviarProvaAluno}
             onDownloadCertificate={baixarCertificadoAluno}
             onReview={avaliarCursoAluno}
+            onOpenMaterial={abrirMaterialCurso}
           />
         )}
         {tab === "discover" && tipoUsuario === 2 && detalheAulaAluno && (

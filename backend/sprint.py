@@ -1,14 +1,18 @@
 import io
 import ast
 import json
+import mimetypes
+import os
 import secrets
 import unicodedata
 from datetime import datetime, timedelta
 from threading import Lock
 from decimal import Decimal, InvalidOperation
+from uuid import uuid4
 
-from flask import Response, current_app, jsonify, request
+from flask import Response, current_app, jsonify, request, send_file
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
+from werkzeug.utils import secure_filename
 
 from app import app
 from auditoria import garantir_gatilhos_auditoria
@@ -328,6 +332,8 @@ def garantir_sprint_schema():
         _garantir_coluna(cursor, "RESPOSTAS_PROVA", "CORRIGIDO_EM", "CORRIGIDO_EM TIMESTAMP")
         # Sprint item 19: garante a foto de perfil usada para identificar os participantes do chat.
         _garantir_coluna(cursor, "USUARIOS", "IMAGEM_PERFIL", "IMAGEM_PERFIL VARCHAR(500)")
+        # Sprint item 21: guarda o nome original de arquivos privados dos complementos do curso.
+        _garantir_coluna(cursor, "MATERIAIS_CURSO", "NOME_ARQUIVO", "NOME_ARQUIVO VARCHAR(255)")
         con.commit()
         garantir_log_schema()
         garantir_gatilhos_auditoria({
@@ -578,6 +584,7 @@ def modulos_professor(id_curso):
         con.close()
 
 
+# Sprint item 21: autoriza o instrutor do curso a publicar links e arquivos privados como complementos.
 @app.route("/professor/cursos/<int:id_curso>/materiais", methods=["GET", "POST"])
 @jwt_required()
 def materiais_professor(id_curso):
@@ -588,12 +595,16 @@ def materiais_professor(id_curso):
     garantir_sprint_schema()
     con = get_db()
     cursor = con.cursor()
+    caminho_arquivo = ""
 
     try:
+        if not _curso_do_professor(cursor, id_curso, int(get_jwt_identity())):
+            return resposta("Curso nao encontrado para este instrutor.", 404)
+
         if request.method == "GET":
             cursor.execute(
                 """
-                SELECT ID_MATERIAL, TITULO, TIPO, URL, DESCRICAO
+                SELECT ID_MATERIAL, TITULO, TIPO, URL, DESCRICAO, NOME_ARQUIVO
                 FROM MATERIAIS_CURSO
                 WHERE ID_CURSO = ?
                 ORDER BY ID_MATERIAL DESC
@@ -607,38 +618,60 @@ def materiais_professor(id_curso):
                     "tipo": row[2],
                     "url": row[3],
                     "descricao": de_blob_texto(row[4]),
+                    "nome_arquivo": row[5] or "",
+                    "arquivo": str(row[3] or "").startswith("privado:"),
                 }
                 for row in cursor.fetchall()
             ])
 
-        dados = request.get_json() or {}
+        dados = request.form if request.form else (request.get_json() or {})
         titulo = (dados.get("titulo") or "").strip()
         tipo = (dados.get("tipo") or "link").strip().lower()
         url = (dados.get("url") or "").strip()
         descricao = (dados.get("descricao") or "").strip()
+        arquivo = request.files.get("arquivo")
+        nome_arquivo = ""
 
-        if not titulo or not url:
-            return resposta("Titulo e URL do material sao obrigatorios.", 400)
+        if not titulo or tipo not in {"link", "pdf", "livro", "apostila", "codigo", "arquivo", "outro"}:
+            return resposta("Informe um titulo e um tipo valido para o complemento.", 400)
+
+        if arquivo and arquivo.filename:
+            extensao = arquivo.filename.rsplit(".", 1)[-1].lower() if "." in arquivo.filename else ""
+            extensoes_permitidas = {"pdf", "epub", "mobi", "doc", "docx", "odt", "txt", "rtf", "zip", "rar", "7z", "py", "js", "java", "html", "css", "csv", "xlsx", "pptx"}
+            if extensao not in extensoes_permitidas:
+                return resposta("Tipo de arquivo nao permitido para complemento.", 400)
+            nome_arquivo = secure_filename(arquivo.filename) or f"complemento.{extensao}"
+            pasta = os.path.join(current_app.root_path, "private_uploads", "materiais")
+            os.makedirs(pasta, exist_ok=True)
+            nome_seguro = f"{uuid4().hex}.{extensao}"
+            caminho_arquivo = os.path.join(pasta, nome_seguro)
+            arquivo.save(caminho_arquivo)
+            url = f"privado:{nome_seguro}"
+        elif not (url.startswith("https://") or url.startswith("http://")):
+            return resposta("Informe um link HTTP/HTTPS ou envie um arquivo.", 400)
 
         id_material = proximo_id(cursor, "MATERIAIS_CURSO", "ID_MATERIAL")
-        # Sprint item 21: registra complementos do curso como links, PDFs e apostilas.
+        # Sprint item 21: mantém os arquivos em diretório privado para exigir matrícula antes do download.
         cursor.execute(
             """
-            INSERT INTO MATERIAIS_CURSO (ID_MATERIAL, ID_CURSO, TITULO, TIPO, URL, DESCRICAO)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO MATERIAIS_CURSO (ID_MATERIAL, ID_CURSO, TITULO, TIPO, URL, DESCRICAO, NOME_ARQUIVO)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (id_material, id_curso, titulo, tipo, url, para_blob_texto(descricao)),
+            (id_material, id_curso, titulo, tipo, url, para_blob_texto(descricao), nome_arquivo),
         )
         con.commit()
         return resposta("Material cadastrado com sucesso.", 201, "sucesso", id_material=id_material)
     except Exception as erro:
         con.rollback()
+        if caminho_arquivo and os.path.exists(caminho_arquivo):
+            os.remove(caminho_arquivo)
         return resposta(f"Erro ao processar materiais: {erro}", 500)
     finally:
         cursor.close()
         con.close()
 
 
+# Sprint item 21: exibe os dados na prévia, mas só revela links e arquivos para aluno matriculado.
 @app.route("/aluno/cursos/<int:id_curso>/materiais", methods=["GET"])
 @jwt_required()
 def materiais_aluno(id_curso):
@@ -669,7 +702,7 @@ def materiais_aluno(id_curso):
 
         cursor.execute(
             """
-            SELECT ID_MATERIAL, TITULO, TIPO, URL, DESCRICAO
+            SELECT ID_MATERIAL, TITULO, TIPO, URL, DESCRICAO, NOME_ARQUIVO
             FROM MATERIAIS_CURSO
             WHERE ID_CURSO = ?
             ORDER BY ID_MATERIAL DESC
@@ -682,8 +715,11 @@ def materiais_aluno(id_curso):
                 "id": row[0],
                 "titulo": row[1],
                 "tipo": row[2],
-                "url": row[3] if matriculado else "",
+                "url": row[3] if matriculado and not str(row[3] or "").startswith("privado:") else "",
+                "arquivo_url": f"/aluno/cursos/{id_curso}/materiais/{row[0]}/arquivo" if matriculado and str(row[3] or "").startswith("privado:") else "",
                 "descricao": de_blob_texto(row[4]),
+                "nome_arquivo": row[5] or "",
+                "arquivo": str(row[3] or "").startswith("privado:"),
                 "bloqueado": not matriculado,
             })
         return jsonify(materiais)
@@ -2936,6 +2972,78 @@ def analiticos_mensais_professor():
         })
     except Exception as erro:
         return resposta(f"Erro ao carregar os indicadores mensais: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+# Sprint item 21: permite ao instrutor remover apenas complementos do próprio curso e apaga uploads privados.
+@app.route("/professor/cursos/<int:id_curso>/materiais/<int:id_material>", methods=["DELETE"])
+@jwt_required()
+def excluir_material_professor(id_curso, id_material):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        if not _curso_do_professor(cursor, id_curso, int(get_jwt_identity())):
+            return resposta("Curso nao encontrado para este instrutor.", 404)
+        cursor.execute(
+            "SELECT URL FROM MATERIAIS_CURSO WHERE ID_MATERIAL = ? AND ID_CURSO = ?",
+            (id_material, id_curso),
+        )
+        registro = cursor.fetchone()
+        if not registro:
+            return resposta("Complemento nao encontrado.", 404)
+        url = str(registro[0] or "")
+        cursor.execute("DELETE FROM MATERIAIS_CURSO WHERE ID_MATERIAL = ? AND ID_CURSO = ?", (id_material, id_curso))
+        con.commit()
+        if url.startswith("privado:"):
+            nome = os.path.basename(url.split(":", 1)[1])
+            caminho = os.path.join(current_app.root_path, "private_uploads", "materiais", nome)
+            if os.path.isfile(caminho):
+                os.remove(caminho)
+        return resposta("Complemento removido com sucesso.")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao remover complemento: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+# Sprint item 21: serve arquivos complementares privados apenas a alunos matriculados com assinatura ativa.
+@app.route("/aluno/cursos/<int:id_curso>/materiais/<int:id_material>/arquivo", methods=["GET"])
+@jwt_required()
+def baixar_material_aluno(id_curso, id_material):
+    negado = exigir_tipo(2)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        id_aluno = int(get_jwt_identity())
+        if not _aluno_matriculado(cursor, id_curso, id_aluno):
+            return resposta("Material disponivel somente para alunos matriculados.", 403)
+        bloqueio = _bloqueio_assinatura_aluno(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+        cursor.execute("SELECT URL, NOME_ARQUIVO FROM MATERIAIS_CURSO WHERE ID_CURSO = ? AND ID_MATERIAL = ?", (id_curso, id_material))
+        material = cursor.fetchone()
+        if not material or not str(material[0] or "").startswith("privado:"):
+            return resposta("Arquivo complementar nao encontrado.", 404)
+        nome_seguro = os.path.basename(str(material[0]).split(":", 1)[1])
+        caminho = os.path.join(current_app.root_path, "private_uploads", "materiais", nome_seguro)
+        if not os.path.isfile(caminho):
+            return resposta("Arquivo complementar nao encontrado.", 404)
+        tipo_mime = mimetypes.guess_type(material[1] or caminho)[0] or "application/octet-stream"
+        return send_file(caminho, mimetype=tipo_mime, as_attachment=True, download_name=material[1] or nome_seguro)
+    except Exception as erro:
+        return resposta(f"Erro ao baixar complemento: {erro}", 500)
     finally:
         cursor.close()
         con.close()
