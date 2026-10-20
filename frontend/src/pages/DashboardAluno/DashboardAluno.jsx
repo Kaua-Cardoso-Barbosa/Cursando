@@ -951,7 +951,7 @@ export default function DashboardAluno({
                                                 {material.bloqueado ? (
                                                     <small>Disponível após inscrição no curso.</small>
                                                 ) : (
-                                                    {material.arquivo_url ? <button type="button" onClick={() => baixarMaterial(material)}>Baixar {material.nome_arquivo || "arquivo"}</button> : material.url ? <a href={material.url} target="_blank" rel="noreferrer">Abrir material</a> : <small>Material indisponível.</small>}
+                                                    material.arquivo_url ? <button type="button" onClick={() => baixarMaterial(material)}>Baixar {material.nome_arquivo || "arquivo"}</button> : material.url ? <a href={material.url} target="_blank" rel="noreferrer">Abrir material</a> : <small>Material indisponível.</small>
                                                 )}
                                             </article>
                                         ))}
