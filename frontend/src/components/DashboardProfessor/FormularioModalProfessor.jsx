@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaUpload } from "react-icons/fa";
 import Input from "../Input/Input.jsx";
 import Button from "../Button/Button.jsx";
@@ -8,7 +8,11 @@ const cursoVazio = {
     titulo: "",
     descricao: "",
     arquivo: null,
-    thumb: null
+    thumb: null,
+    id_categoria: "",
+    id_tema: "",
+    nova_categoria: "",
+    novo_tema: ""
 };
 
 const aulaVazia = {
@@ -25,7 +29,7 @@ const moduloVazio = {
     thumb: null
 };
 
-export default function FormularioModalProfessor({ tipo, item, salvando, onFechar, onSalvar }) {
+export default function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalvar }) {
     const editando = Boolean(item);
     const [form, setForm] = useState({
         ...(tipo === "curso" ? cursoVazio : tipo === "modulo" ? moduloVazio : aulaVazia),
@@ -33,6 +37,40 @@ export default function FormularioModalProfessor({ tipo, item, salvando, onFecha
         descricao: item?.descricao || "",
         thumb: item?.thumb || null
     });
+    const [categorias, setCategorias] = useState([]);
+    const [temas, setTemas] = useState([]);
+
+    useEffect(() => {
+        if (tipo !== "curso") return undefined;
+        let ativo = true;
+
+        async function carregarTaxonomias() {
+            try {
+                const respostas = await Promise.all([
+                    fetch(`${api}/taxonomias/categorias`, { credentials: "include" }),
+                    fetch(`${api}/taxonomias/temas`, { credentials: "include" })
+                ]);
+                const [listaCategorias, listaTemas] = await Promise.all(respostas.map((resposta) => resposta.json()));
+                if (!respostas.every((resposta) => resposta.ok)) throw new Error("Não foi possível carregar categorias e temas.");
+                if (ativo) {
+                    setCategorias(Array.isArray(listaCategorias) ? listaCategorias : []);
+                    setTemas(Array.isArray(listaTemas) ? listaTemas : []);
+                }
+
+                if (item?.id) {
+                    const resposta = await fetch(`${api}/professor/cursos/${item.id}/taxonomia`, { credentials: "include" });
+                    const dados = await resposta.json();
+                    if (!resposta.ok) throw new Error("Não foi possível carregar a categoria e o tema do curso.");
+                    if (ativo) setForm((atual) => ({ ...atual, id_categoria: dados.id_categoria ? String(dados.id_categoria) : "", id_tema: dados.id_tema ? String(dados.id_tema) : "" }));
+                }
+            } catch (erro) {
+                console.error("Erro ao carregar taxonomias do curso:", erro);
+            }
+        }
+
+        carregarTaxonomias();
+        return () => { ativo = false; };
+    }, [api, item?.id, tipo]);
 
     function enviar(evento) {
         evento.preventDefault();
@@ -73,6 +111,31 @@ export default function FormularioModalProfessor({ tipo, item, salvando, onFecha
                         required
                         obrigatorio="Sim"
                     />
+
+                    {tipo === "curso" && (
+                        <div className={css.taxonomiasCurso}>
+                            {/* Sprint item 28: permite selecionar categorias e temas existentes ou iniciar o cadastro de novos. */}
+                            <label>
+                                Categoria
+                                <select value={form.id_categoria} onChange={(e) => setForm({ ...form, id_categoria: e.target.value, nova_categoria: "" })}>
+                                    <option value="">Selecione uma categoria</option>
+                                    {categorias.map((categoria) => <option key={categoria.id} value={String(categoria.id)}>{categoria.nome}</option>)}
+                                    <option value="__nova__">Criar nova categoria...</option>
+                                </select>
+                            </label>
+                            {form.id_categoria === "__nova__" && <Input tipoInp="text" label="Nova categoria:" htmlFor="nova-categoria-curso" placeholder="Digite o nome da categoria" value={form.nova_categoria} funcao={(e) => setForm({ ...form, nova_categoria: e.target.value })} />}
+
+                            <label>
+                                Tema
+                                <select value={form.id_tema} onChange={(e) => setForm({ ...form, id_tema: e.target.value, novo_tema: "" })}>
+                                    <option value="">Selecione um tema</option>
+                                    {temas.map((tema) => <option key={tema.id} value={String(tema.id)}>{tema.nome}</option>)}
+                                    <option value="__novo__">Criar novo tema...</option>
+                                </select>
+                            </label>
+                            {form.id_tema === "__novo__" && <Input tipoInp="text" label="Novo tema:" htmlFor="novo-tema-curso" placeholder="Digite o nome do tema" value={form.novo_tema} funcao={(e) => setForm({ ...form, novo_tema: e.target.value })} />}
+                        </div>
+                    )}
 
                     {tipo === "aula" && (
                         <label className={css.uploadBox}>

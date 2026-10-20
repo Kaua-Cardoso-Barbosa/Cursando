@@ -473,6 +473,38 @@ export default function DashboardProfessor({
 
         try {
             const editando = Boolean(modal.item);
+            let idCategoria = form.id_categoria && form.id_categoria !== "__nova__" ? Number(form.id_categoria) : null;
+            let idTema = form.id_tema && form.id_tema !== "__novo__" ? Number(form.id_tema) : null;
+
+            // Sprint item 28: validates new names before creating the course taxonomy.
+            if (modal.tipo === "curso" && form.id_categoria === "__nova__") {
+                const nome = form.nova_categoria?.trim();
+                if (!nome) throw new Error("Digite o nome da nova categoria.");
+            }
+            if (modal.tipo === "curso" && form.id_tema === "__novo__") {
+                const nome = form.novo_tema?.trim();
+                if (!nome) throw new Error("Digite o nome do novo tema.");
+            }
+
+            if (modal.tipo === "curso" && form.id_categoria === "__nova__" && form.nova_categoria?.trim()) {
+                const respostaCategoria = await fetch(`${api}/taxonomias/categorias`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nome: form.nova_categoria })
+                });
+                idCategoria = (await lerResposta(respostaCategoria)).id;
+            }
+            if (modal.tipo === "curso" && form.id_tema === "__novo__" && form.novo_tema?.trim()) {
+                const respostaTema = await fetch(`${api}/taxonomias/temas`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nome: form.novo_tema })
+                });
+                idTema = (await lerResposta(respostaTema)).id;
+            }
+
             const url = modal.tipo === "curso"
                 ? `${api}/professor/cursos${editando ? `/${modal.item.id}` : ""}`
                 : modal.tipo === "modulo"
@@ -488,6 +520,16 @@ export default function DashboardProfessor({
             });
 
             const dados = await lerResposta(resposta);
+            if (modal.tipo === "curso") {
+                const idCurso = editando ? modal.item.id : dados.id_curso;
+                const respostaTaxonomia = await fetch(`${api}/professor/cursos/${idCurso}/taxonomia`, {
+                    method: "PUT",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id_categoria: idCategoria, id_tema: idTema })
+                });
+                await lerResposta(respostaTaxonomia);
+            }
             setModal(null);
             await carregarDashboard();
 
@@ -1225,6 +1267,7 @@ export default function DashboardProfessor({
 
             {modal && (
                 <FormularioModalProfessor
+                    api={api}
                     tipo={modal.tipo}
                     item={modal.item}
                     salvando={salvando}

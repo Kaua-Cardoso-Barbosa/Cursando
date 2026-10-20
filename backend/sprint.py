@@ -474,7 +474,8 @@ def calcular_saldo_saque(cursor, id_usuario, pool_instrutores, pesos_instrutores
 
 
 def normalizar_taxonomia(valor):
-    return " ".join((valor or "").strip().lower().split())
+    # Sprint item 28: normaliza caixa e espaços para evitar categorias e temas duplicados.
+    return " ".join((valor or "").strip().casefold().split())
 
 
 def _resumo_detalhes_log(detalhes):
@@ -1155,10 +1156,12 @@ def taxonomias(tipo):
         if not normalizado:
             return resposta("Nome e obrigatorio.", 400)
 
+        # Sprint item 28: rejeita nomes já cadastrados sem diferenciar maiúsculas de minúsculas.
         cursor.execute(f"SELECT {coluna}, NOME FROM {tabela} WHERE NOME_NORMALIZADO = ?", (normalizado,))
         existente = cursor.fetchone()
         if existente:
-            return resposta(f"{tipo[:-1].capitalize()} ja existe: {existente[1]}", 409, id=existente[0], nome=existente[1])
+            nome_tipo = "Categoria" if tipo == "categorias" else "Tema"
+            return resposta(f"{nome_tipo} já existe: {existente[1]}. Selecione a opção existente.", 409, id=existente[0], nome=existente[1])
 
         novo_id = proximo_id(cursor, tabela, coluna)
         cursor.execute(
@@ -1213,6 +1216,25 @@ def taxonomia_curso_professor(id_curso):
         dados = request.get_json() or {}
         id_categoria = dados.get("id_categoria")
         id_tema = dados.get("id_tema")
+        for tabela_taxonomia, coluna_taxonomia, valor_id in (
+            ("CATEGORIAS_CURSO", "ID_CATEGORIA", id_categoria),
+            ("TEMAS_CURSO", "ID_TEMA", id_tema),
+        ):
+            if valor_id in (None, ""):
+                continue
+            try:
+                valor_id = int(valor_id)
+            except (TypeError, ValueError):
+                return resposta("Categoria ou tema invalido.", 400)
+            cursor.execute(f"SELECT 1 FROM {tabela_taxonomia} WHERE {coluna_taxonomia} = ?", (valor_id,))
+            if not cursor.fetchone():
+                return resposta("Categoria ou tema nao encontrado.", 400)
+            if coluna_taxonomia == "ID_CATEGORIA":
+                id_categoria = valor_id
+            else:
+                id_tema = valor_id
+
+        # Sprint item 28: associa ao curso somente categorias e temas existentes.
         cursor.execute(
             """
             UPDATE OR INSERT INTO CURSO_TAXONOMIA (ID_CURSO, ID_CATEGORIA, ID_TEMA)

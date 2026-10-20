@@ -184,6 +184,12 @@ export default function DashboardAluno({
     const [busca, setBusca] = useState("");
     const [ordemDescobrir, setOrdemDescobrir] = useState("recentes");
     const [apenasNaoInscritos, setApenasNaoInscritos] = useState(false);
+    // Sprint item 28: keeps taxonomy and rating filters for course discovery.
+    const [categoriasDescobrir, setCategoriasDescobrir] = useState([]);
+    const [temasDescobrir, setTemasDescobrir] = useState([]);
+    const [categoriaDescobrir, setCategoriaDescobrir] = useState("");
+    const [temaDescobrir, setTemaDescobrir] = useState("");
+    const [avaliacaoMinimaDescobrir, setAvaliacaoMinimaDescobrir] = useState("");
     const [detalheCurso, setDetalheCurso] = useState(null);
     const [materiaisCurso, setMateriaisCurso] = useState([]);
     const [provaAluno, setProvaAluno] = useState(null);
@@ -264,6 +270,9 @@ export default function DashboardAluno({
             if (termo.trim()) params.set("busca", termo.trim());
             params.set("ordem", ordemDescobrir);
             if (apenasNaoInscritos) params.set("apenas_novos", "1");
+            if (categoriaDescobrir) params.set("categoria", categoriaDescobrir);
+            if (temaDescobrir) params.set("tema", temaDescobrir);
+            if (avaliacaoMinimaDescobrir) params.set("avaliacao_min", avaliacaoMinimaDescobrir);
             const resposta = await fetch(`${api}/aluno/descobrir?${params.toString()}`, { credentials: "include" });
             setDescobrir(await lerResposta(resposta));
         } catch (erro) {
@@ -272,7 +281,24 @@ export default function DashboardAluno({
         } finally {
             setCarregando(false);
         }
-    }, [api, apenasNaoInscritos, busca, lerResposta, ordemDescobrir]);
+    }, [api, apenasNaoInscritos, avaliacaoMinimaDescobrir, busca, categoriaDescobrir, lerResposta, ordemDescobrir, temaDescobrir]);
+
+    // Sprint item 28: loads the shared category and theme options used by discovery filters.
+    useEffect(() => {
+        let ativo = true;
+        Promise.all([
+            fetch(`${api}/taxonomias/categorias`, { credentials: "include" }),
+            fetch(`${api}/taxonomias/temas`, { credentials: "include" })
+        ]).then(async (respostas) => {
+            const dados = await Promise.all(respostas.map((resposta) => resposta.json()));
+            if (!respostas.every((resposta) => resposta.ok)) throw new Error("Não foi possível carregar os filtros de cursos.");
+            if (ativo) {
+                setCategoriasDescobrir(Array.isArray(dados[0]) ? dados[0] : []);
+                setTemasDescobrir(Array.isArray(dados[1]) ? dados[1] : []);
+            }
+        }).catch((erro) => console.error("Erro ao carregar filtros de cursos:", erro));
+        return () => { ativo = false; };
+    }, [api]);
 
     const carregarDetalheCurso = useCallback(async (idCurso) => {
         setCarregando(true);
@@ -755,6 +781,28 @@ export default function DashboardAluno({
                                 <p>Pesquise o catálogo, compare opções e abra um curso para ver os módulos e as aulas.</p>
                             </header>
                             <div className={css.filtrosDescobrir}>
+                                {/* Sprint item 28: filters the public catalog by category, theme and minimum rating. */}
+                                <label className={css.filtroOrdenacao}>
+                                    <span>Categoria</span>
+                                    <select value={categoriaDescobrir} onChange={(evento) => setCategoriaDescobrir(evento.target.value)}>
+                                        <option value="">Todas</option>
+                                        {categoriasDescobrir.map((categoria) => <option key={categoria.id} value={categoria.nome}>{categoria.nome}</option>)}
+                                    </select>
+                                </label>
+                                <label className={css.filtroOrdenacao}>
+                                    <span>Tema</span>
+                                    <select value={temaDescobrir} onChange={(evento) => setTemaDescobrir(evento.target.value)}>
+                                        <option value="">Todos</option>
+                                        {temasDescobrir.map((tema) => <option key={tema.id} value={tema.nome}>{tema.nome}</option>)}
+                                    </select>
+                                </label>
+                                <label className={css.filtroOrdenacao}>
+                                    <span>Avaliação mínima</span>
+                                    <select value={avaliacaoMinimaDescobrir} onChange={(evento) => setAvaliacaoMinimaDescobrir(evento.target.value)}>
+                                        <option value="">Qualquer nota</option>
+                                        {[1, 2, 3, 4, 5].map((nota) => <option key={nota} value={nota}>{nota} {nota === 1 ? "estrela ou mais" : "estrelas ou mais"}</option>)}
+                                    </select>
+                                </label>
                                 <label className={css.campoBusca}>
                                     <FaSearch />
                                     <input

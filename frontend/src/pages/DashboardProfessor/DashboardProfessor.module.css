@@ -1604,3 +1604,31 @@
         gap: 6px;
     }
 }
+/* Sprint item 28: styles category and theme controls in the course form. */
+.taxonomiasCurso {
+    display: grid;
+    gap: 12px;
+}
+
+.taxonomiasCurso label {
+    display: grid;
+    gap: 6px;
+    color: #244338;
+    font-weight: 600;
+}
+
+.taxonomiasCurso select {
+    min-height: 42px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd9d0;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #111111;
+    font: inherit;
+}
+
+.taxonomiasCurso select:focus-visible {
+    outline: 3px solid rgba(6, 166, 99, 0.2);
+    border-color: #06a663;
+}

@@ -1,17 +1,45 @@
 import AppIcon from "../components/AppIcon";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
-import { Alert, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { resolverUrlMidia } from "../api/client";
+import { useEffect, useState } from "react";
+import { Alert, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { apiRequest, resolverUrlMidia } from "../api/client";
 import BrandLogo from "../components/BrandLogo";
 import Field from "../components/Field";
 import { colors, globalStyles } from "../styles";
 
-export default function EditarCursoScreen({ curso, onCancel, onSave, salvando }) {
+export default function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
   const [titulo, setTitulo] = useState(curso?.titulo || "");
   const [descricao, setDescricao] = useState(curso?.descricao || "");
   const [imagem, setImagem] = useState(null);
+  // Sprint item 28: loads taxonomy options and the current course selections in the app.
+  const [categorias, setCategorias] = useState([]);
+  const [temas, setTemas] = useState([]);
+  const [carregandoTaxonomias, setCarregandoTaxonomias] = useState(true);
+  const [idCategoria, setIdCategoria] = useState("");
+  const [idTema, setIdTema] = useState("");
+  const [novaCategoria, setNovaCategoria] = useState(false);
+  const [novoTema, setNovoTema] = useState(false);
+  const [nomeNovaCategoria, setNomeNovaCategoria] = useState("");
+  const [nomeNovoTema, setNomeNovoTema] = useState("");
   const preview = imagem?.uri || resolverUrlMidia(curso?.imagem);
+
+  useEffect(() => {
+    let ativo = true;
+    Promise.all([
+      apiRequest("/taxonomias/categorias", {}, token),
+      apiRequest("/taxonomias/temas", {}, token),
+      apiRequest(`/professor/cursos/${curso.id}/taxonomia`, {}, token)
+    ]).then(([listaCategorias, listaTemas, taxonomiaCurso]) => {
+      if (!ativo) return;
+      setCategorias(Array.isArray(listaCategorias) ? listaCategorias : []);
+      setTemas(Array.isArray(listaTemas) ? listaTemas : []);
+      setIdCategoria(taxonomiaCurso.id_categoria ? String(taxonomiaCurso.id_categoria) : "");
+      setIdTema(taxonomiaCurso.id_tema ? String(taxonomiaCurso.id_tema) : "");
+    }).catch((error) => Alert.alert("Erro", error.message)).finally(() => {
+      if (ativo) setCarregandoTaxonomias(false);
+    });
+    return () => { ativo = false; };
+  }, [curso.id, token]);
 
   async function escolherImagem() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -63,16 +91,33 @@ export default function EditarCursoScreen({ curso, onCancel, onSave, salvando })
           <Field label="Titulo:" value={titulo} onChangeText={setTitulo} />
           <Field label="Descricao:" value={descricao} onChangeText={setDescricao} multiline />
 
+          {/* Sprint item 28: lets instructors select existing taxonomy or submit a new name. */}
+          <Text style={styles.taxonomyLabel}>Categoria do curso</Text>
+          <View style={styles.taxonomyOptions}>
+            <Pressable style={[styles.taxonomyOption, !idCategoria && !novaCategoria && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(""); setNovaCategoria(false); }}><Text style={[styles.taxonomyOptionText, !idCategoria && !novaCategoria && styles.taxonomyOptionTextActive]}>Nenhuma</Text></Pressable>
+            {categorias.map((item) => <Pressable key={item.id} style={[styles.taxonomyOption, idCategoria === String(item.id) && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(String(item.id)); setNovaCategoria(false); }}><Text style={[styles.taxonomyOptionText, idCategoria === String(item.id) && styles.taxonomyOptionTextActive]}>{item.nome}</Text></Pressable>)}
+            <Pressable style={[styles.taxonomyOption, novaCategoria && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(""); setNovaCategoria(true); }}><Text style={[styles.taxonomyOptionText, novaCategoria && styles.taxonomyOptionTextActive]}>Criar nova</Text></Pressable>
+          </View>
+          {novaCategoria && <TextInput style={styles.taxonomyInput} value={nomeNovaCategoria} onChangeText={setNomeNovaCategoria} placeholder="Nome da nova categoria" />}
+
+          <Text style={styles.taxonomyLabel}>Tema do curso</Text>
+          <View style={styles.taxonomyOptions}>
+            <Pressable style={[styles.taxonomyOption, !idTema && !novoTema && styles.taxonomyOptionActive]} onPress={() => { setIdTema(""); setNovoTema(false); }}><Text style={[styles.taxonomyOptionText, !idTema && !novoTema && styles.taxonomyOptionTextActive]}>Nenhum</Text></Pressable>
+            {temas.map((item) => <Pressable key={item.id} style={[styles.taxonomyOption, idTema === String(item.id) && styles.taxonomyOptionActive]} onPress={() => { setIdTema(String(item.id)); setNovoTema(false); }}><Text style={[styles.taxonomyOptionText, idTema === String(item.id) && styles.taxonomyOptionTextActive]}>{item.nome}</Text></Pressable>)}
+            <Pressable style={[styles.taxonomyOption, novoTema && styles.taxonomyOptionActive]} onPress={() => { setIdTema(""); setNovoTema(true); }}><Text style={[styles.taxonomyOptionText, novoTema && styles.taxonomyOptionTextActive]}>Criar novo</Text></Pressable>
+          </View>
+          {novoTema && <TextInput style={styles.taxonomyInput} value={nomeNovoTema} onChangeText={setNomeNovoTema} placeholder="Nome do novo tema" />}
+
           <View style={styles.buttons}>
             <Pressable style={globalStyles.secondaryButton} onPress={onCancel}>
               <Text style={globalStyles.secondaryText}>Cancelar</Text>
             </Pressable>
             <Pressable
               style={globalStyles.primaryButton}
-              onPress={() => onSave({ titulo, descricao, imagem })}
-              disabled={salvando}
+              onPress={() => onSave({ titulo, descricao, imagem, idCategoria, idTema, novaCategoria, novoTema, nomeNovaCategoria, nomeNovoTema })}
+              disabled={salvando || carregandoTaxonomias}
             >
-              <Text style={globalStyles.buttonText}>{salvando ? "Salvando..." : "Salvar"}</Text>
+              <Text style={globalStyles.buttonText}>{carregandoTaxonomias ? "Carregando..." : salvando ? "Salvando..." : "Salvar"}</Text>
             </Pressable>
           </View>
         </View>
@@ -151,6 +196,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.darkGreen
   },
   cameraButtonText: { color: colors.white, fontWeight: "700" },
+  taxonomyLabel: { color: colors.darkGreen, fontWeight: "700", marginTop: 16, marginBottom: 8 },
+  taxonomyOptions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
+  taxonomyOption: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  taxonomyOptionActive: { backgroundColor: colors.darkGreen, borderColor: colors.darkGreen },
+  taxonomyOptionText: { color: colors.darkGreen, fontWeight: "600" },
+  taxonomyOptionTextActive: { color: colors.white },
+  taxonomyInput: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, marginBottom: 8, color: colors.black },
   buttons: {
     flexDirection: "row",
     justifyContent: "space-between",

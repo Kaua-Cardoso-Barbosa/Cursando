@@ -435,9 +435,29 @@ function AppContent() {
     setDetalheAulaAluno(null);
   }
 
-  async function salvarCurso({ titulo, descricao, imagem }) {
+  async function salvarCurso({ titulo, descricao, imagem, idCategoria, idTema, novaCategoria, novoTema, nomeNovaCategoria, nomeNovoTema }) {
     setSaving(true);
     try {
+      // Sprint item 28: creates new shared taxonomy names through the duplicate-checked API.
+      let categoriaSelecionada = idCategoria || null;
+      let temaSelecionado = idTema || null;
+      if (novaCategoria) {
+        if (!nomeNovaCategoria?.trim()) throw new Error("Digite o nome da nova categoria.");
+        const criada = await apiRequest("/taxonomias/categorias", {
+          method: "POST",
+          body: JSON.stringify({ nome: nomeNovaCategoria.trim() })
+        }, token);
+        categoriaSelecionada = criada.id;
+      }
+      if (novoTema) {
+        if (!nomeNovoTema?.trim()) throw new Error("Digite o nome do novo tema.");
+        const criado = await apiRequest("/taxonomias/temas", {
+          method: "POST",
+          body: JSON.stringify({ nome: nomeNovoTema.trim() })
+        }, token);
+        temaSelecionado = criado.id;
+      }
+
       const form = new FormData();
       form.append("titulo", titulo);
       form.append("descricao", descricao);
@@ -449,6 +469,10 @@ function AppContent() {
         });
       }
       await apiRequest(`/professor/cursos/${editingCourse.id}`, { method: "PUT", body: form }, token);
+      await apiRequest(`/professor/cursos/${editingCourse.id}/taxonomia`, {
+        method: "PUT",
+        body: JSON.stringify({ id_categoria: categoriaSelecionada, id_tema: temaSelecionado })
+      }, token);
       setEditingCourse(null);
       await carregarDados();
     } catch (error) {
@@ -593,7 +617,7 @@ function AppContent() {
     return (
       <SafeAreaView style={globalStyles.app}>
         <StatusBar style="light" />
-        <EditarCursoScreen curso={editingCourse} onCancel={() => setEditingCourse(null)} onSave={salvarCurso} salvando={saving} />
+        <EditarCursoScreen curso={editingCourse} token={token} onCancel={() => setEditingCourse(null)} onSave={salvarCurso} salvando={saving} />
       </SafeAreaView>
     );
   }

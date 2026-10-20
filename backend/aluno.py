@@ -461,15 +461,23 @@ def listar_cursos_aluno():
 @app.route("/aluno/descobrir", methods=["GET"])
 @jwt_required()
 def descobrir_cursos():
+    # Sprint item 28: applies category, theme and 1–5 minimum-rating filters to discovery.
     negado = exigir_aluno()
     if negado:
         return negado
 
     id_aluno = get_jwt_identity()
     busca = (request.args.get("busca") or "").strip().lower()
-    categoria = (request.args.get("categoria") or "").strip().lower()
-    tema = (request.args.get("tema") or "").strip().lower()
+    categoria = (request.args.get("categoria") or "").strip().casefold()
+    tema = (request.args.get("tema") or "").strip().casefold()
     avaliacao_min = request.args.get("avaliacao_min")
+    if avaliacao_min not in (None, ""):
+        try:
+            avaliacao_min = int(avaliacao_min)
+        except (TypeError, ValueError):
+            return resposta("A avaliação deve ser um número inteiro de 1 a 5.", 400)
+        if avaliacao_min < 1 or avaliacao_min > 5:
+            return resposta("A avaliação deve ser um número inteiro de 1 a 5.", 400)
     filtros = []
     parametros = [id_aluno, id_aluno]
 
@@ -485,9 +493,9 @@ def descobrir_cursos():
         filtros.append("AND LOWER(COALESCE(TEMA.NOME, '')) = ?")
         parametros.append(tema)
 
-    if avaliacao_min:
+    if avaliacao_min is not None:
         filtros.append("AND COALESCE((SELECT AVG(A.NOTA) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0) >= ?")
-        parametros.append(float(avaliacao_min))
+        parametros.append(avaliacao_min)
 
     if request.args.get("recomendados") == "1":
         filtros.append(

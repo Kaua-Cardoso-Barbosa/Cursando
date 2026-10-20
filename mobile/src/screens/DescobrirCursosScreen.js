@@ -13,6 +13,12 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState("recentes");
   const [apenasNovos, setApenasNovos] = useState(false);
+  // Sprint item 28: stores discovery filters and taxonomy options for the Android catalog.
+  const [categorias, setCategorias] = useState([]);
+  const [temas, setTemas] = useState([]);
+  const [categoria, setCategoria] = useState("");
+  const [tema, setTema] = useState("");
+  const [avaliacaoMinima, setAvaliacaoMinima] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function carregar(termo = busca) {
@@ -22,6 +28,9 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
       if (termo.trim()) params.set("busca", termo.trim());
       params.set("ordem", ordem);
       if (apenasNovos) params.set("apenas_novos", "1");
+      if (categoria) params.set("categoria", categoria);
+      if (tema) params.set("tema", tema);
+      if (avaliacaoMinima) params.set("avaliacao_min", avaliacaoMinima);
       const dados = await apiRequest(`/aluno/descobrir?${params.toString()}`, {}, token);
       setCursos(Array.isArray(dados) ? dados : []);
     } catch (error) {
@@ -34,7 +43,21 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
 
   useEffect(() => {
     carregar("");
-  }, [ordem, apenasNovos, token]);
+  }, [ordem, apenasNovos, categoria, tema, avaliacaoMinima, token]);
+
+  // Sprint item 28: loads shared categories and themes for the app's discovery filters.
+  useEffect(() => {
+    let ativo = true;
+    Promise.all([
+      apiRequest("/taxonomias/categorias", {}, token),
+      apiRequest("/taxonomias/temas", {}, token)
+    ]).then(([listaCategorias, listaTemas]) => {
+      if (!ativo) return;
+      setCategorias(Array.isArray(listaCategorias) ? listaCategorias : []);
+      setTemas(Array.isArray(listaTemas) ? listaTemas : []);
+    }).catch((error) => mostrarAlerta("Erro", error.message, "erro"));
+    return () => { ativo = false; };
+  }, [token]);
 
   return (
     <ScrollView
@@ -70,6 +93,31 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
           <Pressable style={[styles.filterButton, apenasNovos && styles.filterActive]} onPress={() => setApenasNovos(!apenasNovos)}>
             <Text style={[styles.filterText, apenasNovos && styles.filterTextActive]}>Nao inscritos</Text>
           </Pressable>
+        </View>
+        {/* Sprint item 28: category, theme and rating selectors filter courses on Android. */}
+        <Text style={styles.filterLabel}>Categoria</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          <Pressable style={[styles.filterButton, !categoria && styles.filterActive]} onPress={() => setCategoria("")}>
+            <Text style={[styles.filterText, !categoria && styles.filterTextActive]}>Todas</Text>
+          </Pressable>
+          {categorias.map((item) => <Pressable key={item.id} style={[styles.filterButton, categoria === item.nome && styles.filterActive]} onPress={() => setCategoria(item.nome)}>
+            <Text style={[styles.filterText, categoria === item.nome && styles.filterTextActive]}>{item.nome}</Text>
+          </Pressable>)}
+        </ScrollView>
+        <Text style={styles.filterLabel}>Tema</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          <Pressable style={[styles.filterButton, !tema && styles.filterActive]} onPress={() => setTema("")}>
+            <Text style={[styles.filterText, !tema && styles.filterTextActive]}>Todos</Text>
+          </Pressable>
+          {temas.map((item) => <Pressable key={item.id} style={[styles.filterButton, tema === item.nome && styles.filterActive]} onPress={() => setTema(item.nome)}>
+            <Text style={[styles.filterText, tema === item.nome && styles.filterTextActive]}>{item.nome}</Text>
+          </Pressable>)}
+        </ScrollView>
+        <Text style={styles.filterLabel}>Avaliação mínima</Text>
+        <View style={styles.filterRow}>
+          {["", "1", "2", "3", "4", "5"].map((nota) => <Pressable key={nota || "todas"} style={[styles.filterButton, avaliacaoMinima === nota && styles.filterActive]} onPress={() => setAvaliacaoMinima(nota)}>
+            <Text style={[styles.filterText, avaliacaoMinima === nota && styles.filterTextActive]}>{nota ? `${nota} ★` : "Todas"}</Text>
+          </Pressable>)}
         </View>
       </View>
 
@@ -109,6 +157,7 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, color: colors.black, fontSize: 16 },
   filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  filterLabel: { color: colors.darkGreen, fontSize: 13, fontWeight: "700", marginTop: 2 },
   filterButton: {
     minHeight: 38,
     borderWidth: 1,
