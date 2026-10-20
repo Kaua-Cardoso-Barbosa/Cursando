@@ -20,6 +20,7 @@ function formatarPosicaoAula(milissegundos) {
 
 export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFinish, onSaveProgress }) {
   // Sprint item 10: ativa a proteção nativa do Android (FLAG_SECURE) durante a exibição da aula.
+  // Sprint item 26: mantém o bloqueio nativo de capturas ativo enquanto o player da aula está aberto.
   usePreventScreenCapture("aula-protegida");
   // Reproduz a URL de mídia autenticada e registra a conclusão enviada pelo player nativo.
   const aula = detalhe?.aula;

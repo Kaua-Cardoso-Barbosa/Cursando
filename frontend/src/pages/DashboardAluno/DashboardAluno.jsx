@@ -423,6 +423,7 @@ export default function DashboardAluno({
             temporizadorProtecaoRef.current = window.setTimeout(() => setProtecaoAtiva(false), 2500);
         }
 
+        // Sprint item 26: o site só consegue ocultar o player em eventos detectáveis; o navegador não bloqueia gravações do sistema.
         function aoVisibilidade() {
             if (visao !== "aula") return;
             if (document.hidden) {
