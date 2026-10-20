@@ -3,7 +3,6 @@ from app import app
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required
 from flask_bcrypt import Bcrypt
-import fdb
 import requests
 
 jwt = JWTManager(app)
@@ -20,21 +19,6 @@ CORS(
 @app.route("/health", methods=["GET"])
 def health():
     return {"status": "ok"}, 200
-
-host = app.config['DB_HOST']
-data_base = app.config['DB_NAME']
-user = app.config['DB_USER']
-password = app.config['DB_PASSWORD']
-
-
-con = fdb.connect(
-    host=host,
-    database=data_base,
-    user=user,
-    password=password,
-    charset='UTF8'
-)
-
 
 from usuario import *
 from professor import *

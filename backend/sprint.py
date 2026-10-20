@@ -2200,6 +2200,8 @@ def financeiro_resumo():
                     "alunos": alunos_curso,
                     "receita_estimativa": round(receita_curso, 2),
                 })
+            # Sprint item 31: ordena os cursos da maior para a menor receita estimada do instrutor.
+            cursos_receita.sort(key=lambda curso: curso["receita_estimativa"], reverse=True)
             # Sprint itens 12, 30 e 31: apresenta o resumo financeiro do instrutor com base no fundo de receita.
             return jsonify({
                 "perfil": "instrutor",

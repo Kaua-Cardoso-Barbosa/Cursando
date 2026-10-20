@@ -241,7 +241,9 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
           </View>
 
           <View style={styles.invoiceBlock}>
-            <Text style={styles.sectionTitle}>Receita estimada por curso</Text>
+            {/* Sprint item 31: exibe os cursos do instrutor em ordem decrescente de receita estimada. */}
+            <Text style={styles.sectionTitle}>Cursos que mais geraram receita</Text>
+            <Text style={styles.invoiceText}>Cursos ordenados da maior para a menor receita estimada.</Text>
             {(financeiro?.cursos_receita || []).map((curso) => (
               <View key={curso.id_curso} style={styles.invoiceCard}>
                 <Text style={styles.invoiceTitle}>{curso.curso}</Text>

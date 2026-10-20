@@ -1115,10 +1115,11 @@ export default function DashboardProfessor({
                             </section>
 
                             <section className={css.painelTabelaFinanceiro}>
+                                {/* Sprint item 31: exibe os cursos do instrutor em ordem decrescente de receita estimada. */}
                                 <div className={css.cabecalhoBloco}>
                                     <div>
-                                        <h3>Receita estimada por curso</h3>
-                                        <p>Consulte a atividade e o valor associado a cada curso.</p>
+                                        <h3>Cursos que mais geraram receita</h3>
+                                        <p>Cursos ordenados da maior para a menor receita estimada.</p>
                                     </div>
                                 </div>
                                 <div className={css.containerTabelaFinanceira}>
