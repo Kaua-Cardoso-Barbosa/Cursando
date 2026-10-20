@@ -204,6 +204,7 @@ function AppConteudo() {
                     </RotaRestrita>
                 }/>
 
+                {/* Sprint item 25: limita a tela de consulta de logs aos administradores autenticados. */}
                 <Route path="/DashboardAdm/Logs" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
                         <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>

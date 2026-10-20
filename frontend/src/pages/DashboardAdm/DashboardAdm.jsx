@@ -481,7 +481,7 @@ export default function DashboardAdm({
                     ) : exibindoLogs ? (
                         <section className={css.listaLogs}>
                             <h2>Logs do sistema</h2>
-                            {/* Sprint item 24: organiza os registros por perfil e tipo de atividade para facilitar a auditoria. */}
+                            {/* Sprint item 25: permite filtrar os logs por usuário e datas no painel administrativo. */}
                             <div className={css.abasLogs}>
                                 {[["0", "Administradores"], ["1", "Professores"], ["2", "Alunos"]].map(([tipo, label]) => (
                                     <button key={tipo} className={filtrosLogs.tipo === tipo ? css.abaAtiva : css.abaLog} onClick={() => { setFiltrosLogs({ ...filtrosLogs, tipo, evento: "", acao: "" }); setLogExpandido(null); }} type="button">{label}</button>

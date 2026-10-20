@@ -34,6 +34,8 @@ export default function LogsAdminScreen({ token, onError }) {
   const [perfil, setPerfil] = useState("0");
   const [evento, setEvento] = useState("");
   const [busca, setBusca] = useState("");
+  const [inicio, setInicio] = useState("");
+  const [fim, setFim] = useState("");
   const [logs, setLogs] = useState([]);
   const [aberto, setAberto] = useState(null);
   const [carregando, setCarregando] = useState(false);
@@ -47,6 +49,9 @@ export default function LogsAdminScreen({ token, onError }) {
       const params = new URLSearchParams({ tipo: perfil, limite: "100", offset: String(offset) });
       if (evento) params.set("evento", evento);
       if (busca.trim()) params.set("busca", busca.trim());
+      // Sprint item 25: envia o período escolhido para restringir os logs exibidos ao administrador.
+      if (inicio) params.set("inicio", inicio);
+      if (fim) params.set("fim", fim);
       const dados = await apiRequest(`/admin/logs-gravacao?${params.toString()}`, {}, token);
       const registros = Array.isArray(dados) ? dados : [];
       setLogs((atuais) => anexar ? [...atuais, ...registros.slice(0, 100)] : registros.slice(0, 100));
@@ -56,7 +61,7 @@ export default function LogsAdminScreen({ token, onError }) {
     } finally {
       setCarregando(false);
     }
-  }, [busca, evento, perfil, token]);
+  }, [busca, evento, fim, inicio, perfil, token]);
 
   useEffect(() => { carregar(0, false); }, [carregar]);
 
@@ -71,7 +76,13 @@ export default function LogsAdminScreen({ token, onError }) {
           </Pressable>
         ))}
       </ScrollView>
+      {/* Sprint item 25: localiza logs pelo nome ou e-mail do usuário que realizou a ação. */}
       <TextInput value={busca} onChangeText={setBusca} placeholder="Buscar nome, email ou acao" placeholderTextColor={colors.textMuted} style={styles.search} />
+      {/* Sprint item 25: oferece filtros de data para consultar logs do período desejado. */}
+      <View style={styles.dateFilters}>
+        <TextInput value={inicio} onChangeText={setInicio} placeholder="Data inicial (AAAA-MM-DD)" placeholderTextColor={colors.textMuted} style={[styles.search, styles.dateInput]} />
+        <TextInput value={fim} onChangeText={setFim} placeholder="Data final (AAAA-MM-DD)" placeholderTextColor={colors.textMuted} style={[styles.search, styles.dateInput]} />
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choices}>
         {(eventosPorPerfil[perfil] || eventosPorPerfil["0"]).map(([id, nome]) => (
           <Pressable key={id || "todos"} onPress={() => setEvento(id)} style={[styles.choice, evento === id && styles.choiceActive]}>
@@ -126,6 +137,8 @@ const styles = StyleSheet.create({
   choiceText: { color: colors.black, fontSize: 12, fontWeight: "700" },
   choiceTextActive: { color: colors.white },
   search: { backgroundColor: colors.white, color: colors.black, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  dateFilters: { flexDirection: "row", gap: 8 },
+  dateInput: { flex: 1, minWidth: 0, fontSize: 12 },
   loading: { padding: 20 },
   empty: { color: colors.textMuted, textAlign: "center", padding: 24 },
   card: { backgroundColor: colors.white, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, gap: 6 },

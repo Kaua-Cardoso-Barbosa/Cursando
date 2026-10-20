@@ -766,6 +766,7 @@ function AppContent() {
             carregando={loading}
           />
         )}
+        {/* Sprint item 25: exibe a consulta de logs somente na sessão de administrador. */}
         {tab === "logs" && tipoUsuario === 0 && (
           <LogsAdminScreen token={token} onError={(error) => mostrarAlerta("Logs", error.message, "erro")} />
         )}

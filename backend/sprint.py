@@ -2326,7 +2326,7 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
     return contexto
 
 
-# Sprint item 24: filtra e identifica as alteracoes de negocio feitas por cada perfil para auditoria administrativa.
+# Sprint item 25: restringe a consulta de logs ao administrador e permite filtrar registros por usuário e período.
 @app.route("/admin/logs-gravacao", methods=["GET"])
 @jwt_required()
 def logs_gravacao_admin():
