@@ -497,7 +497,9 @@ def descobrir_cursos():
         filtros.append("AND COALESCE((SELECT AVG(A.NOTA) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0) >= ?")
         parametros.append(avaliacao_min)
 
-    if request.args.get("recomendados") == "1":
+    recomendacoes_ativas = request.args.get("recomendados") == "1"
+    if recomendacoes_ativas:
+        # Sprint item 29: recomenda cursos públicos com categorias ou temas dos cursos do aluno.
         filtros.append(
             """
             AND EXISTS (
@@ -538,7 +540,27 @@ def descobrir_cursos():
         "recentes": "C.CRIADO_EM DESC, C.ID_CURSO DESC",
         "populares": "(SELECT COUNT(*) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1) DESC, C.CRIADO_EM DESC, C.ID_CURSO DESC",
     }
-    ordenacao = ordenacoes.get(request.args.get("ordem"), ordenacoes["recentes"])
+    if recomendacoes_ativas:
+        # Sprint item 29: prioriza categorias e temas que aparecem em mais cursos inscritos.
+        ordenacao = """
+            (
+                COALESCE((SELECT COUNT(DISTINCT MR.ID_CURSO) FROM MATRICULAS MR
+                    JOIN CURSO_TAXONOMIA CTR ON CTR.ID_CURSO = MR.ID_CURSO
+                    WHERE MR.ID_USUARIO = ? AND MR.STATUS_MATRICULA = 1
+                      AND CTR.ID_CATEGORIA = CT.ID_CATEGORIA), 0)
+                +
+                COALESCE((SELECT COUNT(DISTINCT MR.ID_CURSO) FROM MATRICULAS MR
+                    JOIN CURSO_TAXONOMIA CTR ON CTR.ID_CURSO = MR.ID_CURSO
+                    WHERE MR.ID_USUARIO = ? AND MR.STATUS_MATRICULA = 1
+                      AND CTR.ID_TEMA = CT.ID_TEMA), 0)
+            ) DESC,
+            COALESCE((SELECT AVG(A.NOTA) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0) DESC,
+            (SELECT COUNT(*) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1) DESC,
+            C.CRIADO_EM DESC, C.ID_CURSO DESC
+        """
+        parametros.extend([id_aluno, id_aluno])
+    else:
+        ordenacao = ordenacoes.get(request.args.get("ordem"), ordenacoes["recentes"])
 
     con = get_db()
     cursor = con.cursor()

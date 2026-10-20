@@ -175,6 +175,8 @@ export default function DashboardAluno({
     const [dashboard, setDashboard] = useState(null);
     const [meusCursos, setMeusCursos] = useState([]);
     const [descobrir, setDescobrir] = useState([]);
+    // Sprint item 29: stores courses recommended from the student's enrolled topics and categories.
+    const [cursosRecomendados, setCursosRecomendados] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
     const [faturas, setFaturas] = useState([]);
     const [pagamentoFatura, setPagamentoFatura] = useState(null);
@@ -275,6 +277,13 @@ export default function DashboardAluno({
             if (avaliacaoMinimaDescobrir) params.set("avaliacao_min", avaliacaoMinimaDescobrir);
             const resposta = await fetch(`${api}/aluno/descobrir?${params.toString()}`, { credentials: "include" });
             setDescobrir(await lerResposta(resposta));
+            try {
+                const respostaRecomendacoes = await fetch(`${api}/aluno/descobrir?recomendados=1&ordem=recomendados`, { credentials: "include" });
+                setCursosRecomendados(await lerResposta(respostaRecomendacoes));
+            } catch (erroRecomendacoes) {
+                console.error("Erro ao carregar recomendações de cursos:", erroRecomendacoes);
+                setCursosRecomendados([]);
+            }
         } catch (erro) {
             console.error("Erro ao carregar cursos publicos:", erro);
             setDescobrir([]);
@@ -780,6 +789,20 @@ export default function DashboardAluno({
                                 <h2>Encontre seu próximo curso</h2>
                                 <p>Pesquise o catálogo, compare opções e abra um curso para ver os módulos e as aulas.</p>
                             </header>
+                            <section className={css.recomendacoesCursos}>
+                                {/* Sprint item 29: shows courses matching categories and themes from the student's enrollments. */}
+                                <h3>Recomendados para você</h3>
+                                <p>Com base nas categorias e nos temas dos cursos em que você está inscrito.</p>
+                                {cursosRecomendados.length > 0 ? (
+                                    <div className={css.gridCursos}>
+                                        {cursosRecomendados.slice(0, 6).map((curso) => (
+                                            <CursoCard key={curso.id} curso={curso} api={api} onAbrir={() => navigate(`/DashboardAluno/descobrir/${curso.id}`)} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className={css.textoApoio}>Quando houver cursos relacionados às suas inscrições, eles aparecerão aqui.</p>
+                                )}
+                            </section>
                             <div className={css.filtrosDescobrir}>
                                 {/* Sprint item 28: filters the public catalog by category, theme and minimum rating. */}
                                 <label className={css.filtroOrdenacao}>

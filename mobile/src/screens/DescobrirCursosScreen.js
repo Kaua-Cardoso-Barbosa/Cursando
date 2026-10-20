@@ -10,6 +10,8 @@ const fallbackImage = "https://images.unsplash.com/photo-1497633762265-9d179a990
 export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
   const { mostrarAlerta } = useFeedback();
   const [cursos, setCursos] = useState([]);
+  // Sprint item 29: stores personalized suggestions from enrolled course categories and themes.
+  const [cursosRecomendados, setCursosRecomendados] = useState([]);
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState("recentes");
   const [apenasNovos, setApenasNovos] = useState(false);
@@ -33,6 +35,14 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
       if (avaliacaoMinima) params.set("avaliacao_min", avaliacaoMinima);
       const dados = await apiRequest(`/aluno/descobrir?${params.toString()}`, {}, token);
       setCursos(Array.isArray(dados) ? dados : []);
+      try {
+        // Sprint item 29: requests ranked matches against the student's active enrollments.
+        const recomendacoes = await apiRequest("/aluno/descobrir?recomendados=1&ordem=recomendados", {}, token);
+        setCursosRecomendados(Array.isArray(recomendacoes) ? recomendacoes : []);
+      } catch (recommendationError) {
+        console.warn("Erro ao carregar recomendações:", recommendationError.message);
+        setCursosRecomendados([]);
+      }
     } catch (error) {
       mostrarAlerta("Erro", error.message, "erro");
       setCursos([]);
@@ -68,6 +78,26 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
         <Text style={globalStyles.title}>Descobrir cursos</Text>
         <Text style={globalStyles.eyebrow}>Encontre novos cursos publicos</Text>
         <View style={globalStyles.divider} />
+      </View>
+
+      <View style={styles.recommendations}>
+        {/* Sprint item 29: presents courses related to categories and themes from enrolled courses. */}
+        <Text style={styles.recommendationsTitle}>Recomendados para você</Text>
+        <Text style={styles.recommendationsDescription}>Sugestões baseadas nas categorias e nos temas dos cursos em que você está inscrito.</Text>
+        {cursosRecomendados.length > 0 ? (
+          <View style={styles.list}>
+            {cursosRecomendados.slice(0, 6).map((curso) => (
+              <Pressable key={`recomendado-${curso.id}`} style={[globalStyles.card, styles.card]} onPress={() => onOpen?.(curso)}>
+                <Image source={{ uri: curso.imagem ? resolverUrlMidia(curso.imagem) : fallbackImage }} style={styles.image} />
+                <View style={styles.info}>
+                  <Text style={styles.title} numberOfLines={1}>{curso.titulo}</Text>
+                  <Text style={styles.description} numberOfLines={2}>{curso.descricao}</Text>
+                  <Text style={styles.meta}>{curso.professor || "Professor(a)"}</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        ) : <Text style={styles.recommendationsEmpty}>Quando houver cursos relacionados às suas inscrições, eles aparecerão aqui.</Text>}
       </View>
 
       <View style={styles.filters}>
@@ -143,6 +173,10 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
 
 const styles = StyleSheet.create({
   header: { marginBottom: 22 },
+  recommendations: { gap: 10, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.softGray },
+  recommendationsTitle: { color: colors.darkGreen, fontSize: 20, fontWeight: "800" },
+  recommendationsDescription: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
+  recommendationsEmpty: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
   filters: { gap: 12, marginBottom: 18 },
   searchBox: {
     minHeight: 48,

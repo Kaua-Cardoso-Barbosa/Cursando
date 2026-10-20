@@ -496,6 +496,29 @@
     gap: 20px;
 }
 
+/* Sprint item 29: gives personalized course recommendations a distinct section in discovery. */
+.recomendacoesCursos {
+    margin-bottom: 20px;
+    padding: 18px;
+    border: 1px solid #d7e8df;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f3fbf7, #ffffff);
+}
+
+.recomendacoesCursos h3 {
+    margin: 0 0 6px;
+    color: #123126;
+}
+
+.recomendacoesCursos > p {
+    margin: 0 0 14px;
+    color: #53645c;
+}
+
+.recomendacoesCursos .gridCursos {
+    margin-bottom: 0;
+}
+
 .filtrosDescobrir {
     display: flex;
     align-items: center;
