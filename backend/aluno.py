@@ -639,8 +639,30 @@ def detalhe_curso_aluno(id_curso):
         for modulo in modulos:
             modulo["total_aulas"] = len(modulo["aulas"])
 
+        # Sprint item 27: carrega comentários públicos do curso com a foto, nome e nota de cada aluno avaliador.
+        cursor.execute(
+            """
+            SELECT A.ID_AVALIACAO, U.NOME, U.IMAGEM_PERFIL, A.NOTA, A.COMENTARIO
+            FROM AVALIACOES_CURSO A
+            JOIN USUARIOS U ON U.ID_USUARIO = A.ID_USUARIO
+            WHERE A.ID_CURSO = ?
+            ORDER BY A.CRIADO_EM DESC, A.ID_AVALIACAO DESC
+            """,
+            (id_curso,),
+        )
+        avaliacoes = [
+            {
+                "id": avaliacao_row[0],
+                "nome": avaliacao_row[1] or "Aluno",
+                "imagem_perfil": avaliacao_row[2],
+                "nota": int(avaliacao_row[3] or 0),
+                "comentario": de_blob_texto(avaliacao_row[4]) or "",
+            }
+            for avaliacao_row in cursor.fetchall()
+        ]
+
         con.commit()
-        return jsonify({"curso": curso, "modulos": modulos, "aulas": aulas})
+        return jsonify({"curso": curso, "modulos": modulos, "aulas": aulas, "avaliacoes": avaliacoes})
     except Exception as erro:
         return resposta(f"Erro ao carregar curso: {erro}", 500)
     finally:

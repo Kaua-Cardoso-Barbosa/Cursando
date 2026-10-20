@@ -730,6 +730,7 @@ def materiais_aluno(id_curso):
         con.close()
 
 
+# Sprint item 27: exige curso concluido e prova aprovada, valida nota de 0 a 5 e recebe o comentario do aluno.
 @app.route("/aluno/cursos/<int:id_curso>/avaliacoes", methods=["POST"])
 @jwt_required()
 def avaliar_curso(id_curso):
@@ -739,7 +740,12 @@ def avaliar_curso(id_curso):
 
     garantir_sprint_schema()
     dados = request.get_json() or {}
-    nota = int(dados.get("nota") or -1)
+    nota_recebida = dados.get("nota")
+    if isinstance(nota_recebida, bool) or not isinstance(nota_recebida, (int, str)):
+        return resposta("A nota deve ser um numero inteiro entre 0 e 5.", 400)
+    if isinstance(nota_recebida, str) and not nota_recebida.strip().isdigit():
+        return resposta("A nota deve ser um numero inteiro entre 0 e 5.", 400)
+    nota = int(nota_recebida)
     comentario = (dados.get("comentario") or "").strip()
 
     if nota < 0 or nota > 5:
@@ -779,7 +785,7 @@ def avaliar_curso(id_curso):
         if not status_prova or int(status_prova[0] or 0) != 1:
             return resposta("Avaliacao liberada somente apos aprovacao na prova.", 403)
 
-        # Sprint item 27: permite avaliacao do curso somente depois da conclusao.
+        # Sprint item 27: persiste a nota em estrelas e o comentario vinculados ao curso e ao aluno.
         cursor.execute(
             """
             UPDATE OR INSERT INTO AVALIACOES_CURSO (

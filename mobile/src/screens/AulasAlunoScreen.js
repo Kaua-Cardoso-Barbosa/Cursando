@@ -27,7 +27,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
   const materiais = detalhe?.materiais || [];
   const prova = detalhe?.prova;
   const [respostas, setRespostas] = useState({});
-  const [avaliacao, setAvaliacao] = useState({ nota: "5", comentario: "" });
+  const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
   const [baixandoCertificado, setBaixandoCertificado] = useState(false);
   const [moduloAberto, setModuloAberto] = useState(null);
 
@@ -162,6 +162,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
           {(!prova.envio || (prova.envio.status === 2 && (!prova.envio.pode_tentar_em || Date.now() >= new Date(prova.envio.pode_tentar_em).getTime()))) ? <Pressable style={globalStyles.primaryButton} onPress={() => onSubmitExam?.(respostas)}>
             <Text style={globalStyles.buttonText}>Enviar prova</Text>
           </Pressable> : null}
+          {/* Sprint item 27: só mostra avaliação depois da conclusão do curso e da aprovação na prova final. */}
           {prova.envio?.status === 1 ? (
             <>
               {/* Sprint item 5: libera o PDF no app depois da conclusao e aprovacao na prova final. */}
@@ -169,18 +170,26 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
                 <Text style={globalStyles.buttonText}>{baixandoCertificado ? "Preparando certificado..." : "Baixar certificado PDF"}</Text>
               </Pressable>
               <View style={[globalStyles.card, styles.materialCard]}>
+                {/* Sprint item 27: permite selecionar de zero a cinco estrelas e escrever uma avaliação após a conclusão e aprovação. */}
                 <Text style={styles.materialTitle}>Avaliar curso</Text>
-                <TextInput
-                  value={avaliacao.nota}
-                  onChangeText={(nota) => setAvaliacao({ ...avaliacao, nota })}
-                  keyboardType="number-pad"
-                  style={globalStyles.input}
-                />
+                <View style={styles.ratingOptions} accessibilityRole="radiogroup" accessibilityLabel="Nota de 0 a 5 estrelas">
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === 0 }} accessibilityLabel="0 estrelas" onPress={() => setAvaliacao({ ...avaliacao, nota: 0 })} style={[styles.ratingChoice, avaliacao.nota === 0 && styles.ratingZeroSelected]}>
+                    <Text style={[styles.ratingZero, avaliacao.nota === 0 && styles.ratingSelectedText]}>0</Text>
+                  </Pressable>
+                  {[1, 2, 3, 4, 5].map((nota) => (
+                    <Pressable key={nota} accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === nota }} accessibilityLabel={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} onPress={() => setAvaliacao({ ...avaliacao, nota })} style={styles.ratingChoice}>
+                      <Text style={[styles.ratingStar, nota <= avaliacao.nota && styles.ratingStarSelected]}>★</Text>
+                    </Pressable>
+                  ))}
+                  <Text style={styles.ratingCount}>{avaliacao.nota} de 5</Text>
+                </View>
                 <TextInput
                   value={avaliacao.comentario}
                   onChangeText={(comentario) => setAvaliacao({ ...avaliacao, comentario })}
-                  placeholder="Comentario"
+                  placeholder="Escreva sua avaliacao (opcional)"
                   style={globalStyles.input}
+                  multiline
+                  textAlignVertical="top"
                 />
                 <Pressable style={globalStyles.primaryButton} onPress={() => onReview?.({ nota: Number(avaliacao.nota), comentario: avaliacao.comentario })}>
                   <Text style={globalStyles.buttonText}>Enviar avaliacao</Text>
@@ -190,6 +199,34 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
           ) : null}
         </View>
       ) : null}
+
+      {/* Sprint item 27: exibe no final da página os comentários públicos do curso antes da inscrição. */}
+      <View style={styles.reviewsSection}>
+        <Text style={styles.sectionTitle}>Comentários</Text>
+        {detalhe?.avaliacoes?.length ? detalhe.avaliacoes.map((avaliacao) => {
+          const nota = Math.min(5, Math.max(0, Number(avaliacao.nota) || 0));
+          return (
+            <View key={avaliacao.id} style={[globalStyles.card, styles.reviewCard]}>
+              <View style={styles.reviewHeader}>
+                {avaliacao.imagem_perfil ? (
+                  <Image source={{ uri: resolverUrlMidia(avaliacao.imagem_perfil) }} style={styles.reviewAvatar} />
+                ) : (
+                  <View style={styles.reviewAvatarFallback}><AppIcon name="person-outline" size={22} color={colors.darkGreen} /></View>
+                )}
+                <View style={styles.reviewAuthor}>
+                  <Text style={styles.reviewName}>{avaliacao.nome || "Aluno"}</Text>
+                  <Text accessibilityLabel={`${nota} de 5 estrelas`}>
+                    <Text style={styles.reviewStars}>{"★".repeat(nota)}</Text>
+                    <Text style={styles.reviewEmptyStars}>{"☆".repeat(5 - nota)}</Text>
+                    <Text style={styles.reviewScore}> {nota}/5</Text>
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.reviewComment}>{avaliacao.comentario || "Sem comentário escrito."}</Text>
+            </View>
+          );
+        }) : <Text style={globalStyles.message}>Este curso ainda não recebeu comentários.</Text>}
+      </View>
     </ScrollView>
   );
 }
@@ -351,6 +388,18 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 26
   },
+  // Sprint item 27: organiza as avaliações com foto, nome, nota e comentário no final do detalhe do curso.
+  reviewsSection: { gap: 12, marginTop: 28 },
+  reviewCard: { padding: 14, gap: 10 },
+  reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  reviewAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.softGray },
+  reviewAvatarFallback: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.softGray, alignItems: "center", justifyContent: "center" },
+  reviewAuthor: { flex: 1, gap: 2 },
+  reviewName: { color: colors.black, fontSize: 15, fontWeight: "800" },
+  reviewStars: { color: "#e5a400", fontSize: 17 },
+  reviewEmptyStars: { color: colors.border, fontSize: 17 },
+  reviewScore: { color: colors.textMuted, fontSize: 12 },
+  reviewComment: { color: colors.black, fontSize: 14, lineHeight: 20 },
   sectionTitle: {
     color: colors.black,
     fontSize: 24,
@@ -359,6 +408,15 @@ const styles = StyleSheet.create({
   materialCard: {
     padding: 14
   },
+  // Sprint item 27: destaca a nota selecionada entre zero e cinco estrelas.
+  ratingOptions: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 5 },
+  ratingChoice: { minWidth: 36, minHeight: 36, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border, borderRadius: 7, backgroundColor: colors.white },
+  ratingZeroSelected: { borderColor: colors.darkGreen, backgroundColor: colors.darkGreen },
+  ratingZero: { color: colors.darkGreen, fontSize: 14, fontWeight: "800" },
+  ratingSelectedText: { color: colors.white },
+  ratingStar: { color: colors.textMuted, fontSize: 24 },
+  ratingStarSelected: { color: "#e5a400" },
+  ratingCount: { color: colors.textMuted, fontSize: 13, marginLeft: 5 },
   materialTitle: {
     color: colors.black,
     fontSize: 18,

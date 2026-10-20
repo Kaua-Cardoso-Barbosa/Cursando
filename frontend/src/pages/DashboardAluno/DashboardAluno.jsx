@@ -6,7 +6,8 @@ import {
     FaGraduationCap,
     FaPlay,
     FaSearch,
-    FaShieldAlt
+    FaShieldAlt,
+    FaUserCircle
 } from "react-icons/fa";
 import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
@@ -649,6 +650,7 @@ export default function DashboardAluno({
         await carregarDetalheCurso(cursoDetalhe.id);
     }
 
+    // Sprint item 27: envia as estrelas e o comentario; o servidor revalida conclusao e aprovacao antes de salvar.
     async function enviarAvaliacaoCurso() {
         const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/avaliacoes`, {
             method: "POST",
@@ -901,15 +903,23 @@ export default function DashboardAluno({
                                                 </label>
                                             ))}
                                             {(!provaAluno.envio || (provaAluno.envio.status === 2 && (!provaAluno.envio.pode_tentar_em || Date.now() >= new Date(provaAluno.envio.pode_tentar_em).getTime()))) && <button className={css.botaoInscrever} onClick={enviarProvaAluno}>Enviar prova</button>}
+                                            {/* Sprint item 27: só mostra avaliação depois da conclusão do curso e da aprovação na prova final. */}
                                             {provaAluno.envio?.status === 1 && (
                                                 <>
                                                     <button className={css.botaoCertificado} type="button" onClick={() => baixarCertificado(cursoDetalhe)} disabled={baixandoCertificado}>
                                                         {baixandoCertificado ? "Gerando certificado..." : "Baixar certificado PDF"}
                                                     </button>
                                                     <div className={css.conteudoCurso}>
+                                                        {/* Sprint item 27: permite selecionar de zero a cinco estrelas e escrever uma avaliação após a conclusão e aprovação. */}
                                                         <h2>Avaliar curso</h2>
-                                                        <input type="number" min="0" max="5" value={avaliacao.nota} onChange={(e) => setAvaliacao({ ...avaliacao, nota: Number(e.target.value) })} />
-                                                        <input value={avaliacao.comentario} onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })} placeholder="Comentário" />
+                                                        <div className={css.seletorEstrelas} role="radiogroup" aria-label="Nota de 0 a 5 estrelas">
+                                                            <button type="button" className={avaliacao.nota === 0 ? css.estrelasZeroAtivo : css.estrelasZero} aria-label="0 estrelas" aria-pressed={avaliacao.nota === 0} onClick={() => setAvaliacao({ ...avaliacao, nota: 0 })}>0</button>
+                                                            {[1, 2, 3, 4, 5].map((nota) => (
+                                                                <button key={nota} type="button" className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} onClick={() => setAvaliacao({ ...avaliacao, nota })}>★</button>
+                                                            ))}
+                                                            <span>{avaliacao.nota} de 5</span>
+                                                        </div>
+                                                        <textarea className={css.textoAvaliacao} rows="4" value={avaliacao.comentario} onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })} placeholder="Escreva sua avaliação (opcional)" />
                                                         <button className={css.botaoInscrever} onClick={enviarAvaliacaoCurso}>Enviar avaliação</button>
                                                     </div>
                                                 </>
@@ -941,6 +951,34 @@ export default function DashboardAluno({
                                     </div>
                                 </section>
                             )}
+
+                            {/* Sprint item 27: mostra avaliações do curso no fim da página, inclusive antes da inscrição. */}
+                            <section className={css.comentariosCurso}>
+                                <h2>Comentários</h2>
+                                {detalheCurso?.avaliacoes?.length ? (
+                                    <div className={css.listaComentariosCurso}>
+                                        {detalheCurso.avaliacoes.map((avaliacao) => {
+                                            const nota = Math.min(5, Math.max(0, Number(avaliacao.nota) || 0));
+                                            return (
+                                                <article className={css.comentarioCurso} key={avaliacao.id}>
+                                                    <div className={css.cabecalhoComentarioCurso}>
+                                                        {avaliacao.imagem_perfil ? (
+                                                            <img className={css.fotoComentarioCurso} src={resolverUrlMidia(api, avaliacao.imagem_perfil)} alt={`Foto de ${avaliacao.nome}`} />
+                                                        ) : (
+                                                            <FaUserCircle className={css.fotoComentarioVazia} aria-hidden="true" />
+                                                        )}
+                                                        <strong>{avaliacao.nome || "Aluno"}</strong>
+                                                        <span className={css.notaComentarioCurso} aria-label={`${nota} de 5 estrelas`}>
+                                                            {"★".repeat(nota)}{"☆".repeat(5 - nota)} <small>{nota}/5</small>
+                                                        </span>
+                                                    </div>
+                                                    <p>{avaliacao.comentario || "Sem comentário escrito."}</p>
+                                                </article>
+                                            );
+                                        })}
+                                    </div>
+                                ) : <EstadoVazio texto="Este curso ainda não recebeu comentários." />}
+                            </section>
                         </section>
                     )}
 

@@ -1251,6 +1251,136 @@
     box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
 }
 
+/* Sprint item 27: destaca as estrelas selecionadas e apresenta a opção de nota zero. */
+.seletorEstrelas {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 14px;
+}
+
+.seletorEstrelas button {
+    min-width: 38px;
+    min-height: 38px;
+    border: 1px solid #cbd9d0;
+    border-radius: 7px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.seletorEstrelas button:focus-visible {
+    outline: 3px solid rgba(6, 166, 99, 0.3);
+    outline-offset: 2px;
+}
+
+.estrela,
+.estrelaAtiva {
+    color: #8b8b8b;
+    font-size: 1.5rem;
+}
+
+.estrelaAtiva {
+    color: #e5a400;
+}
+
+.estrelasZero,
+.estrelasZeroAtivo {
+    color: #244338;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.estrelasZeroAtivo {
+    border-color: #02693e !important;
+    background: #02693e !important;
+    color: #ffffff;
+}
+
+.seletorEstrelas span {
+    color: #555555;
+    font-size: 0.9rem;
+}
+
+.textoAvaliacao {
+    display: block;
+    width: 100%;
+    min-height: 96px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid #cbd9d0;
+    border-radius: 7px;
+    color: #111111;
+    font: inherit;
+    resize: vertical;
+}
+
+/* Sprint item 27: apresenta no fim do detalhe as avaliações públicas enviadas pelos alunos. */
+.comentariosCurso {
+    width: 100%;
+    margin: 24px 0 0;
+    padding: 22px;
+    border: 1px solid #d9e5df;
+    border-radius: 8px;
+    background: #fbfdfc;
+}
+
+.comentariosCurso h2 {
+    margin: 0 0 16px;
+    font-size: 1.45rem;
+}
+
+.listaComentariosCurso {
+    display: grid;
+    gap: 12px;
+}
+
+.comentarioCurso {
+    padding: 14px;
+    border: 1px solid #d9e5df;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.cabecalhoComentarioCurso {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.fotoComentarioCurso,
+.fotoComentarioVazia {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.fotoComentarioVazia {
+    color: #6b8c7c;
+    font-size: 42px;
+}
+
+.notaComentarioCurso {
+    margin-left: auto;
+    color: #e5a400;
+    font-size: 1.2rem;
+    white-space: nowrap;
+}
+
+.notaComentarioCurso small {
+    color: #555555;
+    font-size: 0.78rem;
+}
+
+.comentarioCurso p {
+    margin: 10px 0 0;
+    color: #333333;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
 .gridCursos,
 .gridAulas {
     grid-template-columns: repeat(3, minmax(0, 1fr));

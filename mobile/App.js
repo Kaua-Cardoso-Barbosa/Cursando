@@ -415,6 +415,7 @@ function AppContent() {
   async function avaliarCursoAluno(dados) {
     if (!detalheCursoAluno?.curso?.id) return;
 
+    // Sprint item 27: envia a nota em estrelas e o comentario do aluno ao endpoint que valida a conclusao e a prova.
     await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/avaliacoes`, {
       method: "POST",
       body: JSON.stringify(dados)
