@@ -661,6 +661,7 @@ export default function DashboardProfessor({
         }
         setSolicitandoSaque(true);
         try {
+            // Sprint item 32: envia a solicitação ao backend para validação do saldo e encaminhamento à Arkhé.
             const resposta = await fetch(`${api}/professor/saques`, {
                 method: "POST",
                 credentials: "include",

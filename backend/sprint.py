@@ -3493,7 +3493,7 @@ def solicitar_saque():
             )
 
         id_saque = proximo_id(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE")
-        # Sprint item 1: solicita o saque na Arkhé somente após validar o saldo do instrutor.
+        # Sprint item 32: solicita o saque na Arkhé após validar o saldo disponível no backend.
         saque_arkhe = solicitar_saque_conta(valor, referencia=f"SAQUE-{id_saque}-{get_jwt_identity()}")
         cursor.execute(
             """

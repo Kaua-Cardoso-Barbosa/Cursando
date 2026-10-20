@@ -192,6 +192,7 @@ def consultar_conta():
 
 def solicitar_saque_conta(valor, referencia=None):
     # Sprint item 1: envia a solicitacao de saque para a conta financeira da Arkhe.
+    # Sprint item 32: encaminha valor e referencia à API Arkhé para rastrear o pedido.
     resposta = _requisitar_arkhe(
         "POST",
         "/api/v1/saques",

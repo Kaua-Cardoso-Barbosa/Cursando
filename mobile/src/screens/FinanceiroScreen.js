@@ -122,6 +122,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
 
     setSolicitandoSaque(true);
     try {
+      // Sprint item 32: envia a solicitação ao backend para validação do saldo e encaminhamento à Arkhé.
       await apiRequest("/professor/saques", {
         method: "POST",
         body: JSON.stringify({ valor: valorSaqueNumero })
