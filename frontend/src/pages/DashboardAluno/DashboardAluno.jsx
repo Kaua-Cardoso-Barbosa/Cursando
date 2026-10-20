@@ -175,7 +175,7 @@ export default function DashboardAluno({
     const [dashboard, setDashboard] = useState(null);
     const [meusCursos, setMeusCursos] = useState([]);
     const [descobrir, setDescobrir] = useState([]);
-    // Sprint item 29: stores courses recommended from the student's enrolled topics and categories.
+    // Sprint item 29: guarda cursos recomendados com base nas categorias e temas das inscrições do aluno.
     const [cursosRecomendados, setCursosRecomendados] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
     const [faturas, setFaturas] = useState([]);
@@ -186,7 +186,7 @@ export default function DashboardAluno({
     const [busca, setBusca] = useState("");
     const [ordemDescobrir, setOrdemDescobrir] = useState("recentes");
     const [apenasNaoInscritos, setApenasNaoInscritos] = useState(false);
-    // Sprint item 28: keeps taxonomy and rating filters for course discovery.
+    // Sprint item 28: mantém categorias, temas e avaliação nos filtros de descoberta de cursos.
     const [categoriasDescobrir, setCategoriasDescobrir] = useState([]);
     const [temasDescobrir, setTemasDescobrir] = useState([]);
     const [categoriaDescobrir, setCategoriaDescobrir] = useState("");
@@ -292,7 +292,7 @@ export default function DashboardAluno({
         }
     }, [api, apenasNaoInscritos, avaliacaoMinimaDescobrir, busca, categoriaDescobrir, lerResposta, ordemDescobrir, temaDescobrir]);
 
-    // Sprint item 28: loads the shared category and theme options used by discovery filters.
+    // Sprint item 28: carrega as categorias e os temas usados nos filtros de descoberta.
     useEffect(() => {
         let ativo = true;
         Promise.all([
@@ -790,7 +790,7 @@ export default function DashboardAluno({
                                 <p>Pesquise o catálogo, compare opções e abra um curso para ver os módulos e as aulas.</p>
                             </header>
                             <section className={css.recomendacoesCursos}>
-                                {/* Sprint item 29: shows courses matching categories and themes from the student's enrollments. */}
+                                {/* Sprint item 29: exibe cursos relacionados às categorias e aos temas das inscrições do aluno. */}
                                 <h3>Recomendados para você</h3>
                                 <p>Com base nas categorias e nos temas dos cursos em que você está inscrito.</p>
                                 {cursosRecomendados.length > 0 ? (
@@ -804,7 +804,7 @@ export default function DashboardAluno({
                                 )}
                             </section>
                             <div className={css.filtrosDescobrir}>
-                                {/* Sprint item 28: filters the public catalog by category, theme and minimum rating. */}
+                                {/* Sprint item 28: filtra o catálogo público por categoria, tema e avaliação mínima. */}
                                 <label className={css.filtroOrdenacao}>
                                     <span>Categoria</span>
                                     <select value={categoriaDescobrir} onChange={(evento) => setCategoriaDescobrir(evento.target.value)}>

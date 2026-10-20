@@ -461,7 +461,7 @@ def listar_cursos_aluno():
 @app.route("/aluno/descobrir", methods=["GET"])
 @jwt_required()
 def descobrir_cursos():
-    # Sprint item 28: applies category, theme and 1–5 minimum-rating filters to discovery.
+    # Sprint item 28: aplica filtros de categoria, tema e avaliação mínima de 1 a 5 estrelas na descoberta.
     negado = exigir_aluno()
     if negado:
         return negado

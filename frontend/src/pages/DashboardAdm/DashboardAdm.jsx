@@ -353,7 +353,7 @@ export default function DashboardAdm({
                     ) : exibindoFinanceiro ? (
                         <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
                             {/* Sprint itens 13, 14, 15 e 16: cards de gestao financeira administrativa. */}
-                            {/* Sprint item 15: mostra o caixa administrativo após reservar comissões do Revenue Pool e custos. */}
+                            {/* Sprint item 15: mostra o caixa administrativo após reservar as comissões do fundo de receita e os custos. */}
                             {[
                                 ["Assinaturas pagas (total)", financeiro?.total_arrecadado, "Soma das mensalidades confirmadas"],
                                 ["Saques concluídos", financeiro?.total_repassado, "Transferências registradas como concluídas"],
@@ -392,7 +392,7 @@ export default function DashboardAdm({
                                     Salvar percentual
                                 </button>
                             </div>
-                            {/* Sprint item 16: apresenta a margem histórica da empresa depois das comissões do pool e dos custos. */}
+                            {/* Sprint item 16: apresenta a margem histórica da empresa depois das comissões do fundo de receita e dos custos. */}
                             <div className={css.cardMetrica}>
                                 <div className={css.metricaTopo}>
                                     <h2>Saude financeira</h2>

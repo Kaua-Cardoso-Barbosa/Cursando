@@ -2131,7 +2131,7 @@ def financeiro_resumo():
         assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
         cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
         total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
-        # Sprint item 15: reparte o total de mensalidades efetivamente pagas pelo percentual do pool e pelo peso das aulas assistidas.
+        # Sprint item 15: reparte as mensalidades pagas conforme o percentual do fundo de receita e o peso das aulas assistidas.
         pool_instrutores = total_arrecadado * (percentual / 100)
         pesos_instrutores = pesos_pool_instrutores(cursor)
         peso_total = sum(pesos_instrutores.values())
@@ -2154,7 +2154,18 @@ def financeiro_resumo():
                 pesos_instrutores,
                 peso_total,
             )
-            valor_por_view = (pool_instrutores / peso_total) if peso_total else 0
+            cursor.execute(
+                """
+                SELECT COUNT(PA.ID_VIDEO)
+                FROM PROFESSORES_CURSO PC
+                JOIN CURSOS C ON C.ID_CURSO = PC.ID_CURSO AND C.EXCLUIDO = 0
+                JOIN VIDEOS V ON V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1
+                LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO
+                """
+            )
+            total_views_pool = int((cursor.fetchone() or (0,))[0] or 0)
+            # Sprint item 30: calcula o valor por aula somente quando há conclusões registradas no fundo de receita.
+            valor_por_view = (pool_instrutores / total_views_pool) if total_views_pool else None
             cursor.execute(
                 """
                 SELECT
@@ -2176,14 +2187,20 @@ def financeiro_resumo():
             cursos_receita = []
             for row in cursor.fetchall():
                 views = int(row[2] or 0)
+                alunos_curso = int(row[3] or 0)
+                if total_views_pool:
+                    receita_curso = views * valor_por_view
+                else:
+                    # Sprint item 30: distribui a estimativa pelas matrículas ativas até haver a primeira aula concluída.
+                    receita_curso = pool_instrutores * (alunos_curso / peso_total) if peso_total else 0
                 cursos_receita.append({
                     "id_curso": row[0],
                     "curso": row[1],
                     "views": views,
-                    "alunos": int(row[3] or 0),
-                    "receita_estimativa": round(views * valor_por_view, 2),
+                    "alunos": alunos_curso,
+                    "receita_estimativa": round(receita_curso, 2),
                 })
-            # Sprint itens 12, 30 e 31: resumo financeiro inicial do instrutor baseado no pool de receita.
+            # Sprint itens 12, 30 e 31: apresenta o resumo financeiro do instrutor com base no fundo de receita.
             return jsonify({
                 "perfil": "instrutor",
                 "recebido_estimado": round(estimado, 2),
@@ -2193,7 +2210,8 @@ def financeiro_resumo():
                 "percentual_pool": round(percentual, 2),
                 "peso_pool": peso_instrutor,
                 "peso_total_pool": peso_total,
-                "valor_por_view": round(valor_por_view, 2),
+                "views_pool": total_views_pool,
+                "valor_por_view": round(valor_por_view, 2) if valor_por_view is not None else None,
                 "cursos_receita": cursos_receita,
             })
 
@@ -2203,7 +2221,7 @@ def financeiro_resumo():
             cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
             faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
             ticket_medio = (float(total_pago or 0) / int(faturas_pagas or 0)) if int(faturas_pagas or 0) else 0
-            # Sprint item 14: calcula o pool acumulado estimado usando a porcentagem definida pelo administrador.
+            # Sprint item 14: calcula o fundo de receita estimado com a porcentagem definida pelo administrador.
             # Sprint item 15: reserva a comissão dos instrutores e as despesas antes de calcular o caixa sacável do administrador.
             pool_historico_instrutores = total_arrecadado * (percentual / 100)
             disponivel_saque_admin = max(total_arrecadado - pool_historico_instrutores - custos, 0)
@@ -2225,7 +2243,7 @@ def financeiro_resumo():
                 "peso_total_pool": peso_total,
                 "receita_media_assinatura": round(valor_assinatura, 2),
                 "ticket_medio_aluno": round(ticket_medio, 2),
-                # Sprint item 16: calcula a margem financeira histórica após pool de instrutores e despesas registradas.
+                # Sprint item 16: calcula a margem financeira histórica após as comissões dos instrutores e as despesas registradas.
                 "margem_caixa_percentual": round(((total_arrecadado - pool_historico_instrutores - custos) / total_arrecadado) * 100, 2) if total_arrecadado else 0,
             })
 
@@ -3453,7 +3471,7 @@ def solicitar_saque():
         percentual = percentual_instrutores(cursor)
         cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
         total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
-        # Sprint item 15: valida o saque usando o mesmo pool baseado em pagamentos reais mostrado aos dois perfis.
+        # Sprint item 15: valida o saque pelo mesmo fundo de receita baseado em pagamentos reais mostrado aos dois perfis.
         pool_instrutores = total_arrecadado * (percentual / 100)
         pesos_instrutores = pesos_pool_instrutores(cursor)
         peso_total = sum(pesos_instrutores.values())

@@ -10,12 +10,12 @@ const fallbackImage = "https://images.unsplash.com/photo-1497633762265-9d179a990
 export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
   const { mostrarAlerta } = useFeedback();
   const [cursos, setCursos] = useState([]);
-  // Sprint item 29: stores personalized suggestions from enrolled course categories and themes.
+  // Sprint item 29: guarda sugestões com base nas categorias e nos temas dos cursos inscritos.
   const [cursosRecomendados, setCursosRecomendados] = useState([]);
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState("recentes");
   const [apenasNovos, setApenasNovos] = useState(false);
-  // Sprint item 28: stores discovery filters and taxonomy options for the Android catalog.
+  // Sprint item 28: guarda os filtros de descoberta e as categorias e temas do catálogo Android.
   const [categorias, setCategorias] = useState([]);
   const [temas, setTemas] = useState([]);
   const [categoria, setCategoria] = useState("");
@@ -36,7 +36,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
       const dados = await apiRequest(`/aluno/descobrir?${params.toString()}`, {}, token);
       setCursos(Array.isArray(dados) ? dados : []);
       try {
-        // Sprint item 29: requests ranked matches against the student's active enrollments.
+        // Sprint item 29: busca sugestões ordenadas conforme as matrículas ativas do aluno.
         const recomendacoes = await apiRequest("/aluno/descobrir?recomendados=1&ordem=recomendados", {}, token);
         setCursosRecomendados(Array.isArray(recomendacoes) ? recomendacoes : []);
       } catch (recommendationError) {
@@ -55,7 +55,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
     carregar("");
   }, [ordem, apenasNovos, categoria, tema, avaliacaoMinima, token]);
 
-  // Sprint item 28: loads shared categories and themes for the app's discovery filters.
+  // Sprint item 28: carrega as categorias e os temas usados nos filtros de descoberta do app.
   useEffect(() => {
     let ativo = true;
     Promise.all([
@@ -81,7 +81,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
       </View>
 
       <View style={styles.recommendations}>
-        {/* Sprint item 29: presents courses related to categories and themes from enrolled courses. */}
+        {/* Sprint item 29: exibe cursos relacionados às categorias e aos temas dos cursos inscritos. */}
         <Text style={styles.recommendationsTitle}>Recomendados para você</Text>
         <Text style={styles.recommendationsDescription}>Sugestões baseadas nas categorias e nos temas dos cursos em que você está inscrito.</Text>
         {cursosRecomendados.length > 0 ? (
@@ -124,7 +124,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
             <Text style={[styles.filterText, apenasNovos && styles.filterTextActive]}>Nao inscritos</Text>
           </Pressable>
         </View>
-        {/* Sprint item 28: category, theme and rating selectors filter courses on Android. */}
+        {/* Sprint item 28: permite filtrar cursos por categoria, tema e avaliação no Android. */}
         <Text style={styles.filterLabel}>Categoria</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           <Pressable style={[styles.filterButton, !categoria && styles.filterActive]} onPress={() => setCategoria("")}>

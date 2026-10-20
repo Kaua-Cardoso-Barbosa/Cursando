@@ -11,7 +11,7 @@ export default function EditarCursoScreen({ curso, token, onCancel, onSave, salv
   const [titulo, setTitulo] = useState(curso?.titulo || "");
   const [descricao, setDescricao] = useState(curso?.descricao || "");
   const [imagem, setImagem] = useState(null);
-  // Sprint item 28: loads taxonomy options and the current course selections in the app.
+  // Sprint item 28: carrega as categorias e os temas disponíveis e as opções atuais do curso no app.
   const [categorias, setCategorias] = useState([]);
   const [temas, setTemas] = useState([]);
   const [carregandoTaxonomias, setCarregandoTaxonomias] = useState(true);
@@ -91,7 +91,7 @@ export default function EditarCursoScreen({ curso, token, onCancel, onSave, salv
           <Field label="Titulo:" value={titulo} onChangeText={setTitulo} />
           <Field label="Descricao:" value={descricao} onChangeText={setDescricao} multiline />
 
-          {/* Sprint item 28: lets instructors select existing taxonomy or submit a new name. */}
+          {/* Sprint item 28: permite ao instrutor selecionar ou cadastrar uma categoria ou um tema. */}
           <Text style={styles.taxonomyLabel}>Categoria do curso</Text>
           <View style={styles.taxonomyOptions}>
             <Pressable style={[styles.taxonomyOption, !idCategoria && !novaCategoria && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(""); setNovaCategoria(false); }}><Text style={[styles.taxonomyOptionText, !idCategoria && !novaCategoria && styles.taxonomyOptionTextActive]}>Nenhuma</Text></Pressable>

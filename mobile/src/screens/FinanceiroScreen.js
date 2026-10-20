@@ -10,10 +10,10 @@ function moeda(valor) {
   return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
 }
 
-// Sprint item 12: define os cards de receita do instrutor no app usando o resumo do Revenue Pool.
+// Sprint item 12: define os cartões de receita do instrutor no app com base no resumo do fundo de receita compartilhado.
 // Sprint item 15: inclui o saldo do instrutor que pode ser solicitado para saque.
 const cards = [
-  ["Recebido estimado", "Pool de receita", "recebido_estimado", "cash-outline", "money"],
+  ["Ganhos estimados", "Sua parte do pool de receita", "recebido_estimado", "cash-outline", "money"],
   ["Disponivel para saque", "Saldo bruto", "disponivel_saque", "wallet-outline", "money"],
   ["Ja sacado", "Solicitacoes registradas", "ja_sacado", "card-outline", "money"],
   ["Alunos ativos", "Matriculas nos seus cursos", "alunos_ativos", "people-outline", "number"]
@@ -170,6 +170,15 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
           : `Percentual do pool: ${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}%`}
       </Text>
 
+      {!aluno && (
+        <View style={styles.viewValueCard}>
+          {/* Sprint item 30: exibe o valor estimado do fundo de receita por aula concluída. */}
+          <Text style={styles.viewValueLabel}>Valor estimado por view concluída</Text>
+          <Text style={styles.viewValue}>{financeiro?.valor_por_view === null || financeiro?.valor_por_view === undefined ? "Aguardando aulas concluídas" : moeda(financeiro.valor_por_view)}</Text>
+          <Text style={styles.viewValueHint}>Estimativa por aula concluída, usada para calcular a receita de cada curso.</Text>
+        </View>
+      )}
+
       {aluno && (
         <View style={styles.invoiceSection}>
           <View style={styles.invoiceBlock}>
@@ -302,6 +311,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 18
   },
+  viewValueCard: { marginTop: 14, marginBottom: 18, padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.softGray, gap: 5 },
+  viewValueLabel: { color: colors.darkGreen, fontSize: 15, fontWeight: "700" },
+  viewValue: { color: colors.darkGreen, fontSize: 24, fontWeight: "800" },
+  viewValueHint: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   invoiceSection: {
     gap: 12,
     marginTop: 18

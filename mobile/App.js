@@ -438,7 +438,7 @@ function AppContent() {
   async function salvarCurso({ titulo, descricao, imagem, idCategoria, idTema, novaCategoria, novoTema, nomeNovaCategoria, nomeNovoTema }) {
     setSaving(true);
     try {
-      // Sprint item 28: creates new shared taxonomy names through the duplicate-checked API.
+      // Sprint item 28: cadastra novas categorias e temas pela API, que verifica duplicidades.
       let categoriaSelecionada = idCategoria || null;
       let temaSelecionado = idTema || null;
       if (novaCategoria) {

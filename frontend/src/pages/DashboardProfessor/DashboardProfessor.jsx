@@ -476,7 +476,7 @@ export default function DashboardProfessor({
             let idCategoria = form.id_categoria && form.id_categoria !== "__nova__" ? Number(form.id_categoria) : null;
             let idTema = form.id_tema && form.id_tema !== "__novo__" ? Number(form.id_tema) : null;
 
-            // Sprint item 28: validates new names before creating the course taxonomy.
+            // Sprint item 28: valida os novos nomes antes de cadastrar as categorias e os temas do curso.
             if (modal.tipo === "curso" && form.id_categoria === "__nova__") {
                 const nome = form.nova_categoria?.trim();
                 if (!nome) throw new Error("Digite o nome da nova categoria.");
@@ -1065,13 +1065,19 @@ export default function DashboardProfessor({
                                     </div>
                                 </div>
                                 <div className={css.gridMetricasFinanceiro}>
-                                    <CardMetricaProfessor titulo="Recebido estimado" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} />
+                                    <CardMetricaProfessor titulo="Ganhos estimados" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} />
                                     {/* Sprint item 15: apresenta ao instrutor o saldo bruto restante que pode solicitar para saque. */}
                                     <div className={css.cardSaldoDisponivel}>
                                         <CardMetricaProfessor titulo="Disponível para saque" detalhe="Saldo após solicitações" valor={formatarMoeda(financeiro?.disponivel_saque)} />
                                     </div>
                                     <CardMetricaProfessor titulo="Já sacado" detalhe="Solicitações registradas" valor={formatarMoeda(financeiro?.ja_sacado)} />
                                     <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} />
+                                </div>
+                                {/* Sprint item 30: exibe a estimativa por aula concluída com base no fundo de receita compartilhado. */}
+                                <div className={css.valorEstimadoView}>
+                                    <span>Valor estimado por view concluída</span>
+                                    <strong>{financeiro?.valor_por_view === null || financeiro?.valor_por_view === undefined ? "Aguardando aulas concluídas" : formatarMoeda(financeiro.valor_por_view)}</strong>
+                                    <p>Estimativa por aula concluída, usada para calcular a receita de cada curso.</p>
                                 </div>
                             </section>
 

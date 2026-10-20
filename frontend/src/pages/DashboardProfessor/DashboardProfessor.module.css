@@ -952,6 +952,36 @@
     white-space: nowrap;
 }
 
+/* Sprint item 30: destaca o valor estimado do fundo de receita por aula concluída. */
+.valorEstimadoView {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 4px 16px;
+    margin-top: 16px;
+    padding: 14px 16px;
+    border: 1px solid #d7e8df;
+    border-radius: 12px;
+    background: #f3fbf7;
+}
+
+.valorEstimadoView span {
+    color: #315342;
+    font-weight: 650;
+}
+
+.valorEstimadoView strong {
+    color: #123126;
+    font-size: 1.2rem;
+}
+
+.valorEstimadoView p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #53645c;
+    font-size: 0.85rem;
+}
+
 .gridMetricasRelatorio {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1604,7 +1634,7 @@
         gap: 6px;
     }
 }
-/* Sprint item 28: styles category and theme controls in the course form. */
+/* Sprint item 28: define o estilo dos campos de categoria e tema no formulário do curso. */
 .taxonomiasCurso {
     display: grid;
     gap: 12px;

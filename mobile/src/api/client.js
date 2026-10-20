@@ -187,7 +187,7 @@ export async function apiRequest(
           .catch(() => ({}));
 
       if (!response.ok) {
-        // Sprint item 3: keeps response status and payload so the app can distinguish sync failures from missing access.
+        // Sprint item 3: mantém o status e os dados da resposta para o app distinguir falhas de sincronização da falta de acesso.
         const error = new Error(
             data?.mensagem?.descricao ||
             data?.mensagem ||
