@@ -32,23 +32,17 @@ export default function DashboardAdm({
     const [custos, setCustos] = useState([]);
     const [transacoes, setTransacoes] = useState([]);
     const [novoCusto, setNovoCusto] = useState({ descricao: "", categoria: "", valor: "", data_custo: "" });
-    const [logs, setLogs] = useState([]);
     const [logsGravacao, setLogsGravacao] = useState([]);
-    const [abaLogs, setAbaLogs] = useState("gravacao");
-    const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "", acao: "", inicio: "", fim: "" });
+    // Sprint item 24: separa a consulta de auditoria por perfil e categoria de atividade.
+    const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "0", evento: "", acao: "", inicio: "", fim: "" });
+    const [logExpandido, setLogExpandido] = useState(null);
+    const [temMaisLogs, setTemMaisLogs] = useState(false);
+    const [carregandoMaisLogs, setCarregandoMaisLogs] = useState(false);
     const [relatorio, setRelatorio] = useState(null);
     const [cursosRelatorio, setCursosRelatorio] = useState([]);
     const [instrutoresRelatorio, setInstrutoresRelatorio] = useState([]);
     const [filtrosRelatorio, setFiltrosRelatorio] = useState({ inicio: "", fim: "", id_instrutor: "", id_curso: "" });
     const [carregandoRelatorio, setCarregandoRelatorio] = useState(false);
-
-    function detalhesLog(log) {
-        try {
-            return JSON.parse(log.detalhes || "{}");
-        } catch {
-            return null;
-        }
-    }
 
     function rotuloAcaoLog(acao) {
         return ({ INSERT: "Inclusao", UPDATE: "Alteracao", DELETE: "Exclusao" })[acao] || acao;
@@ -57,6 +51,13 @@ export default function DashboardAdm({
     function formatarDataLog(valor) {
         if (!valor) return "";
         return new Date(valor).toLocaleString("pt-BR");
+    }
+
+    // Sprint item 24: formata os snapshots de valores do log para leitura detalhada no site.
+    function formatarJson(valor) {
+        if (!valor) return "Sem dados registrados";
+        try { return JSON.stringify(JSON.parse(valor), null, 2); }
+        catch { return valor; }
     }
 
     // Busca as métricas agregadas no endpoint administrativo ao abrir o dashboard.
@@ -224,13 +225,12 @@ export default function DashboardAdm({
                 Object.entries(filtrosLogs).forEach(([chave, valor]) => {
                     if (valor) params.set(chave, valor);
                 });
-                const resposta = await fetch(`${api}/admin/logs?${params.toString()}`, { credentials: "include" });
-                const dados = await resposta.json().catch(() => ({}));
-                if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao carregar logs.");
-                setLogs(Array.isArray(dados) ? dados : []);
                 const respostaGravacao = await fetch(`${api}/admin/logs-gravacao?${params.toString()}`, { credentials: "include" });
                 const dadosGravacao = await respostaGravacao.json().catch(() => ({}));
-                if (respostaGravacao.ok) setLogsGravacao(Array.isArray(dadosGravacao) ? dadosGravacao : []);
+                if (!respostaGravacao.ok) throw new Error(dadosGravacao?.mensagem?.descricao || "Erro ao carregar logs.");
+                const registros = Array.isArray(dadosGravacao) ? dadosGravacao : [];
+                setLogsGravacao(registros.slice(0, 100));
+                setTemMaisLogs(registros.length > 100);
             } catch (erro) {
                 console.error("Erro ao carregar logs:", erro);
                 setMensagem?.({ tipo: "erro", descricao: erro.message });
@@ -239,6 +239,23 @@ export default function DashboardAdm({
 
         carregarLogs();
     }, [api, exibindoLogs, filtrosLogs, setMensagem]);
+
+    // Sprint item 24: pagina os registros para que a busca de um usuario possa percorrer todo o historico.
+    async function carregarMaisLogs() {
+        setCarregandoMaisLogs(true);
+        try {
+            const params = new URLSearchParams();
+            Object.entries(filtrosLogs).forEach(([chave, valor]) => { if (valor) params.set(chave, valor); });
+            params.set("offset", String(logsGravacao.length));
+            const resposta = await fetch(`${api}/admin/logs-gravacao?${params.toString()}`, { credentials: "include" });
+            const dados = await resposta.json().catch(() => ([]));
+            if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao carregar mais logs.");
+            const registros = Array.isArray(dados) ? dados : [];
+            setLogsGravacao((atuais) => [...atuais, ...registros.slice(0, 100)]);
+            setTemMaisLogs(registros.length > 100);
+        } catch (erro) { setMensagem?.({ tipo: "erro", descricao: erro.message }); }
+        finally { setCarregandoMaisLogs(false); }
+    }
 
     // Converte a resposta da API nos indicadores apresentados nos cards.
     const metricas = useMemo(() => {
@@ -464,67 +481,52 @@ export default function DashboardAdm({
                     ) : exibindoLogs ? (
                         <section className={css.listaLogs}>
                             <h2>Logs do sistema</h2>
+                            {/* Sprint item 24: organiza os registros por perfil e tipo de atividade para facilitar a auditoria. */}
                             <div className={css.abasLogs}>
-                                <button className={abaLogs === "sistema" ? css.abaAtiva : css.abaLog} onClick={() => setAbaLogs("sistema")} type="button">Histórico anterior</button>
-                                <button className={abaLogs === "gravacao" ? css.abaAtiva : css.abaLog} onClick={() => setAbaLogs("gravacao")} type="button">Log de gravação</button>
+                                {[["0", "Administradores"], ["1", "Professores"], ["2", "Alunos"]].map(([tipo, label]) => (
+                                    <button key={tipo} className={filtrosLogs.tipo === tipo ? css.abaAtiva : css.abaLog} onClick={() => { setFiltrosLogs({ ...filtrosLogs, tipo, evento: "", acao: "" }); setLogExpandido(null); }} type="button">{label}</button>
+                                ))}
                             </div>
                             <div className={css.filtrosLogs}>
-                                <input placeholder={abaLogs === "gravacao" ? "Buscar ação, tabela ou registro" : "Buscar nome, e-mail ou ação"} value={filtrosLogs.busca} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, busca: e.target.value })} />
-                                <select value={filtrosLogs.tipo} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, tipo: e.target.value })}>
-                                    <option value="">Todos</option>
-                                    <option value="0">Admins</option>
-                                    <option value="1">Professores</option>
-                                    <option value="2">Alunos</option>
-                                </select>
-                                <select value={filtrosLogs.acao} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, acao: e.target.value })}>
+                                <input placeholder="Buscar nome, e-mail, acao ou registro" value={filtrosLogs.busca} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, busca: e.target.value })} />
+                                <select value={filtrosLogs.evento} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, evento: e.target.value })}>
                                     <option value="">Todas as acoes</option>
-                                    {abaLogs === "gravacao" ? (
-                                        <>
-                                            <option value="INSERT">Registro criado</option>
-                                            <option value="UPDATE">Registro alterado</option>
-                                            <option value="DELETE">Registro excluido</option>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <option value="criar_prova">Professor criou prova</option>
-                                            <option value="criar_material">Professor criou material</option>
-                                            <option value="enviar_prova">Aluno enviou prova</option>
-                                            <option value="avaliar_curso">Aluno avaliou curso</option>
-                                            <option value="solicitar_saque">Professor solicitou saque</option>
-                                            <option value="requisicao_modificacao">Modificacoes gerais</option>
-                                        </>
-                                    )}
+                                    {filtrosLogs.tipo === "0" && <><option value="cadastro_professor">Cadastro de professor</option><option value="cadastro_aluno">Cadastro de aluno</option><option value="alterar_usuario">Alterou usuario</option><option value="registrar_custo">Registrou custo</option><option value="alterar_configuracao">Alterou configuracao financeira</option><option value="aprovar_saque">Atualizou saque</option></>}
+                                    {filtrosLogs.tipo === "1" && <><option value="criar_curso">Criou curso</option><option value="editar_curso">Alterou curso</option><option value="excluir_curso">Excluiu curso</option><option value="criar_aula">Criou aula</option><option value="editar_aula">Alterou aula</option><option value="excluir_aula">Excluiu aula</option><option value="criar_modulo">Criou modulo</option><option value="criar_material">Criou material</option><option value="criar_prova">Criou prova</option><option value="corrigir_prova">Corrigiu prova</option><option value="solicitar_saque">Solicitou saque</option><option value="mensagem_chat">Enviou mensagem</option></>}
+                                    {filtrosLogs.tipo === "2" && <><option value="inscricao_curso">Inscricao em curso</option><option value="assinar">Criou assinatura</option><option value="assistir_aula">Assistiu aula</option><option value="avaliar_curso">Avaliou curso</option><option value="enviar_prova">Enviou prova</option><option value="mensagem_chat">Enviou mensagem</option></>}
                                 </select>
                                 <input type="date" value={filtrosLogs.inicio} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, inicio: e.target.value })} />
                                 <input type="date" value={filtrosLogs.fim} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, fim: e.target.value })} />
                             </div>
-                            {/* Sprint item 6: alterna entre logs gerais e log de gravacao salvo em banco separado. */}
-                            {(abaLogs === "sistema" ? logs : logsGravacao).length === 0 && <p>Nenhum log registrado.</p>}
-                            {(abaLogs === "sistema" ? logs : logsGravacao).map((log) => {
-                                const detalhes = detalhesLog(log);
-                                const requisicao = detalhes?.requisicao || {};
-                                const corpo = detalhes?.corpo?.json;
+                            {/* Sprint item 24: permite abrir cada acao para conferir campos e valores registrados. */}
+                            {logsGravacao.length === 0 && <p>Nenhum log registrado.</p>}
+                            {logsGravacao.map((log) => {
+                                const expandido = logExpandido === log.id;
                                 const perfilUsuario = { 0: "Administrador", 1: "Professor", 2: "Aluno" }[log.tipo_usuario];
-
+                                const rotuloTabela = { USUARIOS: "usuario", CURSOS: "curso", VIDEOS: "aula", MATRICULAS: "inscricao em curso", MODULOS_CURSO: "modulo", MATERIAIS_CURSO: "material", PROVAS_CURSO: "prova", AVALIACOES_CURSO: "avaliacao", RESPOSTAS_PROVA: "resposta de prova", SAQUES_INSTRUTOR: "solicitacao de saque" }[log.tabela] || log.tabela;
                                 return (
-                                    <article key={log.id} className={css.logItem}>
+                                    <article key={log.id} className={css.logItem} onClick={() => setLogExpandido(expandido ? null : log.id)} role="button" tabIndex={0} onKeyDown={(evento) => { if (evento.key === "Enter" || evento.key === " ") { evento.preventDefault(); setLogExpandido(expandido ? null : log.id); } }}>
                                         <div className={css.logTopo}>
-                                            <strong>{rotuloAcaoLog(log.acao)}</strong>
+                                            <strong>{rotuloAcaoLog(log.acao)}: {rotuloTabela}</strong>
                                             <small>{formatarDataLog(log.criado_em)}</small>
                                         </div>
                                         <span>{log.nome || `Usuario ${log.id_usuario || "nao identificado"}`} - {log.email || "e-mail nao armazenado"}{perfilUsuario ? ` - ${perfilUsuario}` : ""}</span>
-                                        <small>{log.metodo} {log.rota} {requisicao.status_http ? `- status ${requisicao.status_http}` : ""}</small>
+                                        <small>{log.metodo} {log.rota}</small>
                                         <p>{log.resumo || log.detalhes}</p>
-                                        {log.tabela && <small>Tabela afetada: {log.tabela}</small>}
-                                        {detalhes?.parametros_rota && Object.keys(detalhes.parametros_rota).length > 0 && (
-                                            <small>Recurso: {JSON.stringify(detalhes.parametros_rota)}</small>
-                                        )}
-                                        {corpo && Object.keys(corpo).length > 0 && (
-                                            <pre className={css.logDetalhes}>{JSON.stringify(corpo, null, 2)}</pre>
-                                        )}
+                                        <small>Registro {log.id_registro || "indisponivel"} - {expandido ? "Clique para recolher" : "Clique para ver detalhes"}</small>
+                                        {expandido && <div className={css.logDetalhes}>
+                                            {log.contexto?.usuario_afetado && <p>Usuario cadastrado: {log.contexto.usuario_afetado.nome} - {log.contexto.usuario_afetado.email} - tipo {log.contexto.usuario_afetado.tipo}</p>}
+                                            {log.contexto?.curso && <p>Curso: {log.contexto.curso}</p>}
+                                            {log.contexto?.professor && <p>Professor: {log.contexto.professor.nome} - {log.contexto.professor.email}</p>}
+                                            {log.contexto?.aula && <p>Aula: {log.contexto.aula}</p>}
+                                            <strong>Campos alterados</strong><pre>{log.campos_alterados || "Nao informado"}</pre>
+                                            <strong>Valores anteriores</strong><pre>{formatarJson(log.valores_antes)}</pre>
+                                            <strong>Valores atuais</strong><pre>{formatarJson(log.valores_depois)}</pre>
+                                        </div>}
                                     </article>
                                 );
                             })}
+                            {temMaisLogs && <button className={css.botaoFinanceiro} type="button" onClick={carregarMaisLogs} disabled={carregandoMaisLogs}>{carregandoMaisLogs ? "Carregando..." : "Carregar mais registros"}</button>}
                         </section>
                     ) : (
                         <>

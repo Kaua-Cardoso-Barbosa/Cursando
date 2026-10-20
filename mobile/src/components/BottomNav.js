@@ -12,7 +12,13 @@ const baseItems = [
 
 export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const items = Number(tipoUsuario) === 1
+  // Sprint item 24: inclui a aba de auditoria na navegacao do administrador no app.
+  const items = Number(tipoUsuario) === 0
+    ? [
+      { key: "logs", label: "Logs", icon: "document-text-outline" },
+      baseItems[3]
+    ]
+    : Number(tipoUsuario) === 1
     ? [
       baseItems[0],
       baseItems[1],

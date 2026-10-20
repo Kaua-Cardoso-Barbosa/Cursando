@@ -25,6 +25,7 @@ import PlayerAulaScreen from "./src/screens/PlayerAulaScreen";
 import ProvasProfessorScreen from "./src/screens/ProvasProfessorScreen";
 import MateriaisProfessorScreen from "./src/screens/MateriaisProfessorScreen";
 import RelatoriosProfessorScreen from "./src/screens/RelatoriosProfessorScreen";
+import LogsAdminScreen from "./src/screens/LogsAdminScreen";
 import VerificarEmailScreen from "./src/screens/VerificarEmailScreen";
 import { colors, globalStyles } from "./src/styles";
 
@@ -73,6 +74,20 @@ function AppContent() {
     setLoading(true);
     try {
       const tipo = Number(authUser?.tipo ?? usuario?.tipo ?? 1);
+      if (tipo === 0) {
+        setTab("logs");
+        const [dashboardData, perfilData] = await Promise.all([
+          apiRequest("/admin/dashboard", {}, authToken),
+          apiRequest("/perfil", {}, authToken)
+        ]);
+        setDashboard(dashboardData.metricas || dashboardData || {});
+        setCursos([]);
+        setPerfil(perfilData);
+        const usuarioAtualizado = { ...(authUser || {}), ...perfilData, tipo };
+        setUsuario(usuarioAtualizado);
+        await salvarSessao(authToken, usuarioAtualizado);
+        return;
+      }
       const dashboardPath = tipo === 2 ? "/aluno/dashboard" : "/professor/dashboard";
       const cursosPath = tipo === 2 ? "/aluno/cursos" : "/professor/cursos?status=todos";
       const requisicoes = [
@@ -750,6 +765,9 @@ function AppContent() {
             cursos={cursos}
             carregando={loading}
           />
+        )}
+        {tab === "logs" && tipoUsuario === 0 && (
+          <LogsAdminScreen token={token} onError={(error) => mostrarAlerta("Logs", error.message, "erro")} />
         )}
       </View>
       <BottomNav active={tab} onChange={trocarAba} tipoUsuario={tipoUsuario} />

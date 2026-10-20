@@ -365,6 +365,12 @@
     padding: 14px 16px;
     display: grid;
     gap: 5px;
+    cursor: pointer;
+}
+
+.logItem:focus-visible {
+    outline: 3px solid #139a58;
+    outline-offset: 2px;
 }
 
 .logItem strong {

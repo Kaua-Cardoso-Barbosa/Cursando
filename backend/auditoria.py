@@ -41,7 +41,8 @@ VALORES_AUDITAVEIS = {
     "USUARIOS": {"TIPO_USUARIO", "SITUACAO", "TENTATIVAS", "EMAIL_VERIFICADO"},
     "CURSOS": {"TITULO", "STATUS", "EXCLUIDO"},
     "PROFESSORES_CURSO": {"ID_CURSO", "ID_USUARIO"},
-    "VIDEOS": {"ID_CURSO", "ID_MODULO", "STATUS", "EXCLUIDO"},
+    # Sprint item 24: guarda o nome da aula nos registros para contextualizar a auditoria por curso.
+    "VIDEOS": {"ID_CURSO", "ID_MODULO", "TITULO", "STATUS", "EXCLUIDO"},
     "MATRICULAS": {"ID_CURSO", "ID_USUARIO", "STATUS_MATRICULA"},
     "ASSINATURAS": {
         "ID_USUARIO", "VALOR", "STATUS", "DATA_VENCIMENTO", "DATA_PAGAMENTO", "DATA_EXPIRACAO"
