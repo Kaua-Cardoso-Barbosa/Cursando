@@ -109,7 +109,7 @@ export default function VerificarEmail({ api, atualizarSessao }) {
             <div className={css.cartao}>
                 <aside className={css.painelInfo} aria-label="Etapas do cadastro">
                     <div className={css.marca}>
-                        <span className={css.marcaSimbolo} aria-hidden="true">C</span>
+                        <img className={css.marcaIcone} src="/imagens_assets/logo.png" alt="" />
                         <span>Cursando</span>
                     </div>
 

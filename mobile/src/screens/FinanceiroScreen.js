@@ -14,9 +14,9 @@ function moeda(valor) {
 // Sprint item 15: inclui o saldo do instrutor que pode ser solicitado para saque.
 const cards = [
   ["Ganhos estimados", "Sua parte do pool de receita", "recebido_estimado", "cash-outline", "money"],
-  ["Disponivel para saque", "Saldo bruto", "disponivel_saque", "wallet-outline", "money"],
-  ["Ja sacado", "Solicitacoes registradas", "ja_sacado", "card-outline", "money"],
-  ["Alunos ativos", "Matriculas nos seus cursos", "alunos_ativos", "people-outline", "number"]
+  ["Disponível para saque", "Saldo bruto", "disponivel_saque", "wallet-outline", "money"],
+  ["Já sacado", "Solicitações registradas", "ja_sacado", "card-outline", "money"],
+  ["Alunos ativos", "Matrículas nos seus cursos", "alunos_ativos", "people-outline", "number"]
 ];
 
 export default function FinanceiroScreen({ financeiro, carregando, onRefresh, token, tipoUsuario }) {
@@ -115,8 +115,9 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
   }
 
   async function solicitarSaque() {
+    if (solicitandoSaque) return;
     if (!saqueValido) {
-      mostrarAlerta("Saque", "Informe um valor valido dentro do saldo disponivel.", "erro");
+      mostrarAlerta("Saque", "Informe um valor válido dentro do saldo disponível.", "erro");
       return;
     }
 
@@ -129,7 +130,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
       }, token);
       setValorSaque("");
       await onRefresh?.();
-      mostrarAlerta("Saque", "Solicitacao enviada.", "sucesso");
+      mostrarAlerta("Saque", "Solicitação enviada.", "sucesso");
     } catch (error) {
       mostrarAlerta("Erro", error.message, "erro");
     } finally {
@@ -227,7 +228,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
         <View style={styles.invoiceSection}>
           <View style={styles.invoiceBlock}>
             <Text style={styles.sectionTitle}>Solicitar saque</Text>
-            <Text style={styles.invoiceText}>Disponivel para saque: {moeda(disponivelSaque)}</Text>
+            <Text style={styles.invoiceText}>Disponível para saque: {moeda(disponivelSaque)}</Text>
             <TextInput
               value={valorSaque}
               onChangeText={setValorSaque}

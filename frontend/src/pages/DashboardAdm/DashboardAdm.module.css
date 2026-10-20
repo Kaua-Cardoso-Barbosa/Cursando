@@ -6,17 +6,21 @@
 }
 
 .painelAdm {
-    display: flex;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     min-height: 100vh;
     background-color: #ffffff;
 }
 
 .conteudoPrincipal {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 1;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     overflow-x: hidden;
+    min-width: 0;
 }
 
 .areaConteudo {
@@ -253,6 +257,8 @@
 }
 
 .rodapePagina {
+    grid-column: 1 / -1;
+    grid-row: 2;
     background-color: #006338;
     color: #ffffff;
     padding: 24px 48px;
@@ -411,7 +417,17 @@
 
 @media (max-width: 860px) {
     .painelAdm {
-        flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .conteudoPrincipal {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .rodapePagina {
+        grid-row: 3;
     }
 
     .areaConteudo {
@@ -626,6 +642,36 @@
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
 }
 
+.filtrosRelatorio {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: 14px;
+}
+
+.filtrosRelatorio label {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    color: #334a3c;
+    font-size: 0.88rem;
+    font-weight: 650;
+}
+
+.filtrosRelatorio input,
+.filtrosRelatorio select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 9px 11px;
+}
+
+.filtrosRelatorio button {
+    min-height: 44px;
+    margin-top: 0;
+    padding: 0 16px;
+    white-space: nowrap;
+}
+
 .listaLogs h2 {
     color: #183d2c;
     font-size: 1.2rem;
@@ -688,6 +734,14 @@
     .listaLogs {
         padding: 16px;
     }
+
+    .filtrosRelatorio {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .filtrosRelatorio button {
+        grid-column: 1 / -1;
+    }
 }
 
 @media (max-width: 560px) {
@@ -710,5 +764,14 @@
 
     .paginaFinanceiro .formFinanceiro button {
         grid-column: auto;
+    }
+
+    .filtrosRelatorio {
+        grid-template-columns: 1fr;
+    }
+
+    .filtrosRelatorio button {
+        grid-column: auto;
+        width: 100%;
     }
 }

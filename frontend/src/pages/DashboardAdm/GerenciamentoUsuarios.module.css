@@ -6,17 +6,21 @@
 }
 
 .painelAdmin {
-    display: flex;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     min-height: 100vh;
     background-color: #ffffff;
 }
 
 .conteudoPrincipal {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 1;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     overflow-x: hidden;
+    min-width: 0;
 }
 
 .areaConteudo {
@@ -319,6 +323,8 @@
 }
 
 .rodapePagina {
+    grid-column: 1 / -1;
+    grid-row: 2;
     background-color: #006338;
     color: #ffffff;
     padding: 24px 48px;
@@ -367,7 +373,17 @@
 
 @media (max-width: 860px) {
     .painelAdmin {
-        flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .conteudoPrincipal {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .rodapePagina {
+        grid-row: 3;
     }
 
     .areaConteudo {

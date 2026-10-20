@@ -1,6 +1,5 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { FaGraduationCap } from "react-icons/fa";
 import css from "./MenuLateralAdm.module.css";
 
 export default function MenuLateralAdm({ itemAtivo = "inicio" }) {
@@ -50,7 +49,7 @@ export default function MenuLateralAdm({ itemAtivo = "inicio" }) {
 
             <div className={css.menuRodape}>
                 <div className={css.logoBox}>
-                    <FaGraduationCap className={css.logoIcone} />
+                    <img className={css.logoIcone} src="/imagens_assets/logo.png" alt="" />
                     <span className={css.logoTexto}>Cursando</span>
                 </div>
             </div>

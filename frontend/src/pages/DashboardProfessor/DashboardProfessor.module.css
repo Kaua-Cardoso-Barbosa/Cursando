@@ -6,14 +6,17 @@
 }
 
 .painelProfessor {
-    display: flex;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     min-height: 100vh;
     background: #ffffff;
     color: #101010;
 }
 
 .conteudoPrincipal {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -714,6 +717,8 @@
 }
 
 .rodapePagina {
+    grid-column: 1 / -1;
+    grid-row: 2;
     background: #02693e;
     color: #ffffff;
     padding: 24px 42px;
@@ -772,7 +777,17 @@
 
 @media (max-width: 860px) {
     .painelProfessor {
-        flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .conteudoPrincipal {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .rodapePagina {
+        grid-row: 3;
     }
 
     .areaConteudo {

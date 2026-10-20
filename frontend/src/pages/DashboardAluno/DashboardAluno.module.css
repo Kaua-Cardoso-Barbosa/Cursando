@@ -6,14 +6,17 @@
 }
 
 .painelAluno {
-    display: flex;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     min-height: 100vh;
     background: #ffffff;
     color: #101010;
 }
 
 .conteudoPrincipal {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -496,29 +499,6 @@
     gap: 20px;
 }
 
-/* Sprint item 29: destaca as recomendações personalizadas na descoberta de cursos. */
-.recomendacoesCursos {
-    margin-bottom: 20px;
-    padding: 18px;
-    border: 1px solid #d7e8df;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #f3fbf7, #ffffff);
-}
-
-.recomendacoesCursos h3 {
-    margin: 0 0 6px;
-    color: #123126;
-}
-
-.recomendacoesCursos > p {
-    margin: 0 0 14px;
-    color: #53645c;
-}
-
-.recomendacoesCursos .gridCursos {
-    margin-bottom: 0;
-}
-
 .filtrosDescobrir {
     display: flex;
     align-items: center;
@@ -982,6 +962,8 @@
 }
 
 .rodapePagina {
+    grid-column: 1 / -1;
+    grid-row: 2;
     background: #02693e;
     color: #ffffff;
     padding: 24px 42px;
@@ -1031,7 +1013,17 @@
 
 @media (max-width: 860px) {
     .painelAluno {
-        flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .conteudoPrincipal {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .rodapePagina {
+        grid-row: 3;
     }
 
     .areaConteudo {

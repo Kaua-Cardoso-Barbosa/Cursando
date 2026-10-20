@@ -21,6 +21,7 @@ export default function DashboardAdm({
                                          usuario
                                      }) {
     const location = useLocation();
+    const exibindoInicio = location.pathname === "/DashboardAdm";
     const exibindoPerfil = location.pathname.endsWith("/perfil");
     const exibindoFinanceiro = location.pathname.endsWith("/Financeiro");
     const exibindoLogs = location.pathname.endsWith("/Logs");
@@ -317,17 +318,18 @@ export default function DashboardAdm({
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    <header className={css.cabecalhoUsuario}>
-                        <div className={css.dadosUsuario}>
-                            <h1>Ola {usuario.nome}</h1>
-                            <span className={css.cargoUsuario}>
-                                {Number(usuario.tipo) === 0 && "Administrador"}
-                                {Number(usuario.tipo) === 1 && "Professor"}
-                                {Number(usuario.tipo) === 2 && "Aluno"}
-                            </span>
-                        </div>
-
-                    </header>
+                    {exibindoInicio && (
+                        <header className={css.cabecalhoUsuario}>
+                            <div className={css.dadosUsuario}>
+                                <h1>Olá {usuario.nome}</h1>
+                                <span className={css.cargoUsuario}>
+                                    {Number(usuario.tipo) === 0 && "Administrador"}
+                                    {Number(usuario.tipo) === 1 && "Professor"}
+                                    {Number(usuario.tipo) === 2 && "Aluno"}
+                                </span>
+                            </div>
+                        </header>
+                    )}
 
                     {/* Sprint item 9: identifica a área administrativa atual e orienta a leitura da página. */}
                     <section className={css.cabecalhoPagina}>
@@ -462,7 +464,7 @@ export default function DashboardAdm({
                             {/* Sprint item 22: aplica os filtros de período, instrutor e curso ao relatório geral da plataforma. */}
                             <h2>Filtros do relatório</h2>
                             <p>O período considera a data de criação dos cursos.</p>
-                            <form className={css.formFinanceiro} onSubmit={(evento) => { evento.preventDefault(); carregarRelatorio(); }}>
+                            <form className={`${css.formFinanceiro} ${css.filtrosRelatorio}`} onSubmit={(evento) => { evento.preventDefault(); carregarRelatorio(); }}>
                                 <label>Início do período<input type="date" value={filtrosRelatorio.inicio} onChange={(evento) => setFiltrosRelatorio({ ...filtrosRelatorio, inicio: evento.target.value })} /></label>
                                 <label>Fim do período<input type="date" value={filtrosRelatorio.fim} onChange={(evento) => setFiltrosRelatorio({ ...filtrosRelatorio, fim: evento.target.value })} /></label>
                                 <label>Instrutor<select value={filtrosRelatorio.id_instrutor} onChange={(evento) => setFiltrosRelatorio({ ...filtrosRelatorio, id_instrutor: evento.target.value })}><option value="">Todos</option>{instrutoresRelatorio.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select></label>
@@ -547,32 +549,32 @@ export default function DashboardAdm({
                         </>
                     )}
                 </main>
-
-                <footer className={css.rodapePagina}>
-                    <div className={css.colunaRodape}>
-                        <h4>Contato</h4>
-                        <p>Birigui - SP</p>
-                        <p>(18)98131-3801</p>
-                        <p>cursando@gmail.com</p>
-                    </div>
-
-                    <div className={css.colunaRodape}>
-                        <h4>Navegacao</h4>
-                        <a href="#home">Home</a>
-                        <a href="#login">Login</a>
-                        <a href="#cadastro">Cadastro</a>
-                    </div>
-
-                    <div className={css.colunaRodape}>
-                        <h4>Baixe nosso aplicativo</h4>
-                        <ul className={css.listaApps}>
-                            <li><FaGooglePlay /> Playstore</li>
-                            <li><FaLinux /> Linux</li>
-                            <li><FaWindows /> Windows</li>
-                        </ul>
-                    </div>
-                </footer>
             </div>
+
+            <footer className={css.rodapePagina}>
+                <div className={css.colunaRodape}>
+                    <h4>Contato</h4>
+                    <p>Birigui - SP</p>
+                    <p>(18)98131-3801</p>
+                    <p>cursando@gmail.com</p>
+                </div>
+
+                <div className={css.colunaRodape}>
+                    <h4>Navegacao</h4>
+                    <a href="#home">Home</a>
+                    <a href="#login">Login</a>
+                    <a href="#cadastro">Cadastro</a>
+                </div>
+
+                <div className={css.colunaRodape}>
+                    <h4>Baixe nosso aplicativo</h4>
+                    <ul className={css.listaApps}>
+                        <li><FaGooglePlay /> Playstore</li>
+                        <li><FaLinux /> Linux</li>
+                        <li><FaWindows /> Windows</li>
+                    </ul>
+                </div>
+            </footer>
         </div>
     );
 }

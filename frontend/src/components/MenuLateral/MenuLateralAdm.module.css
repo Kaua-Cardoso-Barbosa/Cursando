@@ -49,8 +49,13 @@
 }
 
 .logoIcone {
-    font-size: 1.8rem;
-    color: #ffffff;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    padding: 3px;
+    border-radius: 9px;
+    background: #ffffff;
+    object-fit: contain;
 }
 
 .logoTexto {
@@ -130,10 +135,6 @@
 .logoBox {
     margin: 0 12px 18px;
     padding: 9px 13px;
-}
-
-.logoIcone {
-    color: #c4f0d5;
 }
 
 .menuRodape {

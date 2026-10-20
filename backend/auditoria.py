@@ -155,6 +155,9 @@ def preparar_auditoria_antes_de_modificar():
         return None
 
     try:
+        # Reconciliamos o gerador em cada escrita para recuperar bancos em que
+        # registros tenham sido inseridos sem atualizar GEN_LOG_GRAVACAO.
+        garantir_log_schema()
         garantir_gatilhos_auditoria()
     except Exception:
         current_app.logger.exception("Não foi possível preparar a auditoria do banco.")

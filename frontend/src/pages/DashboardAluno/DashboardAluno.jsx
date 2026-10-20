@@ -175,8 +175,6 @@ export default function DashboardAluno({
     const [dashboard, setDashboard] = useState(null);
     const [meusCursos, setMeusCursos] = useState([]);
     const [descobrir, setDescobrir] = useState([]);
-    // Sprint item 29: guarda cursos recomendados com base nas categorias e temas das inscrições do aluno.
-    const [cursosRecomendados, setCursosRecomendados] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
     const [faturas, setFaturas] = useState([]);
     const [pagamentoFatura, setPagamentoFatura] = useState(null);
@@ -271,19 +269,14 @@ export default function DashboardAluno({
             const params = new URLSearchParams();
             if (termo.trim()) params.set("busca", termo.trim());
             params.set("ordem", ordemDescobrir);
+            // Sprint item 29: mostra recomendações no próprio catálogo, sem repetir cursos em outro painel.
+            if (ordemDescobrir === "recomendados") params.set("recomendados", "1");
             if (apenasNaoInscritos) params.set("apenas_novos", "1");
             if (categoriaDescobrir) params.set("categoria", categoriaDescobrir);
             if (temaDescobrir) params.set("tema", temaDescobrir);
             if (avaliacaoMinimaDescobrir) params.set("avaliacao_min", avaliacaoMinimaDescobrir);
             const resposta = await fetch(`${api}/aluno/descobrir?${params.toString()}`, { credentials: "include" });
             setDescobrir(await lerResposta(resposta));
-            try {
-                const respostaRecomendacoes = await fetch(`${api}/aluno/descobrir?recomendados=1&ordem=recomendados`, { credentials: "include" });
-                setCursosRecomendados(await lerResposta(respostaRecomendacoes));
-            } catch (erroRecomendacoes) {
-                console.error("Erro ao carregar recomendações de cursos:", erroRecomendacoes);
-                setCursosRecomendados([]);
-            }
         } catch (erro) {
             console.error("Erro ao carregar cursos publicos:", erro);
             setDescobrir([]);
@@ -714,7 +707,7 @@ export default function DashboardAluno({
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    {visao !== "aula" && <CabecalhoAluno usuario={usuario} />}
+                    {visao === "inicio" && <CabecalhoAluno usuario={usuario} />}
 
                     {visao === "inicio" && (
                         <>
@@ -789,20 +782,6 @@ export default function DashboardAluno({
                                 <h2>Encontre seu próximo curso</h2>
                                 <p>Pesquise o catálogo, compare opções e abra um curso para ver os módulos e as aulas.</p>
                             </header>
-                            <section className={css.recomendacoesCursos}>
-                                {/* Sprint item 29: exibe cursos relacionados às categorias e aos temas das inscrições do aluno. */}
-                                <h3>Recomendados para você</h3>
-                                <p>Com base nas categorias e nos temas dos cursos em que você está inscrito.</p>
-                                {cursosRecomendados.length > 0 ? (
-                                    <div className={css.gridCursos}>
-                                        {cursosRecomendados.slice(0, 6).map((curso) => (
-                                            <CursoCard key={curso.id} curso={curso} api={api} onAbrir={() => navigate(`/DashboardAluno/descobrir/${curso.id}`)} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className={css.textoApoio}>Quando houver cursos relacionados às suas inscrições, eles aparecerão aqui.</p>
-                                )}
-                            </section>
                             <div className={css.filtrosDescobrir}>
                                 {/* Sprint item 28: filtra o catálogo público por categoria, tema e avaliação mínima. */}
                                 <label className={css.filtroOrdenacao}>
@@ -839,6 +818,8 @@ export default function DashboardAluno({
                                     <select value={ordemDescobrir} onChange={(evento) => setOrdemDescobrir(evento.target.value)}>
                                         <option value="recentes">Mais recentes</option>
                                         <option value="populares">Mais populares</option>
+                                        {/* Sprint item 29: filtra e ordena cursos relacionados às inscrições do aluno na lista principal. */}
+                                        <option value="recomendados">Recomendados para você</option>
                                     </select>
                                 </label>
                                 <label className={css.filtroNovos}>
@@ -852,7 +833,7 @@ export default function DashboardAluno({
                             </div>
 
                             {carregando && <p className={css.textoApoio}>Buscando cursos...</p>}
-                            {!carregando && descobrir.length === 0 && <EstadoVazio texto="Nenhum curso público encontrado." />}
+                            {!carregando && descobrir.length === 0 && <EstadoVazio texto={ordemDescobrir === "recomendados" ? "Ainda não há cursos relacionados às suas inscrições. Selecione outra ordenação para explorar o catálogo." : "Nenhum curso público encontrado."} />}
                             <div className={css.gridCursos}>
                                 {descobrir.map((curso) => (
                                     <CursoCard key={curso.id} curso={curso} api={api} onAbrir={() => navigate(`/DashboardAluno/descobrir/${curso.id}`)} />
@@ -1210,9 +1191,8 @@ export default function DashboardAluno({
                         </section>
                     )}
                 </main>
-
-                <RodapeAluno />
             </div>
+            <RodapeAluno />
         </div>
     );
 }

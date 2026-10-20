@@ -209,7 +209,7 @@ def solicitar_saque_conta(valor, referencia=None):
     dados = _json_resposta(resposta)
 
     if not resposta.ok:
-        raise ArkheError(_mensagem_erro(dados, "Erro ao solicitar saque na Arkhe"))
+        raise ArkheError(_mensagem_erro(dados, "Erro ao solicitar saque na Arkhé"))
 
     id_saque = _primeiro_valor(dados, "id_saque", "id", "saque_id", "withdraw_id")
 

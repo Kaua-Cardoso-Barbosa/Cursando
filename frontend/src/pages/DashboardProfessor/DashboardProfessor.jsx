@@ -3,13 +3,17 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
     FaBookOpen,
     FaCheckCircle,
+    FaChartLine,
     FaClock,
+    FaEye,
     FaFilePdf,
     FaFolderOpen,
     FaGraduationCap,
     FaListAlt,
+    FaMoneyBillWave,
     FaPlayCircle,
     FaPlus,
+    FaUserPlus,
     FaWallet,
     FaUsers
 } from "react-icons/fa";
@@ -655,7 +659,7 @@ export default function DashboardProfessor({
         // Sprint item 1: evita enviar duas solicitações de saque por toques repetidos.
         if (solicitandoSaque) return;
         if (!saqueValido) {
-            avisar({ tipo: "erro", descricao: "Informe um valor de saque valido dentro do saldo disponivel." });
+            avisar({ tipo: "erro", descricao: "Informe um valor de saque válido dentro do saldo disponível." });
             return;
         }
         setSolicitandoSaque(true);
@@ -735,7 +739,7 @@ export default function DashboardProfessor({
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    <CabecalhoProfessor usuario={usuario} />
+                    {visao === "inicio" && <CabecalhoProfessor usuario={usuario} />}
 
                     {visao === "inicio" && (
                         <>
@@ -778,10 +782,10 @@ export default function DashboardProfessor({
                                     </div>
                                 </div>
                                 <div className={css.gridMetricasFinanceiro}>
-                                    <CardMetricaProfessor titulo="Acessos aos cursos" detalhe="Alunos únicos neste mês" valor={formatarNumero(analiticosMensais?.total_acessos)} />
-                                    <CardMetricaProfessor titulo="Inscrições no mês" detalhe="Novas matrículas convertidas" valor={formatarNumero(analiticosMensais?.inscricoes_mes)} />
-                                    <CardMetricaProfessor titulo="Taxa de conversão" detalhe="Inscrições ÷ acessos únicos" valor={`${Number(analiticosMensais?.conversao_percentual || 0).toFixed(2).replace(".", ",")}%`} />
-                                    <CardMetricaProfessor titulo="Alunos inscritos" detalhe="Matrículas ativas nos cursos" valor={formatarNumero(analiticosMensais?.alunos_inscritos)} />
+                                    <CardMetricaProfessor titulo="Acessos aos cursos" detalhe="Alunos únicos neste mês" valor={formatarNumero(analiticosMensais?.total_acessos)} icone={<FaEye />} />
+                                    <CardMetricaProfessor titulo="Inscrições no mês" detalhe="Novas matrículas convertidas" valor={formatarNumero(analiticosMensais?.inscricoes_mes)} icone={<FaUserPlus />} />
+                                    <CardMetricaProfessor titulo="Taxa de conversão" detalhe="Inscrições ÷ acessos únicos" valor={`${Number(analiticosMensais?.conversao_percentual || 0).toFixed(2).replace(".", ",")}%`} icone={<FaChartLine />} />
+                                    <CardMetricaProfessor titulo="Alunos inscritos" detalhe="Matrículas ativas nos cursos" valor={formatarNumero(analiticosMensais?.alunos_inscritos)} icone={<FaUsers />} />
                                 </div>
                                 {/* Sprint item 9: compara por curso os acessos únicos e as inscrições obtidos durante o mês. */}
                                 <GoogleChart titulo="Acessos e conversões por curso" data={dadosGraficoMensal} options={opcoesGraficoInstrutor} />
@@ -904,6 +908,7 @@ export default function DashboardProfessor({
                                 </div>
                             </div>
 
+                            {/* Sprint item 20: reúne a configuração e correção de provas às opções de gestão do curso. */}
                             <div className={css.barraTitulo}>
                                 <button className={abaGestaoCurso === "modulos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("modulos"); setIdModuloSelecionado(null); }}>Módulos</button>
                                 <button className={abaGestaoCurso === "complementos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("complementos"); setIdModuloSelecionado(null); }}>Complementos</button>
@@ -1068,13 +1073,13 @@ export default function DashboardProfessor({
                                     </div>
                                 </div>
                                 <div className={css.gridMetricasFinanceiro}>
-                                    <CardMetricaProfessor titulo="Ganhos estimados" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} />
+                                    <CardMetricaProfessor titulo="Ganhos estimados" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} icone={<FaChartLine />} />
                                     {/* Sprint item 15: apresenta ao instrutor o saldo bruto restante que pode solicitar para saque. */}
                                     <div className={css.cardSaldoDisponivel}>
-                                        <CardMetricaProfessor titulo="Disponível para saque" detalhe="Saldo após solicitações" valor={formatarMoeda(financeiro?.disponivel_saque)} />
+                                        <CardMetricaProfessor titulo="Disponível para saque" detalhe="Saldo após solicitações" valor={formatarMoeda(financeiro?.disponivel_saque)} icone={<FaWallet />} />
                                     </div>
-                                    <CardMetricaProfessor titulo="Já sacado" detalhe="Solicitações registradas" valor={formatarMoeda(financeiro?.ja_sacado)} />
-                                    <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} />
+                                    <CardMetricaProfessor titulo="Já sacado" detalhe="Solicitações registradas" valor={formatarMoeda(financeiro?.ja_sacado)} icone={<FaMoneyBillWave />} />
+                                    <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} icone={<FaUsers />} />
                                 </div>
                                 {/* Sprint item 30: exibe a estimativa por aula concluída com base no fundo de receita compartilhado. */}
                                 <div className={css.valorEstimadoView}>
@@ -1206,13 +1211,13 @@ export default function DashboardProfessor({
                                     </div>
                                 </div>
                                 <div className={css.gridMetricasRelatorio}>
-                                    <CardMetricaProfessor titulo="Matrículas" detalhe="Inscrições ativas nos cursos" valor={formatarNumero(relatorio?.resumo?.alunos)} />
-                                    <CardMetricaProfessor titulo="Cursos" detalhe="Cursos incluídos no filtro" valor={formatarNumero(relatorio?.resumo?.cursos)} />
-                                    <CardMetricaProfessor titulo="Aulas concluídas" detalhe="Concluídas pelos alunos" valor={formatarNumero(relatorio?.resumo?.aulas_assistidas)} />
+                                    <CardMetricaProfessor titulo="Matrículas" detalhe="Inscrições ativas nos cursos" valor={formatarNumero(relatorio?.resumo?.alunos)} icone={<FaUsers />} />
+                                    <CardMetricaProfessor titulo="Cursos" detalhe="Cursos incluídos no filtro" valor={formatarNumero(relatorio?.resumo?.cursos)} icone={<FaGraduationCap />} />
+                                    <CardMetricaProfessor titulo="Aulas concluídas" detalhe="Concluídas pelos alunos" valor={formatarNumero(relatorio?.resumo?.aulas_assistidas)} icone={<FaPlayCircle />} />
                                     {/* Sprint item 7: mantém visíveis as conclusões e o tempo registrado pelo player. */}
-                                    <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.conclusoes)} />
-                                    <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.modulos)} />
-                                    <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} />
+                                    <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.conclusoes)} icone={<FaCheckCircle />} />
+                                    <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.modulos)} icone={<FaListAlt />} />
+                                    <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} icone={<FaClock />} />
                                 </div>
                             </section>
 
@@ -1265,9 +1270,8 @@ export default function DashboardProfessor({
                         </section>
                     )}
                 </main>
-
-                <RodapeProfessor />
             </div>
+            <RodapeProfessor />
 
             {modal && (
                 <FormularioModalProfessor

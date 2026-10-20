@@ -360,14 +360,6 @@ export default function GerenciamentoUsuarios({
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    <header className={css.cabecalhoUsuario}>
-                        <div className={css.dadosUsuario}>
-                            <h1>Ola {usuario.nome}</h1>
-                            <span className={css.cargoUsuario}>{nomeTipoUsuario(usuario.tipo)}</span>
-                        </div>
-
-                    </header>
-
                     {/* Sprint item 9: introduz a área de usuários com um resumo dos controles disponíveis. */}
                     <section className={css.cabecalhoPagina}>
                         <span className={css.etiquetaPagina}>ADMINISTRAÇÃO</span>
@@ -404,32 +396,32 @@ export default function GerenciamentoUsuarios({
                         tipoCadastro: TIPOS.ADMIN
                     })}
                 </main>
-
-                <footer className={css.rodapePagina}>
-                    <div className={css.colunaRodape}>
-                        <h4>Contato</h4>
-                        <p>Birigui - SP</p>
-                        <p>(18)98131-3801</p>
-                        <p>cursando@gmail.com</p>
-                    </div>
-
-                    <div className={css.colunaRodape}>
-                        <h4>Navegacao</h4>
-                        <a href="#home">Home</a>
-                        <a href="#login">Login</a>
-                        <a href="#cadastro">Cadastro</a>
-                    </div>
-
-                    <div className={css.colunaRodape}>
-                        <h4>Baixe nosso aplicativo</h4>
-                        <ul className={css.listaApps}>
-                            <li><FaGooglePlay /> Playstore</li>
-                            <li><FaLinux /> Linux</li>
-                            <li><FaWindows /> Windows</li>
-                        </ul>
-                    </div>
-                </footer>
             </div>
+
+            <footer className={css.rodapePagina}>
+                <div className={css.colunaRodape}>
+                    <h4>Contato</h4>
+                    <p>Birigui - SP</p>
+                    <p>(18)98131-3801</p>
+                    <p>cursando@gmail.com</p>
+                </div>
+
+                <div className={css.colunaRodape}>
+                    <h4>Navegacao</h4>
+                    <a href="#home">Home</a>
+                    <a href="#login">Login</a>
+                    <a href="#cadastro">Cadastro</a>
+                </div>
+
+                <div className={css.colunaRodape}>
+                    <h4>Baixe nosso aplicativo</h4>
+                    <ul className={css.listaApps}>
+                        <li><FaGooglePlay /> Playstore</li>
+                        <li><FaLinux /> Linux</li>
+                        <li><FaWindows /> Windows</li>
+                    </ul>
+                </div>
+            </footer>
         </div>
     );
 }

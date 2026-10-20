@@ -111,9 +111,14 @@ def garantir_log_schema():
         id_atual = int((cursor.fetchone() or (0,))[0] or 0)
         if maior_id > id_atual:
             cursor.execute(
-                "SELECT GEN_ID(GEN_LOG_GRAVACAO, ?) FROM RDB$DATABASE",
+                "SELECT GEN_ID(GEN_LOG_GRAVACAO, CAST(? AS INTEGER)) FROM RDB$DATABASE",
                 (maior_id - id_atual,),
             )
+            id_atual = int((cursor.fetchone() or (0,))[0] or 0)
+            if id_atual < maior_id:
+                raise RuntimeError(
+                    "O gerador GEN_LOG_GRAVACAO permaneceu abaixo do maior ID_LOG."
+                )
         con.commit()
     except Exception:
         con.rollback()
