@@ -9,7 +9,6 @@ import BottomNav from "./src/components/BottomNav";
 import FeedbackProvider, { useFeedback } from "./src/components/FeedbackProvider";
 import AlunosCursoScreen from "./src/screens/AlunosCursoScreen";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen";
-import AssinaturaScreen from "./src/screens/AssinaturaScreen";
 import CadastroScreen from "./src/screens/CadastroScreen";
 import ChatScreen from "./src/screens/ChatScreen";
 import CursosScreen from "./src/screens/CursosScreen";
@@ -92,7 +91,11 @@ function AppContent() {
       const cursosPath = tipo === 2 ? "/aluno/cursos" : "/professor/cursos?status=todos";
       const requisicoes = [
         apiRequest(dashboardPath, {}, authToken),
-        apiRequest(cursosPath, {}, authToken),
+        // Sprint item 34: a listagem bloqueada não impede o acesso ao restante do dashboard.
+        apiRequest(cursosPath, {}, authToken).catch((error) => {
+          if (tipo === 2 && error?.status === 402) return [];
+          throw error;
+        }),
         apiRequest("/perfil", {}, authToken)
       ];
 
@@ -184,20 +187,13 @@ function AppContent() {
       const dados = await apiRequest("/assinaturas/verificar", {}, authToken);
       const ativa = dados?.assinatura === true;
       setAssinaturaAtiva(ativa);
-      if (ativa) {
-        await carregarDados(authToken, authUser);
-      } else {
-        setDashboard(null);
-        setCursos([]);
-        setFinanceiro(null);
-      }
+      // Sprint item 34: mantém início, catálogo e financeiro acessíveis sem mensalidade ativa.
+      await carregarDados(authToken, authUser);
       return ativa;
     } catch (error) {
       if (error?.status === 403 && error?.dados?.assinatura === false) {
         setAssinaturaAtiva(false);
-        setDashboard(null);
-        setCursos([]);
-        setFinanceiro(null);
+        await carregarDados(authToken, authUser);
         return false;
       }
 
@@ -206,11 +202,6 @@ function AppContent() {
     } finally {
       setValidandoAssinatura(false);
     }
-  }
-
-  async function concluirAssinatura() {
-    setAssinaturaAtiva(true);
-    await carregarDados(token, usuario);
   }
 
   // Restaura a sessão persistida e revalida o acesso quando o aplicativo inicia.
@@ -245,7 +236,13 @@ function AppContent() {
       try {
         // Sprint item 3: ao voltar ao app, revalida acesso e busca no servidor os dados alterados no site.
         const acessoAtivo = await validarAcesso(token, usuario);
-        if (!acessoAtivo) return;
+        if (!acessoAtivo) {
+          // Sprint item 34: se o pagamento venceu durante a sessão, leva o aluno ao financeiro.
+          setDetalheCursoAluno(null);
+          setDetalheAulaAluno(null);
+          if (tab === "courses" || tab === "discover") setTab("finance");
+          return;
+        }
 
         if (aulaId) {
           await abrirAulaAluno({ id: aulaId });
@@ -295,7 +292,15 @@ function AppContent() {
       setDetalheAulaAluno(null);
       setTab(destino);
     } catch (error) {
-      mostrarAlerta("Erro", error.message, "erro");
+      if (error.status === 402) {
+        // Sprint item 34: avisa sobre a fatura pendente e abre a aba de pagamento.
+        mostrarAlerta("Fatura em aberto", error.message, "erro");
+        setDetalheCursoAluno(null);
+        setDetalheAulaAluno(null);
+        setTab("finance");
+      } else {
+        mostrarAlerta("Erro", error.message, "erro");
+      }
     } finally {
       setLoading(false);
     }
@@ -309,9 +314,10 @@ function AppContent() {
       await apiRequest(`/aluno/cursos/${curso.id}/inscrever`, { method: "POST" }, token);
       await carregarDados();
       setDetalheCursoAluno(await buscarDetalheCursoAluno(curso.id));
-      mostrarAlerta("Inscricao", "Inscricao realizada com sucesso.", "sucesso");
+      mostrarAlerta("Inscrição", "Inscrição realizada com sucesso.", "sucesso");
     } catch (error) {
       if (error.status === 402) {
+        mostrarAlerta("Fatura em aberto", error.message, "erro");
         setDetalheCursoAluno(null);
         setDetalheAulaAluno(null);
         setTab("finance");
@@ -330,7 +336,14 @@ function AppContent() {
       setDetalheAulaAluno(detalhe);
       setTab("courses");
     } catch (error) {
-      mostrarAlerta("Erro", error.message, "erro");
+      if (error.status === 402) {
+        mostrarAlerta("Fatura em aberto", error.message, "erro");
+        setDetalheCursoAluno(null);
+        setDetalheAulaAluno(null);
+        setTab("finance");
+      } else {
+        mostrarAlerta("Erro", error.message, "erro");
+      }
     } finally {
       setLoading(false);
     }
@@ -600,15 +613,6 @@ function AppContent() {
     return (
       <SafeAreaView style={[globalStyles.app, styles.loading]}>
         <ActivityIndicator size="large" color={colors.green} />
-      </SafeAreaView>
-    );
-  }
-
-  if (tipoUsuario === 2 && assinaturaAtiva === false) {
-    return (
-      <SafeAreaView style={globalStyles.app}>
-        <StatusBar style="dark" />
-        <AssinaturaScreen token={token} onLogout={sair} onAssinaturaAtiva={concluirAssinatura} />
       </SafeAreaView>
     );
   }

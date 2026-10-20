@@ -100,12 +100,16 @@ export default function RotaProtegida({
         return <Navigate to="/login" replace />;
     }
 
-    if (usuario.redirecionar && location.pathname !== usuario.redirecionar) {
-        return <Navigate to={usuario.redirecionar} replace />;
+    // Sprint item 34: ignora o redirecionamento antigo para permitir navegar pelo painel com fatura aberta.
+    const destinoSessao = Number(usuario.tipo) === 2 && usuario.redirecionar === "/assinatura"
+        ? null
+        : usuario.redirecionar;
+    if (destinoSessao && location.pathname !== destinoSessao) {
+        return <Navigate to={destinoSessao} replace />;
     }
 
     if (exigirAssinatura && !assinaturaValida) {
-        return <Navigate to="/assinatura" replace />;
+        return <Navigate to="/DashboardAluno/assinatura" replace />;
     }
 
     if (

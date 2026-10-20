@@ -1,4 +1,4 @@
-
+from threading import Lock
 
 from auditoria import garantir_gatilhos_auditoria
 from banco import get_db
@@ -7,6 +7,7 @@ from log_banco import garantir_log_schema
 
 
 _schema_pronto = False
+_schema_lock = Lock()
 
 
 
@@ -48,7 +49,7 @@ def _garantir_coluna(cursor, tabela, coluna, ddl):
 
 
 
-def garantir_sprint_schema():
+def _garantir_sprint_schema():
     global _schema_pronto
 
     if _schema_pronto:
@@ -180,12 +181,24 @@ def garantir_sprint_schema():
         _criar_tabela(
             cursor,
             "CUSTOS_PLATAFORMA",
+            # Sprint item 36: armazena despesas da plataforma para consulta e acompanhamento pelo administrador.
             """
             CREATE TABLE CUSTOS_PLATAFORMA (
                 ID_CUSTO INTEGER NOT NULL PRIMARY KEY,
                 DESCRICAO VARCHAR(200) NOT NULL,
                 VALOR NUMERIC(15,2) NOT NULL,
                 DATA_CUSTO DATE DEFAULT CURRENT_DATE,
+                CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+        )
+        _criar_tabela(
+            cursor,
+            "CATEGORIAS_CUSTO",
+            """
+            CREATE TABLE CATEGORIAS_CUSTO (
+                ID_CATEGORIA INTEGER NOT NULL PRIMARY KEY,
+                NOME VARCHAR(80) NOT NULL UNIQUE,
                 CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """,
@@ -297,6 +310,35 @@ def garantir_sprint_schema():
         _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "RESPOSTA_ARKHE", "RESPOSTA_ARKHE BLOB SUB_TYPE TEXT")
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "CATEGORIA", "CATEGORIA VARCHAR(80)")
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_USUARIO", "ID_USUARIO INTEGER")
+        _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_CATEGORIA", "ID_CATEGORIA INTEGER")
+        _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "TIPO_CUSTO", "TIPO_CUSTO VARCHAR(12) DEFAULT 'UNICO'")
+        _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "DATA_INICIO", "DATA_INICIO DATE")
+        _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "DATA_FIM", "DATA_FIM DATE")
+        _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_GRUPO_MENSAL", "ID_GRUPO_MENSAL INTEGER")
+        # Sprint item 36: confirma as colunas novas antes de usá-las na migração de custos no Firebird.
+        con.commit()
+        # Sprint item 36: migra categorias antigas para a lista obrigatória de seleção.
+        cursor.execute("SELECT NOME FROM CATEGORIAS_CUSTO")
+        categorias_existentes = {str(row[0]).strip().casefold() for row in cursor.fetchall()}
+        cursor.execute("SELECT DISTINCT CATEGORIA FROM CUSTOS_PLATAFORMA WHERE CATEGORIA IS NOT NULL")
+        for linha_categoria in cursor.fetchall():
+            nome_categoria = str(linha_categoria[0]).strip()
+            if nome_categoria and nome_categoria.casefold() not in categorias_existentes:
+                cursor.execute("SELECT COALESCE(MAX(ID_CATEGORIA), 0) + 1 FROM CATEGORIAS_CUSTO")
+                id_categoria = cursor.fetchone()[0]
+                cursor.execute(
+                    "INSERT INTO CATEGORIAS_CUSTO (ID_CATEGORIA, NOME) VALUES (?, ?)",
+                    (id_categoria, nome_categoria[:80]),
+                )
+                categorias_existentes.add(nome_categoria.casefold())
+        cursor.execute("SELECT ID_CATEGORIA, NOME FROM CATEGORIAS_CUSTO")
+        ids_categorias = {str(row[1]).strip().casefold(): row[0] for row in cursor.fetchall()}
+        for nome_categoria, id_categoria in ids_categorias.items():
+            cursor.execute(
+                "UPDATE CUSTOS_PLATAFORMA SET ID_CATEGORIA = ?, TIPO_CUSTO = COALESCE(TIPO_CUSTO, 'UNICO') WHERE ID_CATEGORIA IS NULL AND UPPER(TRIM(CATEGORIA)) = ?",
+                (id_categoria, nome_categoria.upper()),
+            )
+        cursor.execute("UPDATE CUSTOS_PLATAFORMA SET TIPO_CUSTO = 'UNICO' WHERE TIPO_CUSTO IS NULL")
         # Sprint item 6: associa cada videoaula ao modulo do curso.
         _garantir_coluna(cursor, "VIDEOS", "ID_MODULO", "ID_MODULO INTEGER")
         # Sprint item 20: guarda quando o instrutor corrigiu a prova para aplicar o intervalo de nova tentativa.
@@ -316,6 +358,7 @@ def garantir_sprint_schema():
             "RESPOSTAS_PROVA",
             "CERTIFICADOS",
             "CUSTOS_PLATAFORMA",
+            "CATEGORIAS_CUSTO",
             "SAQUES_INSTRUTOR",
             "FINANCEIRO_CONFIG",
             "MENSAGENS_CHAT",
@@ -332,5 +375,12 @@ def garantir_sprint_schema():
     finally:
         cursor.close()
         con.close()
+
+def garantir_sprint_schema():
+    # As rotas financeiras podem pedir o schema em paralelo na primeira visita.
+    # Serializa a criação/migração para evitar DDL concorrente no Firebird.
+    with _schema_lock:
+        return _garantir_sprint_schema()
+
 
 __all__ = ['_existe_relacao', '_criar_tabela', '_existe_coluna', '_garantir_coluna', 'garantir_sprint_schema']

@@ -23,7 +23,15 @@ def health():
 from usuario import *
 from professor import *
 from aluno import *
-from sprint import *
+# Registra explicitamente as rotas por área funcional.
+import curso_conteudo
+import chat_cursos
+import provas_cursos
+import gravacao_log
+import financeiro
+import pagamento_arkhe
+import relatorio
+from sprint_comum import exigir_tipo
 from servicos.arkhe import ArkheError, consultar_conta
 
 print("\nROTAS REGISTRADAS ANTES DA ROTA ARKHÉ:")

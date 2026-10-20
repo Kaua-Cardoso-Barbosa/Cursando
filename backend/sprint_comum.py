@@ -381,17 +381,9 @@ def _aluno_matriculado(cursor, id_curso, id_aluno):
 
 
 def _bloqueio_assinatura_aluno(cursor, id_aluno):
-    from aluno import aluno_tem_assinatura_ativa
-
-    if aluno_tem_assinatura_ativa(cursor, id_aluno):
-        return None
-
-    return resposta(
-        "Voce precisa de uma assinatura ativa para acessar este recurso.",
-        402,
-        "erro",
-        redirecionar="/DashboardAluno/financeiro",
-    )
+    # Sprint item 34: materiais de curso usam o mesmo aviso de fatura pendente e bloqueio das aulas.
+    from aluno import exigir_assinatura_ativa
+    return exigir_assinatura_ativa(cursor, id_aluno)
 
 
 

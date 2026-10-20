@@ -22,10 +22,11 @@ const CartaoPlano = ({ titulo, popular, precoAntigo, precoAtual, descricao, bene
                 ))}
             </div>
             <div style={{ textAlign: 'center' }}>
+                {/* Sprint item 34: leva o aluno à assinatura dentro do próprio painel. */}
                 <button
                     className={`${css.botao} ${css['botao-primario']} ${css['botao-largo']}`}
                     type="button"
-                    onClick={() => navigate('/assinatura')}
+                    onClick={() => navigate('/DashboardAluno/assinatura')}
                 >
                     Assinar Plano
                 </button>

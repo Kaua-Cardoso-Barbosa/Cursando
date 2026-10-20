@@ -120,29 +120,7 @@ def verificar_token():
         usuario = cursor.fetchone()
         redirecionar = None
 
-        if usuario and int(tipo) == 2:
-            cursor.execute(
-                """
-                SELECT
-                    COUNT(*),
-                    SUM(
-                        CASE
-                            WHEN STATUS = 1
-                             AND (DATA_EXPIRACAO IS NULL OR DATA_EXPIRACAO >= CURRENT_TIMESTAMP)
-                            THEN 1
-                            ELSE 0
-                        END
-                    )
-                FROM ASSINATURAS
-                WHERE ID_USUARIO = ?
-                """,
-                (id_usuario,),
-            )
-            total_assinaturas, assinaturas_ativas = cursor.fetchone() or (0, 0)
-
-            # Redireciona qualquer aluno sem assinatura ativa para concluir o pagamento.
-            if int(assinaturas_ativas or 0) == 0:
-                redirecionar = "/assinatura"
+        # Sprint item 34: a sessão do aluno continua válida para consultar e pagar faturas.
 
         cursor.close()
 

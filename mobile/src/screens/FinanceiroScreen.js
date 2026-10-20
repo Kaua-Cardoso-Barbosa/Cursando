@@ -1,8 +1,9 @@
 import * as Clipboard from "expo-clipboard";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client";
 import AppIcon from "../components/AppIcon";
+import HistoricoFaturasAluno from "../components/HistoricoFaturasAluno";
 import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
@@ -28,17 +29,18 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
   const [pixCopiado, setPixCopiado] = useState(false);
   const [valorSaque, setValorSaque] = useState("");
   const [solicitandoSaque, setSolicitandoSaque] = useState(false);
+  const onRefreshRef = useRef(onRefresh);
+  onRefreshRef.current = onRefresh;
   const aluno = Number(tipoUsuario) === 2;
   const disponivelSaque = Number(financeiro?.disponivel_saque || 0);
   const valorSaqueNumero = Number(valorSaque);
   const saqueValido = Number.isFinite(valorSaqueNumero) && valorSaqueNumero > 0 && valorSaqueNumero <= disponivelSaque;
   const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
-  const faturasPagas = faturas.filter((fatura) => !fatura.aberta);
   const cardsAtivos = aluno
     ? [
       ["Total gasto", "Mensalidades pagas", "total_gasto", "cash-outline", "money"],
       ["Em aberto", "Faturas pendentes", "total_aberto", "wallet-outline", "money"],
-      ["Faturas pagas", "Historico de mensalidades", "faturas", "receipt-outline", "number"],
+      ["Faturas pagas", "Histórico de mensalidades", "faturas", "receipt-outline", "number"],
       ["Faturas abertas", "Bloqueiam cursos", "faturas_abertas", "alert-circle-outline", "number"]
     ]
     : cards;
@@ -62,6 +64,8 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
       if (estado === "active") {
         // Sprint item 3: atualiza faturas criadas ou pagas no site ao retornar ao financeiro do app.
         carregarFaturas();
+        // Sprint item 33: atualiza também o total gasto, apresentado pelo resumo financeiro.
+        if (aluno) onRefreshRef.current?.();
       }
     });
 
@@ -73,14 +77,18 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
     await Promise.all([onRefresh?.(), carregarFaturas()]);
   }
 
-  async function pagarProxima() {
+  async function pagarProxima(idAssinatura = null) {
     try {
       // Sprint item 1: aguarda a resposta da Arkhé ao gerar uma cobrança de mensalidade.
-      // Sprint item 3: gera PIX de fatura futura pelo financeiro mobile do aluno.
+      // Sprint item 34: permite escolher a fatura aberta ou criar uma mensalidade futura.
       const dados = await apiRequest("/financeiro/faturas", {
         method: "POST",
-        body: JSON.stringify({ meses: 1 })
+        body: JSON.stringify({ meses: 1, ...(idAssinatura ? { id_assinatura: idAssinatura } : {}) })
       }, token, PAYMENT_REQUEST_TIMEOUT_MS, false);
+      if (dados.pagamento_confirmado) {
+        await confirmarPagamento(dados.id_assinatura);
+        return;
+      }
       setPagamento(dados);
       await carregarFaturas();
       await onRefresh?.();
@@ -89,17 +97,22 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
     }
   }
 
+  async function confirmarPagamento(idAssinatura) {
+    // Sprint item 34: confirma somente a cobrança escolhida e atualiza o resumo financeiro.
+    await apiRequest(`/financeiro/faturas/${idAssinatura}/verificar`, {
+      method: "POST"
+    }, token, PAYMENT_REQUEST_TIMEOUT_MS);
+    setPagamento(null);
+    await carregarFaturas();
+    await onRefresh?.();
+  }
+
   async function verificarPagamento() {
     if (!pagamento?.id_assinatura) return;
     try {
       setVerificando(true);
-      // Sprint item 1: confere com a Arkhé se a cobrança de mensalidade foi paga.
-      await apiRequest(`/financeiro/faturas/${pagamento.id_assinatura}/verificar`, {
-        method: "POST"
-      }, token, PAYMENT_REQUEST_TIMEOUT_MS);
-      setPagamento(null);
-      await carregarFaturas();
-      await onRefresh?.();
+      // Sprint item 34: baixa apenas a fatura selecionada após a confirmação da Arkhé.
+      await confirmarPagamento(pagamento.id_assinatura);
     } catch (error) {
       mostrarAlerta("Pagamento", error.message, "erro");
     } finally {
@@ -185,8 +198,8 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
         <View style={styles.invoiceSection}>
           <View style={styles.invoiceBlock}>
             <Text style={styles.sectionTitle}>Pagamento de novas mensalidades</Text>
-            <Text style={styles.invoiceText}>Gere uma nova cobranca sem interromper a mensalidade atual.</Text>
-            <Pressable style={styles.payButton} onPress={pagarProxima}>
+            <Text style={styles.invoiceText}>Gere uma nova cobrança sem interromper a mensalidade atual.</Text>
+            <Pressable style={styles.payButton} onPress={() => pagarProxima()}>
               <Text style={styles.payButtonText}>Pagar nova mensalidade</Text>
             </Pressable>
             {pagamento?.codigo_pagamento && (
@@ -197,7 +210,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
                   <Text style={styles.payButtonText}>{pixCopiado ? "PIX copiado" : "Copiar pix"}</Text>
                 </Pressable>
                 <Pressable style={styles.confirmButton} onPress={verificarPagamento} disabled={verificando}>
-                  <Text style={styles.payButtonText}>{verificando ? "Verificando..." : "Ja paguei"}</Text>
+                  <Text style={styles.payButtonText}>{verificando ? "Verificando..." : "Já paguei"}</Text>
                 </Pressable>
               </View>
             )}
@@ -205,21 +218,23 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
               <View key={fatura.id} style={styles.invoiceCard}>
                 <Text style={styles.invoiceTitle}>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</Text>
                 <Text style={styles.invoiceText}>{moeda(fatura.valor)}</Text>
+                {fatura.data_vencimento && (
+                  <Text style={styles.invoiceText}>
+                    Vencimento: {String(fatura.data_vencimento).slice(0, 10).split("-").reverse().join("/")}
+                  </Text>
+                )}
+                {/* Sprint item 34: recupera ou renova o Pix de cada fatura em aberto. */}
+                <Pressable style={styles.confirmButton} onPress={() => pagarProxima(fatura.id)}>
+                  <Text style={styles.payButtonText}>Pagar esta fatura</Text>
+                </Pressable>
               </View>
             ))}
+            {faturasAbertas.length === 0 && <Text style={styles.invoiceText}>Nenhuma mensalidade em aberto.</Text>}
           </View>
 
           <View style={styles.invoiceBlock}>
-            <Text style={styles.sectionTitle}>Historico de mensalidades</Text>
-            {faturasPagas.map((fatura) => (
-              <View key={fatura.id} style={styles.invoiceCard}>
-                <Text style={styles.invoiceTitle}>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</Text>
-                <Text style={styles.invoiceText}>{moeda(fatura.valor)}</Text>
-              </View>
-            ))}
-            {faturasPagas.length === 0 && (
-              <Text style={styles.invoiceText}>Nenhuma mensalidade paga registrada.</Text>
-            )}
+            {/* Sprint item 33: exibe o histórico de mensalidades pagas com valor e data. */}
+            <HistoricoFaturasAluno faturas={faturas} />
           </View>
         </View>
       )}

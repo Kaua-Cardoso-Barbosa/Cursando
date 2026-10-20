@@ -8,11 +8,11 @@ from werkzeug.utils import secure_filename
 
 from app import app
 from banco import get_db
-from professor import de_blob_texto, para_blob_texto, salvar_upload
+from professor import AULA_STATUS_FILTRO, CURSO_STATUS_FILTRO, STATUS_ARQUIVADO, STATUS_NOMES, STATUS_PRIVADO, STATUS_PUBLICADO, converter_video_dash, criar_slug, de_blob_texto, exigir_professor, para_blob_texto, resposta as resposta_professor, salvar_thumb_aula, salvar_upload
 
 
 from sprint_schema import garantir_sprint_schema
-from sprint_comum import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, exigir_tipo, proximo_id, resposta
+from sprint_comum import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, exigir_tipo, normalizar_taxonomia, proximo_id, resposta
 
 
 
@@ -98,7 +98,6 @@ def modulos_professor(id_curso):
     finally:
         cursor.close()
         con.close()
-
 
 
 # Sprint item 21: autoriza o instrutor do curso a publicar links e arquivos privados como complementos.
@@ -375,4 +374,356 @@ def baixar_material_aluno(id_curso, id_material):
         cursor.close()
         con.close()
 
-__all__ = ['modulos_professor', 'materiais_professor', 'materiais_aluno', 'editar_modulo_professor', 'excluir_material_professor', 'baixar_material_aluno']
+# Categorias e temas dos cursos.
+@app.route("/taxonomias/<string:tipo>", methods=["GET", "POST"])
+@jwt_required()
+def taxonomias(tipo):
+    if tipo not in {"categorias", "temas"}:
+        return resposta("Tipo de taxonomia invalido.", 400)
+
+    garantir_sprint_schema()
+    tabela = "CATEGORIAS_CURSO" if tipo == "categorias" else "TEMAS_CURSO"
+    coluna = "ID_CATEGORIA" if tipo == "categorias" else "ID_TEMA"
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if request.method == "GET":
+            cursor.execute(f"SELECT {coluna}, NOME FROM {tabela} ORDER BY NOME")
+            return jsonify([{"id": row[0], "nome": row[1]} for row in cursor.fetchall()])
+
+        negado = exigir_tipo(1, 0)
+        if negado:
+            return negado
+
+        nome = (request.get_json() or {}).get("nome") or ""
+        nome = nome.strip()
+        normalizado = normalizar_taxonomia(nome)
+
+        if not normalizado:
+            return resposta("Nome e obrigatorio.", 400)
+
+        # Sprint item 28: rejeita nomes já cadastrados sem diferenciar maiúsculas de minúsculas.
+        cursor.execute(f"SELECT {coluna}, NOME FROM {tabela} WHERE NOME_NORMALIZADO = ?", (normalizado,))
+        existente = cursor.fetchone()
+        if existente:
+            nome_tipo = "Categoria" if tipo == "categorias" else "Tema"
+            return resposta(f"{nome_tipo} já existe: {existente[1]}. Selecione a opção existente.", 409, id=existente[0], nome=existente[1])
+
+        novo_id = proximo_id(cursor, tabela, coluna)
+        cursor.execute(
+            f"INSERT INTO {tabela} ({coluna}, NOME, NOME_NORMALIZADO) VALUES (?, ?, ?)",
+            (novo_id, nome, normalizado),
+        )
+        con.commit()
+        return resposta("Taxonomia cadastrada.", 201, "sucesso", id=novo_id, nome=nome)
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar taxonomia: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+
+@app.route("/professor/cursos/<int:id_curso>/taxonomia", methods=["GET", "PUT"])
+@jwt_required()
+def taxonomia_curso_professor(id_curso):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if not _curso_do_professor(cursor, id_curso, int(get_jwt_identity())):
+            return resposta("Curso nao encontrado para este instrutor.", 404)
+
+        if request.method == "GET":
+            cursor.execute(
+                """
+                SELECT CT.ID_CATEGORIA, CAT.NOME, CT.ID_TEMA, T.NOME
+                FROM CURSO_TAXONOMIA CT
+                LEFT JOIN CATEGORIAS_CURSO CAT ON CAT.ID_CATEGORIA = CT.ID_CATEGORIA
+                LEFT JOIN TEMAS_CURSO T ON T.ID_TEMA = CT.ID_TEMA
+                WHERE CT.ID_CURSO = ?
+                """,
+                (id_curso,),
+            )
+            row = cursor.fetchone()
+            return jsonify({
+                "id_curso": id_curso,
+                "id_categoria": row[0] if row else None,
+                "categoria": row[1] if row else "",
+                "id_tema": row[2] if row else None,
+                "tema": row[3] if row else "",
+            })
+
+        dados = request.get_json() or {}
+        id_categoria = dados.get("id_categoria")
+        id_tema = dados.get("id_tema")
+        for tabela_taxonomia, coluna_taxonomia, valor_id in (
+            ("CATEGORIAS_CURSO", "ID_CATEGORIA", id_categoria),
+            ("TEMAS_CURSO", "ID_TEMA", id_tema),
+        ):
+            if valor_id in (None, ""):
+                continue
+            try:
+                valor_id = int(valor_id)
+            except (TypeError, ValueError):
+                return resposta("Categoria ou tema invalido.", 400)
+            cursor.execute(f"SELECT 1 FROM {tabela_taxonomia} WHERE {coluna_taxonomia} = ?", (valor_id,))
+            if not cursor.fetchone():
+                return resposta("Categoria ou tema nao encontrado.", 400)
+            if coluna_taxonomia == "ID_CATEGORIA":
+                id_categoria = valor_id
+            else:
+                id_tema = valor_id
+
+        # Sprint item 28: associa ao curso somente categorias e temas existentes.
+        cursor.execute(
+            """
+            UPDATE OR INSERT INTO CURSO_TAXONOMIA (ID_CURSO, ID_CATEGORIA, ID_TEMA)
+            VALUES (?, ?, ?)
+            MATCHING (ID_CURSO)
+            """,
+            (id_curso, id_categoria, id_tema),
+        )
+        con.commit()
+        return resposta("Taxonomia do curso atualizada.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao atualizar taxonomia do curso: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+# Sprint item 6: cadastro de aulas e vínculo com módulos.
+@app.route("/professor/cursos/<int:id_curso>/aulas", methods=["POST"])
+@jwt_required()
+def criar_aula_professor(id_curso):
+    negado = exigir_professor()
+    if negado:
+        return negado
+
+    # Sprint item 6: valida e grava a aula somente no módulo escolhido pelo instrutor.
+    from sprint_schema import garantir_sprint_schema
+    garantir_sprint_schema()
+
+    titulo = (request.form.get("titulo") or "").strip()
+    descricao = (request.form.get("descricao") or "").strip()
+    id_modulo = request.form.get("id_modulo", type=int)
+
+    if not titulo or not descricao:
+        return resposta_professor("Título e descrição são obrigatórios.", 400)
+
+    if not id_modulo:
+        return resposta_professor("Selecione um modulo para esta aula.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT 1
+            FROM CURSOS C
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            JOIN MODULOS_CURSO M ON M.ID_CURSO = C.ID_CURSO
+            WHERE C.ID_CURSO = ? AND PC.ID_USUARIO = ? AND C.EXCLUIDO = 0 AND M.ID_MODULO = ?
+            """,
+            (id_curso, get_jwt_identity(), id_modulo),
+        )
+
+        if not cursor.fetchone():
+            return resposta_professor("Curso não encontrado.", 404)
+
+        cursor.execute("SELECT GEN_ID(GEN_VIDEOS_ID, 1) FROM RDB$DATABASE")
+        id_aula = cursor.fetchone()[0]
+
+        try:
+            video = salvar_upload(
+                request.files.get("video"),
+                "aulas",
+                {"mp4", "webm", "ogg", "mov"}
+            )
+
+            if not video:
+                return resposta_professor("O vídeo da aula é obrigatório.", 400)
+
+            video_url = converter_video_dash(
+                                video["caminho"],
+                                id_aula
+                            )
+
+            thumb_url = salvar_thumb_aula(id_aula, request.files.get("thumb"))
+        except ValueError as erro:
+            return resposta_professor(str(erro), 400)
+
+        cursor.execute(
+            """
+            INSERT INTO VIDEOS (
+                ID_VIDEO, ID_CURSO, ID_MODULO, ID_PUBLICO, TITULO, TITULO_SLUG, DESCRICAO,
+                POSICAO_PLAYLIST, DURACAO, DATA_UPLOAD, VIDEO_URL, STATUS, EXCLUIDO, ATUALIZADO_EM
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP, ?, 0, 0, CURRENT_TIMESTAMP)
+            """,
+            (id_aula, id_curso, id_modulo, uuid4().hex, titulo, criar_slug(titulo), para_blob_texto(descricao), video_url),
+        )
+        con.commit()
+        return resposta_professor("Aula cadastrada como privada.", 201, "sucesso", id_aula=id_aula, thumb=thumb_url)
+    except Exception as erro:
+        con.rollback()
+        return resposta_professor(f"Erro ao cadastrar aula: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/aulas/<int:id_aula>/modulo", methods=["PATCH"])
+@jwt_required()
+def mover_aula_para_modulo(id_aula):
+    negado = exigir_professor()
+    if negado:
+        return negado
+
+    from sprint_schema import garantir_sprint_schema
+    garantir_sprint_schema()
+    try:
+        id_modulo = int((request.get_json() or {}).get("id_modulo"))
+    except (TypeError, ValueError):
+        return resposta_professor("Selecione um modulo valido.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT V.ID_CURSO
+            FROM VIDEOS V
+            JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE V.ID_VIDEO = ? AND V.EXCLUIDO = 0 AND C.EXCLUIDO = 0
+              AND PC.ID_USUARIO = ?
+            """,
+            (id_aula, get_jwt_identity()),
+        )
+        curso = cursor.fetchone()
+        if not curso:
+            return resposta_professor("Aula nao encontrada.", 404)
+
+        cursor.execute(
+            "SELECT 1 FROM MODULOS_CURSO WHERE ID_MODULO = ? AND ID_CURSO = ?",
+            (id_modulo, curso[0]),
+        )
+        if not cursor.fetchone():
+            return resposta_professor("Modulo nao pertence a este curso.", 400)
+
+        cursor.execute("UPDATE VIDEOS SET ID_MODULO = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_VIDEO = ?", (id_modulo, id_aula))
+        con.commit()
+        # Sprint item 6: permite incluir aulas antigas em um dos módulos criados pelo instrutor.
+        return resposta_professor("Aula movida para o modulo.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta_professor(f"Erro ao mover aula: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+# Sprint item 7: publicação e arquivamento de cursos.
+@app.route("/professor/cursos/<int:id_curso>/status", methods=["PATCH"])
+@jwt_required()
+def alterar_status_curso(id_curso):
+    negado = exigir_professor()
+    if negado:
+        return negado
+
+    try:
+        status = int((request.get_json() or {}).get("status"))
+    except (TypeError, ValueError):
+        return resposta_professor("Status inválido.", 400)
+
+    if status not in STATUS_NOMES:
+        return resposta_professor("Status inválido.", 400)
+
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT C.STATUS, C.TITULO
+            FROM CURSOS C
+            JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+            WHERE C.ID_CURSO = ? AND PC.ID_USUARIO = ? AND C.EXCLUIDO = 0
+            """,
+            (id_curso, get_jwt_identity()),
+        )
+        curso_atual = cursor.fetchone()
+        if not curso_atual:
+            return resposta_professor("Curso não encontrado.", 404)
+        status_anterior, titulo_curso = curso_atual
+
+        if status == STATUS_PUBLICADO:
+            # Sprint item 20: só libera o status público se a prova final do curso já estiver publicada.
+            try:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM PROVAS_CURSO
+                    WHERE ID_CURSO = ? AND PUBLICADA = 1
+                    """,
+                    (id_curso,),
+                )
+                if int((cursor.fetchone() or (0,))[0] or 0) == 0:
+                    return resposta_professor("Cadastre e publique uma prova antes de publicar o curso.", 400)
+            except Exception:
+                return resposta_professor("Cadastre e publique uma prova antes de publicar o curso.", 400)
+
+        # Sprint item 11: seleciona uma única vez os alunos ativos dos outros cursos do instrutor ao publicar um curso novo.
+        destinatarios = []
+        if status == STATUS_PUBLICADO and status_anterior != STATUS_PUBLICADO:
+            cursor.execute(
+                """
+                SELECT DISTINCT U.EMAIL
+                FROM USUARIOS U
+                JOIN MATRICULAS M ON M.ID_USUARIO = U.ID_USUARIO
+                JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = M.ID_CURSO
+                JOIN CURSOS C ON C.ID_CURSO = PC.ID_CURSO
+                WHERE PC.ID_USUARIO = ?
+                  AND M.STATUS_MATRICULA = 1
+                  AND C.EXCLUIDO = 0
+                  AND U.EMAIL IS NOT NULL
+                  AND TRIM(U.EMAIL) <> ''
+                """,
+                (get_jwt_identity(),),
+            )
+            destinatarios = [row[0] for row in cursor.fetchall()]
+
+        cursor.execute(
+            """
+            UPDATE CURSOS
+            SET STATUS = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP
+            WHERE ID_CURSO = ? AND EXCLUIDO = 0
+              AND EXISTS (
+                  SELECT 1 FROM PROFESSORES_CURSO PC
+                  WHERE PC.ID_CURSO = CURSOS.ID_CURSO AND PC.ID_USUARIO = ?
+              )
+            """,
+            (status, id_curso, get_jwt_identity()),
+        )
+        con.commit()
+        if status == STATUS_PUBLICADO and status_anterior != STATUS_PUBLICADO:
+            # Sprint item 11: envia o aviso depois do commit, sem deixar falhas SMTP reverterem a publicação.
+            from chat_cursos import notificar_alunos_novo_curso
+            notificar_alunos_novo_curso(destinatarios, titulo_curso)
+        return resposta_professor(f"Curso definido como {STATUS_NOMES[status]}.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta_professor(f"Erro ao alterar status do curso: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()

@@ -43,7 +43,8 @@ export default function VerificarEmail({ api, atualizarSessao }) {
             if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Código inválido. Confira os números e tente novamente.");
             sessionStorage.removeItem("cursando_email_pendente");
             await atualizarSessao();
-            navigate("/assinatura", { replace: true });
+            // Sprint item 34: após confirmar o e-mail, abre a assinatura dentro do painel do aluno.
+            navigate("/DashboardAluno/assinatura", { replace: true });
         } catch (error) {
             setErro(error.message || "Não foi possível verificar o e-mail.");
         } finally {

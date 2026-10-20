@@ -14,6 +14,7 @@ import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import css from "./DashboardAluno.module.css";
 import PlayerVideo from "../../components/PlayerVideo/PlayerVideo.jsx";
 import ChatCurso from "../../components/ChatCurso/ChatCurso.jsx";
+import ResumoAssinatura from "./ResumoAssinatura.jsx";
 
 const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
 const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
@@ -209,6 +210,8 @@ export default function DashboardAluno({
     const visao = useMemo(() => {
         if (location.pathname.endsWith("/perfil")) return "perfil";
         if (location.pathname.endsWith("/financeiro")) return "financeiro";
+        // Sprint item 34: assinatura agora é uma seção da Dashboard Aluno.
+        if (location.pathname.endsWith("/assinatura")) return "assinatura";
         if (location.pathname.endsWith("/chat")) return "chat";
         if (location.pathname.includes("/descobrir")) return "descobrir";
         if (location.pathname.includes("/aulas/")) return "aula";
@@ -216,7 +219,7 @@ export default function DashboardAluno({
         return "inicio";
     }, [location.pathname]);
 
-    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
+    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "assinatura" ? "assinatura" : visao === "chat" ? "chat" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
 
     const avisar = useCallback((mensagem) => {
         if (mensagem && setMensagem) setMensagem(mensagem);
@@ -244,7 +247,8 @@ export default function DashboardAluno({
             setDashboard(await lerResposta(resposta));
         } catch (erro) {
             console.error("Erro ao carregar dashboard do aluno:", erro);
-            setDashboard({ metricas: { inscritos: 0, finalizados: 0, iniciados: 0 }, recentes: [] });
+            // Sprint item 34: distingue erro de consulta do estado pendente da assinatura.
+            setDashboard({ metricas: { inscritos: 0, finalizados: 0, iniciados: 0 }, recentes: [], erro_assinatura: true });
         }
     }, [api, lerResposta]);
 
@@ -255,7 +259,11 @@ export default function DashboardAluno({
             setMeusCursos(await lerResposta(resposta));
         } catch (erro) {
             console.error("Erro ao carregar cursos do aluno:", erro);
-            if (erro.status === 402) navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
+            if (erro.status === 402) {
+                // Sprint item 34: informa a pendência antes de abrir o financeiro.
+                avisar({ tipo: "erro", descricao: erro.message });
+                navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
+            }
             setMeusCursos([]);
         } finally {
             setCarregando(false);
@@ -328,7 +336,11 @@ export default function DashboardAluno({
             }
         } catch (erro) {
             console.error("Erro ao carregar curso:", erro);
-            if (erro.status === 402) navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
+            if (erro.status === 402) {
+                // Sprint item 34: mostra o motivo do bloqueio ao tentar entrar em um curso.
+                avisar({ tipo: "erro", descricao: erro.message });
+                navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
+            }
             setDetalheCurso(null);
             setMateriaisCurso([]);
             setProvaAluno(null);
@@ -344,7 +356,10 @@ export default function DashboardAluno({
             setAulaAtual(await lerResposta(resposta));
         } catch (erro) {
             console.error("Erro ao carregar aula:", erro);
-            if (erro.status === 402) navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
+            if (erro.status === 402) {
+                avisar({ tipo: "erro", descricao: erro.message });
+                navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
+            }
             setAulaAtual(null);
         } finally {
             setCarregando(false);
@@ -427,7 +442,7 @@ export default function DashboardAluno({
     }, [api, avisar, lerResposta]);
 
     useEffect(() => {
-        if (visao === "financeiro") carregarFinanceiro();
+        if (visao === "financeiro" || visao === "assinatura") carregarFinanceiro();
     }, [carregarFinanceiro, visao]);
 
     useEffect(() => {
@@ -497,7 +512,7 @@ export default function DashboardAluno({
                     tarefas.push(carregarDescobrir());
                 }
 
-                if (visao === "financeiro") tarefas.push(carregarFinanceiro());
+                if (visao === "financeiro" || visao === "assinatura") tarefas.push(carregarFinanceiro());
 
                 // Sprint item 3: recarrega do backend a tela atual quando o aluno retorna do app ou de outra aba.
                 await Promise.allSettled(tarefas);
@@ -533,6 +548,8 @@ export default function DashboardAluno({
         } catch (erro) {
             console.error("Erro ao inscrever:", erro);
             if (erro.status === 402) {
+                // Sprint item 34: explica o bloqueio da inscrição antes de mostrar as faturas.
+                avisar({ tipo: "erro", descricao: erro.message });
                 navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
                 return;
             }
@@ -540,7 +557,7 @@ export default function DashboardAluno({
         }
     }
 
-    async function criarFaturaFutura() {
+    async function criarFaturaFutura(idAssinatura = null) {
         if (criandoFatura) return;
         setCriandoFatura(true);
         try {
@@ -548,13 +565,15 @@ export default function DashboardAluno({
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ meses: 1 })
+                // Sprint item 34: permite pagar uma fatura aberta específica ou pedir a próxima mensalidade.
+                body: JSON.stringify({ meses: 1, ...(idAssinatura ? { id_assinatura: idAssinatura } : {}) })
             });
             const dados = await lerResposta(resposta);
-            setPagamentoFatura(dados);
-            if (dados.fatura_existente) {
-                avisar({ tipo: "info", descricao: dados.mensagem || "Use a mensalidade em aberto para concluir o pagamento." });
+            if (dados.pagamento_confirmado) {
+                await confirmarFatura(dados.id_assinatura);
+                return;
             }
+            setPagamentoFatura(dados);
             const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
             const lista = await lerResposta(respostaFaturas);
             setFaturas(lista.faturas || []);
@@ -577,27 +596,32 @@ export default function DashboardAluno({
         window.setTimeout(() => setCodigoFaturaCopiado(false), 2500);
     }
 
+    async function confirmarFatura(idAssinatura) {
+        // Sprint item 34: baixa a cobrança escolhida e atualiza as duas listas de mensalidades.
+        const resposta = await fetch(`${api}/financeiro/faturas/${idAssinatura}/verificar`, {
+            method: "POST",
+            credentials: "include"
+        });
+        await lerResposta(resposta);
+        const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
+        const lista = await lerResposta(respostaFaturas);
+        setFaturas(lista.faturas || []);
+        setFinanceiro((atual) => ({
+            ...(atual || {}),
+            total_gasto: lista.total_gasto,
+            total_aberto: lista.total_aberto,
+            faturas_abertas: (lista.faturas_abertas || []).length,
+            faturas: (lista.faturas_pagas || []).length
+        }));
+        setPagamentoFatura(null);
+        await carregarDashboard();
+    }
+
     async function verificarPagamentoFatura() {
         if (!pagamentoFatura?.id_assinatura) return;
         setVerificandoFatura(true);
         try {
-            const resposta = await fetch(`${api}/financeiro/faturas/${pagamentoFatura.id_assinatura}/verificar`, {
-                method: "POST",
-                credentials: "include"
-            });
-            await lerResposta(resposta);
-            const respostaFaturas = await fetch(`${api}/financeiro/faturas`, { credentials: "include" });
-            const lista = await lerResposta(respostaFaturas);
-            setFaturas(lista.faturas || []);
-            setFinanceiro((atual) => ({
-                ...(atual || {}),
-                total_gasto: lista.total_gasto,
-                total_aberto: lista.total_aberto,
-                faturas_abertas: (lista.faturas_abertas || []).length,
-                faturas: (lista.faturas_pagas || []).length
-            }));
-            setPagamentoFatura(null);
-            await carregarDashboard();
+            await confirmarFatura(pagamentoFatura.id_assinatura);
         } catch (erro) {
             avisar({ tipo: "erro", descricao: erro.message });
         } finally {
@@ -699,7 +723,8 @@ export default function DashboardAluno({
     const videoAula = aulaAtual?.aula;
     const proximas = aulaAtual?.proximas || [];
     const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
-    const faturasPagas = faturas.filter((fatura) => !fatura.aberta);
+    // Sprint item 33: mantém mensalidades pagas no histórico mesmo depois da expiração da assinatura.
+    const faturasPagas = faturas.filter((fatura) => [1, 3].includes(Number(fatura.status)));
 
     return (
         <div className={css.painelAluno}>
@@ -783,6 +808,14 @@ export default function DashboardAluno({
                                 <p>Pesquise o catálogo, compare opções e abra um curso para ver os módulos e as aulas.</p>
                             </header>
                             <div className={css.filtrosDescobrir}>
+                                <label className={css.campoBusca}>
+                                    <FaSearch />
+                                    <input
+                                        value={busca}
+                                        placeholder="Pesquisar em cursos"
+                                        onChange={(evento) => setBusca(evento.target.value)}
+                                    />
+                                </label>
                                 {/* Sprint item 28: filtra o catálogo público por categoria, tema e avaliação mínima. */}
                                 <label className={css.filtroOrdenacao}>
                                     <span>Categoria</span>
@@ -804,14 +837,6 @@ export default function DashboardAluno({
                                         <option value="">Qualquer nota</option>
                                         {[1, 2, 3, 4, 5].map((nota) => <option key={nota} value={nota}>{nota} {nota === 1 ? "estrela ou mais" : "estrelas ou mais"}</option>)}
                                     </select>
-                                </label>
-                                <label className={css.campoBusca}>
-                                    <FaSearch />
-                                    <input
-                                        value={busca}
-                                        placeholder="Pesquisar em cursos"
-                                        onChange={(evento) => setBusca(evento.target.value)}
-                                    />
                                 </label>
                                 <label className={css.filtroOrdenacao}>
                                     <span>Ordenar por</span>
@@ -1090,20 +1115,29 @@ export default function DashboardAluno({
                         </section>
                     )}
 
-                    {visao === "financeiro" && (
+                    {(visao === "financeiro" || visao === "assinatura") && (
                         <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
                             {/* Sprint item 9: resume a finalidade da página financeira antes dos valores e cobranças. */}
                             <header className={css.cabecalhoPagina}>
                                 <span className={css.etiquetaPagina}>ASSINATURA</span>
-                                <h2>Financeiro</h2>
+                                <h2>{visao === "assinatura" ? "Minha assinatura" : "Financeiro"}</h2>
                                 <p>Acompanhe suas mensalidades, consulte cobranças pendentes e acesse o histórico.</p>
                             </header>
+                            {visao === "assinatura" && (
+                                <ResumoAssinatura
+                                    assinatura={dashboard?.assinatura}
+                                    acessoBloqueado={dashboard?.acesso_bloqueado}
+                                    faturasAbertas={faturasAbertas.length}
+                                    carregando={dashboard === null}
+                                    erro={dashboard?.erro_assinatura === true}
+                                />
+                            )}
                             {/* Sprint itens 33 e 34: resumo inicial de gastos e faturas do aluno. */}
                             <div className={css.gridMetricas}>
-                                {/* Sprint item 2: mostra total gasto e historico de faturas do aluno. */}
+                                {/* Sprint item 33: mostra apenas o valor das mensalidades efetivamente pagas. */}
                                 <CardMetrica
                                     titulo="Total gasto"
-                                    detalhe="Mensalidades registradas"
+                                    detalhe="Mensalidades pagas"
                                     valor={`R$ ${Number(financeiro?.total_gasto || 0).toFixed(2).replace(".", ",")}`}
                                 />
                                 <CardMetrica
@@ -1119,7 +1153,7 @@ export default function DashboardAluno({
                                             <h2>Pagamento de novas mensalidades</h2>
                                             <p>Gere uma nova cobrança sem interromper a mensalidade atual.</p>
                                         </div>
-                                        <button className={css.botaoCertificado} type="button" onClick={criarFaturaFutura} disabled={criandoFatura}>
+                                        <button className={css.botaoCertificado} type="button" onClick={() => criarFaturaFutura()} disabled={criandoFatura}>
                                             {criandoFatura ? "Gerando mensalidade..." : "Pagar nova mensalidade"}
                                         </button>
                                     </div>
@@ -1130,7 +1164,7 @@ export default function DashboardAluno({
                                                     <span>{pagamentoFatura.fatura_existente ? "Mensalidade pendente" : "PIX gerado"}</span>
                                                     <strong>R$ {Number(pagamentoFatura.valor || 0).toFixed(2).replace(".", ",")}</strong>
                                                 </div>
-                                                <small>Vencimento em ate 3 dias</small>
+                                                <small>Vencimento em até 3 dias</small>
                                             </div>
                                             <div className={css.caixaCodigoPixFinanceiro}>
                                                 <span>Pix copia e cola</span>
@@ -1161,6 +1195,10 @@ export default function DashboardAluno({
                                                 <strong>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</strong>
                                                 <span>R$ {Number(fatura.valor || 0).toFixed(2).replace(".", ",")}</span>
                                                 <p>Vencimento: {formatarDataAssinatura(fatura.data_vencimento || fatura.data_expiracao || fatura.criado_em)}</p>
+                                                {/* Sprint item 34: recupera o Pix da fatura escolhida, inclusive após o vencimento. */}
+                                                <button className={css.botaoSecundarioFinanceiro} type="button" onClick={() => criarFaturaFutura(fatura.id)} disabled={criandoFatura}>
+                                                    Pagar esta fatura
+                                                </button>
                                             </article>
                                         ))}
                                         {faturasAbertas.length === 0 && <EstadoVazio texto="Nenhuma mensalidade em aberto." />}
@@ -1168,13 +1206,14 @@ export default function DashboardAluno({
                                 </div>
 
                                 <div className={css.blocoFinanceiro}>
+                                    {/* Sprint item 33: relaciona cada mensalidade paga ao valor e à data do pagamento. */}
                                     <h2>Histórico de mensalidades</h2>
                                     <div className={css.listaMateriais}>
                                         {faturasPagas.map((fatura) => (
                                             <article className={css.cardMaterial} key={fatura.id}>
                                                 <strong>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</strong>
                                                 <span>R$ {Number(fatura.valor || 0).toFixed(2).replace(".", ",")}</span>
-                                                <p>Vencimento: {formatarDataAssinatura(fatura.data_vencimento || fatura.data_expiracao || fatura.criado_em)}</p>
+                                                <p>{fatura.data_pagamento ? "Pagamento" : "Registro"}: {formatarDataAssinatura(fatura.data_pagamento || fatura.criado_em)}</p>
                                             </article>
                                         ))}
                                         {faturasPagas.length === 0 && <EstadoVazio texto="Nenhuma mensalidade paga registrada." />}

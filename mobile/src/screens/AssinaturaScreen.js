@@ -1,8 +1,10 @@
 import AppIcon from "../components/AppIcon";
+import HistoricoFaturasAluno from "../components/HistoricoFaturasAluno";
 import * as Clipboard from "expo-clipboard";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +20,27 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
   const [verificando, setVerificando] = useState(false);
   const [codigoCopiado, setCodigoCopiado] = useState(false);
   const [erro, setErro] = useState("");
+  const [historico, setHistorico] = useState(null);
+  const [erroHistorico, setErroHistorico] = useState("");
+
+  // Sprint item 33: mantém total pago e histórico acessíveis ao aluno que precisa renovar a assinatura.
+  const carregarHistorico = useCallback(async () => {
+    try {
+      const dados = await apiRequest("/financeiro/faturas", {}, token);
+      setHistorico(dados);
+      setErroHistorico("");
+    } catch (error) {
+      setErroHistorico(error.message || "Não foi possível carregar o histórico de mensalidades.");
+    }
+  }, [token]);
+
+  useEffect(() => {
+    carregarHistorico();
+    const inscricao = AppState.addEventListener("change", (estado) => {
+      if (estado === "active") carregarHistorico();
+    });
+    return () => inscricao.remove();
+  }, [carregarHistorico]);
 
   // Sprint item 1: cria ou recupera a cobrança da assinatura com tempo suficiente para a Arkhé responder.
   async function iniciarPagamento() {
@@ -152,6 +175,23 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
         {erro ? <Text accessibilityRole="alert" style={globalStyles.error}>{erro}</Text> : null}
       </View>
 
+      <View style={styles.historico}>
+        {/* Sprint item 33: mostra o histórico mesmo quando o acesso aos cursos está suspenso. */}
+        {historico && (
+          <HistoricoFaturasAluno
+            faturas={historico.faturas || []}
+            totalGasto={historico.total_gasto}
+            mostrarTotal
+          />
+        )}
+        {erroHistorico && <Text style={globalStyles.error}>{erroHistorico}</Text>}
+        {erroHistorico && (
+          <Pressable style={[globalStyles.secondaryButton, styles.actionButton]} onPress={carregarHistorico}>
+            <Text style={globalStyles.secondaryText}>Tentar novamente</Text>
+          </Pressable>
+        )}
+      </View>
+
       <Pressable style={styles.logout} onPress={onLogout}>
         <Text style={styles.logoutText}>Sair da conta</Text>
       </Pressable>
@@ -203,6 +243,14 @@ const styles = StyleSheet.create({
     marginTop: 12
   },
   plan: {
+    padding: 22,
+    borderWidth: 1,
+    borderColor: "#c6dfd0",
+    borderRadius: 8,
+    backgroundColor: colors.white
+  },
+  historico: {
+    marginTop: 20,
     padding: 22,
     borderWidth: 1,
     borderColor: "#c6dfd0",

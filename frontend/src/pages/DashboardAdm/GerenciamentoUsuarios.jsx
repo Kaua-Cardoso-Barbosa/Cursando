@@ -30,6 +30,16 @@ function normalizar(texto) {
     return String(texto || "").toLowerCase();
 }
 
+function moeda(valor) {
+    return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
+}
+
+function dataBrasileira(valor) {
+    if (!valor) return "—";
+    const data = new Date(valor);
+    return Number.isNaN(data.getTime()) ? "—" : data.toLocaleDateString("pt-BR");
+}
+
 export default function GerenciamentoUsuarios({
                                                   api,
                                                   usuario,
@@ -54,6 +64,7 @@ export default function GerenciamentoUsuarios({
     });
     const [salvandoEdicao, setSalvandoEdicao] = useState(false);
     const [confirmacao, setConfirmacao] = useState(null);
+    const [perfilFinanceiroAluno, setPerfilFinanceiroAluno] = useState(null);
 
     const avisar = useCallback((mensagem) => {
         if (mensagem && setMensagem) {
@@ -145,6 +156,17 @@ export default function GerenciamentoUsuarios({
             senha: "",
             confirmar_senha: ""
         });
+    }
+
+    // Sprint item 35: abre os dados financeiros e acadêmicos do aluno selecionado pelo administrador.
+    async function abrirPerfilFinanceiroAluno(item) {
+        setPerfilFinanceiroAluno({ carregando: true, aluno: { nome: item.nome, email: item.email } });
+        try {
+            const resposta = await fetch(`${api}/admin/alunos/${item.id}/financeiro`, { credentials: "include" });
+            setPerfilFinanceiroAluno(await lerResposta(resposta));
+        } catch (error) {
+            setPerfilFinanceiroAluno({ erro: error.message, aluno: { nome: item.nome, email: item.email } });
+        }
     }
 
     function fecharEdicao() {
@@ -240,6 +262,11 @@ export default function GerenciamentoUsuarios({
                                 <span className={css.avisoPropriaConta}>Use o Perfil para editar sua conta</span>
                             ) : (
                                 <div className={css.grupoBotoes}>
+                                    {chave === "alunos" && (
+                                        <button type="button" className={css.btnPerfilAluno} onClick={() => abrirPerfilFinanceiroAluno(item)}>
+                                            Ver perfil
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => alternarStatus(item)}
@@ -265,6 +292,47 @@ export default function GerenciamentoUsuarios({
 
     return (
         <div className={css.painelAdmin}>
+            {perfilFinanceiroAluno && (
+                <div className={css.overlayModal} onClick={() => setPerfilFinanceiroAluno(null)}>
+                    <section className={`${css.modalEdicao} ${css.modalFinanceiroAluno}`} onClick={(evento) => evento.stopPropagation()}>
+                        <button type="button" className={css.fecharModal} onClick={() => setPerfilFinanceiroAluno(null)} aria-label="Fechar perfil">×</button>
+                        <h2>Perfil do aluno</h2>
+                        <p className={css.identificacaoAluno}>{perfilFinanceiroAluno.aluno?.nome} · {perfilFinanceiroAluno.aluno?.email}</p>
+                        {perfilFinanceiroAluno.carregando ? <p>Carregando dados do aluno...</p> : null}
+                        {perfilFinanceiroAluno.erro ? <p className={css.erro}>{perfilFinanceiroAluno.erro}</p> : null}
+                        {!perfilFinanceiroAluno.carregando && !perfilFinanceiroAluno.erro && (
+                            <>
+                                <div className={css.metricasPerfilAluno}>
+                                    <article><span>Total pago em mensalidades</span><strong>{moeda(perfilFinanceiroAluno.total_pago)}</strong></article>
+                                    <article><span>Ticket médio mensal</span><strong>{moeda(perfilFinanceiroAluno.ticket_medio)}</strong></article>
+                                    <article><span>Faturas pagas</span><strong>{perfilFinanceiroAluno.faturas_pagas || 0}</strong></article>
+                                    <article><span>Em aberto</span><strong>{moeda(perfilFinanceiroAluno.total_aberto)}</strong></article>
+                                    <article><span>Aulas assistidas</span><strong>{perfilFinanceiroAluno.aulas_assistidas || 0}</strong></article>
+                                </div>
+                                <section className={css.secaoPerfilAluno}>
+                                    <h3>Cursos inscritos</h3>
+                                    {(perfilFinanceiroAluno.cursos || []).map((curso) => (
+                                        <div className={css.linhaPerfilAluno} key={curso.id}>
+                                            <span>{curso.titulo}</span><strong>{curso.progresso}%</strong>
+                                        </div>
+                                    ))}
+                                    {!(perfilFinanceiroAluno.cursos || []).length && <p>Nenhum curso inscrito.</p>}
+                                </section>
+                                <section className={css.secaoPerfilAluno}>
+                                    <h3>Histórico de mensalidades</h3>
+                                    {(perfilFinanceiroAluno.faturas || []).map((fatura) => (
+                                        <div className={css.linhaPerfilAluno} key={fatura.id}>
+                                            <span>Mensalidade #{fatura.id} · {fatura.status_label}<small>{fatura.data_pagamento ? `Pagamento: ${dataBrasileira(fatura.data_pagamento)}` : `Vencimento: ${dataBrasileira(fatura.data_vencimento || fatura.criado_em)}`}</small></span>
+                                            <strong>{moeda(fatura.valor)}</strong>
+                                        </div>
+                                    ))}
+                                    {!(perfilFinanceiroAluno.faturas || []).length && <p>Nenhuma mensalidade registrada.</p>}
+                                </section>
+                            </>
+                        )}
+                    </section>
+                </div>
+            )}
             {popupCadastro !== null && (
                 <CadastroColaborador
                     api={api}

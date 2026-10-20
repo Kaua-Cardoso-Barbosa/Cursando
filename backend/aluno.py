@@ -33,12 +33,12 @@ def exigir_aluno():
 
 
 def bloquear_por_fatura_aberta(cursor, id_aluno):
-    from sprint import aluno_tem_fatura_aberta
+    from pagamento_arkhe import aluno_tem_fatura_aberta
 
-    # Sprint item 3: bloqueia cursos quando ha fatura aberta e orienta o aluno a pagar no financeiro.
+    # Sprint item 34: informa a fatura pendente e envia o aluno ao financeiro antes de abrir cursos.
     if aluno_tem_fatura_aberta(cursor, id_aluno):
         return resposta(
-            "Voce possui fatura em aberto. Acesse a aba Financeiro para consultar e pagar.",
+            "Você possui uma fatura em aberto. Acesse a aba Financeiro para consultar e pagar.",
             402,
             "erro",
             redirecionar="/DashboardAluno/financeiro",
@@ -63,11 +63,15 @@ def aluno_tem_assinatura_ativa(cursor, id_aluno):
 
 
 def exigir_assinatura_ativa(cursor, id_aluno):
+    # Sprint item 34: a pendência tem uma orientação específica antes do bloqueio geral da assinatura.
+    bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
+    if bloqueio:
+        return bloqueio
     if aluno_tem_assinatura_ativa(cursor, id_aluno):
         return None
 
     return resposta(
-        "Voce precisa de uma assinatura ativa para acessar os cursos e aulas.",
+        "Você precisa de uma assinatura ativa para acessar os cursos e aulas. Acesse a aba Financeiro para pagar.",
         402,
         "erro",
         redirecionar="/DashboardAluno/financeiro",
@@ -196,23 +200,8 @@ def aluno_dashboard():
 
     try:
         garantir_tabela_progresso(con)
-        if not aluno_tem_assinatura_ativa(cursor, id_aluno):
-            return jsonify(
-                {
-                    "metricas": {
-                        "inscritos": 0,
-                        "finalizados": 0,
-                    },
-                    "recentes": [],
-                    "assinatura": None,
-                    "acesso_bloqueado": True,
-                    "redirecionar": "/DashboardAluno/financeiro",
-                    "mensagem": criar_mensagem(
-                        "Voce precisa de uma assinatura ativa para acessar seus cursos e aulas.",
-                        "erro",
-                    ),
-                }
-            ), 402
+        # Sprint item 34: o resumo do dashboard permanece disponível enquanto os cursos estão bloqueados.
+        acesso_bloqueado = not aluno_tem_assinatura_ativa(cursor, id_aluno)
 
         cursor.execute(
             """
@@ -272,6 +261,7 @@ def aluno_dashboard():
                     "finalizados": len([curso for curso in cursos if curso["progresso"] >= 100]),
                 },
                 "recentes": recentes,
+                "acesso_bloqueado": acesso_bloqueado,
                 "assinatura": {
                     "data_inicio": assinatura[0].isoformat() if assinatura and assinatura[0] else None,
                     "data_expiracao": assinatura[1].isoformat() if assinatura and assinatura[1] else None,
@@ -299,10 +289,6 @@ def listar_cursos_aluno():
     try:
         garantir_tabela_progresso(con)
         bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
-        if bloqueio:
-            return bloqueio
-
-        bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
         if bloqueio:
             return bloqueio
 
@@ -347,10 +333,6 @@ def detalhe_aula_aluno(id_aula):
     try:
         garantir_tabela_progresso(con)
         bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
-        if bloqueio:
-            return bloqueio
-
-        bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
         if bloqueio:
             return bloqueio
 
@@ -421,6 +403,4 @@ def detalhe_aula_aluno(id_aula):
 
 
 # Mantém as funções e rotas da sprint acessíveis pelos imports existentes.
-from progresso_aulas import garantir_tabela_progresso, salvar_progresso_aula, marcar_aula_assistida
-from descoberta_cursos import descobrir_cursos
-from visao_curso_aluno import detalhe_curso_aluno, inscrever_curso
+from cursos_aluno import descobrir_cursos, detalhe_curso_aluno, garantir_tabela_progresso, inscrever_curso, marcar_aula_assistida, salvar_progresso_aula

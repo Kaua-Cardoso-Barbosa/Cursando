@@ -444,7 +444,7 @@ def listar_aulas_professor(id_curso):
     if negado:
         return negado
 
-    from sprint import garantir_sprint_schema
+    from sprint_schema import garantir_sprint_schema
     garantir_sprint_schema()
 
     filtro = request.args.get("status", "todos")
@@ -698,6 +698,5 @@ def excluir_aula_professor(id_aula):
         con.close()
 
 # Mantém as funções e rotas da sprint acessíveis pelos imports existentes.
-from metricas_instrutor import professor_dashboard
-from publicacao_curso import alterar_status_curso
-from aulas_modulos import criar_aula_professor, mover_aula_para_modulo
+from relatorio import professor_dashboard
+from curso_conteudo import alterar_status_curso, criar_aula_professor, mover_aula_para_modulo

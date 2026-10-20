@@ -184,6 +184,22 @@
     margin-top: 14px;
 }
 
+.formFinanceiro label {
+    display: grid;
+    min-width: 0;
+    gap: 5px;
+    color: #354a3d;
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+.formFinanceiro label input,
+.formFinanceiro label select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
 .formFinanceiro input,
 .formFinanceiro select {
     min-height: 40px;
@@ -192,18 +208,6 @@
     padding: 8px 10px;
     background: #ffffff;
     color: #111111;
-}
-
-.listaCustos {
-    display: grid;
-    gap: 6px;
-    margin-top: 14px;
-}
-
-.listaCustos p {
-    color: #333333;
-    font-size: 0.92rem;
-    overflow-wrap: anywhere;
 }
 
 .listaTransacoes {
@@ -537,6 +541,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.paginaFinanceiro .cardCadastroCusto {
+    align-self: start;
+}
+
 .cardMetrica {
     min-width: 0;
     min-height: 150px;
@@ -609,28 +617,38 @@
     transform: translateY(-1px);
 }
 
-.listaCustos {
-    display: grid;
-    gap: 8px;
-    margin-top: 14px;
-}
-
-.listaCustos p {
-    margin: 0;
-    padding: 9px 11px;
-    border-radius: 9px;
-    background: #f5f9f6;
-    color: #455b4e;
-    font-size: 0.87rem;
-    line-height: 1.4;
-}
-
 .paginaFinanceiro .formFinanceiro {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.paginaFinanceiro .formCategoriaCusto label {
+    grid-column: 1 / -1;
+}
+
 .paginaFinanceiro .formFinanceiro button {
     grid-column: 1 / -1;
+}
+
+.paginaFinanceiro .filtrosTransacoes {
+    grid-template-columns: repeat(5, minmax(130px, 1fr)) auto;
+    align-items: end;
+    gap: 12px;
+    margin: 0 0 18px;
+}
+
+.botaoLimparFiltros {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid #cbd9d0;
+    border-radius: 10px;
+    background: #f4f8f6;
+    color: #244338;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.botaoLimparFiltros:hover {
+    background: #e5eee8;
 }
 
 .listaLogs {
@@ -646,6 +664,18 @@
     grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
     align-items: end;
     gap: 14px;
+}
+
+.paginaFinanceiro .filtrosTransacoes label {
+    min-width: 0;
+}
+
+.paginaFinanceiro .filtrosTransacoes input,
+.paginaFinanceiro .filtrosTransacoes select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
 }
 
 .filtrosRelatorio label {
@@ -742,6 +772,10 @@
     .filtrosRelatorio button {
         grid-column: 1 / -1;
     }
+
+    .paginaFinanceiro .filtrosTransacoes {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 560px) {
@@ -764,6 +798,10 @@
 
     .paginaFinanceiro .formFinanceiro button {
         grid-column: auto;
+    }
+
+    .paginaFinanceiro .filtrosTransacoes {
+        grid-template-columns: 1fr;
     }
 
     .filtrosRelatorio {

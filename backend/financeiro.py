@@ -1,10 +1,12 @@
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 
 from flask import jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
 from app import app
 from banco import get_db
+from pagamento_arkhe import garantir_fatura_vencida
 
 
 from sprint_schema import garantir_sprint_schema
@@ -26,7 +28,8 @@ def financeiro_resumo():
         percentual = percentual_instrutores(cursor)
         cursor.execute("SELECT COUNT(*) FROM ASSINATURAS WHERE STATUS = 1")
         assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
-        cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
+        # Sprint item 33: a receita histórica inclui mensalidades pagas cuja assinatura já expirou.
+        cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS IN (1, 3)")
         total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
         # Sprint item 15: reparte as mensalidades pagas conforme o percentual do fundo de receita e o peso das aulas assistidas.
         pool_instrutores = total_arrecadado * (percentual / 100)
@@ -115,11 +118,37 @@ def financeiro_resumo():
             })
 
         if tipo == 0:
-            cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM CUSTOS_PLATAFORMA")
+            # Sprint item 36: despesas futuras ficam no histórico como programadas e só entram no caixa no mês devido.
+            cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM CUSTOS_PLATAFORMA WHERE DATA_CUSTO <= CURRENT_DATE")
             custos = float((cursor.fetchone() or (0,))[0] or 0)
-            cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
-            faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
-            ticket_medio = (float(total_pago or 0) / int(faturas_pagas or 0)) if int(faturas_pagas or 0) else 0
+            # Sprint item 33: mantém a contagem administrativa coerente com o total pago pelo aluno.
+            # Sprint item 35: calcula gasto médio por aluno pagante, sem tratar faturas mensais como alunos.
+            cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0), COUNT(DISTINCT ID_USUARIO) FROM ASSINATURAS WHERE STATUS IN (1, 3)")
+            faturas_pagas, total_pago, alunos_pagantes = cursor.fetchone() or (0, 0, 0)
+            ticket_medio = (float(total_pago or 0) / int(alunos_pagantes or 0)) if int(alunos_pagantes or 0) else 0
+            cursor.execute(
+                """
+                SELECT U.ID_USUARIO, U.NOME, U.EMAIL, COUNT(A.ID_ASSINATURA),
+                       COALESCE(CAST(SUM(A.VALOR) AS DOUBLE PRECISION), 0)
+                FROM USUARIOS U
+                LEFT JOIN ASSINATURAS A ON A.ID_USUARIO = U.ID_USUARIO AND A.STATUS IN (1, 3)
+                WHERE U.TIPO_USUARIO = 2
+                GROUP BY U.ID_USUARIO, U.NOME, U.EMAIL
+                ORDER BY U.NOME, U.ID_USUARIO
+                """
+            )
+            ticket_alunos = []
+            for linha in cursor.fetchall():
+                qtd_faturas = int(linha[3] or 0)
+                gasto_aluno = float(linha[4] or 0)
+                ticket_alunos.append({
+                    "id_usuario": linha[0],
+                    "nome": linha[1],
+                    "email": linha[2],
+                    "faturas_pagas": qtd_faturas,
+                    "total_pago": round(gasto_aluno, 2),
+                    "ticket_medio": round(gasto_aluno / qtd_faturas, 2) if qtd_faturas else 0,
+                })
             # Sprint item 14: calcula o fundo de receita estimado com a porcentagem definida pelo administrador.
             # Sprint item 15: reserva a comissão dos instrutores e as despesas antes de calcular o caixa sacável do administrador.
             pool_historico_instrutores = total_arrecadado * (percentual / 100)
@@ -128,7 +157,7 @@ def financeiro_resumo():
                 "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE STATUS = 1"
             )
             total_repassado = float((cursor.fetchone() or (0,))[0] or 0)
-            return jsonify({
+            resposta_financeiro = jsonify({
                 "perfil": "admin",
                 "total_arrecadado": round(total_arrecadado, 2),
                 "total_repassado": round(total_repassado, 2),
@@ -142,21 +171,30 @@ def financeiro_resumo():
                 "peso_total_pool": peso_total,
                 "receita_media_assinatura": round(valor_assinatura, 2),
                 "ticket_medio_aluno": round(ticket_medio, 2),
+                "alunos_pagantes": int(alunos_pagantes or 0),
+                "total_alunos": len(ticket_alunos),
+                # Sprint item 35: lista gastos individuais para a seção de ticket por aluno no financeiro.
+                "ticket_alunos": ticket_alunos,
                 # Sprint item 16: calcula a margem financeira histórica após as comissões dos instrutores e as despesas registradas.
                 "margem_caixa_percentual": round(((total_arrecadado - pool_historico_instrutores - custos) / total_arrecadado) * 100, 2) if total_arrecadado else 0,
             })
+            resposta_financeiro.headers["Cache-Control"] = "no-store"
+            return resposta_financeiro
 
+        # Sprint item 34: registra a mensalidade vencida antes de somar as faturas em aberto.
+        garantir_fatura_vencida(cursor, con, id_usuario)
         cursor.execute(
-            "SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 1",
+            "SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS IN (1, 3)",
             (id_usuario,),
         )
         qtd, gasto = cursor.fetchone() or (0, 0)
         cursor.execute(
-            "SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS <> 1",
+            "SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 0",
             (id_usuario,),
         )
         abertas, aberto = cursor.fetchone() or (0, 0)
-        # Sprint itens 2 e 3: resumo de gasto e faturas abertas do aluno.
+        # Sprint item 33: soma todas as mensalidades pagas, inclusive assinaturas já expiradas.
+        # Sprint item 34: separa as cobranças ainda em aberto do histórico pago.
         return jsonify({
             "perfil": "aluno",
             "faturas": int(qtd or 0),
@@ -187,9 +225,10 @@ def financeiro_aluno_admin(id_aluno):
         cursor.execute("SELECT ID_USUARIO, NOME, EMAIL FROM USUARIOS WHERE ID_USUARIO = ? AND TIPO_USUARIO = 2", (id_aluno,))
         aluno = cursor.fetchone()
         if not aluno:
-            return resposta("Aluno nao encontrado.", 404)
+            return resposta("Aluno não encontrado.", 404)
 
-        cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 1", (id_aluno,))
+        # Sprint item 33: inclui mensalidades expiradas no histórico financeiro do aluno visto pelo administrador.
+        cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS IN (1, 3)", (id_aluno,))
         faturas_pagas, total_pago = cursor.fetchone() or (0, 0)
         faturas_pagas = int(faturas_pagas or 0)
         total_pago = float(total_pago or 0)
@@ -205,14 +244,40 @@ def financeiro_aluno_admin(id_aluno):
             (id_aluno,),
         )
         cursos = [{"id": row[0], "titulo": row[1], "progresso": int(row[2] or 0)} for row in cursor.fetchall()]
-        cursor.execute("SELECT COUNT(*) FROM PROGRESSO_AULAS WHERE ID_USUARIO = ?", (id_aluno,))
+        cursor.execute("SELECT COUNT(*) FROM PROGRESSO_AULAS WHERE ID_USUARIO = ? AND ASSISTIDO_EM IS NOT NULL", (id_aluno,))
         aulas_assistidas = int((cursor.fetchone() or (0,))[0] or 0)
-        # Sprint item 4: calcula ticket medio por aluno com contexto academico para o perfil administrativo.
+        cursor.execute(
+            "SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 0",
+            (id_aluno,),
+        )
+        faturas_abertas, total_aberto = cursor.fetchone() or (0, 0)
+        cursor.execute(
+            """
+            SELECT ID_ASSINATURA, STATUS, VALOR, DATA_PAGAMENTO, DATA_VENCIMENTO, CRIADO_EM
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ? AND STATUS IN (0, 1, 3)
+            ORDER BY ID_ASSINATURA DESC
+            """,
+            (id_aluno,),
+        )
+        faturas = [{
+            "id": row[0],
+            "status": int(row[1] or 0),
+            "status_label": "Paga" if int(row[1] or 0) in (1, 3) else "Em aberto",
+            "valor": float(row[2] or 0),
+            "data_pagamento": row[3].isoformat() if row[3] else None,
+            "data_vencimento": row[4].isoformat() if row[4] else None,
+            "criado_em": row[5].isoformat() if row[5] else None,
+        } for row in cursor.fetchall()]
+        # Sprint item 35: apresenta ticket mensal, gasto total, faturas, cursos ativos e aulas concluídas.
         return jsonify({
             "aluno": {"id": aluno[0], "nome": aluno[1], "email": aluno[2]},
             "ticket_medio": round(total_pago / faturas_pagas, 2) if faturas_pagas else 0,
             "total_pago": round(total_pago, 2),
             "faturas_pagas": faturas_pagas,
+            "faturas_abertas": int(faturas_abertas or 0),
+            "total_aberto": round(float(total_aberto or 0), 2),
+            "faturas": faturas,
             "cursos": cursos,
             "aulas_assistidas": aulas_assistidas,
         })
@@ -234,30 +299,79 @@ def custos_plataforma_admin():
     garantir_sprint_schema()
     con = get_db()
     cursor = con.cursor()
-
     try:
         if request.method == "POST":
             dados = request.get_json() or {}
             descricao = (dados.get("descricao") or "").strip()
-            categoria = (dados.get("categoria") or "geral").strip()
-            valor = float(dados.get("valor") or 0)
-            data_custo = dados.get("data_custo") or datetime.now().date().isoformat()
-            if not descricao or valor <= 0:
-                return resposta("Descricao e valor positivo sao obrigatorios.", 400)
-            # Sprint item 5: cadastra custos operacionais para acompanhamento financeiro da plataforma.
-            cursor.execute(
-                """
-                INSERT INTO CUSTOS_PLATAFORMA (ID_CUSTO, DESCRICAO, VALOR, DATA_CUSTO, CATEGORIA, ID_USUARIO)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (proximo_id(cursor, "CUSTOS_PLATAFORMA", "ID_CUSTO"), descricao, valor, data_custo, categoria, get_jwt_identity()),
-            )
+            tipo_custo = (dados.get("tipo_custo") or "UNICO").strip().upper()
+            try:
+                id_categoria = int(dados.get("id_categoria"))
+                valor = Decimal(str(dados.get("valor", ""))).quantize(Decimal("0.01"))
+            except (InvalidOperation, TypeError, ValueError):
+                return resposta("Selecione uma categoria e informe um valor válido.", 400)
+            if not descricao or len(descricao) > 200:
+                return resposta("A descrição é obrigatória e deve ter até 200 caracteres.", 400)
+            if not valor.is_finite() or valor <= 0:
+                return resposta("O valor do custo deve ser maior que zero.", 400)
+            if tipo_custo not in {"UNICO", "MENSAL"}:
+                return resposta("O tipo de custo deve ser pagamento único ou mensal.", 400)
+            cursor.execute("SELECT NOME FROM CATEGORIAS_CUSTO WHERE ID_CATEGORIA = ?", (id_categoria,))
+            categoria = cursor.fetchone()
+            if not categoria:
+                return resposta("A categoria selecionada não existe.", 400)
+            categoria_nome = categoria[0]
+            try:
+                if tipo_custo == "UNICO":
+                    data_inicio = date.fromisoformat(dados.get("data_custo") or "")
+                    data_fim = data_inicio
+                    meses = [data_inicio]
+                else:
+                    data_inicio = date.fromisoformat(dados.get("data_inicio") or "")
+                    data_fim = date.fromisoformat(dados.get("data_fim") or "")
+                    if data_inicio > data_fim:
+                        return resposta("A data de início deve ser anterior ou igual à data de fim.", 400)
+                    quantidade_meses = (data_fim.year - data_inicio.year) * 12 + data_fim.month - data_inicio.month + 1
+                    if quantidade_meses > 120:
+                        return resposta("O período mensal não pode ultrapassar 120 meses.", 400)
+                    meses = []
+                    ano, mes = data_inicio.year, data_inicio.month
+                    while (ano, mes) <= (data_fim.year, data_fim.month):
+                        data_mes = date(ano, mes, 1)
+                        meses.append(max(data_inicio, data_mes))
+                        mes += 1
+                        if mes == 13:
+                            ano, mes = ano + 1, 1
+            except (TypeError, ValueError):
+                return resposta("Informe datas válidas para o período do custo.", 400)
+
+            # Sprint item 36: registra pagamento único ou uma ocorrência para cada mês do período mensal.
+            id_custo_inicial = proximo_id(cursor, "CUSTOS_PLATAFORMA", "ID_CUSTO")
+            id_grupo = id_custo_inicial if tipo_custo == "MENSAL" else None
+            for indice, data_mes in enumerate(meses):
+                cursor.execute(
+                    """
+                    INSERT INTO CUSTOS_PLATAFORMA
+                        (ID_CUSTO, DESCRICAO, VALOR, DATA_CUSTO, CATEGORIA, ID_USUARIO,
+                         ID_CATEGORIA, TIPO_CUSTO, DATA_INICIO, DATA_FIM, ID_GRUPO_MENSAL)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        id_custo_inicial + indice, descricao, float(valor), data_mes,
+                        categoria_nome, get_jwt_identity(), id_categoria, tipo_custo,
+                        data_inicio, data_fim, id_grupo,
+                    ),
+                )
             con.commit()
-            return resposta("Custo cadastrado com sucesso.", 201, "sucesso")
+            return resposta(
+                f"Custo cadastrado. Meses registrados: {len(meses)}.",
+                201,
+                "sucesso",
+            )
 
         cursor.execute(
             """
-            SELECT ID_CUSTO, DESCRICAO, VALOR, DATA_CUSTO, CATEGORIA, CRIADO_EM
+            SELECT ID_CUSTO, DESCRICAO, VALOR, DATA_CUSTO, CATEGORIA, CRIADO_EM,
+                   TIPO_CUSTO, DATA_INICIO, DATA_FIM, ID_GRUPO_MENSAL
             FROM CUSTOS_PLATAFORMA
             ORDER BY DATA_CUSTO DESC, ID_CUSTO DESC
             """
@@ -270,6 +384,10 @@ def custos_plataforma_admin():
                 "data_custo": row[3].isoformat() if row[3] else None,
                 "categoria": row[4] or "geral",
                 "criado_em": row[5].isoformat() if row[5] else None,
+                "tipo_custo": row[6] or "UNICO",
+                "data_inicio": row[7].isoformat() if row[7] else None,
+                "data_fim": row[8].isoformat() if row[8] else None,
+                "id_grupo_mensal": row[9],
             }
             for row in cursor.fetchall()
         ])
@@ -280,6 +398,39 @@ def custos_plataforma_admin():
         cursor.close()
         con.close()
 
+
+@app.route("/admin/categorias-custo", methods=["GET", "POST"])
+@jwt_required()
+def categorias_custo_admin():
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        if request.method == "POST":
+            dados = request.get_json() or {}
+            nome = (dados.get("nome") or "").strip()
+            if not nome or len(nome) > 80:
+                return resposta("Informe uma categoria com até 80 caracteres.", 400)
+            cursor.execute("SELECT ID_CATEGORIA FROM CATEGORIAS_CUSTO WHERE UPPER(NOME) = UPPER(?)", (nome,))
+            if cursor.fetchone():
+                return resposta("Essa categoria já está cadastrada.", 409)
+            cursor.execute(
+                "INSERT INTO CATEGORIAS_CUSTO (ID_CATEGORIA, NOME) VALUES (?, ?)",
+                (proximo_id(cursor, "CATEGORIAS_CUSTO", "ID_CATEGORIA"), nome),
+            )
+            con.commit()
+            return resposta("Categoria de custo cadastrada.", 201, "sucesso")
+        cursor.execute("SELECT ID_CATEGORIA, NOME FROM CATEGORIAS_CUSTO ORDER BY NOME")
+        return jsonify([{"id": row[0], "nome": row[1]} for row in cursor.fetchall()])
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar categorias de custo: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
 
 
 @app.route("/admin/financeiro/transacoes", methods=["GET"])
@@ -312,14 +463,15 @@ def transacoes_financeiras_admin():
                 "data": data.isoformat() if data else None,
                 "tipo": "Assinatura",
                 "descricao": f"Mensalidade de {row[2] or 'aluno'}",
-                "status": "Paga" if int(row[4] or 0) == 1 else "Pendente",
+                # Sprint item 33: o vencimento da assinatura não altera o pagamento da transação.
+                "status": "Paga" if int(row[4] or 0) in (1, 3) else "Pendente",
                 "valor": float(row[3] or 0),
-                "direcao": "entrada" if int(row[4] or 0) == 1 else "pendente",
+                "direcao": "entrada" if int(row[4] or 0) in (1, 3) else "pendente",
             })
 
         cursor.execute(
             """
-            SELECT ID_CUSTO, DESCRICAO, CATEGORIA, VALOR, DATA_CUSTO, CRIADO_EM
+            SELECT ID_CUSTO, DESCRICAO, CATEGORIA, VALOR, DATA_CUSTO, CRIADO_EM, TIPO_CUSTO
             FROM CUSTOS_PLATAFORMA
             """
         )
@@ -328,9 +480,10 @@ def transacoes_financeiras_admin():
             transacoes.append({
                 "id": f"despesa-{row[0]}",
                 "data": data.isoformat() if data else None,
-                "tipo": "Despesa",
+                "tipo": "Despesa mensal" if row[6] == "MENSAL" else "Pagamento \u00danico",
                 "descricao": row[1],
-                "status": row[2] or "Registrada",
+                "categoria": row[2] or "Geral",
+                "status": "Programada" if data and (data.date() if isinstance(data, datetime) else data) > date.today() else "Registrada",
                 "valor": float(row[3] or 0),
                 "direcao": "saida",
             })
@@ -407,4 +560,4 @@ def financeiro_config_admin():
         cursor.close()
         con.close()
 
-__all__ = ['financeiro_resumo', 'financeiro_aluno_admin', 'custos_plataforma_admin', 'transacoes_financeiras_admin', 'financeiro_config_admin']
+__all__ = ['financeiro_resumo', 'financeiro_aluno_admin', 'custos_plataforma_admin', 'categorias_custo_admin', 'transacoes_financeiras_admin', 'financeiro_config_admin']

@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 from threading import Lock
 from decimal import Decimal, InvalidOperation
 
-from flask import jsonify, request
+import requests
+from flask import current_app, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app import app
@@ -21,19 +22,21 @@ _faturas_lock = Lock()
 def _fatura_para_dict(row, numero=None):
     status = int(row[2] or 0)
     valor_padrao = valor_assinatura_config()
+    # Sprint item 33: a assinatura expirada continua sendo uma mensalidade paga no histórico.
+    paga = status in (1, 3)
     return {
         "id": row[0],
         "numero": numero or row[0],
         "id_cobranca": row[1],
         "status": status,
-        "status_label": "paga" if status == 1 else "em aberto",
+        "status_label": "paga" if paga else "em aberto" if status == 0 else "não paga",
         "valor": float(row[3] or valor_padrao),
         "data_inicio": row[4].isoformat() if row[4] else None,
         "data_expiracao": row[5].isoformat() if row[5] else None,
         "data_vencimento": row[6].isoformat() if row[6] else None,
         "data_pagamento": row[7].isoformat() if row[7] else None,
         "criado_em": row[8].isoformat() if row[8] else None,
-        "aberta": status != 1,
+        "aberta": status == 0,
     }
 
 
@@ -59,8 +62,22 @@ def aluno_tem_fatura_aberta(cursor, id_usuario):
         """
         SELECT FIRST 1 ID_ASSINATURA
         FROM ASSINATURAS
-        WHERE ID_USUARIO = ? AND STATUS <> 1
+        WHERE ID_USUARIO = ? AND STATUS = 0
         ORDER BY ID_ASSINATURA DESC
+        """,
+        (id_usuario,),
+    )
+    if cursor.fetchone() is not None:
+        return True
+
+    # Sprint item 34: avisa sobre a mensalidade vencida mesmo antes de abrir a aba Financeiro.
+    cursor.execute(
+        """
+        SELECT FIRST 1 ID_ASSINATURA
+        FROM ASSINATURAS
+        WHERE ID_USUARIO = ? AND STATUS IN (1, 3)
+          AND DATA_EXPIRACAO < CURRENT_TIMESTAMP
+        ORDER BY DATA_EXPIRACAO DESC, ID_ASSINATURA DESC
         """,
         (id_usuario,),
     )
@@ -82,43 +99,49 @@ def faturas_aluno():
     cursor = con.cursor()
 
     try:
+        # Sprint item 34: uma assinatura vencida ganha sua fatura aberta antes da consulta financeira.
+        garantir_fatura_vencida(cursor, con, id_usuario)
         if request.method == "POST":
             # Sprint item 1: serializa a criacao para evitar cobrancas duplicadas em pedidos simultaneos.
             with _faturas_lock:
                 dados = request.get_json(silent=True) or {}
                 valor = valor_assinatura_config()
-                meses = max(1, min(int(dados.get("meses") or 1), 12))
-                valor_total = round(valor * meses, 2)
+                # Sprint item 34: cada cobrança representa exatamente uma mensalidade.
+                if str(dados.get("meses") or 1) != "1":
+                    return resposta("Pague uma mensalidade por vez para manter o histórico correto.", 400)
+                id_solicitado = dados.get("id_assinatura")
+                if id_solicitado is not None:
+                    try:
+                        id_solicitado = int(id_solicitado)
+                    except (TypeError, ValueError):
+                        return resposta("Mensalidade inválida.", 400)
+                    if id_solicitado <= 0:
+                        return resposta("Mensalidade inválida.", 400)
+                # Sprint item 34: seleciona a fatura do aluno sem parâmetro de tipo indefinido no Firebird.
+                filtro_fatura = "AND ID_ASSINATURA = ?" if id_solicitado is not None else ""
                 cursor.execute(
-                    """
-                    SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
+                    f"""
+                    SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR, DATA_VENCIMENTO
                     FROM ASSINATURAS
                     WHERE ID_USUARIO = ?
                       AND STATUS = 0
-                      AND ID_COBRANCA_ARKHE IS NOT NULL
-                      AND (DATA_VENCIMENTO IS NULL OR DATA_VENCIMENTO >= CURRENT_TIMESTAMP)
-                    ORDER BY ID_ASSINATURA DESC
+                      {filtro_fatura}
+                    ORDER BY ID_ASSINATURA ASC
                     """,
-                    (id_usuario,),
+                    (id_usuario, id_solicitado) if id_solicitado is not None else (id_usuario,),
                 )
                 fatura_aberta = cursor.fetchone()
                 if fatura_aberta:
-                    id_assinatura, id_cobranca, valor_fatura = fatura_aberta
-                    valor_pendente = float(valor_fatura or 0)
-                    if valor_pendente > 0:
-                        cobranca = consultar_cobranca_pix(id_cobranca)
-                        return jsonify({
-                            "id_assinatura": id_assinatura,
-                            "id_cobranca": cobranca["id_cobranca"],
-                            "valor": valor_pendente,
-                            "codigo_pagamento": cobranca["codigo_pagamento"],
-                            "status": cobranca["status"],
-                            "tipo_cobranca": cobranca["tipo_cobranca"],
-                            "fatura_existente": True,
-                            "mensagem": "Ja existe uma mensalidade em aberto para pagamento.",
-                        }), 200
+                    id_assinatura, id_cobranca, valor_fatura, vencimento = fatura_aberta
+                    valor_pendente = float(valor_fatura or valor)
+                    return jsonify(preparar_pagamento_fatura(
+                        cursor, con, id_assinatura, id_cobranca, valor_pendente, vencimento,
+                    )), 200
 
-                cobranca = criar_cobranca_pix(valor_total)
+                if id_solicitado is not None:
+                    return resposta("Mensalidade em aberto não encontrada.", 404)
+
+                cobranca = criar_cobranca_pix(valor)
                 agora = datetime.now()
                 vencimento = agora + timedelta(days=3)
                 id_assinatura = proximo_id(cursor, "ASSINATURAS", "ID_ASSINATURA")
@@ -130,13 +153,13 @@ def faturas_aluno():
                     )
                     VALUES (?, ?, 1, 0, ?, ?, ?, ?)
                     """,
-                    (id_assinatura, id_usuario, cobranca["id_cobranca"], valor_total, vencimento, agora),
+                    (id_assinatura, id_usuario, cobranca["id_cobranca"], valor, vencimento, agora),
                 )
                 con.commit()
                 return jsonify({
                     "id_assinatura": id_assinatura,
                     "id_cobranca": cobranca["id_cobranca"],
-                    "valor": valor_total,
+                    "valor": valor,
                     "codigo_pagamento": cobranca["codigo_pagamento"],
                     "status": cobranca["status"],
                     "tipo_cobranca": cobranca["tipo_cobranca"],
@@ -154,9 +177,9 @@ def faturas_aluno():
         )
         faturas = [_fatura_para_dict(row, indice + 1) for indice, row in enumerate(cursor.fetchall())]
         faturas = list(reversed(faturas))
-        faturas_abertas = [item for item in faturas if item["status"] != 1]
-        faturas_pagas = [item for item in faturas if item["status"] == 1]
-        # Sprint item 2: devolve total gasto, total em aberto e historico de faturas do aluno.
+        faturas_abertas = [item for item in faturas if item["aberta"]]
+        faturas_pagas = [item for item in faturas if item["status"] in (1, 3)]
+        # Sprint item 33: devolve o total pago e o histórico completo das mensalidades, mesmo após o vencimento.
         total_gasto = sum(item["valor"] for item in faturas_pagas)
         total_aberto = sum(item["valor"] for item in faturas_abertas)
         return jsonify({
@@ -204,20 +227,24 @@ def verificar_fatura_aluno(id_assinatura):
         fatura = cursor.fetchone()
 
         if not fatura:
-            return resposta("Mensalidade nao encontrada.", 404)
+            return resposta("Mensalidade não encontrada.", 404)
 
         id_cobranca, status = fatura
         if int(status or 0) == 1:
             return jsonify({"assinatura": True, "status": "ativa", "id_assinatura": id_assinatura}), 200
 
+        # Sprint item 33: uma mensalidade já paga e expirada não pode ser confirmada de novo.
+        if int(status or 0) == 3:
+            return resposta("Esta mensalidade já foi paga e expirou.", 409)
+
         if not id_cobranca:
-            return resposta("Mensalidade aguardando codigo de cobranca.", 409)
+            return resposta("Mensalidade aguardando código de cobrança.", 409)
 
         # Sprint item 1: confirma o status remoto sem depender do campo de cópia do Pix.
         cobranca = consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=False)
         # Sprint item 1: confirma apenas o status pago informado pela Arkhé, tolerando espaços no retorno.
-        if str(cobranca["status"]).strip() != "1":
-            return resposta("Pagamento ainda nao confirmado.", 402, status_cobranca=cobranca["status"])
+        if str(cobranca["status"]).strip().lower() not in STATUS_PAGOS:
+            return resposta("Pagamento ainda não confirmado.", 402, status_cobranca=cobranca["status"])
 
         agora = datetime.now()
         cursor.execute(
@@ -302,7 +329,8 @@ def solicitar_saque():
 
         # Sprint item 1: valida o saque contra o saldo disponível calculado no backend.
         percentual = percentual_instrutores(cursor)
-        cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS = 1")
+        # Sprint item 33: mensalidades pagas e expiradas permanecem na receita histórica.
+        cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS IN (1, 3)")
         total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
         # Sprint item 15: valida o saque pelo mesmo fundo de receita baseado em pagamentos reais mostrado aos dois perfis.
         pool_instrutores = total_arrecadado * (percentual / 100)
@@ -345,4 +373,454 @@ def solicitar_saque():
         cursor.close()
         con.close()
 
-__all__ = ['_fatura_para_dict', 'aluno_tem_fatura_aberta', 'faturas_aluno', 'verificar_fatura_aluno', 'solicitar_saque']
+# Geração e recuperação de faturas pendentes.
+STATUS_PAGOS = {"1", "pago", "paid", "confirmado", "confirmed", "aprovado", "approved"}
+_pendencias_lock = Lock()
+
+
+def garantir_fatura_vencida(cursor, con, id_usuario):
+    # Sprint item 34: ao vencer a última mensalidade paga, registra a próxima como aberta.
+    with _pendencias_lock:
+        cursor.execute(
+            """
+            SELECT FIRST 1 ID_ASSINATURA, STATUS, DATA_EXPIRACAO
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ? AND STATUS IN (1, 3)
+            ORDER BY DATA_EXPIRACAO DESC, ID_ASSINATURA DESC
+            """,
+            (id_usuario,),
+        )
+        ultima_paga = cursor.fetchone()
+        if not ultima_paga or not ultima_paga[2] or ultima_paga[2] >= datetime.now():
+            return
+
+        cursor.execute(
+            "SELECT FIRST 1 ID_ASSINATURA FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 0",
+            (id_usuario,),
+        )
+        if cursor.fetchone():
+            return
+
+        if int(ultima_paga[1]) == 1:
+            cursor.execute("UPDATE ASSINATURAS SET STATUS = 3 WHERE ID_ASSINATURA = ?", (ultima_paga[0],))
+
+        id_assinatura = proximo_id(cursor, "ASSINATURAS", "ID_ASSINATURA")
+        cursor.execute(
+            """
+            INSERT INTO ASSINATURAS (
+                ID_ASSINATURA, ID_USUARIO, PLANO, STATUS, VALOR, DATA_VENCIMENTO, CRIADO_EM
+            ) VALUES (?, ?, 1, 0, ?, ?, ?)
+            """,
+            (id_assinatura, id_usuario, valor_assinatura_config(), ultima_paga[2], datetime.now()),
+        )
+        con.commit()
+
+
+def preparar_pagamento_fatura(cursor, con, id_assinatura, id_cobranca, valor, vencimento):
+    # Sprint item 34: recupera a cobrança escolhida, inclusive de uma mensalidade anterior.
+    if id_cobranca:
+        anterior = consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=False)
+        if str(anterior["status"]).strip().lower() in STATUS_PAGOS:
+            return {"id_assinatura": id_assinatura, "pagamento_confirmado": True}
+
+        if (vencimento is None or vencimento >= datetime.now()) and anterior.get("codigo_pagamento"):
+            return {
+                "id_assinatura": id_assinatura,
+                "id_cobranca": anterior["id_cobranca"],
+                "valor": valor,
+                "codigo_pagamento": anterior["codigo_pagamento"],
+                "status": anterior["status"],
+                "tipo_cobranca": anterior["tipo_cobranca"],
+                "fatura_existente": True,
+            }
+
+    # Sprint item 34: um Pix vencido recebe um novo código sem criar outra fatura em aberto.
+    cobranca = criar_cobranca_pix(valor)
+    cursor.execute(
+        "UPDATE ASSINATURAS SET ID_COBRANCA_ARKHE = ?, DATA_VENCIMENTO = ? WHERE ID_ASSINATURA = ? AND STATUS = 0",
+        (cobranca["id_cobranca"], datetime.now() + timedelta(days=3), id_assinatura),
+    )
+    con.commit()
+    return {
+        "id_assinatura": id_assinatura,
+        "id_cobranca": cobranca["id_cobranca"],
+        "valor": valor,
+        "codigo_pagamento": cobranca["codigo_pagamento"],
+        "status": cobranca["status"],
+        "tipo_cobranca": cobranca["tipo_cobranca"],
+        "fatura_existente": True,
+    }
+
+
+# Sprint item 1: cobranças Pix avulsas e assinatura do usuário.
+@app.route("/pagamentos/pix", methods=["POST"])
+@jwt_required()
+def criar_pagamento_pix():
+    try:
+        # Esta rota gera uma cobrança avulsa; diferente da rota de assinatura,
+        # ela não grava uma assinatura no banco.
+        dados = request.get_json() or {}
+
+        valor_recebido = dados.get("valor")
+
+        if valor_recebido is None:
+            return jsonify({
+                "mensagem": "Valor do pagamento é obrigatório"
+            }), 400
+
+        # Sprint item 1: rejeita valores PIX inválidos antes de chamar a Arkhé.
+        try:
+            valor_decimal = Decimal(str(valor_recebido))
+            if not valor_decimal.is_finite():
+                raise InvalidOperation
+            valor_centavos = valor_decimal.quantize(Decimal("0.01"))
+        except (InvalidOperation, TypeError, ValueError):
+            return jsonify({
+                "mensagem": "Valor do pagamento deve ser um número válido com até duas casas decimais"
+            }), 400
+
+        if valor_decimal <= 0:
+            return jsonify({
+                "mensagem": "Valor do pagamento deve ser maior que zero"
+            }), 400
+
+        if valor_decimal != valor_centavos:
+            return jsonify({
+                "mensagem": "Valor do pagamento deve ter até duas casas decimais"
+            }), 400
+
+        valor = float(valor_centavos)
+
+        # A Arkhé cria a cobrança e retorna o código PIX para o cliente pagar.
+        cobranca = criar_cobranca_pix(valor)
+
+        return jsonify({
+            "id_cobranca": cobranca["id_cobranca"],
+            "valor": cobranca["valor"],
+            "codigo_pagamento": cobranca["codigo_pagamento"],
+            "status": cobranca["status"],
+            "tipo_cobranca": cobranca["tipo_cobranca"],
+        }), 201
+
+    except (requests.RequestException, ArkheError) as erro:
+        return jsonify({
+            "mensagem": "Não foi possível comunicar com a Arkhé",
+            "detalhes": str(erro)
+        }), 502
+
+    except Exception as erro:
+        return jsonify({
+            "mensagem": str(erro)
+        }), 500
+
+
+@app.route("/assinaturas/pix", methods=["POST"])
+@jwt_required()
+def criar_pix_assinatura():
+    from sprint_schema import garantir_sprint_schema
+    from sprint_comum import valor_assinatura_config
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        id_usuario = get_jwt_identity()
+
+        # Impede criar outra cobrança de assinatura enquanto houver uma ativa.
+        cursor.execute(
+            """
+            SELECT ID_ASSINATURA
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ?
+              AND STATUS = 1
+            """,
+            (id_usuario,)
+        )
+
+        if cursor.fetchone():
+            return jsonify({
+                "mensagem": "Usuário já possui uma assinatura ativa"
+            }), 409
+
+        # Sprint item 1: reutiliza apenas PIX pendente e dentro do vencimento, sem gerar cobranças duplicadas.
+        cursor.execute(
+            """
+            SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ?
+              AND STATUS = 0
+              AND ID_COBRANCA_ARKHE IS NOT NULL
+              AND (DATA_VENCIMENTO IS NULL OR DATA_VENCIMENTO >= CURRENT_TIMESTAMP)
+            ORDER BY ID_ASSINATURA DESC
+            """,
+            (id_usuario,)
+        )
+        assinatura_pendente = cursor.fetchone()
+
+        if assinatura_pendente:
+            id_assinatura, id_cobranca, valor_fatura = assinatura_pendente
+            valor_pendente = float(valor_fatura or 0)
+            if valor_pendente > 0:
+                cobranca = consultar_cobranca_pix(id_cobranca)
+                return jsonify({
+                    "id_assinatura": id_assinatura,
+                    "id_cobranca": cobranca["id_cobranca"],
+                    "valor": valor_pendente,
+                    "codigo_pagamento": cobranca["codigo_pagamento"],
+                    "status": cobranca["status"],
+                    "tipo_cobranca": cobranca["tipo_cobranca"],
+                    "cobranca_existente": True
+                }), 200
+
+        # Sprint item 1: usa o preco do servidor quando nao houver PIX pendente reutilizavel.
+        valor = valor_assinatura_config()
+
+        # Solicita à Arkhé uma cobrança PIX vinculada ao valor do plano.
+        cobranca = criar_cobranca_pix(valor)
+
+        # Guarda a assinatura como pendente (STATUS 0) até confirmar o pagamento.
+        # O ID da cobrança permite consultar depois o estado do PIX na Arkhé.
+        # Bases antigas podem ter o generator da tabela defasado. Usar o
+        # próximo ID livre evita reutilizar uma chave primária já existente.
+        cursor.execute("SELECT COALESCE(MAX(ID_ASSINATURA), 0) + 1 FROM ASSINATURAS")
+        id_assinatura = cursor.fetchone()[0]
+        cursor.execute(
+            """
+            INSERT INTO ASSINATURAS (
+                ID_ASSINATURA,
+                ID_USUARIO,
+                STATUS,
+                PLANO,
+                ID_COBRANCA_ARKHE,
+                VALOR,
+                DATA_VENCIMENTO
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                id_assinatura,
+                id_usuario,
+                0,
+                1,
+                cobranca["id_cobranca"],
+                valor,
+                datetime.now() + timedelta(days=3)
+            )
+        )
+
+        # Persiste a assinatura pendente antes de devolver o código PIX.
+        con.commit()
+
+        return jsonify({
+            "id_assinatura": id_assinatura,
+            "id_cobranca": cobranca["id_cobranca"],
+            "valor": valor,
+            "codigo_pagamento": cobranca["codigo_pagamento"],
+            "status": cobranca["status"],
+            "tipo_cobranca": cobranca["tipo_cobranca"]
+        }), 201
+
+    except (requests.RequestException, ArkheError) as erro:
+        con.rollback()
+
+        return jsonify({
+            "mensagem": "Não foi possível comunicar com a Arkhé",
+            "detalhes": str(erro)
+        }), 502
+
+    except Exception as erro:
+        con.rollback()
+
+        return jsonify({
+            "mensagem": str(erro)
+        }), 500
+
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/assinaturas/verificar", methods=["GET"])
+@jwt_required()
+def verificar_pagamento_assinatura():
+    from sprint_schema import garantir_sprint_schema
+
+    garantir_sprint_schema()
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        id_usuario = get_jwt_identity()
+
+        # Usa a assinatura mais recente do usuário para decidir se pode acessar.
+        cursor.execute(
+            """
+            SELECT
+                ID_ASSINATURA,
+                ID_COBRANCA_ARKHE,
+                STATUS,
+                DATA_INICIO,
+                DATA_EXPIRACAO
+            FROM ASSINATURAS
+            WHERE ID_USUARIO = ?
+            ORDER BY
+                CASE
+                    WHEN STATUS = 1 AND (DATA_EXPIRACAO IS NULL OR DATA_EXPIRACAO >= CURRENT_TIMESTAMP) THEN 0
+                    ELSE 1
+                END,
+                ID_ASSINATURA DESC
+            """,
+            (id_usuario,)
+        )
+
+        assinaturas = cursor.fetchall()
+        assinatura = assinaturas[0] if assinaturas else None
+
+        if not assinatura:
+            return jsonify({
+                "assinatura": False,
+                "status": "sem_assinatura",
+                "mensagem": "Usuário não possui assinatura."
+            }), 200
+
+        (
+            id_assinatura,
+            id_cobranca,
+            status,
+            data_inicio,
+            data_expiracao
+        ) = assinatura
+
+        # STATUS 1 significa ativa; ainda é preciso conferir se não venceu.
+        if status == 1:
+            agora = datetime.now()
+
+            # Verifica se ela ainda está dentro da validade
+            if data_expiracao and data_expiracao >= agora:
+                return jsonify({
+                    "assinatura": True,
+                    "status": "ativa",
+                    "id_assinatura": id_assinatura,
+                    "data_inicio": data_inicio.isoformat(),
+                    "data_expiracao": data_expiracao.isoformat()
+                }), 200
+
+            # Registra STATUS 3 quando a data de validade já passou.
+            cursor.execute(
+                """
+                UPDATE ASSINATURAS
+                SET STATUS = 3
+                WHERE ID_ASSINATURA = ?
+                """,
+                (id_assinatura,)
+            )
+
+            con.commit()
+
+            return jsonify({
+                "assinatura": False,
+                "status": "expirada",
+                "mensagem": "A assinatura do usuário expirou."
+            }), 200
+
+        # Sprint item 33: uma mensalidade paga e expirada permanece no histórico;
+        # somente cobranças pendentes podem confirmar uma nova assinatura.
+        # Verifica todas as cobranças pendentes para aceitar o pagamento de
+        # uma mensalidade antiga caso existam duplicatas no histórico.
+        cobranca = None
+        assinatura_paga = None
+        for assinatura_candidata in assinaturas:
+            if assinatura_candidata[2] != 0 or not assinatura_candidata[1]:
+                continue
+            # Sprint item 1: consulta o status sem depender de um novo código para a cobrança existente.
+            cobranca_candidata = consultar_cobranca_pix(
+                assinatura_candidata[1],
+                exigir_codigo_pix=False,
+            )
+            if str(cobranca_candidata["status"]).strip().lower() in {
+                "1", "pago", "paid", "confirmado", "confirmed", "aprovado", "approved"
+            }:
+                assinatura_paga = assinatura_candidata
+                cobranca = cobranca_candidata
+                break
+
+        if cobranca is None:
+            existe_pendente = any(item[2] == 0 for item in assinaturas)
+            return jsonify({
+                "assinatura": False,
+                "status": "pendente" if existe_pendente else "expirada",
+                "mensagem": "Assinatura aguardando pagamento." if existe_pendente else "A assinatura do usuário expirou."
+            }), 200
+
+        status_cobranca = cobranca["status"]
+
+        # Sprint item 1: reconhece status numérico ou textual da cobrança confirmada pela Arkhé.
+        # STATUS 1 da cobrança indica pagamento confirmado: ativa por 30 dias
+        # a partir do momento desta confirmação e salva as duas datas no banco.
+        if str(status_cobranca).strip().lower() in {
+            "1", "pago", "paid", "confirmado", "confirmed", "aprovado", "approved"
+        }:
+            agora = datetime.now()
+            data_expiracao = agora + timedelta(days=30)
+
+            cursor.execute(
+                """
+                UPDATE ASSINATURAS
+                SET
+                    STATUS = 1,
+                    DATA_INICIO = ?,
+                    DATA_EXPIRACAO = ?,
+                    DATA_PAGAMENTO = ?,
+                    VALOR = COALESCE(VALOR, ?)
+                WHERE ID_ASSINATURA = ?
+                """,
+                (
+                    agora,
+                    data_expiracao,
+                    agora,
+                    current_app.config["VALOR_ASSINATURA"],
+                    (assinatura_paga or assinatura)[0]
+                )
+            )
+
+            con.commit()
+
+            return jsonify({
+                "assinatura": True,
+                "status": "ativa",
+                "id_assinatura": (assinatura_paga or assinatura)[0],
+                "data_inicio": agora.isoformat(),
+                "data_expiracao": data_expiracao.isoformat()
+            }), 200
+
+        # Qualquer status diferente de confirmado mantém a assinatura pendente.
+        return jsonify({
+            "assinatura": False,
+            "status": "pendente",
+            "id_assinatura": id_assinatura,
+            "id_cobranca": id_cobranca,
+            "status_cobranca": status_cobranca,
+            "mensagem": "Pagamento ainda não confirmado."
+        }), 200
+
+    except (requests.RequestException, ArkheError) as erro:
+        con.rollback()
+
+        return jsonify({
+            "assinatura": False,
+            "mensagem": "Não foi possível verificar o pagamento.",
+            "detalhes": str(erro)
+        }), 502
+
+    except Exception as erro:
+        con.rollback()
+
+        return jsonify({
+            "assinatura": False,
+            "mensagem": str(erro)
+        }), 500
+
+    finally:
+        cursor.close()
+        con.close()

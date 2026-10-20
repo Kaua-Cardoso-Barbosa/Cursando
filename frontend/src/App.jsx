@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Header from "./components/Header/Header.jsx";
 import Home from "./pages/Home/Home.jsx";
 import Pagina404 from "./pages/Pagina404/Pagina404.jsx";
@@ -12,7 +12,6 @@ import Alerts from "./components/Alerts/Alerts.jsx";
 import ConfirmAlert from "./components/ConfirmAlert/ConfirmAlert.jsx";
 import {useCallback, useEffect, useState} from "react";
 import RotaRestrita from "./components/RotaRestrita/RotaRestrita.jsx";
-import Assinatura from "./pages/Assinatura/Assinatura.jsx";
 import VerificarEmail from "./pages/VerificarEmail/VerificarEmail.jsx";
 
 export default function App() {
@@ -120,6 +119,8 @@ function AppConteudo() {
             "/DashboardAluno/cursos": "Meus Cursos - Cursando",
             "/DashboardAluno/descobrir": "Descobrir Cursos - Cursando",
             "/DashboardAluno/perfil": "Meu Perfil - Cursando",
+            // Sprint item 34: identifica a assinatura como parte da Dashboard Aluno.
+            "/DashboardAluno/assinatura": "Assinatura - Cursando",
 
             "/DashboardProfessor": "Dashboard Professor - Cursando",
             "/DashboardAdm": "Dashboard Administrador - Cursando",
@@ -161,11 +162,8 @@ function AppConteudo() {
                 <Route path="/cadastro" element={<Cadastro api={api} setMensagem={setMensagem}/>}/>
                 <Route path="/verificar-email" element={<VerificarEmail api={api} atualizarSessao={atualizarSessao}/>}/>
 
-                <Route path="/assinatura" element={
-                    <RotaRestrita api={api} tipoPermitido={2}>
-                        <Assinatura api={api} sair={sair}/>
-                    </RotaRestrita>
-                }/>
+                {/* Sprint item 34: links antigos de assinatura abrem a seção dentro da Dashboard Aluno. */}
+                <Route path="/assinatura" element={<Navigate to="/DashboardAluno/assinatura" replace />}/>
 
                 <Route path="/DashboardAluno/*" element={
                     <RotaRestrita api={api} tipoPermitido={2}>

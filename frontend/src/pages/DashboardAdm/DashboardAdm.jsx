@@ -30,9 +30,12 @@ export default function DashboardAdm({
     const [dashboard, setDashboard] = useState(null);
     const [financeiro, setFinanceiro] = useState(null);
     const [percentualInstrutores, setPercentualInstrutores] = useState("");
-    const [custos, setCustos] = useState([]);
+    const [categoriasCusto, setCategoriasCusto] = useState([]);
     const [transacoes, setTransacoes] = useState([]);
-    const [novoCusto, setNovoCusto] = useState({ descricao: "", categoria: "", valor: "", data_custo: "" });
+    const [novoCustoUnico, setNovoCustoUnico] = useState({ descricao: "", id_categoria: "", valor: "", data_custo: "" });
+    const [novoCustoMensal, setNovoCustoMensal] = useState({ descricao: "", id_categoria: "", valor: "", data_inicio: "", data_fim: "" });
+    const [novaCategoriaCusto, setNovaCategoriaCusto] = useState("");
+    const [filtrosTransacoes, setFiltrosTransacoes] = useState({ tipo: "", categoria: "", inicio: "", fim: "", status: "" });
     const [logsGravacao, setLogsGravacao] = useState([]);
     // Sprint item 24: separa a consulta de auditoria por perfil e categoria de atividade.
     const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "0", evento: "", acao: "", inicio: "", fim: "" });
@@ -44,6 +47,13 @@ export default function DashboardAdm({
     const [instrutoresRelatorio, setInstrutoresRelatorio] = useState([]);
     const [filtrosRelatorio, setFiltrosRelatorio] = useState({ inicio: "", fim: "", id_instrutor: "", id_curso: "" });
     const [carregandoRelatorio, setCarregandoRelatorio] = useState(false);
+
+    function descricaoErroApi(erro) {
+        if (erro instanceof TypeError && erro.message === "Failed to fetch") {
+            return `Não foi possível conectar à API (${api}). Verifique se o backend está ativo e acessível pelo navegador.`;
+        }
+        return erro?.message || "Ocorreu um erro ao comunicar com o servidor.";
+    }
 
     function rotuloAcaoLog(acao) {
         return ({ INSERT: "Inclusao", UPDATE: "Alteracao", DELETE: "Exclusao" })[acao] || acao;
@@ -140,22 +150,47 @@ export default function DashboardAdm({
         if (!exibindoFinanceiro) return;
 
         async function carregarFinanceiro() {
-            try {
-                const resposta = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
-                const dados = await resposta.json().catch(() => ({}));
-                if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao carregar financeiro.");
-                setFinanceiro(dados);
-                setPercentualInstrutores(String(dados.percentual_instrutores ?? 50));
-                const respostaCustos = await fetch(`${api}/admin/custos-plataforma`, { credentials: "include" });
-                const dadosCustos = await respostaCustos.json().catch(() => ([]));
-                if (respostaCustos.ok) setCustos(Array.isArray(dadosCustos) ? dadosCustos : []);
-                // Sprint item 13: carrega o livro de entradas, despesas e saques para auditoria financeira do administrador.
-                const respostaTransacoes = await fetch(`${api}/admin/financeiro/transacoes`, { credentials: "include" });
-                const dadosTransacoes = await respostaTransacoes.json().catch(() => ([]));
-                if (respostaTransacoes.ok) setTransacoes(Array.isArray(dadosTransacoes) ? dadosTransacoes : []);
-            } catch (erro) {
-                console.error("Erro ao carregar financeiro:", erro);
-                setMensagem?.({ tipo: "erro", descricao: erro.message });
+            // Carrega cada área em paralelo: falha no resumo não deve bloquear categorias ou transações.
+            const resultados = await Promise.allSettled([
+                fetch(`${api}/financeiro/resumo`, { credentials: "include", cache: "no-store" }),
+                fetch(`${api}/admin/categorias-custo`, { credentials: "include", cache: "no-store" }),
+                fetch(`${api}/admin/financeiro/transacoes`, { credentials: "include", cache: "no-store" }),
+            ]);
+            const erros = [];
+
+            const [resumo, categorias, transacoesAtuais] = resultados.map((resultado) => {
+                if (resultado.status === "rejected") {
+                    erros.push(resultado.reason);
+                    return null;
+                }
+                return resultado.value;
+            });
+
+            if (resumo) {
+                const dados = await resumo.json().catch(() => ({}));
+                if (resumo.ok) {
+                    setFinanceiro(dados);
+                    setPercentualInstrutores(String(dados.percentual_instrutores ?? 50));
+                } else {
+                    erros.push(new Error(dados?.mensagem?.descricao || "Erro ao carregar o resumo financeiro."));
+                }
+            }
+
+            if (categorias) {
+                const dadosCategorias = await categorias.json().catch(() => ([]));
+                if (categorias.ok) setCategoriasCusto(Array.isArray(dadosCategorias) ? dadosCategorias : []);
+                else erros.push(new Error(dadosCategorias?.mensagem?.descricao || "Erro ao carregar categorias de custo."));
+            }
+
+            if (transacoesAtuais) {
+                const dadosTransacoes = await transacoesAtuais.json().catch(() => ([]));
+                if (transacoesAtuais.ok) setTransacoes(Array.isArray(dadosTransacoes) ? dadosTransacoes : []);
+                else erros.push(new Error(dadosTransacoes?.mensagem?.descricao || "Erro ao carregar transações financeiras."));
+            }
+
+            if (erros.length) {
+                console.error("Erros ao carregar áreas do financeiro:", erros);
+                setMensagem?.({ tipo: "erro", descricao: descricaoErroApi(erros[0]) });
             }
         }
 
@@ -193,27 +228,53 @@ export default function DashboardAdm({
         }
     }
 
-    async function cadastrarCusto(evento) {
+    async function atualizarTransacoesFinanceiras() {
+        const respostaTransacoes = await fetch(`${api}/admin/financeiro/transacoes`, { credentials: "include", cache: "no-store" });
+        const dadosTransacoes = await respostaTransacoes.json().catch(() => ([]));
+        if (respostaTransacoes.ok) setTransacoes(Array.isArray(dadosTransacoes) ? dadosTransacoes : []);
+    }
+
+    async function cadastrarCusto(evento, tipoCusto) {
         evento.preventDefault();
+        const dadosCusto = tipoCusto === "MENSAL" ? novoCustoMensal : novoCustoUnico;
         try {
             const resposta = await fetch(`${api}/admin/custos-plataforma`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(novoCusto)
+                body: JSON.stringify({ ...dadosCusto, tipo_custo: tipoCusto })
             });
             const dados = await resposta.json().catch(() => ({}));
             if (dados.mensagem) setMensagem?.(dados.mensagem);
             if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao cadastrar custo.");
-            setNovoCusto({ descricao: "", categoria: "", valor: "", data_custo: "" });
-            const lista = await fetch(`${api}/admin/custos-plataforma`, { credentials: "include" });
-            const custosAtualizados = await lista.json().catch(() => ([]));
-            if (lista.ok) setCustos(Array.isArray(custosAtualizados) ? custosAtualizados : []);
-            const respostaTransacoes = await fetch(`${api}/admin/financeiro/transacoes`, { credentials: "include" });
-            const dadosTransacoes = await respostaTransacoes.json().catch(() => ([]));
-            if (respostaTransacoes.ok) setTransacoes(Array.isArray(dadosTransacoes) ? dadosTransacoes : []);
+            if (tipoCusto === "MENSAL") setNovoCustoMensal({ descricao: "", id_categoria: "", valor: "", data_inicio: "", data_fim: "" });
+            else setNovoCustoUnico({ descricao: "", id_categoria: "", valor: "", data_custo: "" });
+            await atualizarTransacoesFinanceiras();
+            const resumo = await fetch(`${api}/financeiro/resumo`, { credentials: "include", cache: "no-store" });
+            if (resumo.ok) setFinanceiro(await resumo.json());
         } catch (erro) {
-            setMensagem?.({ tipo: "erro", descricao: erro.message });
+            setMensagem?.({ tipo: "erro", descricao: descricaoErroApi(erro) });
+        }
+    }
+
+    async function cadastrarCategoriaCusto(evento) {
+        evento.preventDefault();
+        try {
+            const resposta = await fetch(`${api}/admin/categorias-custo`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome: novaCategoriaCusto })
+            });
+            const dados = await resposta.json().catch(() => ({}));
+            if (dados.mensagem) setMensagem?.(dados.mensagem);
+            if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Erro ao cadastrar categoria.");
+            setNovaCategoriaCusto("");
+            const lista = await fetch(`${api}/admin/categorias-custo`, { credentials: "include", cache: "no-store" });
+            const categorias = await lista.json().catch(() => ([]));
+            if (lista.ok) setCategoriasCusto(Array.isArray(categorias) ? categorias : []);
+        } catch (erro) {
+            setMensagem?.({ tipo: "erro", descricao: descricaoErroApi(erro) });
         }
     }
 
@@ -311,6 +372,15 @@ export default function DashboardAdm({
         hAxis: { textStyle: { color: "#4c5b53" } },
         backgroundColor: "transparent"
     }), []);
+    // Sprint item 36: filtra o livro de transações por período, tipo, categoria e status.
+    const transacoesFiltradas = useMemo(() => transacoes.filter((transacao) => {
+        const data = (transacao.data || "").slice(0, 10);
+        return (!filtrosTransacoes.tipo || transacao.tipo === filtrosTransacoes.tipo)
+            && (!filtrosTransacoes.categoria || transacao.categoria === filtrosTransacoes.categoria)
+            && (!filtrosTransacoes.inicio || data >= filtrosTransacoes.inicio)
+            && (!filtrosTransacoes.fim || data <= filtrosTransacoes.fim)
+            && (!filtrosTransacoes.status || transacao.status === filtrosTransacoes.status);
+    }), [transacoes, filtrosTransacoes]);
 
     return (
         <div className={css.painelAdm}>
@@ -374,6 +444,26 @@ export default function DashboardAdm({
                             ))}
                             <div className={css.cardMetrica}>
                                 <div className={css.metricaTopo}>
+                                    <h2>Ticket médio por aluno</h2>
+                                    <div className={css.iconeBadge}><FaUser /></div>
+                                </div>
+                                <span className={css.metricaVariacao}>{financeiro?.alunos_pagantes || 0} alunos com mensalidade paga</span>
+                                <div className={css.metricaNumero}>R$ {Number(financeiro?.ticket_medio_aluno || 0).toFixed(2).replace(".", ",")}</div>
+                            </div>
+                            {/* Sprint item 16: apresenta a margem histórica da empresa depois das comissões do fundo de receita e dos custos. */}
+                            <div className={css.cardMetrica}>
+                                <div className={css.metricaTopo}>
+                                    <h2>Saude financeira</h2>
+                                    <div className={css.iconeBadge}><FaFolder /></div>
+                                </div>
+                                <span className={css.metricaVariacao}>Margem histórica estimada após pool e custos</span>
+                                <div className={css.metricaNumero}>{Number(financeiro?.margem_caixa_percentual || 0).toFixed(2).replace(".", ",")}%</div>
+                                <p className={css.textoFinanceiro}>
+                                    {financeiro?.faturas_pagas || 0} mensalidades pagas, ticket base de R$ {Number(financeiro?.receita_media_assinatura || 0).toFixed(2).replace(".", ",")}.
+                                </p>
+                            </div>
+                            <div className={css.cardMetrica}>
+                                <div className={css.metricaTopo}>
                                     <h2>Pool dos instrutores</h2>
                                     <div className={css.iconeBadge}><FaGraduationCap /></div>
                                 </div>
@@ -394,58 +484,90 @@ export default function DashboardAdm({
                                     Salvar percentual
                                 </button>
                             </div>
-                            {/* Sprint item 16: apresenta a margem histórica da empresa depois das comissões do fundo de receita e dos custos. */}
-                            <div className={css.cardMetrica}>
+                            {/* Sprint item 35: detalha faturas pagas, gasto total e média mensal de cada aluno. */}
+                            <section className={css.listaTransacoes}>
+                                <h2>Ticket por aluno</h2>
+                                <div className={css.tabelaTransacoes}>
+                                    <table>
+                                        <thead>
+                                            <tr><th>Aluno</th><th>Mensalidades pagas</th><th>Total pago</th><th>Média por mensalidade</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {(financeiro?.ticket_alunos || []).map((aluno) => (
+                                                <tr key={aluno.id_usuario}>
+                                                    <td>{aluno.nome}<br /><small>{aluno.email}</small></td>
+                                                    <td>{aluno.faturas_pagas}</td>
+                                                    <td>R$ {Number(aluno.total_pago || 0).toFixed(2).replace(".", ",")}</td>
+                                                    <td>R$ {Number(aluno.ticket_medio || 0).toFixed(2).replace(".", ",")}</td>
+                                                </tr>
+                                            ))}
+                                            {!(financeiro?.ticket_alunos || []).length && <tr><td colSpan="4">{financeiro?.total_alunos ? "Nenhuma mensalidade paga encontrada para os alunos." : "Nenhum aluno cadastrado."}</td></tr>}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                            {/* Sprint item 36: separa cadastro de categorias, pagamentos únicos e despesas mensais. */}
+                            <div className={`${css.cardMetrica} ${css.cardCadastroCusto}`}>
                                 <div className={css.metricaTopo}>
-                                    <h2>Saude financeira</h2>
+                                    <h2>Pagamento Único</h2>
                                     <div className={css.iconeBadge}><FaFolder /></div>
                                 </div>
-                                <span className={css.metricaVariacao}>Margem histórica estimada após pool e custos</span>
-                                <div className={css.metricaNumero}>{Number(financeiro?.margem_caixa_percentual || 0).toFixed(2).replace(".", ",")}%</div>
-                                <p className={css.textoFinanceiro}>
-                                    {financeiro?.faturas_pagas || 0} mensalidades pagas, ticket base de R$ {Number(financeiro?.receita_media_assinatura || 0).toFixed(2).replace(".", ",")}.
-                                </p>
-                            </div>
-                            <div className={css.cardMetrica}>
-                                <div className={css.metricaTopo}>
-                                    <h2>Ticket medio por aluno</h2>
-                                    <div className={css.iconeBadge}><FaUser /></div>
-                                </div>
-                                <span className={css.metricaVariacao}>Media sobre faturas pagas</span>
-                                <div className={css.metricaNumero}>R$ {Number(financeiro?.ticket_medio_aluno || 0).toFixed(2).replace(".", ",")}</div>
-                            </div>
-                            <div className={css.cardMetrica}>
-                                <div className={css.metricaTopo}>
-                                    <h2>Custos da plataforma</h2>
-                                    <div className={css.iconeBadge}><FaFolder /></div>
-                                </div>
-                                {/* Sprint item 5: formulario administrativo para cadastrar e acompanhar custos da plataforma. */}
-                                <form className={css.formFinanceiro} onSubmit={cadastrarCusto}>
-                                    <input placeholder="Descricao" value={novoCusto.descricao} onChange={(e) => setNovoCusto({ ...novoCusto, descricao: e.target.value })} />
-                                    <input placeholder="Categoria" value={novoCusto.categoria} onChange={(e) => setNovoCusto({ ...novoCusto, categoria: e.target.value })} />
-                                    <input type="number" min="0" step="0.01" placeholder="Valor" value={novoCusto.valor} onChange={(e) => setNovoCusto({ ...novoCusto, valor: e.target.value })} />
-                                    <input type="date" value={novoCusto.data_custo} onChange={(e) => setNovoCusto({ ...novoCusto, data_custo: e.target.value })} />
-                                    <button className={css.botaoFinanceiro} type="submit">Cadastrar custo</button>
+                                <form className={css.formFinanceiro} onSubmit={(evento) => cadastrarCusto(evento, "UNICO")}>
+                                    <label>Descrição<input required maxLength="200" value={novoCustoUnico.descricao} onChange={(evento) => setNovoCustoUnico({ ...novoCustoUnico, descricao: evento.target.value })} /></label>
+                                    <label>Categoria<select required value={novoCustoUnico.id_categoria} onChange={(evento) => setNovoCustoUnico({ ...novoCustoUnico, id_categoria: evento.target.value })}><option value="">Selecione</option>{categoriasCusto.map((categoria) => <option key={categoria.id} value={categoria.id}>{categoria.nome}</option>)}</select></label>
+                                    <label>Valor<input required type="number" min="0.01" step="0.01" value={novoCustoUnico.valor} onChange={(evento) => setNovoCustoUnico({ ...novoCustoUnico, valor: evento.target.value })} /></label>
+                                    <label>Data do pagamento<input required type="date" value={novoCustoUnico.data_custo} onChange={(evento) => setNovoCustoUnico({ ...novoCustoUnico, data_custo: evento.target.value })} /></label>
+                                    <button className={css.botaoFinanceiro} type="submit">Cadastrar pagamento único</button>
                                 </form>
-                                <div className={css.listaCustos}>
-                                    {custos.slice(0, 6).map((custo) => (
-                                        <p key={custo.id}>{custo.descricao} - R$ {Number(custo.valor || 0).toFixed(2).replace(".", ",")}</p>
-                                    ))}
+                            </div>
+                            <div className={`${css.cardMetrica} ${css.cardCadastroCusto}`}>
+                                <div className={css.metricaTopo}>
+                                    <h2>Pagamento mensal</h2>
+                                    <div className={css.iconeBadge}><FaFolder /></div>
                                 </div>
+                                <p className={css.textoFinanceiro}>O valor será lançado em cada mês entre as datas escolhidas.</p>
+                                <form className={css.formFinanceiro} onSubmit={(evento) => cadastrarCusto(evento, "MENSAL")}>
+                                    <label>Descrição<input required maxLength="200" value={novoCustoMensal.descricao} onChange={(evento) => setNovoCustoMensal({ ...novoCustoMensal, descricao: evento.target.value })} /></label>
+                                    <label>Categoria<select required value={novoCustoMensal.id_categoria} onChange={(evento) => setNovoCustoMensal({ ...novoCustoMensal, id_categoria: evento.target.value })}><option value="">Selecione</option>{categoriasCusto.map((categoria) => <option key={categoria.id} value={categoria.id}>{categoria.nome}</option>)}</select></label>
+                                    <label>Valor mensal<input required type="number" min="0.01" step="0.01" value={novoCustoMensal.valor} onChange={(evento) => setNovoCustoMensal({ ...novoCustoMensal, valor: evento.target.value })} /></label>
+                                    <label>Data de início<input required type="date" value={novoCustoMensal.data_inicio} onChange={(evento) => setNovoCustoMensal({ ...novoCustoMensal, data_inicio: evento.target.value })} /></label>
+                                    <label>Data de fim<input required type="date" value={novoCustoMensal.data_fim} onChange={(evento) => setNovoCustoMensal({ ...novoCustoMensal, data_fim: evento.target.value })} /></label>
+                                    <button className={css.botaoFinanceiro} type="submit">Cadastrar custo mensal</button>
+                                </form>
+                            </div>
+                            <div className={`${css.cardMetrica} ${css.cardCadastroCusto}`}>
+                                <div className={css.metricaTopo}>
+                                    <h2>Cadastrar categoria de custo</h2>
+                                    <div className={css.iconeBadge}><FaFolder /></div>
+                                </div>
+                                <form className={`${css.formFinanceiro} ${css.formCategoriaCusto}`} onSubmit={cadastrarCategoriaCusto}>
+                                    <label>Nome da categoria<input required maxLength="80" value={novaCategoriaCusto} onChange={(evento) => setNovaCategoriaCusto(evento.target.value)} /></label>
+                                    <button className={css.botaoFinanceiro} type="submit">Cadastrar categoria</button>
+                                </form>
+                                <p className={css.textoFinanceiro}>{categoriasCusto.length} categorias disponíveis para selecionar.</p>
                             </div>
                             <section className={css.listaTransacoes}>
                                 {/* Sprint item 13: exibe as assinaturas pagas ou pendentes, despesas e saques enviados ao administrador. */}
                                 <h2>Transações financeiras</h2>
+                                <form className={css.formFinanceiro + " " + css.filtrosTransacoes}>
+                                    <label>Tipo<select value={filtrosTransacoes.tipo} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, tipo: evento.target.value })}><option value="">Todos</option><option>Assinatura</option><option>Despesa mensal</option><option>Pagamento Único</option><option>Saque de instrutor</option></select></label>
+                                    <label>Categoria<select value={filtrosTransacoes.categoria} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, categoria: evento.target.value })}><option value="">Todas</option>{categoriasCusto.map((categoria) => <option key={categoria.id} value={categoria.nome}>{categoria.nome}</option>)}</select></label>
+                                    <label>Data inicial<input type="date" value={filtrosTransacoes.inicio} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, inicio: evento.target.value })} /></label>
+                                    <label>Data final<input type="date" value={filtrosTransacoes.fim} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, fim: evento.target.value })} /></label>
+                                    <label>Status<select value={filtrosTransacoes.status} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, status: evento.target.value })}><option value="">Todos</option><option>Paga</option><option>Pendente</option><option>Registrada</option><option>Programada</option><option>Concluído</option><option>Solicitado</option></select></label>
+                                    <button className={css.botaoLimparFiltros} type="button" onClick={() => setFiltrosTransacoes({ tipo: "", categoria: "", inicio: "", fim: "", status: "" })}>Limpar filtros</button>
+                                </form>
                                 <div className={css.tabelaTransacoes}>
                                     <table>
                                         <thead>
-                                            <tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th></tr>
+                                            <tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Status</th><th>Valor</th></tr>
                                         </thead>
                                         <tbody>
-                                            {transacoes.map((transacao) => (
+                                            {transacoesFiltradas.map((transacao) => (
                                                 <tr key={transacao.id}>
                                                     <td>{transacao.data ? new Date(transacao.data).toLocaleDateString("pt-BR") : "—"}</td>
                                                     <td>{transacao.tipo}</td>
+                                                    <td>{transacao.categoria || "—"}</td>
                                                     <td>{transacao.descricao}</td>
                                                     <td>{transacao.status}</td>
                                                     <td className={transacao.direcao === "saida" ? css.valorSaida : transacao.direcao === "entrada" ? css.valorEntrada : ""}>
@@ -453,7 +575,7 @@ export default function DashboardAdm({
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {!transacoes.length && <tr><td colSpan="5">Nenhuma transação registrada.</td></tr>}
+                                            {!transacoesFiltradas.length && <tr><td colSpan="6">Nenhuma transação encontrada para os filtros selecionados.</td></tr>}
                                         </tbody>
                                     </table>
                                 </div>
