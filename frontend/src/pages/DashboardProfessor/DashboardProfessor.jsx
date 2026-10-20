@@ -273,8 +273,7 @@ export default function DashboardProfessor({
         }
 
         if (location.pathname.endsWith("/provas")) {
-            setVisao("provas");
-            setCursoSelecionado(null);
+            navigate("/DashboardProfessor/cursos", { replace: true });
             return;
         }
 
@@ -287,7 +286,7 @@ export default function DashboardProfessor({
         setVisao("inicio");
         setCursoSelecionado(null);
         setIdModuloSelecionado(null);
-    }, [carregarCursos, cursos, cursoSelecionado, location.pathname]);
+    }, [carregarCursos, cursos, cursoSelecionado, location.pathname, navigate]);
 
     useEffect(() => {
         carregarDashboard();
@@ -313,8 +312,8 @@ export default function DashboardProfessor({
     }, [carregarAnaliticosMensais, visao]);
 
     useEffect(() => {
-        if (visao === "cursos" || visao === "provas") {
-            carregarCursos(visao === "provas" ? "todos" : filtroCursos);
+        if (visao === "cursos") {
+            carregarCursos(filtroCursos);
         }
     }, [carregarCursos, filtroCursos, visao]);
 
@@ -683,6 +682,7 @@ export default function DashboardProfessor({
     function abrirAulas(curso) {
         setCursoSelecionado(curso);
         setFiltroAulas("todos");
+        setAbaGestaoCurso("modulos");
         setIdModuloSelecionado(null);
         navigate(`/DashboardProfessor/cursos/${curso.id}/aulas`);
     }
@@ -731,7 +731,7 @@ export default function DashboardProfessor({
 
     return (
         <div className={css.painelProfessor}>
-            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "provas" ? "provas" : visao === "relatorios" ? "relatorios" : "meus-cursos"} />
+            <MenuLateralProf itemAtivo={visao === "inicio" ? "inicio" : visao === "perfil" ? "perfil" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "relatorios" ? "relatorios" : "meus-cursos"} />
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
@@ -905,11 +905,13 @@ export default function DashboardProfessor({
                             </div>
 
                             <div className={css.barraTitulo}>
-                                <button className={abaGestaoCurso === "modulos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("modulos"); setIdModuloSelecionado(null); }}>Módulos e aulas</button>
+                                <button className={abaGestaoCurso === "modulos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("modulos"); setIdModuloSelecionado(null); }}>Módulos</button>
                                 <button className={abaGestaoCurso === "complementos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("complementos"); setIdModuloSelecionado(null); }}>Complementos</button>
+                                <button className={abaGestaoCurso === "provas" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("provas"); setIdModuloSelecionado(null); }}>Provas</button>
                             </div>
 
                             {abaGestaoCurso === "complementos" && <MateriaisProfessor api={api} idCurso={cursoSelecionado.id} avisar={avisar} />}
+                            {abaGestaoCurso === "provas" && <ProvasProfessor key={cursoSelecionado.id} api={api} idCurso={cursoSelecionado.id} setMensagem={setMensagem} />}
                             {abaGestaoCurso === "modulos" && !idModuloSelecionado && (
                                 <>
                                     <div className={css.barraTitulo}>
@@ -1150,12 +1152,6 @@ export default function DashboardProfessor({
                         <section className={css.secaoCursos}>
                             {/* Sprint item 9: contextualiza o chat compartilhado dentro do painel do professor. */}
                             <ChatCurso api={api} perfil="professor" setMensagem={setMensagem} />
-                        </section>
-                    )}
-
-                    {visao === "provas" && (
-                        <section className={css.secaoCursos}>
-                            <ProvasProfessor api={api} cursos={cursos} setMensagem={setMensagem} />
                         </section>
                     )}
 

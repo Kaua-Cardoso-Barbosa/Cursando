@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import css from "./ProvasProfessor.module.css";
 
-const questaoVazia = () => ({ enunciado: "", tipo: "objetiva", alternativas: "" });
+const questaoVazia = () => ({ enunciado: "", tipo: "objetiva", alternativas: [""] });
 
 // Sprint item 20: permite ao instrutor montar e publicar a prova do curso e corrigir respostas enviadas.
-export default function ProvasProfessor({ api, cursos = [], setMensagem }) {
-    const [idCurso, setIdCurso] = useState(cursos[0]?.id ? String(cursos[0].id) : "");
+export default function ProvasProfessor({ api, idCurso, setMensagem }) {
     const [prova, setProva] = useState(null);
     const [titulo, setTitulo] = useState("");
     const [questoes, setQuestoes] = useState([questaoVazia()]);
@@ -20,10 +19,6 @@ export default function ProvasProfessor({ api, cursos = [], setMensagem }) {
         return data;
     }, []);
 
-    useEffect(() => {
-        if (!idCurso && cursos[0]?.id) setIdCurso(String(cursos[0].id));
-    }, [cursos, idCurso]);
-
     const carregar = useCallback(async () => {
         if (!idCurso) return;
         setCarregando(true);
@@ -36,9 +31,9 @@ export default function ProvasProfessor({ api, cursos = [], setMensagem }) {
             setTitulo(exam.prova?.titulo || "");
             setQuestoes(exam.questoes?.length ? exam.questoes.map((item) => ({
                 ...item,
-                alternativas: Array.isArray(item.alternativas) ? item.alternativas.join("\n") : item.alternativas || ""
+                alternativas: Array.isArray(item.alternativas) && item.alternativas.length ? item.alternativas : [""]
             })) : [questaoVazia()]);
-            setRespostas(Array.isArray(submissions) ? submissions.filter((item) => String(item.id_curso) === idCurso) : []);
+            setRespostas(Array.isArray(submissions) ? submissions.filter((item) => String(item.id_curso) === String(idCurso)) : []);
         } catch (error) {
             setMensagem?.({ tipo: "erro", descricao: error.message });
         } finally {
@@ -53,14 +48,19 @@ export default function ProvasProfessor({ api, cursos = [], setMensagem }) {
     }
 
     async function salvarProva() {
+        const questoesPreparadas = questoes.map((item) => ({
+            ...item,
+            alternativas: item.tipo === "objetiva" ? item.alternativas.map((opcao) => opcao.trim()).filter(Boolean) : []
+        }));
+        if (questoesPreparadas.some((item) => item.tipo === "objetiva" && item.alternativas.length < 2)) {
+            setMensagem?.({ tipo: "erro", descricao: "Cada questão objetiva precisa ter ao menos duas alternativas preenchidas." });
+            return;
+        }
         setSalvando(true);
         try {
             const dados = await fetch(`${api}/professor/cursos/${idCurso}/prova`, {
                 method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ titulo, questoes: questoes.map((item) => ({
-                    ...item,
-                    alternativas: item.tipo === "objetiva" ? item.alternativas.split("\n").map((opcao) => opcao.trim()).filter(Boolean) : []
-                })) })
+                body: JSON.stringify({ titulo, questoes: questoesPreparadas })
             }).then(ler);
             setMensagem?.({ tipo: "sucesso", descricao: dados.mensagem?.descricao || "Prova salva como rascunho." });
             await carregar();
@@ -97,12 +97,9 @@ export default function ProvasProfessor({ api, cursos = [], setMensagem }) {
 
     return (
         <section className={css.pagina}>
-            <header><div><span>AVALIAÇÃO</span><h2>Provas dos cursos</h2><p>Publique uma prova antes de tornar o curso público e corrija as respostas dos alunos.</p></div>
-                <select value={idCurso} onChange={(event) => setIdCurso(event.target.value)} aria-label="Selecionar curso">
-                    {cursos.map((curso) => <option key={curso.id} value={curso.id}>{curso.titulo}</option>)}
-                </select>
+            <header><div><span>AVALIAÇÃO</span><h2>Provas do curso</h2><p>Publique uma prova antes de tornar o curso público e corrija as respostas dos alunos.</p></div>
             </header>
-            {!cursos.length ? <p className={css.vazio}>Cadastre um curso para configurar uma prova.</p> : <>
+            {!idCurso ? <p className={css.vazio}>Selecione um curso para configurar uma prova.</p> : <>
                 <section className={css.cartao}>
                     <h3>{prova?.publicada ? "Prova publicada" : "Cadastro da prova"}</h3>
                     <label>Título da prova<input value={titulo} onChange={(event) => setTitulo(event.target.value)} disabled={prova?.publicada} /></label>
@@ -110,7 +107,24 @@ export default function ProvasProfessor({ api, cursos = [], setMensagem }) {
                         <div className={css.questaoTopo}><h4>Questão {index + 1}</h4>{!prova?.publicada && questoes.length > 1 && <button type="button" onClick={() => setQuestoes((atual) => atual.filter((_, i) => i !== index))}>Remover</button>}</div>
                         <label>Enunciado<textarea value={questao.enunciado} onChange={(event) => alterarQuestao(index, "enunciado", event.target.value)} disabled={prova?.publicada} /></label>
                         <label>Tipo<select value={questao.tipo} onChange={(event) => alterarQuestao(index, "tipo", event.target.value)} disabled={prova?.publicada}><option value="objetiva">Objetiva</option><option value="dissertativa">Dissertativa</option></select></label>
-                        {questao.tipo === "objetiva" && <label>Alternativas (uma por linha)<textarea value={questao.alternativas} onChange={(event) => alterarQuestao(index, "alternativas", event.target.value)} disabled={prova?.publicada} /></label>}
+                        {questao.tipo === "objetiva" && <div className={css.alternativas}>
+                            {questao.alternativas.map((alternativa, indiceAlternativa) => <div className={css.alternativa} key={indiceAlternativa}>
+                                <label>Alternativa {indiceAlternativa + 1}
+                                    <textarea
+                                        value={alternativa}
+                                        onChange={(event) => alterarQuestao(index, "alternativas", questao.alternativas.map((opcao, indice) => indice === indiceAlternativa ? event.target.value : opcao))}
+                                        disabled={prova?.publicada}
+                                        rows={3}
+                                    />
+                                </label>
+                                {!prova?.publicada && questao.alternativas.length > 1 && <div className={css.questaoTopo}>
+                                    <button type="button" aria-label={`Remover alternativa ${indiceAlternativa + 1} da questão ${index + 1}`} onClick={() => alterarQuestao(index, "alternativas", questao.alternativas.filter((_, indice) => indice !== indiceAlternativa))}>Remover alternativa</button>
+                                </div>}
+                            </div>)}
+                            {!prova?.publicada && <div className={css.acoes}>
+                                <button type="button" onClick={() => alterarQuestao(index, "alternativas", [...questao.alternativas, ""])}>Adicionar Alternativa</button>
+                            </div>}
+                        </div>}
                     </article>)}
                     {!prova?.publicada && <div className={css.acoes}><button type="button" onClick={() => setQuestoes((atual) => [...atual, questaoVazia()])}>Adicionar questão</button><button type="button" onClick={salvarProva} disabled={salvando}>{salvando ? "Salvando..." : "Salvar rascunho"}</button>{prova && <button type="button" onClick={publicarProva}>Publicar prova</button>}</div>}
                     {prova?.publicada && <p className={css.publicada}>A prova está publicada e já é exigida para novos certificados.</p>}

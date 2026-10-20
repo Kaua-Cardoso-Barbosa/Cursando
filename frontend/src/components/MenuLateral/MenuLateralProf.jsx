@@ -32,13 +32,6 @@ export default function MenuLateralProf({ itemAtivo = "inicio" }) {
                     >
                         Chat
                     </Link>
-                    {/* Sprint item 20: dá acesso à criação das provas e à fila de respostas para corrigir. */}
-                    <Link
-                        to="/DashboardProfessor/provas"
-                        className={`${css.linkItem} ${itemAtivo === "provas" ? css.ativo : ""}`}
-                    >
-                        Provas
-                    </Link>
                     <Link
                         to="/DashboardProfessor/relatorios"
                         className={`${css.linkItem} ${itemAtivo === "relatorios" ? css.ativo : ""}`}
