@@ -176,6 +176,28 @@
     font: inherit;
 }
 
+.campoUpload input[type="file"] {
+    cursor: pointer;
+    background: #f9fbfa;
+}
+
+.campoUpload input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    border: 0;
+    border-radius: 7px;
+    padding: 9px 13px;
+    background: #087044;
+    color: #ffffff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+.campoUpload input[type="file"]:hover::file-selector-button {
+    background: #065b38;
+}
+
 .formulario input:focus,
 .campoUpload input:focus {
     outline: 0;

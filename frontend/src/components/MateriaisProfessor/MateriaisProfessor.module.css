@@ -10,6 +10,9 @@
 .formulario { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 18px; border: 1px solid #dfe9e3; border-radius: 15px; background: #fff; }
 .formulario label { display: grid; gap: 6px; color: #173e2c; font-weight: 700; }
 .formulario input, .formulario select, .formulario textarea { width: 100%; min-height: 42px; border: 1px solid #cbd9d0; border-radius: 8px; padding: 9px 11px; color: #18241d; font: inherit; }
+.formulario input[type="file"] { cursor: pointer; background: #f9fbfa; }
+.formulario input[type="file"]::file-selector-button { margin-right: 12px; border: 0; border-radius: 7px; padding: 9px 13px; background: #087044; color: #ffffff; font: inherit; font-weight: 700; cursor: pointer; transition: background .2s ease; }
+.formulario input[type="file"]:hover::file-selector-button { background: #065b38; }
 .formulario textarea { min-height: 76px; resize: vertical; }
 .formulario label:nth-of-type(3), .formulario label:nth-of-type(4), .formulario label:nth-of-type(5), .selecionado { grid-column: 1 / -1; }
 .formulario button { grid-column: 1 / -1; justify-self: start; display: inline-flex; gap: 8px; align-items: center; border: 0; border-radius: 9px; padding: 11px 16px; background: #087044; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }

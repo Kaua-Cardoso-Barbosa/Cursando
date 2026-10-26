@@ -2,8 +2,9 @@ import { StatusBar } from "expo-status-bar";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as LocalAuthentication from "expo-local-authentication";
+import Constants from "expo-constants";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, AppState, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
+import { ActivityIndicator, AppState, Platform, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
 import { apiRequest, carregarSessao, getApiBaseUrl, limparSessao, salvarSessao } from "./src/api/client";
 import BottomNav from "./src/components/BottomNav";
 import FeedbackProvider, { useFeedback } from "./src/components/FeedbackProvider";
@@ -143,6 +144,11 @@ function AppContent() {
   // Sprint item 18: confirma o início da sessão com vibração e uma notificação local.
   async function avisarSessaoAtiva() {
     Vibration.vibrate(60);
+
+    // O Expo Go no Android carrega o aviso de push remoto ao importar o modulo.
+    // O app usa somente notificacao local; no Expo Go mantemos a vibracao e
+    // reservamos a notificacao do sistema para builds do proprio aplicativo.
+    if (Platform.OS === "android" && Constants.expoGoConfig) return;
 
     const Notifications = await import("expo-notifications");
     if (!notificationHandlerConfigured) {

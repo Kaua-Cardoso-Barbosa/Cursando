@@ -227,27 +227,52 @@
 }
 
 .tabelaTransacoes {
+    width: 100%;
     overflow-x: auto;
+    border: 1px solid #e1e9e4;
+    border-radius: 12px;
 }
 
 .tabelaTransacoes table {
     width: 100%;
     border-collapse: collapse;
+    color: #26372e;
     text-align: left;
 }
 
 .tabelaTransacoes th,
 .tabelaTransacoes td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #e5eee8;
-    color: #354a3d;
-    font-size: 0.9rem;
+    padding: 15px 16px;
     white-space: nowrap;
 }
 
 .tabelaTransacoes th {
-    color: #183d2c;
-    font-weight: 650;
+    padding: 14px 16px;
+    background: #f0f7f3;
+    color: #315342;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    font-weight: 700;
+}
+
+.tabelaTransacoes td {
+    border-top: 1px solid #e8eee9;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.tabelaTransacoes tbody tr:hover {
+    background: #f9fcfa;
+}
+
+.tabelaTransacoes td:not(:first-child) {
+    font-variant-numeric: tabular-nums;
+}
+
+.tabelaTransacoes td[colspan] {
+    padding: 30px 18px;
+    color: #718076;
+    text-align: center;
 }
 
 .valorEntrada {

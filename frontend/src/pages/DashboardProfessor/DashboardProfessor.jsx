@@ -1205,7 +1205,7 @@ export default function DashboardProfessor({
                                             <td>{saque.status_nome}</td>
                                             <td>{saque.status === 1 ? `Referência: ${saque.comprovante}` : saque.status === 2 ? saque.motivo_recusa : "Aguardando pagamento e confirmação"}</td>
                                         </tr>)}
-                                        {!saques.length && <tr><td colSpan="4">Nenhuma solicitação enviada.</td></tr>}
+                                        {!saques.length && <tr><td className={css.celulaVazia} colSpan="4">Nenhuma solicitação enviada.</td></tr>}
                                     </tbody>
                                 </table></div>
                             </section>
