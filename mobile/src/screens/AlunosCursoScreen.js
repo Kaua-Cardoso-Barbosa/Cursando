@@ -5,7 +5,7 @@ import AppIcon from "../components/AppIcon";
 import { useFeedback } from "../components/FeedbackProvider";
 import { colors, globalStyles } from "../styles";
 
-export default function AlunosCursoScreen({ curso, token, onBack }) {
+export default function AlunosCursoScreen({ curso, token, onBack, onOpenChat }) {
   const { mostrarAlerta } = useFeedback();
   const [alunos, setAlunos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -52,6 +52,15 @@ export default function AlunosCursoScreen({ curso, token, onBack }) {
               <Text style={styles.name}>{aluno.nome}</Text>
               <Text style={styles.email}>{aluno.email}</Text>
             </View>
+            <Pressable
+              style={styles.chatButton}
+              onPress={() => onOpenChat?.(aluno)}
+              accessibilityRole="button"
+              accessibilityLabel={`Conversar com ${aluno.nome}`}
+            >
+              <AppIcon name="chatbubble-outline" size={17} color={colors.white} />
+              <Text style={styles.chatButtonText}>Conversar</Text>
+            </Pressable>
           </View>
         ))}
         {!loading && alunos.length === 0 ? <Text style={globalStyles.message}>Nenhum aluno matriculado neste curso.</Text> : null}
@@ -65,9 +74,11 @@ const styles = StyleSheet.create({
   backText: { color: colors.darkGreen, fontSize: 16 },
   header: { marginBottom: 24 },
   list: { gap: 12 },
-  row: { padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
+  row: { padding: 14, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 },
   avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.softGray, alignItems: "center", justifyContent: "center" },
   info: { flex: 1 },
   name: { color: colors.black, fontSize: 17, fontWeight: "700" },
-  email: { color: colors.textMuted, fontSize: 14, marginTop: 2 }
+  email: { color: colors.textMuted, fontSize: 14, marginTop: 2 },
+  chatButton: { minHeight: 38, paddingHorizontal: 12, borderRadius: 9, backgroundColor: colors.darkGreen, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
+  chatButtonText: { color: colors.white, fontWeight: "700" }
 });

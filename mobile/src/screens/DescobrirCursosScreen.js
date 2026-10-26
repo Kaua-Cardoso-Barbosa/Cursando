@@ -13,7 +13,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState("recentes");
   const [apenasNovos, setApenasNovos] = useState(false);
-  // Sprint item 28: guarda os filtros de descoberta e as categorias e temas do catálogo Android.
+  // Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. guarda os filtros de descoberta e as categorias e temas do catálogo Android.
   const [categorias, setCategorias] = useState([]);
   const [temas, setTemas] = useState([]);
   const [categoria, setCategoria] = useState("");
@@ -46,7 +46,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
     carregar();
   }, [ordem, apenasNovos, categoria, tema, avaliacaoMinima, token]);
 
-  // Sprint item 28: carrega as categorias e os temas usados nos filtros de descoberta do app.
+  // Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. carrega as categorias e os temas usados nos filtros de descoberta do app.
   useEffect(() => {
     let ativo = true;
     Promise.all([
@@ -98,7 +98,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
           </Pressable>
         </ScrollView>
         <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: apenasNovos }} style={[styles.filterButton, styles.newFilter, apenasNovos && styles.filterActive]} onPress={() => setApenasNovos(!apenasNovos)}><Text style={[styles.filterText, apenasNovos && styles.filterTextActive]}>{apenasNovos ? "✓ " : "□ "}Somente não inscritos</Text></Pressable>
-        {/* Sprint item 28: permite filtrar cursos por categoria, tema e avaliação no Android. */}
+        {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. permite filtrar cursos por categoria, tema e avaliação no Android. */}
         <Text style={styles.filterLabel}>Categoria</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           <Pressable style={[styles.filterButton, !categoria && styles.filterActive]} onPress={() => setCategoria("")}>

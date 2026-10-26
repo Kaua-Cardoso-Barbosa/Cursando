@@ -7,10 +7,10 @@ function formatarData(data) {
     return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(valor);
 }
 
-// Sprint item 34: mostra a situação da assinatura no painel, inclusive com faturas em aberto.
+// Sprint item 34 - Exibir faturas em aberto. mostra a situação da assinatura no painel, inclusive com faturas em aberto.
 export default function ResumoAssinatura({ assinatura, acessoBloqueado, faturasAbertas, carregando, erro }) {
     const pendente = faturasAbertas > 0;
-    // Sprint item 34: usa a validade quando a API traz datas sem o indicador de bloqueio.
+    // Sprint item 34 - Exibir faturas em aberto. usa a validade quando a API traz datas sem o indicador de bloqueio.
     const expiracao = assinatura?.data_expiracao ? new Date(assinatura.data_expiracao) : null;
     const validadeConhecida = expiracao && !Number.isNaN(expiracao.getTime());
     const bloqueado = typeof acessoBloqueado === "boolean"

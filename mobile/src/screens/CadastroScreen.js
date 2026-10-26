@@ -67,7 +67,7 @@ export default function CadastroScreen({ onBack, onRegistered }) {
     setCarregando(true);
 
     try {
-      // Sprint item 1: cadastro de aluno no aplicativo usando o mesmo endpoint do site.
+      // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. cadastro de aluno no aplicativo usando o mesmo endpoint do site.
       const dadosCadastro = await apiRequest("/cadastrar", {
         method: "POST",
         body: JSON.stringify({

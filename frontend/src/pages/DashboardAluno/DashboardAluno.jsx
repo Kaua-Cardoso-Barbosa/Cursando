@@ -4,6 +4,10 @@ import {
     FaCheck,
     FaCalendarAlt,
     FaGraduationCap,
+    FaBookOpen,
+    FaCheckCircle,
+    FaWallet,
+    FaFileInvoiceDollar,
     FaPlay,
     FaSearch,
     FaShieldAlt,
@@ -185,7 +189,7 @@ export default function DashboardAluno({
     const [busca, setBusca] = useState("");
     const [ordemDescobrir, setOrdemDescobrir] = useState("recentes");
     const [apenasNaoInscritos, setApenasNaoInscritos] = useState(false);
-    // Sprint item 28: mantém categorias, temas e avaliação nos filtros de descoberta de cursos.
+    // Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. mantém categorias, temas e avaliação nos filtros de descoberta de cursos.
     const [categoriasDescobrir, setCategoriasDescobrir] = useState([]);
     const [temasDescobrir, setTemasDescobrir] = useState([]);
     const [categoriaDescobrir, setCategoriaDescobrir] = useState("");
@@ -202,7 +206,7 @@ export default function DashboardAluno({
     const temporizadorProtecaoRef = useRef(null);
     const [carregando, setCarregando] = useState(false);
     const [baixandoCertificado, setBaixandoCertificado] = useState(false);
-    // Sprint item 6: abre a prévia de aulas de um módulo escolhido pelo aluno.
+    // Sprint item 6 - Permitir que o instrutor divida o curso em módulos. abre a prévia de aulas de um módulo escolhido pelo aluno.
     const [idModuloAberto, setIdModuloAberto] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
@@ -211,7 +215,7 @@ export default function DashboardAluno({
     const visao = useMemo(() => {
         if (location.pathname.endsWith("/perfil")) return "perfil";
         if (location.pathname.endsWith("/financeiro")) return "financeiro";
-        // Sprint item 34: assinatura agora é uma seção da Dashboard Aluno.
+        // Sprint item 34 - Exibir faturas em aberto. assinatura agora é uma seção da Dashboard Aluno.
         if (location.pathname.endsWith("/assinatura")) return "assinatura";
         if (location.pathname.endsWith("/chat")) return "chat";
         if (location.pathname.includes("/descobrir")) return "descobrir";
@@ -248,7 +252,7 @@ export default function DashboardAluno({
             setDashboard(await lerResposta(resposta));
         } catch (erro) {
             console.error("Erro ao carregar dashboard do aluno:", erro);
-            // Sprint item 34: distingue erro de consulta do estado pendente da assinatura.
+            // Sprint item 34 - Exibir faturas em aberto. distingue erro de consulta do estado pendente da assinatura.
             setDashboard({ metricas: { inscritos: 0, finalizados: 0, iniciados: 0 }, recentes: [], erro_assinatura: true });
         }
     }, [api, lerResposta]);
@@ -261,7 +265,7 @@ export default function DashboardAluno({
         } catch (erro) {
             console.error("Erro ao carregar cursos do aluno:", erro);
             if (erro.status === 402) {
-                // Sprint item 34: informa a pendência antes de abrir o financeiro.
+                // Sprint item 34 - Exibir faturas em aberto. informa a pendência antes de abrir o financeiro.
                 avisar({ tipo: "erro", descricao: erro.message });
                 navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
             }
@@ -278,7 +282,7 @@ export default function DashboardAluno({
             const params = new URLSearchParams();
             if (termo.trim()) params.set("busca", termo.trim());
             params.set("ordem", ordemDescobrir);
-            // Sprint item 29: mostra recomendações no próprio catálogo, sem repetir cursos em outro painel.
+            // Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno. mostra recomendações no próprio catálogo, sem repetir cursos em outro painel.
             if (ordemDescobrir === "recomendados") params.set("recomendados", "1");
             if (apenasNaoInscritos) params.set("apenas_novos", "1");
             if (categoriaDescobrir) params.set("categoria", categoriaDescobrir);
@@ -294,7 +298,7 @@ export default function DashboardAluno({
         }
     }, [api, apenasNaoInscritos, avaliacaoMinimaDescobrir, busca, categoriaDescobrir, lerResposta, ordemDescobrir, temaDescobrir]);
 
-    // Sprint item 28: carrega as categorias e os temas usados nos filtros de descoberta.
+    // Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. carrega as categorias e os temas usados nos filtros de descoberta.
     useEffect(() => {
         let ativo = true;
         Promise.all([
@@ -343,7 +347,7 @@ export default function DashboardAluno({
         } catch (erro) {
             console.error("Erro ao carregar curso:", erro);
             if (erro.status === 402) {
-                // Sprint item 34: mostra o motivo do bloqueio ao tentar entrar em um curso.
+                // Sprint item 34 - Exibir faturas em aberto. mostra o motivo do bloqueio ao tentar entrar em um curso.
                 avisar({ tipo: "erro", descricao: erro.message });
                 navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
             }
@@ -372,7 +376,7 @@ export default function DashboardAluno({
         }
     }, [api, lerResposta]);
 
-    // Sprint item 4: o player envia segundos de reprodução. O servidor os
+    // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. o player envia segundos de reprodução. O servidor os
     // guarda por aluno e aula; a próxima abertura devolve o ponto ao player.
     const salvarProgressoAula = useCallback(async (idAula, posicaoSegundos) => {
         try {
@@ -467,7 +471,7 @@ export default function DashboardAluno({
                 || (evento?.shiftKey && evento?.ctrlKey && tecla === "s");
             if (!atalhoCaptura) return;
 
-            // Sprint item 10: cancela atalhos de captura detectáveis e oculta o vídeo como defesa complementar do site.
+            // Sprint item 10 - Bloquear captura de tela durante o curso. cancela atalhos de captura detectáveis e oculta o vídeo como defesa complementar do site.
             evento.preventDefault();
             evento.stopPropagation();
             setProtecaoAtiva(true);
@@ -475,7 +479,7 @@ export default function DashboardAluno({
             temporizadorProtecaoRef.current = window.setTimeout(() => setProtecaoAtiva(false), 2500);
         }
 
-        // Sprint item 26: o site só consegue ocultar o player em eventos detectáveis; o navegador não bloqueia gravações do sistema.
+        // Sprint item 26 - Bloquear gravação de tela durante o curso. o site só consegue ocultar o player em eventos detectáveis; o navegador não bloqueia gravações do sistema.
         function aoVisibilidade() {
             if (visao !== "aula") return;
             if (document.hidden) {
@@ -522,7 +526,7 @@ export default function DashboardAluno({
 
                 if (visao === "financeiro" || visao === "assinatura") tarefas.push(carregarFinanceiro());
 
-                // Sprint item 3: recarrega do backend a tela atual quando o aluno retorna do app ou de outra aba.
+                // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. recarrega do backend a tela atual quando o aluno retorna do app ou de outra aba.
                 await Promise.allSettled(tarefas);
             } finally {
                 sincronizando = false;
@@ -556,7 +560,7 @@ export default function DashboardAluno({
         } catch (erro) {
             console.error("Erro ao inscrever:", erro);
             if (erro.status === 402) {
-                // Sprint item 34: explica o bloqueio da inscrição antes de mostrar as faturas.
+                // Sprint item 34 - Exibir faturas em aberto. explica o bloqueio da inscrição antes de mostrar as faturas.
                 avisar({ tipo: "erro", descricao: erro.message });
                 navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
                 return;
@@ -573,7 +577,7 @@ export default function DashboardAluno({
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                // Sprint item 34: permite pagar uma fatura aberta específica ou pedir a próxima mensalidade.
+                // Sprint item 34 - Exibir faturas em aberto. permite pagar uma fatura aberta específica ou pedir a próxima mensalidade.
                 body: JSON.stringify({ meses: 1, ...(idAssinatura ? { id_assinatura: idAssinatura } : {}) })
             });
             const dados = await lerResposta(resposta);
@@ -605,7 +609,7 @@ export default function DashboardAluno({
     }
 
     async function confirmarFatura(idAssinatura) {
-        // Sprint item 34: baixa a cobrança escolhida e atualiza as duas listas de mensalidades.
+        // Sprint item 34 - Exibir faturas em aberto. baixa a cobrança escolhida e atualiza as duas listas de mensalidades.
         const resposta = await fetch(`${api}/financeiro/faturas/${idAssinatura}/verificar`, {
             method: "POST",
             credentials: "include"
@@ -651,8 +655,8 @@ export default function DashboardAluno({
         }
     }, [api, carregarDashboard, lerResposta]);
 
-    // Sprint item 20: baixa o certificado somente após o servidor confirmar a aprovação na prova.
-    // Sprint item 21: baixa arquivos privados de complemento somente após autorização da API para aluno matriculado.
+    // Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. baixa o certificado somente após o servidor confirmar a aprovação na prova.
+    // Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. baixa arquivos privados de complemento somente após autorização da API para aluno matriculado.
     async function baixarMaterial(material) {
         try {
             const resposta = await fetch(`${api}${material.arquivo_url}`, { credentials: "include" });
@@ -675,7 +679,7 @@ export default function DashboardAluno({
     async function baixarCertificado(curso) {
         setBaixandoCertificado(true);
         try {
-            // Sprint item 5: baixa o PDF autenticado e apresenta erros da API no site.
+            // Sprint item 5 - Gerar certificado ao concluir o curso. baixa o PDF autenticado e apresenta erros da API no site.
             const resposta = await fetch(`${api}/aluno/cursos/${curso.id}/certificado`, {
                 credentials: "include",
                 headers: { Accept: "application/pdf" }
@@ -698,7 +702,7 @@ export default function DashboardAluno({
         }
     }
 
-    // Sprint item 20: envia a avaliação final para correção manual pelo instrutor.
+    // Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. envia a avaliação final para correção manual pelo instrutor.
     async function enviarProvaAluno() {
         if (enviandoProva) return;
         setEnviandoProva(true);
@@ -720,7 +724,7 @@ export default function DashboardAluno({
         }
     }
 
-    // Sprint item 27: envia as estrelas e o comentario; o servidor revalida conclusao e aprovacao antes de salvar.
+    // Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. envia as estrelas e o comentario; o servidor revalida conclusao e aprovacao antes de salvar.
     async function enviarAvaliacaoCurso() {
         const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/avaliacoes`, {
             method: "POST",
@@ -741,7 +745,7 @@ export default function DashboardAluno({
     const videoAula = aulaAtual?.aula;
     const proximas = aulaAtual?.proximas || [];
     const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
-    // Sprint item 33: mantém mensalidades pagas no histórico mesmo depois da expiração da assinatura.
+    // Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. mantém mensalidades pagas no histórico mesmo depois da expiração da assinatura.
     const faturasPagas = faturas.filter((fatura) => [1, 3].includes(Number(fatura.status)));
 
     return (
@@ -754,7 +758,7 @@ export default function DashboardAluno({
 
                     {visao === "inicio" && (
                         <>
-                            {/* Sprint item 9: apresenta ao aluno o foco do painel antes dos indicadores e aulas recentes. */}
+                            {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. apresenta ao aluno o foco do painel antes dos indicadores e aulas recentes. */}
                             <header className={css.cabecalhoPagina}>
                                 <span className={css.etiquetaPagina}>ÁREA DO ALUNO</span>
                                 <h2>Seu aprendizado em andamento</h2>
@@ -791,8 +795,8 @@ export default function DashboardAluno({
                                         valor={formatarDataAssinatura(dashboard?.assinatura?.data_expiracao)}
                                         icone={<FaCalendarAlt />}
                                     />
-                                    <CardMetrica titulo="Cursos inscritos" detalhe="" valor={metricas.inscritos} />
-                                    <CardMetrica titulo="Cursos finalizados" detalhe="" valor={metricas.finalizados} />
+                                    <CardMetrica titulo="Cursos inscritos" detalhe="Matrículas ativas" valor={metricas.inscritos} icone={<FaBookOpen />} />
+                                    <CardMetrica titulo="Cursos finalizados" detalhe="Conclusões registradas" valor={metricas.finalizados} icone={<FaCheckCircle />} />
                                 </div>
                             </section>
 
@@ -801,7 +805,7 @@ export default function DashboardAluno({
 
                     {visao === "meus-cursos" && !cursoDetalhe && (
                         <section className={css.secaoCursos}>
-                            {/* Sprint item 9: padroniza a abertura das páginas de cursos com título e orientação. */}
+                            {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. padroniza a abertura das páginas de cursos com título e orientação. */}
                             <header className={css.cabecalhoPagina}>
                                 <span className={css.etiquetaPagina}>MINHA APRENDIZAGEM</span>
                                 <h2>Meus cursos</h2>
@@ -819,7 +823,7 @@ export default function DashboardAluno({
 
                     {visao === "descobrir" && !cursoDetalhe && (
                         <section className={css.secaoCursos}>
-                            {/* Sprint item 9: explica a busca e mantém os filtros agrupados abaixo do cabeçalho. */}
+                            {/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. explica a busca e mantém os filtros agrupados abaixo do cabeçalho. */}
                             <header className={css.cabecalhoPagina}>
                                 <span className={css.etiquetaPagina}>EXPLORE</span>
                                 <h2>Encontre seu próximo curso</h2>
@@ -834,7 +838,7 @@ export default function DashboardAluno({
                                         onChange={(evento) => setBusca(evento.target.value)}
                                     />
                                 </label>
-                                {/* Sprint item 28: filtra o catálogo público por categoria, tema e avaliação mínima. */}
+                                {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. filtra o catálogo público por categoria, tema e avaliação mínima. */}
                                 <label className={css.filtroOrdenacao}>
                                     <span>Categoria</span>
                                     <select value={categoriaDescobrir} onChange={(evento) => setCategoriaDescobrir(evento.target.value)}>
@@ -861,7 +865,7 @@ export default function DashboardAluno({
                                     <select value={ordemDescobrir} onChange={(evento) => setOrdemDescobrir(evento.target.value)}>
                                         <option value="recentes">Mais recentes</option>
                                         <option value="populares">Mais populares</option>
-                                        {/* Sprint item 29: filtra e ordena cursos relacionados às inscrições do aluno na lista principal. */}
+                                        {/* Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno. filtra e ordena cursos relacionados às inscrições do aluno na lista principal. */}
                                         <option value="recomendados">Recomendados para você</option>
                                     </select>
                                 </label>
@@ -971,7 +975,7 @@ export default function DashboardAluno({
 
                             {abaCurso === "complementos" && (
                                 <div className={`${css.conteudoCurso} ${css.conteudoComplementos}`}>
-                                    {/* Sprint item 21: a prévia mostra títulos; matrícula e assinatura
+                                    {/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. a prévia mostra títulos; matrícula e assinatura
                                         ativas liberam links e downloads privados pela API. */}
                                     <header className={css.cabecalhoComplementos}><div><span>MATERIAIS DE APOIO</span><h2>Vá além da aula</h2><p>Leituras, arquivos e links escolhidos pelo professor para este curso.</p></div><strong>{materiaisCurso.length} {materiaisCurso.length === 1 ? "material" : "materiais"}</strong></header>
 
@@ -1076,7 +1080,7 @@ export default function DashboardAluno({
                                 </section>
                             )}
 
-                            {/* Sprint item 27: mostra avaliações do curso no fim da página, inclusive antes da inscrição. */}
+                            {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. mostra avaliações do curso no fim da página, inclusive antes da inscrição. */}
                             <section className={css.comentariosCurso}>
                                 <h2>Comentários</h2>
                                 {detalheCurso?.avaliacoes?.length ? (
@@ -1117,7 +1121,7 @@ export default function DashboardAluno({
 
                             {videoAula && (
                                 <>
-                                    {/* Sprint item 9: identifica a aula aberta antes do player para orientar a retomada. */}
+                                    {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. identifica a aula aberta antes do player para orientar a retomada. */}
                                     <header className={css.cabecalhoPagina}>
                                         <span className={css.etiquetaPagina}>AULA EM ANDAMENTO</span>
                                         <h2>{videoAula.titulo}</h2>
@@ -1164,7 +1168,7 @@ export default function DashboardAluno({
 
                     {(visao === "financeiro" || visao === "assinatura") && (
                         <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
-                            {/* Sprint item 9: resume a finalidade da página financeira antes dos valores e cobranças. */}
+                            {/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. resume a finalidade da página financeira antes dos valores e cobranças. */}
                             <header className={css.cabecalhoPagina}>
                                 <span className={css.etiquetaPagina}>ASSINATURA</span>
                                 <h2>{visao === "assinatura" ? "Minha assinatura" : "Financeiro"}</h2>
@@ -1179,18 +1183,20 @@ export default function DashboardAluno({
                                     erro={dashboard?.erro_assinatura === true}
                                 />
                             )}
-                            {/* Sprint itens 33 e 34: resumo inicial de gastos e faturas do aluno. */}
+                            {/* resumo inicial de gastos e faturas do aluno. */}
                             <div className={css.gridMetricas}>
-                                {/* Sprint item 33: mostra apenas o valor das mensalidades efetivamente pagas. */}
+                                {/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. mostra apenas o valor das mensalidades efetivamente pagas. */}
                                 <CardMetrica
                                     titulo="Total gasto"
                                     detalhe="Mensalidades pagas"
                                     valor={`R$ ${Number(financeiro?.total_gasto || 0).toFixed(2).replace(".", ",")}`}
+                                    icone={<FaWallet />}
                                 />
                                 <CardMetrica
                                     titulo="Em aberto"
                                     detalhe="Faturas pendentes"
                                     valor={`R$ ${Number(financeiro?.total_aberto || 0).toFixed(2).replace(".", ",")}`}
+                                    icone={<FaFileInvoiceDollar />}
                                 />
                             </div>
                             <div className={css.areaFinanceiro}>
@@ -1242,7 +1248,7 @@ export default function DashboardAluno({
                                                 <strong>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</strong>
                                                 <span>R$ {Number(fatura.valor || 0).toFixed(2).replace(".", ",")}</span>
                                                 <p>Vencimento: {formatarDataAssinatura(fatura.data_vencimento || fatura.data_expiracao || fatura.criado_em)}</p>
-                                                {/* Sprint item 34: recupera o Pix da fatura escolhida, inclusive após o vencimento. */}
+                                                {/* Sprint item 34 - Exibir faturas em aberto. recupera o Pix da fatura escolhida, inclusive após o vencimento. */}
                                                 <button className={css.botaoSecundarioFinanceiro} type="button" onClick={() => criarFaturaFutura(fatura.id)} disabled={criandoFatura}>
                                                     Pagar esta fatura
                                                 </button>
@@ -1253,7 +1259,7 @@ export default function DashboardAluno({
                                 </div>
 
                                 <div className={css.blocoFinanceiro}>
-                                    {/* Sprint item 33: relaciona cada mensalidade paga ao valor e à data do pagamento. */}
+                                    {/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. relaciona cada mensalidade paga ao valor e à data do pagamento. */}
                                     <h2>Histórico de mensalidades</h2>
                                     <div className={css.listaMateriais}>
                                         {faturasPagas.map((fatura) => (
@@ -1272,7 +1278,7 @@ export default function DashboardAluno({
 
                     {visao === "chat" && (
                         <section className={css.secaoCursos}>
-                            {/* Sprint item 9: dá contexto ao componente de conversa compartilhado. */}
+                            {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. dá contexto ao componente de conversa compartilhado. */}
                             <ChatCurso api={api} perfil="aluno" setMensagem={setMensagem} />
                         </section>
                     )}

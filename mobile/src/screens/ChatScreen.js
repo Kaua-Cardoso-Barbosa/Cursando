@@ -18,9 +18,9 @@ import { apiRequest, resolverUrlMidia } from "../api/client";
 import AppIcon from "../components/AppIcon";
 import { colors, globalStyles } from "../styles";
 
-export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando, onRefresh }) {
+export default function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, carregando, onRefresh }) {
   const [conversas, setConversas] = useState([]);
-  const [selecionada, setSelecionada] = useState(null);
+  const [selecionada, setSelecionada] = useState(conversaInicial);
   const [mensagens, setMensagens] = useState([]);
   const [texto, setTexto] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,8 +28,14 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
   const [tecladoAberto, setTecladoAberto] = useState(false);
   const enviandoRef = useRef(false);
   const aluno = Number(tipoUsuario) === 2;
+  // Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. o destino escolhido na lista de alunos fica visível
+  // nesta tela; a API só o inclui na caixa de entrada após a primeira mensagem.
+  const conversasVisiveis = selecionada && !conversas.some((conversa) =>
+    Number(conversa.id_curso) === Number(selecionada.id_curso) &&
+    Number(conversa.id_aluno) === Number(selecionada.id_aluno)
+  ) ? [selecionada, ...conversas] : conversas;
 
-  // Sprint item 19: apresenta a foto cadastrada do participante e usa um ícone quando não há foto.
+  // Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. apresenta a foto cadastrada do participante e usa um ícone quando não há foto.
   function Avatar({ imagem, tamanho = 38 }) {
     return imagem
       ? <Image source={{ uri: resolverUrlMidia(imagem) }} style={{ width: tamanho, height: tamanho, borderRadius: tamanho / 2 }} />
@@ -100,7 +106,7 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
     carregarConversas();
   }, [token, tipoUsuario, cursos]);
 
-  // Sprint item 19: atualiza a caixa de entrada e a conversa aberta periodicamente no app.
+  // Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. atualiza a caixa de entrada e a conversa aberta periodicamente no app.
   useEffect(() => {
     const intervalo = setInterval(() => {
       if (AppState.currentState !== "active") return;
@@ -118,7 +124,7 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
     const inscricao = AppState.addEventListener("change", (estado) => {
       if (estado !== "active") return;
 
-      // Sprint item 3: sincroniza conversas e mensagens recebidas no site quando o app volta ao primeiro plano.
+      // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. sincroniza conversas e mensagens recebidas no site quando o app volta ao primeiro plano.
       carregarConversas();
       if (selecionada) {
         carregarMensagens(selecionada).catch(() => setMensagens([]));
@@ -149,14 +155,14 @@ export default function ChatScreen({ token, tipoUsuario, cursos = [], carregando
       >
         <View style={styles.header}>
           <Text style={globalStyles.title}>Chat</Text>
-          <Text style={globalStyles.eyebrow}>{aluno ? "Tire duvidas com o instrutor" : "Mensagens dos alunos"}</Text>
+          <Text style={globalStyles.eyebrow}>{aluno ? "Tire duvidas com o instrutor" : "Converse com os alunos dos seus cursos"}</Text>
           <View style={globalStyles.divider} />
         </View>
 
         <View style={styles.conversations}>
           {loading ? <ActivityIndicator color={colors.green} /> : null}
-          {!loading && conversas.length === 0 ? <Text style={globalStyles.message}>Nenhuma conversa disponivel.</Text> : null}
-          {conversas.map((conversa) => {
+          {!loading && conversasVisiveis.length === 0 ? <Text style={globalStyles.message}>{aluno ? "Nenhuma conversa disponivel." : "Nenhuma conversa ainda. Abra os alunos de um curso para iniciar."}</Text> : null}
+          {conversasVisiveis.map((conversa) => {
             const active = selecionada?.id_curso === conversa.id_curso && selecionada?.id_aluno === conversa.id_aluno;
             return (
               <Pressable

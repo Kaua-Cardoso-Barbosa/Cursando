@@ -1,3 +1,12 @@
+"""catálogo, acesso e abertura da aula do aluno.
+
+As rotas consultam a matrícula e a assinatura antes de expor conteúdo
+privado. A rota da aula devolve também o segundo salvo para retomada; gravar
+esse segundo e marcar a aula como concluída são operações separadas em
+``cursos_aluno.py``. O catálogo pode continuar visível com fatura pendente,
+mas a aula exige acesso válido.
+"""
+
 import fdb
 import math
 from datetime import datetime
@@ -35,7 +44,7 @@ def exigir_aluno():
 def bloquear_por_fatura_aberta(cursor, id_aluno):
     from pagamento_arkhe import aluno_tem_fatura_aberta
 
-    # Sprint item 34: informa a fatura pendente e envia o aluno ao financeiro antes de abrir cursos.
+    # Sprint item 34 - Exibir faturas em aberto. informa a fatura pendente e envia o aluno ao financeiro antes de abrir cursos.
     if aluno_tem_fatura_aberta(cursor, id_aluno):
         return resposta(
             "Você possui uma fatura em aberto. Acesse a aba Financeiro para consultar e pagar.",
@@ -63,7 +72,7 @@ def aluno_tem_assinatura_ativa(cursor, id_aluno):
 
 
 def exigir_assinatura_ativa(cursor, id_aluno):
-    # Sprint item 34: a pendência tem uma orientação específica antes do bloqueio geral da assinatura.
+    # Sprint item 34 - Exibir faturas em aberto. a pendência tem uma orientação específica antes do bloqueio geral da assinatura.
     bloqueio = bloquear_por_fatura_aberta(cursor, id_aluno)
     if bloqueio:
         return bloqueio
@@ -200,7 +209,7 @@ def aluno_dashboard():
 
     try:
         garantir_tabela_progresso(con)
-        # Sprint item 34: o resumo do dashboard permanece disponível enquanto os cursos estão bloqueados.
+        # Sprint item 34 - Exibir faturas em aberto. o resumo do dashboard permanece disponível enquanto os cursos estão bloqueados.
         acesso_bloqueado = not aluno_tem_assinatura_ativa(cursor, id_aluno)
 
         cursor.execute(
@@ -318,12 +327,18 @@ def listar_cursos_aluno():
 
 
 
-# Sprint item 4: entrega uma aula publicada ao aluno matriculado com a posição
+# Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. entrega uma aula publicada ao aluno matriculado com a posição
 # salva em segundos. O site e o app usam esse valor para abrir o player no ponto
 # em que a reprodução parou. A consulta também traz as próximas aulas.
 @app.route("/aluno/aulas/<int:id_aula>", methods=["GET"])
 @jwt_required()
 def detalhe_aula_aluno(id_aula):
+    """Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. devolve a aula, o segundo de retomada e as outras aulas.
+
+    A consulta junta curso, matrícula e vídeo para impedir abrir aula de um
+    curso sem acesso. O LEFT JOIN do progresso permite começar em zero quando
+    o aluno ainda não assistiu; o player usa progresso_segundos para retomar.
+    """
     negado = exigir_aluno()
     if negado:
         return negado
@@ -365,6 +380,8 @@ def detalhe_aula_aluno(id_aula):
             return resposta("Aula nao encontrada para seus cursos.", 404)
 
         aula = aula_para_dict(row[:6])
+        # O índice 13 vem de COALESCE(PR.POSICAO_SEGUNDOS, 0) na consulta:
+        # é a posição para o player, não a contagem de tempo assistido.
         aula["progresso_segundos"] = float(row[13] or 0)
 
         curso = {
@@ -392,6 +409,8 @@ def detalhe_aula_aluno(id_aula):
             (id_aluno, id_aluno, aula["id_curso"], id_aula),
         )
         proximas = []
+        # A mesma resposta traz as demais aulas com conclusão e posição.
+        # Assim o card e o player podem mostrar estados coerentes ao navegar.
         for prox_row in cursor.fetchall():
             proxima = aula_para_dict(prox_row[:6])
             proxima["assistida"] = bool(prox_row[6])

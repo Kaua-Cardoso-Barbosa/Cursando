@@ -1,3 +1,13 @@
+"""métricas e relatórios do professor/admin.
+
+O filtro de identidade entra na consulta SQL antes de somar resultados. Assim,
+o professor vê somente seus cursos; o administrador pode filtrar por instrutor.
+Visitas e inscrições usam o mês civil; tempo assistido vem de avanços reais do
+player. Dados anteriores à coleta mensal não podem ganhar mês retroativo.
+``?`` nas consultas representa um parâmetro, evitando juntar texto do usuário
+diretamente ao SQL.
+"""
+
 from datetime import datetime, timedelta
 
 from flask import Response, jsonify, request
@@ -32,10 +42,16 @@ def _filtros_periodo(prefixo=""):
 
 
 
-# Sprint item 22: fornece relatórios por período de criação do curso, instrutor e curso; instrutores ficam limitados aos próprios cursos.
+# Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. fornece relatórios por período de criação do curso, instrutor e curso; instrutores ficam limitados aos próprios cursos.
 @app.route("/relatorios/professor", methods=["GET"])
 @jwt_required()
 def relatorio_professor():
+    """Itens 7, 22 e 23: aplica filtros e agrega progresso por curso e mês.
+
+    O perfil do token decide o limite de acesso antes do SQL: professor só vê
+    vínculo próprio; admin pode escolher instrutor. O período filtra criação
+    dos cursos, enquanto horas mensais vêm da competência de reprodução.
+    """
     garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = int(get_jwt_identity())
@@ -50,13 +66,15 @@ def relatorio_professor():
     cursor = con.cursor()
 
     try:
-        # Sprint item 7: prepara progresso e tempo de reprodução para o relatório do instrutor.
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. prepara progresso e tempo de reprodução para o relatório do instrutor.
         from aluno import garantir_tabela_progresso
         garantir_tabela_progresso(con)
 
         params = []
         where = ["C.EXCLUIDO = 0"]
 
+        # Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. a restrição do professor entra no WHERE antes de agregar.
+        # Filtrar só a resposta depois da consulta poderia expor outros cursos.
         if tipo == 1:
             where.append("PC.ID_USUARIO = ?")
             params.append(id_usuario)
@@ -69,6 +87,8 @@ def relatorio_professor():
             params.append(int(id_curso))
 
         periodo_filtros, periodo_params = _filtros_periodo("C.")
+        # O período desta seção se refere à criação do curso. A distribuição
+        # das horas assistidas por mês é calculada em outra consulta.
         where.extend(periodo_filtros)
         params.extend(periodo_params)
 
@@ -146,9 +166,11 @@ def relatorio_professor():
             for row in cursor.fetchall()
         ]
 
-        # Sprint item 23: agrupa alunos inscritos, cursos e módulos criados e horas assistidas por mês.
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas. agrupa alunos inscritos, cursos e módulos criados e horas assistidas por mês.
         mensal = {}
         def linha_mensal(ano, mes):
+            # Várias consultas alimentam o mesmo mês. Esta função cria a linha
+            # apenas na primeira ocorrência e evita perder os campos já somados.
             chave = f"{int(ano):04d}-{int(mes):02d}"
             if chave not in mensal:
                 mensal[chave] = {"mes": chave, "alunos": 0, "cursos": 0, "modulos": 0, "horas_assistidas": 0.0}
@@ -212,7 +234,7 @@ def relatorio_professor():
             linha_mensal(ano, mes)["horas_assistidas"] = round(float(segundos or 0) / 3600, 2)
         mensal = [mensal[chave] for chave in sorted(mensal)]
 
-        # Sprint item 23: identifica tempo acumulado antes da captura mensal, cuja competência antiga não pode ser recuperada.
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas. identifica tempo acumulado antes da captura mensal, cuja competência antiga não pode ser recuperada.
         cursor.execute(
             f"""
             SELECT COALESCE(SUM(TA.SEGUNDOS_ASSISTIDOS), 0) - COALESCE((
@@ -232,6 +254,8 @@ def relatorio_professor():
             tuple(params + params),
         )
         segundos_sem_competencia = max(float((cursor.fetchone() or (0,))[0] or 0), 0)
+        # Dados de reprodução anteriores à tabela mensal não têm mês seguro.
+        # Mostramos a diferença separadamente, sem inventar uma competência.
 
         total_alunos = sum(item["alunos"] for item in cursos)
         total_aulas_assistidas = sum(item["aulas_assistidas"] for item in cursos)
@@ -301,6 +325,11 @@ def relatorio_professor():
 @app.route("/professor/analiticos-mensais", methods=["GET"])
 @jwt_required()
 def analiticos_mensais_professor():
+    """Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. mede visitas e inscrições do mês civil vigente.
+
+    A taxa divide matrículas do mês pelos acessos únicos; sem acesso, devolve
+    zero para evitar divisão por zero no painel.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -315,7 +344,7 @@ def analiticos_mensais_professor():
     cursor = con.cursor()
 
     try:
-        # Sprint item 9: reúne visitas, inscrições convertidas e alunos ativos apenas no mês civil atual para o instrutor autenticado.
+        # Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. reúne visitas, inscrições convertidas e alunos ativos apenas no mês civil atual para o instrutor autenticado.
         cursor.execute(
             """
             SELECT
@@ -376,16 +405,21 @@ def analiticos_mensais_professor():
         cursor.close()
         con.close()
 
-# Sprint item 7: métricas do painel do professor.
+# Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. métricas do painel do professor.
 @app.route("/professor/dashboard", methods=["GET"])
 @jwt_required()
 def professor_dashboard():
+    """Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. conta alunos, aulas, módulos e cursos concluídos.
+
+    Conclusão é contada por aluno e exige todas as aulas publicadas daquela
+    unidade. Segundos de reprodução são transformados em horas para a tela.
+    """
     negado = exigir_professor()
     if negado:
         return negado
 
     id_professor = get_jwt_identity()
-    # Sprint item 7: garante as tabelas de módulos e progresso usadas pelas métricas do painel.
+    # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. garante as tabelas de módulos e progresso usadas pelas métricas do painel.
     from estrutura_banco import garantir_estrutura_banco
     from aluno import garantir_tabela_progresso
 
@@ -436,7 +470,7 @@ def professor_dashboard():
         )
         total_alunos = (cursor.fetchone() or (0,))[0] or 0
 
-        # Sprint item 7: conta cada conclusão de curso por aluno usando somente aulas publicadas.
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. conta cada conclusão de curso por aluno usando somente aulas publicadas.
         cursor.execute(
             """
             SELECT COUNT(DISTINCT CAST(M.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(C.ID_CURSO AS VARCHAR(20)))
@@ -462,7 +496,7 @@ def professor_dashboard():
         )
         cursos_concluidos = (cursor.fetchone() or (0,))[0] or 0
 
-        # Sprint item 7: conta módulos concluídos por aluno, exigindo ao menos uma aula publicada.
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. conta módulos concluídos por aluno, exigindo ao menos uma aula publicada.
         cursor.execute(
             """
             SELECT COUNT(DISTINCT CAST(M.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(MC.ID_MODULO AS VARCHAR(20)))
@@ -489,7 +523,7 @@ def professor_dashboard():
         )
         modulos_concluidos = (cursor.fetchone() or (0,))[0] or 0
 
-        # Sprint item 7: transforma os segundos efetivamente registrados em horas assistidas.
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. transforma os segundos efetivamente registrados em horas assistidas.
         cursor.execute(
             """
             SELECT COALESCE(SUM(T.SEGUNDOS_ASSISTIDOS), 0)

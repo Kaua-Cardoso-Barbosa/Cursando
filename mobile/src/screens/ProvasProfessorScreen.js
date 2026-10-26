@@ -7,7 +7,7 @@ import { colors, globalStyles } from "../styles";
 
 const questaoVazia = () => ({ enunciado: "", tipo: "objetiva", alternativas: "", resposta_esperada: "" });
 
-// Sprint item 20: no app o professor cadastra, edita, publica e exclui a prova.
+// Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. no app o professor cadastra, edita, publica e exclui a prova.
 // A API apaga tentativas antigas quando as questões mudam, para que o gabarito
 // mostrado ao aluno e ao professor corresponda sempre à versão atual.
 export default function ProvasProfessorScreen({ curso, cursos = [], token, onBack }) {

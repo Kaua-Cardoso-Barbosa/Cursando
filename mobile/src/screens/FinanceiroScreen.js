@@ -11,8 +11,8 @@ function moeda(valor) {
   return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
 }
 
-// Sprint item 12: define os cartões de receita do instrutor no app com base no resumo do fundo de receita compartilhado.
-// Sprint item 15: inclui o saldo do instrutor que pode ser solicitado para saque.
+// Sprint item 12 - Exibir valores recebidos, disponíveis para saque e já sacados pelo instrutor. define os cartões de receita do instrutor no app com base no resumo do fundo de receita compartilhado.
+// Sprint item 15 - Exibir saldo disponível em caixa. (Esse é tanto para adm e instrutor, para o instrutor ele vai apenas mostrar o saldo bruto que ele pode sacar, para o adm, como o professor recebe uma comissão em porcentagem para cada aula que o aluno viu do curso dele, altere o valor da assinatura para 500 e para mostrar o saldo do adm, deve descontar as comissão e ai mostrar quanto vai sobrar para saque) inclui o saldo do instrutor que pode ser solicitado para saque.
 const cards = [
   ["Ganhos estimados", "Sua parte do pool de receita", "recebido_estimado", "cash-outline", "money"],
   ["Disponível para saque", "Saldo bruto", "disponivel_saque", "wallet-outline", "money"],
@@ -62,9 +62,9 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
     carregarFaturas();
     const inscricao = AppState.addEventListener("change", (estado) => {
       if (estado === "active") {
-        // Sprint item 3: atualiza faturas criadas ou pagas no site ao retornar ao financeiro do app.
+        // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. atualiza faturas criadas ou pagas no site ao retornar ao financeiro do app.
         carregarFaturas();
-        // Sprint item 33: atualiza também o total gasto, apresentado pelo resumo financeiro.
+        // Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. atualiza também o total gasto, apresentado pelo resumo financeiro.
         if (aluno) onRefreshRef.current?.();
       }
     });
@@ -73,14 +73,14 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
   }, [aluno, token]);
 
   async function atualizarFinanceiro() {
-    // Sprint item 3: o gesto de atualizar busca resumo e faturas na mesma fonte usada pelo site.
+    // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. o gesto de atualizar busca resumo e faturas na mesma fonte usada pelo site.
     await Promise.all([onRefresh?.(), carregarFaturas()]);
   }
 
   async function pagarProxima(idAssinatura = null) {
     try {
-      // Sprint item 1: aguarda a resposta da Arkhé ao gerar uma cobrança de mensalidade.
-      // Sprint item 34: permite escolher a fatura aberta ou criar uma mensalidade futura.
+      // Sprint item 2 - Integrar pagamentos pelo ARKHE. aguarda a resposta da Arkhé ao gerar uma cobrança de mensalidade.
+      // Sprint item 34 - Exibir faturas em aberto. permite escolher a fatura aberta ou criar uma mensalidade futura.
       const dados = await apiRequest("/financeiro/faturas", {
         method: "POST",
         body: JSON.stringify({ meses: 1, ...(idAssinatura ? { id_assinatura: idAssinatura } : {}) })
@@ -98,7 +98,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
   }
 
   async function confirmarPagamento(idAssinatura) {
-    // Sprint item 34: confirma somente a cobrança escolhida e atualiza o resumo financeiro.
+    // Sprint item 34 - Exibir faturas em aberto. confirma somente a cobrança escolhida e atualiza o resumo financeiro.
     await apiRequest(`/financeiro/faturas/${idAssinatura}/verificar`, {
       method: "POST"
     }, token, PAYMENT_REQUEST_TIMEOUT_MS);
@@ -111,7 +111,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
     if (!pagamento?.id_assinatura) return;
     try {
       setVerificando(true);
-      // Sprint item 34: baixa apenas a fatura selecionada após a confirmação da Arkhé.
+      // Sprint item 34 - Exibir faturas em aberto. baixa apenas a fatura selecionada após a confirmação da Arkhé.
       await confirmarPagamento(pagamento.id_assinatura);
     } catch (error) {
       mostrarAlerta("Pagamento", error.message, "erro");
@@ -136,7 +136,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
 
     setSolicitandoSaque(true);
     try {
-      // Sprint item 32: envia a solicitação ao backend para validação do saldo e encaminhamento à Arkhé.
+      // Sprint item 32 - Permitir solicitação de saque para a conta ARKHE. envia a solicitação ao backend para validação do saldo e encaminhamento à Arkhé.
       await apiRequest("/professor/saques", {
         method: "POST",
         body: JSON.stringify({ valor: valorSaqueNumero })
@@ -187,7 +187,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
 
       {!aluno && (
         <View style={styles.viewValueCard}>
-          {/* Sprint item 30: exibe o valor estimado do fundo de receita por aula concluída. */}
+          {/* Sprint item 30 - Criar gestão financeira do instrutor. exibe o valor estimado do fundo de receita por aula concluída. */}
           <Text style={styles.viewValueLabel}>Valor estimado por view concluída</Text>
           <Text style={styles.viewValue}>{financeiro?.valor_por_view === null || financeiro?.valor_por_view === undefined ? "Aguardando aulas concluídas" : moeda(financeiro.valor_por_view)}</Text>
           <Text style={styles.viewValueHint}>Estimativa por aula concluída, usada para calcular a receita de cada curso.</Text>
@@ -223,7 +223,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
                     Vencimento: {String(fatura.data_vencimento).slice(0, 10).split("-").reverse().join("/")}
                   </Text>
                 )}
-                {/* Sprint item 34: recupera ou renova o Pix de cada fatura em aberto. */}
+                {/* Sprint item 34 - Exibir faturas em aberto. recupera ou renova o Pix de cada fatura em aberto. */}
                 <Pressable style={styles.confirmButton} onPress={() => pagarProxima(fatura.id)}>
                   <Text style={styles.payButtonText}>Pagar esta fatura</Text>
                 </Pressable>
@@ -233,7 +233,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
           </View>
 
           <View style={styles.invoiceBlock}>
-            {/* Sprint item 33: exibe o histórico de mensalidades pagas com valor e data. */}
+            {/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. exibe o histórico de mensalidades pagas com valor e data. */}
             <HistoricoFaturasAluno faturas={faturas} />
           </View>
         </View>
@@ -258,7 +258,7 @@ export default function FinanceiroScreen({ financeiro, carregando, onRefresh, to
           </View>
 
           <View style={styles.invoiceBlock}>
-            {/* Sprint item 31: exibe os cursos do instrutor em ordem decrescente de receita estimada. */}
+            {/* Sprint item 31 - Exibir cursos que mais geraram receita para o instrutor. exibe os cursos do instrutor em ordem decrescente de receita estimada. */}
             <Text style={styles.sectionTitle}>Cursos que mais geraram receita</Text>
             <Text style={styles.invoiceText}>Cursos ordenados da maior para a menor receita estimada.</Text>
             {(financeiro?.cursos_receita || []).map((curso) => (

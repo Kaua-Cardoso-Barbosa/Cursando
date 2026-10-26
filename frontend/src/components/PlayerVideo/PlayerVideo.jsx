@@ -32,7 +32,7 @@ export default function PlayerVideo({
         let desmontado = false;
 
         function salvarPosicao(forcar = false) {
-            // Sprint item 4: durante o carregamento, o elemento de vídeo ainda
+            // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. durante o carregamento, o elemento de vídeo ainda
             // pode estar em 0. Não devemos sobrescrever o segundo salvo na API.
             if (aulaConcluida || !retomadaPronta) return filaSalvamentos;
 
@@ -40,14 +40,14 @@ export default function PlayerVideo({
             if (!Number.isFinite(posicao) || posicao < 0) return filaSalvamentos;
 
             const diferenca = Math.abs(posicao - ultimaPosicaoSalva);
-            // Sprint item 4: timeupdate grava a cada segundo. Assim, fechar uma
+            // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. timeupdate grava a cada segundo. Assim, fechar uma
             // aula curta após cinco segundos não perde dez segundos de progresso.
             // Pausa, busca e saída da página sempre gravam o segundo exato.
             if (!forcar && diferenca < 1) return filaSalvamentos;
 
             ultimaPosicaoSalva = posicao;
             const idAula = videoAula.id;
-            // Sprint item 4: envia periodicamente o ponto atual para o mesmo progresso usado pelo aplicativo.
+            // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. envia periodicamente o ponto atual para o mesmo progresso usado pelo aplicativo.
             filaSalvamentos = filaSalvamentos
                 .then(() => callbacksRef.current.salvarProgresso?.(idAula, posicao))
                 .catch((erro) => console.error("Erro ao enfileirar progresso da aula:", erro));
@@ -122,14 +122,14 @@ export default function PlayerVideo({
 
         const quandoTerminar = () => {
             if (aulaConcluida) return;
-            // Sprint item 7: registra o último intervalo assistido antes de encerrar a aula.
+            // Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. registra o último intervalo assistido antes de encerrar a aula.
             salvarPosicao(true);
             aulaConcluida = true;
             const aulaAtual = callbacksRef.current.videoAula;
             filaSalvamentos.then(() => callbacksRef.current.marcarAssistida?.(aulaAtual));
         };
 
-        // Sprint item 7: grava o ponto inicial quando o aluno realmente começa a reproduzir a aula.
+        // Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. grava o ponto inicial quando o aluno realmente começa a reproduzir a aula.
         const quandoIniciar = () => {
             if (!retomadaPronta || progressoInicialRegistrado || aulaConcluida) return;
             progressoInicialRegistrado = true;
@@ -167,7 +167,7 @@ export default function PlayerVideo({
                     "Player anexado ao vídeo"
                 );
 
-                // Sprint item 4: Shaka recebe a posição ao carregar o manifesto
+                // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. Shaka recebe a posição ao carregar o manifesto
                 // e prepara os segmentos a partir desse segundo. Alterar
                 // currentTime depois do load podia deixar o player em zero.
                 await player.load(videoUrl, posicaoInicial > 0 ? posicaoInicial : null);
@@ -191,7 +191,7 @@ export default function PlayerVideo({
 
         carregarVideo();
 
-        // Sprint item 10: dificulta salvar ou arrastar o vídeo pelo menu e pelos gestos do navegador.
+        // Sprint item 10 - Bloquear captura de tela durante o curso. dificulta salvar ou arrastar o vídeo pelo menu e pelos gestos do navegador.
         const bloquearEvento = (evento) => {
             evento.preventDefault();
         };
@@ -250,7 +250,7 @@ export default function PlayerVideo({
                 disablePictureInPicture
                 onContextMenu={(evento) => evento.preventDefault()}
             />
-            {/* Sprint item 10: identifica visualmente a sessão do aluno para desencorajar a redistribuição de gravações. */}
+            {/* Sprint item 10 - Bloquear captura de tela durante o curso. identifica visualmente a sessão do aluno para desencorajar a redistribuição de gravações. */}
             {marcaDagua && <span className={css.marcaDagua} aria-hidden="true">{marcaDagua}</span>}
         </div>
     );

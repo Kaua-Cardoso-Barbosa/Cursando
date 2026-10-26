@@ -1,4 +1,4 @@
-/* Sprint item 34: destaca o estado da assinatura dentro do visual do painel do aluno. */
+/* Sprint item 34 - Exibir faturas em aberto. destaca o estado da assinatura dentro do visual do painel do aluno. */
 .resumo {
     display: flex;
     justify-content: space-between;

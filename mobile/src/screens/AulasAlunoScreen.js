@@ -21,7 +21,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
   // Exibe apenas as aulas disponibilizadas pelo detalhe do curso retornado pela API.
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
-  // Sprint item 6: agrupa as aulas por módulo também na área do aluno no aplicativo.
+  // Sprint item 6 - Permitir que o instrutor divida o curso em módulos. agrupa as aulas por módulo também na área do aluno no aplicativo.
   const modulos = detalhe?.modulos || [];
   const aulasSemModulo = aulas.filter((aula) => !aula.id_modulo);
   const materiais = detalhe?.materiais || [];
@@ -150,15 +150,15 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
           <Text style={styles.description}>{prova.questoes?.length || 0} questões · Nota de 0 a 100</Text>
           {prova.envio ? <Text style={styles.locked}>{prova.envio.status === 1 ? "Aprovado" : prova.envio.status === 2 ? "Reprovado" : "Aguardando correção"}{prova.envio.nota != null ? ` · ${prova.envio.nota} pontos · ${prova.envio.acertos} de ${prova.envio.total_questoes || prova.questoes?.length || 0} acertos` : ""}</Text> : null}
           <Pressable style={globalStyles.primaryButton} onPress={onOpenExam}><Text style={globalStyles.buttonText}>{prova.envio ? "Ver prova e resultado" : "Fazer prova"}</Text></Pressable>
-          {/* Sprint item 27: só mostra avaliação depois da conclusão do curso e da aprovação na prova final. */}
+          {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. só mostra avaliação depois da conclusão do curso e da aprovação na prova final. */}
           {prova.envio?.status === 1 ? (
             <>
-              {/* Sprint item 5: libera o PDF no app depois da conclusao e aprovacao na prova final. */}
+              {/* Sprint item 5 - Gerar certificado ao concluir o curso. libera o PDF no app depois da conclusao e aprovacao na prova final. */}
               <Pressable style={globalStyles.primaryButton} onPress={baixarCertificado} disabled={baixandoCertificado}>
                 <Text style={globalStyles.buttonText}>{baixandoCertificado ? "Preparando certificado..." : "Baixar certificado PDF"}</Text>
               </Pressable>
               <View style={[globalStyles.card, styles.materialCard]}>
-                {/* Sprint item 27: permite selecionar de zero a cinco estrelas e escrever uma avaliação após a conclusão e aprovação. */}
+                {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. permite selecionar de zero a cinco estrelas e escrever uma avaliação após a conclusão e aprovação. */}
                 <Text style={styles.materialTitle}>Avaliar curso</Text>
                 <View style={styles.ratingOptions} accessibilityRole="radiogroup" accessibilityLabel="Nota de 0 a 5 estrelas">
                   <Pressable accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === 0 }} accessibilityLabel="0 estrelas" onPress={() => setAvaliacao({ ...avaliacao, nota: 0 })} style={[styles.ratingChoice, avaliacao.nota === 0 && styles.ratingZeroSelected]}>
@@ -188,7 +188,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
         </View>
       ) : null}
 
-      {/* Sprint item 27: exibe no final da página os comentários públicos do curso antes da inscrição. */}
+      {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. exibe no final da página os comentários públicos do curso antes da inscrição. */}
       <View style={styles.reviewsSection}>
         <Text style={styles.sectionTitle}>Comentários</Text>
         {detalhe?.avaliacoes?.length ? detalhe.avaliacoes.map((avaliacao) => {
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 26
   },
-  // Sprint item 27: organiza as avaliações com foto, nome, nota e comentário no final do detalhe do curso.
+  // Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. organiza as avaliações com foto, nome, nota e comentário no final do detalhe do curso.
   reviewsSection: { gap: 12, marginTop: 28 },
   reviewCard: { padding: 14, gap: 10 },
   reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   materialCard: {
     padding: 14
   },
-  // Sprint item 27: destaca a nota selecionada entre zero e cinco estrelas.
+  // Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. destaca a nota selecionada entre zero e cinco estrelas.
   ratingOptions: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 5 },
   ratingChoice: { minWidth: 36, minHeight: 36, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border, borderRadius: 7, backgroundColor: colors.white },
   ratingZeroSelected: { borderColor: colors.darkGreen, backgroundColor: colors.darkGreen },

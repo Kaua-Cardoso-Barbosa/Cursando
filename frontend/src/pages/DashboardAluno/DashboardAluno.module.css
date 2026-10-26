@@ -412,7 +412,7 @@
     overflow-wrap: anywhere;
 }
 
-/* Sprint item 4: destaca a posicao salva para que o aluno escolha a aula a retomar. */
+/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. destaca a posicao salva para que o aluno escolha a aula a retomar. */
 .retomadaAula {
     display: inline-block;
     margin-top: 7px;
@@ -535,7 +535,7 @@
     color: #111111;
 }
 
-/* Sprint item 20: formata as respostas dissertativas e a mensagem de prazo após reprovação. */
+/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. formata as respostas dissertativas e a mensagem de prazo após reprovação. */
 .campoBusca textarea,
 .campoBusca select {
     flex: 1;
@@ -758,7 +758,7 @@
     gap: 12px;
 }
 
-/* Sprint item 21: destaca o acervo e deixa clara a ação de cada material. */
+/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. destaca o acervo e deixa clara a ação de cada material. */
 .conteudoComplementos { padding: 0; overflow: hidden; border-radius: 18px; background: #f7faf8; }
 .cabecalhoComplementos { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 25px; background: linear-gradient(115deg, #e4f4e9, #f5fbf7); }
 .cabecalhoComplementos span, .tipoMaterial { color: #087044 !important; font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
@@ -773,7 +773,7 @@
 .conteudoComplementos .cardMaterial a, .conteudoComplementos .cardMaterial button { width: fit-content; align-self: end; margin-top: auto; padding: 9px 13px; border: 0; border-radius: 9px; background: #087044; color: #fff; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
 @media (max-width: 600px) { .cabecalhoComplementos { align-items: start; flex-direction: column; } }
 
-/* Sprint item 6: permite ao aluno abrir um módulo e conferir suas aulas antes da inscrição. */
+/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos. permite ao aluno abrir um módulo e conferir suas aulas antes da inscrição. */
 .gradeModulosAluno {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -1116,7 +1116,7 @@
     }
 }
 
-/* Sprint item 9: unifica cursos, aulas, financeiro e conversa do aluno com o visual claro do painel. */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas. unifica cursos, aulas, financeiro e conversa do aluno com o visual claro do painel. */
 .painelAluno {
     background: #f5f8f6;
 }
@@ -1184,10 +1184,10 @@
 
 .secaoUltimasAulas,
 .secaoMetricas:not(.paginaFinanceiro) {
-    margin-bottom: 22px;
-    padding: 22px;
+    margin-bottom: 28px;
+    padding: clamp(18px, 2.4vw, 26px);
     border: 1px solid #dfe9e3;
-    border-radius: 19px;
+    border-radius: 18px;
     background: #ffffff;
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
 }
@@ -1211,42 +1211,52 @@
 }
 
 .gridMetricas {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
     margin: 0;
 }
 
+.paginaFinanceiro .gridMetricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .cardMetrica {
-    min-height: 142px;
-    padding: 19px;
+    min-width: 0;
+    min-height: 148px;
+    padding: 22px 23px;
     border: 1px solid #dfe9e3;
-    border-radius: 16px;
+    border-radius: 18px;
     background: #ffffff;
-    box-shadow: 0 7px 18px rgba(15, 63, 40, 0.045);
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
 }
 
 .metricaTopo h2 {
     color: #244338;
-    font-size: 0.98rem;
+    font-size: 1rem;
+    line-height: 1.35;
     font-weight: 650;
 }
 
 .iconeBadge {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
     background: #e5f5ec;
     color: #087044;
 }
 
 .metricaVariacao {
-    color: #607468;
+    color: #507363;
     font-size: 0.82rem;
+    line-height: 1.4;
+    font-weight: 500;
+    margin-bottom: 10px;
 }
 
 .metricaNumero {
     color: #123c2a;
-    font-size: clamp(1.35rem, 2vw, 1.8rem);
+    font-size: clamp(1.55rem, 2vw, 1.9rem);
+    line-height: 1.15;
     font-weight: 650;
 }
 
@@ -1288,7 +1298,7 @@
     box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
 }
 
-/* Sprint item 27: destaca as estrelas selecionadas e apresenta a opção de nota zero. */
+/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. destaca as estrelas selecionadas e apresenta a opção de nota zero. */
 .seletorEstrelas {
     display: flex;
     align-items: center;
@@ -1352,7 +1362,7 @@
     resize: vertical;
 }
 
-/* Sprint item 27: apresenta no fim do detalhe as avaliações públicas enviadas pelos alunos. */
+/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. apresenta no fim do detalhe as avaliações públicas enviadas pelos alunos. */
 .comentariosCurso {
     width: 100%;
     margin: 24px 0 0;
@@ -1700,7 +1710,7 @@
 
 .estadoVazio {
     border-color: #cad9cf;
-    border-radius: 15px;
+    border-radius: 16px;
     background: #ffffff;
     color: #607468;
 }
@@ -1767,9 +1777,20 @@
     background: #075132;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas. os indicadores do aluno seguem as mesmas quebras de quatro, duas e uma coluna do painel do professor. */
+@media (max-width: 1180px) {
+    .gridMetricas {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 860px) {
     .areaConteudo {
         padding: 22px 18px 30px;
+    }
+
+    .gridMetricas {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .cabecalhoPagina {
@@ -1792,6 +1813,11 @@
 }
 
 @media (max-width: 560px) {
+    .gridMetricas,
+    .paginaFinanceiro .gridMetricas {
+        grid-template-columns: 1fr;
+    }
+
     .cabecalhoPagina {
         padding: 21px 18px;
     }

@@ -25,7 +25,7 @@ export default function MenuLateralAdm({ itemAtivo = "inicio" }) {
                     >
                         Financeiro
                     </Link>
-                    {/* Sprint item 22: abre os relatórios gerais com filtros de período, instrutor e curso. */}
+                    {/* Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. abre os relatórios gerais com filtros de período, instrutor e curso. */}
                     <Link
                         to="/DashboardAdm/Relatorios"
                         className={`${css.linkItem} ${itemAtivo === "relatorios" ? css.ativo : ""}`}

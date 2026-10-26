@@ -1,8 +1,11 @@
-"""Rotas de cursos do aluno e progresso das aulas.
+"""cursos vistos pelo aluno.
 
-Itens 4, 7, 23, 28 e 29 da sprint. O aluno descobre cursos, abre o detalhe,
-salva a posição do vídeo e marca a aula como concluída. Posição de reprodução
-e conclusão são dados diferentes: pausar no segundo 5 não conclui a aula.
+O detalhe lista módulos públicos e registra acesso mensal único (item 9).
+Descoberta filtra categoria, tema e nota; recomendações usam assuntos dos
+cursos já inscritos. Durante a aula, o player salva o segundo de retomada e
+acumula tempo visto. A conclusão é gravada separadamente, somente ao fim;
+tempo mensal vai para a tabela de competência para relatórios (item 23).
+Pausar no segundo 5 nunca equivale a concluir a aula.
 """
 import math
 from datetime import datetime
@@ -21,12 +24,17 @@ from auditoria import garantir_gatilhos_auditoria
 @app.route("/aluno/cursos/<int:id_curso>", methods=["GET"])
 @jwt_required()
 def detalhe_curso_aluno(id_curso):
+    """Itens 6 e 9: entrega módulos públicos e conta um acesso mensal único.
+
+    O filtro de acesso evita expor aulas privadas; a visita é registrada por
+    aluno, curso e mês para não inflar a conversão por recarregar a página.
+    """
     negado = exigir_aluno()
     if negado:
         return negado
 
     id_aluno = get_jwt_identity()
-    # Sprint item 6: prepara a coluna de associacao antes de montar a previa publica dos modulos.
+    # Sprint item 6 - Permitir que o instrutor divida o curso em módulos. prepara a coluna de associacao antes de montar a previa publica dos modulos.
     from estrutura_banco import garantir_estrutura_banco
     from utilitarios_backend import registrar_evento_curso
     garantir_estrutura_banco()
@@ -44,7 +52,7 @@ def detalhe_curso_aluno(id_curso):
         if not row:
             return resposta("Curso nao encontrado.", 404)
 
-        # Sprint item 34: o catálogo continua visível, mas entrar no detalhe do curso exige mensalidade em dia.
+        # Sprint item 34 - Exibir faturas em aberto. o catálogo continua visível, mas entrar no detalhe do curso exige mensalidade em dia.
         bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
         if bloqueio:
             return bloqueio
@@ -109,7 +117,7 @@ def detalhe_curso_aluno(id_curso):
         for modulo in modulos:
             modulo["total_aulas"] = len(modulo["aulas"])
 
-        # Sprint item 27: carrega comentários públicos do curso com a foto, nome e nota de cada aluno avaliador.
+        # Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. carrega comentários públicos do curso com a foto, nome e nota de cada aluno avaliador.
         cursor.execute(
             """
             SELECT A.ID_AVALIACAO, U.NOME, U.IMAGEM_PERFIL, A.NOTA, A.COMENTARIO
@@ -144,6 +152,11 @@ def detalhe_curso_aluno(id_curso):
 @app.route("/aluno/cursos/<int:id_curso>/inscrever", methods=["POST"])
 @jwt_required()
 def inscrever_curso(id_curso):
+    """Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. cria ou reativa matrícula e registra a conversão mensal.
+
+    Acesso à assinatura e publicação do curso são conferidos primeiro. Uma
+    matrícula já ativa não conta outra inscrição no mesmo retorno à página.
+    """
     negado = exigir_aluno()
     if negado:
         return negado
@@ -168,7 +181,7 @@ def inscrever_curso(id_curso):
         if not cursor.fetchone():
             return resposta("Curso nao encontrado ou indisponivel.", 404)
 
-        # Sprint item 9: contabiliza como acesso mensal a abertura direta do fluxo de inscrição quando não houve detalhe antes.
+        # Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. contabiliza como acesso mensal a abertura direta do fluxo de inscrição quando não houve detalhe antes.
         registrar_evento_curso(cursor, id_curso, id_aluno, "ACESSO")
 
         cursor.execute(
@@ -178,6 +191,8 @@ def inscrever_curso(id_curso):
         matricula = cursor.fetchone()
 
         if matricula:
+            # Reativar preserva o progresso que já estava na matrícula;
+            # criar do zero começa com 0% de aulas concluídas.
             cursor.execute(
                 """
                 UPDATE MATRICULAS
@@ -194,6 +209,7 @@ def inscrever_curso(id_curso):
             )
 
         if not matricula or int(matricula[0] or 0) != 1:
+            # Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. só a nova matrícula (ou reativação) vira conversão.
             registrar_evento_curso(cursor, id_curso, id_aluno, "INSCRICAO")
 
         con.commit()
@@ -209,7 +225,12 @@ def inscrever_curso(id_curso):
 @app.route("/aluno/descobrir", methods=["GET"])
 @jwt_required()
 def descobrir_cursos():
-    # Sprint item 28: aplica filtros de categoria, tema e avaliação mínima de 1 a 5 estrelas na descoberta.
+    """Itens 28 e 29: filtra catálogo público e prepara recomendações.
+
+    Categoria, tema e avaliação mínima vêm da busca; recomendações usam
+    assuntos dos cursos em que o aluno já se matriculou.
+    """
+    # Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. aplica filtros de categoria, tema e avaliação mínima de 1 a 5 estrelas na descoberta.
     negado = exigir_aluno()
     if negado:
         return negado
@@ -247,7 +268,9 @@ def descobrir_cursos():
 
     recomendacoes_ativas = request.args.get("recomendados") == "1"
     if recomendacoes_ativas:
-        # Sprint item 29: recomenda cursos públicos com categorias ou temas dos cursos do aluno.
+        # Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno. recomenda cursos públicos com categorias ou temas dos cursos do aluno.
+        # EXISTS exige assunto em comum; NOT EXISTS exclui cursos nos quais
+        # ele já está matriculado, evitando recomendar o que já consome.
         filtros.append(
             """
             AND EXISTS (
@@ -289,7 +312,7 @@ def descobrir_cursos():
         "populares": "(SELECT COUNT(*) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1) DESC, C.CRIADO_EM DESC, C.ID_CURSO DESC",
     }
     if recomendacoes_ativas:
-        # Sprint item 29: prioriza categorias e temas que aparecem em mais cursos inscritos.
+        # Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno. prioriza categorias e temas que aparecem em mais cursos inscritos.
         ordenacao = """
             (
                 COALESCE((SELECT COUNT(DISTINCT MR.ID_CURSO) FROM MATRICULAS MR
@@ -328,8 +351,14 @@ def descobrir_cursos():
 
 
 
-# Sprint item 7: persistência do progresso das aulas do aluno.
+# Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. persistência do progresso das aulas do aluno.
 def garantir_tabela_progresso(con):
+    """Itens 4, 7, 23 e 28: prepara tabelas antes das rotas de aula e busca.
+
+    PROGRESSO_REPRODUCAO guarda o segundo de retomada; PROGRESSO_AULAS guarda
+    a conclusão. TEMPO_ASSISTIDO_AULAS acumula duração total e a versão MENSAL
+    conserva a competência do relatório. São medidas com usos distintos.
+    """
     cursor = con.cursor()
 
     try:
@@ -366,7 +395,7 @@ def garantir_tabela_progresso(con):
             """
         )
         if not cursor.fetchone():
-            # Sprint item 4: guarda a posicao de reproducao separada da conclusao da aula.
+            # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. guarda a posicao de reproducao separada da conclusao da aula.
             cursor.execute(
                 """
                 CREATE TABLE PROGRESSO_REPRODUCAO (
@@ -379,7 +408,7 @@ def garantir_tabela_progresso(con):
                 """
             )
 
-        # Sprint item 7: acumula o tempo de reprodução confirmado pelos avanços do player.
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. acumula o tempo de reprodução confirmado pelos avanços do player.
         cursor.execute(
             """
             SELECT 1
@@ -399,7 +428,7 @@ def garantir_tabela_progresso(con):
                 """
             )
 
-        # Sprint item 23: guarda segundos assistidos por mês para que os relatórios preservem a distribuição mensal.
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas. guarda segundos assistidos por mês para que os relatórios preservem a distribuição mensal.
         cursor.execute(
             """
             SELECT 1 FROM RDB$RELATIONS
@@ -462,14 +491,20 @@ def garantir_tabela_progresso(con):
         cursor.close()
 
 
-# Sprint item 4: salva a posição atual sem concluir a aula. O player manda
+# Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. salva a posição atual sem concluir a aula. O player manda
 # segundos pela API durante a reprodução e ao pausar; a linha é identificada
 # por aluno e vídeo. A consulta da aula lê essa mesma linha para retomar.
-# Sprint itens 7 e 23: o avanço real do player também alimenta o tempo total
+# o avanço real do player também alimenta o tempo total
 # assistido e a competência mensal usada nos relatórios do professor.
 @app.route("/aluno/aulas/<int:id_aula>/progresso", methods=["PUT"])
 @jwt_required()
 def salvar_progresso_aula(id_aula):
+    """Itens 4, 7 e 23: grava segundo de retomada e tempo efetivo assistido.
+
+    Valida matrícula e segundo recebido, compara com a posição anterior e
+    limita saltos ao tempo transcorrido. A posição é salva por aluno e vídeo;
+    o tempo também alimenta o mês atual, sem marcar a aula como concluída.
+    """
     negado = exigir_aluno()
     if negado:
         return negado
@@ -511,7 +546,7 @@ def salvar_progresso_aula(id_aula):
         if not cursor.fetchone():
             return resposta("Aula nao encontrada para seus cursos.", 404)
 
-        # Sprint item 7: estima tempo assistido pelo avanço do player e limita saltos ao tempo real transcorrido.
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. estima tempo assistido pelo avanço do player e limita saltos ao tempo real transcorrido.
         cursor.execute(
             """
             SELECT POSICAO_SEGUNDOS,
@@ -525,6 +560,9 @@ def salvar_progresso_aula(id_aula):
         if progresso_anterior:
             posicao_anterior = float(progresso_anterior[0] or 0)
             segundos_transcorridos = max(0, float(progresso_anterior[1] or 0) / 1000)
+            # Um salto de 5 para 300 segundos deve retomar em 300, mas não
+            # prova que 295 segundos foram assistidos. Para a métrica, contamos
+            # no máximo o tempo real desde a última atualização do player.
             segundos_novos = min(max(0.0, posicao - posicao_anterior), segundos_transcorridos)
             if segundos_novos > 0:
                 cursor.execute(
@@ -543,7 +581,7 @@ def salvar_progresso_aula(id_aula):
                         """,
                         (id_aluno, id_aula, segundos_novos),
                     )
-                # Sprint item 23: registra o mesmo tempo na competência mensal para relatórios mensais do instrutor.
+                # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas. registra o mesmo tempo na competência mensal para relatórios mensais do instrutor.
                 mes_referencia = datetime.now().date().replace(day=1)
                 cursor.execute(
                     """
@@ -563,7 +601,9 @@ def salvar_progresso_aula(id_aula):
                         (id_aluno, id_aula, mes_referencia, segundos_novos),
                     )
 
-        # Sprint item 4: app e site gravam a posição na mesma tabela e retomam do valor mais recente.
+        # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. app e site gravam a posição na mesma tabela e retomam do valor mais recente.
+        # UPDATE OR INSERT é o "upsert" do Firebird: atualiza a linha do par
+        # aluno/vídeo se existir; caso contrário cria a primeira posição.
         cursor.execute(
             """
             UPDATE OR INSERT INTO PROGRESSO_REPRODUCAO (
@@ -588,6 +628,11 @@ def salvar_progresso_aula(id_aula):
 @app.route("/aluno/aulas/<int:id_aula>/assistir", methods=["POST"])
 @jwt_required()
 def marcar_aula_assistida(id_aula):
+    """Itens 4 e 7: conclui uma aula e recalcula o progresso da matrícula.
+
+    ``UPDATE OR INSERT`` cria ou atualiza a conclusão; remover a posição salva
+    evita retomar no final do vídeo. A porcentagem usa aulas publicadas.
+    """
     negado = exigir_aluno()
     if negado:
         return negado
@@ -625,7 +670,7 @@ def marcar_aula_assistida(id_aula):
             """,
             (id_aluno, id_aula),
         )
-        # Sprint item 4: remove o ponto salvo ao concluir para evitar uma retomada quase no fim.
+        # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. remove o ponto salvo ao concluir para evitar uma retomada quase no fim.
         cursor.execute(
             "DELETE FROM PROGRESSO_REPRODUCAO WHERE ID_USUARIO = ? AND ID_VIDEO = ?",
             (id_aluno, id_aula),

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FaPaperPlane, FaUserCircle } from "react-icons/fa";
 import css from "./ChatCurso.module.css";
 
-export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
+export default function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null }) {
     const [conversas, setConversas] = useState([]);
-    const [selecionada, setSelecionada] = useState(null);
+    const [selecionada, setSelecionada] = useState(conversaInicial);
     const [mensagens, setMensagens] = useState([]);
     const [texto, setTexto] = useState("");
     const [carregando, setCarregando] = useState(false);
@@ -12,8 +12,14 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
     const mensagensRef = useRef(null);
     const textoRef = useRef(null);
     const enviandoRef = useRef(false);
+    // Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. a conversa escolhida na lista de alunos aparece somente
+    // nesta visita até o professor enviar a primeira mensagem.
+    const conversasVisiveis = selecionada && !conversas.some((conversa) =>
+        Number(conversa.id_curso) === Number(selecionada.id_curso) &&
+        Number(conversa.id_aluno) === Number(selecionada.id_aluno)
+    ) ? [selecionada, ...conversas] : conversas;
 
-    // Sprint item 19: resolve a foto de perfil da conversa usando a mesma origem da API.
+    // Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. resolve a foto de perfil da conversa usando a mesma origem da API.
     function urlImagem(caminho) {
         if (!caminho) return "";
         if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) return caminho;
@@ -140,8 +146,8 @@ export default function ChatCurso({ api, perfil = "aluno", setMensagem }) {
             <div className={css.layout}>
                 <aside className={css.listaConversas}>
                     {carregando && <p className={css.estado}>Carregando conversas...</p>}
-                    {!carregando && conversas.length === 0 && <p className={css.estado}>Nenhuma conversa disponível.</p>}
-                    {conversas.map((conversa) => {
+                    {!carregando && conversasVisiveis.length === 0 && <p className={css.estado}>{perfil === "professor" ? "Nenhuma conversa ainda. Abra os alunos de um curso para iniciar." : "Nenhuma conversa disponível."}</p>}
+                    {conversasVisiveis.map((conversa) => {
                         const ativo = selecionada?.id_curso === conversa.id_curso && selecionada?.id_aluno === conversa.id_aluno;
                         return (
                             <button

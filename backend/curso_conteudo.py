@@ -1,8 +1,11 @@
-"""Conteúdo do professor: módulos, aulas, categorias e complementos.
+"""conteúdo e publicação do professor.
 
-Itens 6, 21 e 28 da sprint. As rotas de alteração confirmam que o professor
-pertence ao curso. Os arquivos dos complementos são privados;
-alunos matriculados com assinatura ativa recebem o download pela API.
+Antes de editar, criar ou excluir, cada rota verifica se o professor pertence
+ao curso. Módulos organizam aulas; categorias e temas classificam o catálogo.
+Complementos aceitam link ou arquivo, mas arquivo privado só é entregue pela
+API após conferir matrícula e assinatura. Ao publicar um curso, a prova final
+precisa estar pronta; depois do ``commit``, alunos elegíveis recebem o aviso
+por e-mail. ``commit`` grava a operação e ``rollback`` a desfaz se houver erro.
 """
 
 import mimetypes
@@ -26,6 +29,11 @@ from utilitarios_backend import _aluno_matriculado, _bloqueio_assinatura_aluno, 
 @app.route("/professor/cursos/<int:id_curso>/modulos", methods=["GET", "POST"])
 @jwt_required()
 def modulos_professor(id_curso):
+    """Sprint item 6 - Permitir que o instrutor divida o curso em módulos. GET lista módulos; POST valida e cria um módulo do próprio curso.
+
+    A consulta de vínculo evita que um professor altere curso alheio. A ordem
+    organiza a exibição e a capa enviada é salva antes de gravar seu caminho.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -48,6 +56,8 @@ def modulos_professor(id_curso):
             return resposta("Curso nao encontrado.", 404)
 
         if request.method == "GET":
+            # Sprint item 6 - Permitir que o instrutor divida o curso em módulos. a ordenação ORDEM, ID_MODULO estabiliza a sequência de
+            # cartões, e a subconsulta informa quantas aulas há em cada um.
             cursor.execute(
                 """
                 SELECT M.ID_MODULO, M.ID_CURSO, M.TITULO, M.DESCRICAO, M.IMAGEM_URL, M.ORDEM,
@@ -92,7 +102,9 @@ def modulos_professor(id_curso):
             return resposta(str(erro), 400)
 
         id_modulo = proximo_id(cursor, "MODULOS_CURSO", "ID_MODULO")
-        # Sprint item 6: cadastra modulos para organizar aulas dentro do curso.
+        # Sprint item 6 - Permitir que o instrutor divida o curso em módulos. cadastra modulos para organizar aulas dentro do curso.
+        # STATUS_PUBLICADO torna o módulo visível na estrutura do curso; as
+        # aulas ainda precisam cumprir as próprias regras de publicação.
         cursor.execute(
             """
             INSERT INTO MODULOS_CURSO (ID_MODULO, ID_CURSO, TITULO, DESCRICAO, IMAGEM_URL, ORDEM, STATUS)
@@ -110,10 +122,15 @@ def modulos_professor(id_curso):
         con.close()
 
 
-# Sprint item 21: autoriza o instrutor do curso a publicar links e arquivos privados como complementos.
+# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. autoriza o instrutor do curso a publicar links e arquivos privados como complementos.
 @app.route("/professor/cursos/<int:id_curso>/materiais", methods=["GET", "POST"])
 @jwt_required()
 def materiais_professor(id_curso):
+    """Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. GET mostra complementos; POST recebe link ou arquivo privado.
+
+    O arquivo fica fora do acesso público direto. No banco guardamos a
+    referência, para que o download passe pela verificação de acesso da API.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -162,6 +179,8 @@ def materiais_professor(id_curso):
             return resposta("Informe um titulo e um tipo valido para o complemento.", 400)
 
         if arquivo and arquivo.filename:
+            # Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. se vier um upload, validamos extensão e geramos um nome
+            # interno aleatório. O nome original serve só para exibir/download.
             extensao = arquivo.filename.rsplit(".", 1)[-1].lower() if "." in arquivo.filename else ""
             extensoes_permitidas = {"pdf", "epub", "mobi", "doc", "docx", "odt", "txt", "rtf", "zip", "rar", "7z", "py", "js", "java", "html", "css", "csv", "xlsx", "pptx"}
             if extensao not in extensoes_permitidas:
@@ -172,12 +191,14 @@ def materiais_professor(id_curso):
             nome_seguro = f"{uuid4().hex}.{extensao}"
             caminho_arquivo = os.path.join(pasta, nome_seguro)
             arquivo.save(caminho_arquivo)
+            # O prefixo privado: é uma referência para a API localizar o
+            # arquivo; não é um endereço público que ignore as permissões.
             url = f"privado:{nome_seguro}"
         elif not (url.startswith("https://") or url.startswith("http://")):
             return resposta("Informe um link HTTP/HTTPS ou envie um arquivo.", 400)
 
         id_material = proximo_id(cursor, "MATERIAIS_CURSO", "ID_MATERIAL")
-        # Sprint item 21: mantém os arquivos em diretório privado para exigir matrícula antes do download.
+        # Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. mantém os arquivos em diretório privado para exigir matrícula antes do download.
         cursor.execute(
             """
             INSERT INTO MATERIAIS_CURSO (ID_MATERIAL, ID_CURSO, TITULO, TIPO, URL, DESCRICAO, NOME_ARQUIVO)
@@ -189,6 +210,8 @@ def materiais_professor(id_curso):
         return resposta("Material cadastrado com sucesso.", 201, "sucesso", id_material=id_material)
     except Exception as erro:
         con.rollback()
+        # O arquivo foi salvo antes do INSERT. Se o banco falhar, remover o
+        # upload impede um arquivo órfão sem material correspondente.
         if caminho_arquivo and os.path.exists(caminho_arquivo):
             os.remove(caminho_arquivo)
         return resposta(f"Erro ao processar materiais: {erro}", 500)
@@ -198,10 +221,15 @@ def materiais_professor(id_curso):
 
 
 
-# Sprint item 21: exibe os dados na prévia, mas só revela links e arquivos para aluno matriculado.
+# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. exibe os dados na prévia, mas só revela links e arquivos para aluno matriculado.
 @app.route("/aluno/cursos/<int:id_curso>/materiais", methods=["GET"])
 @jwt_required()
 def materiais_aluno(id_curso):
+    """Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. mostra a prévia e só revela o destino com acesso autorizado.
+
+    Matrícula e assinatura são conferidas no servidor, inclusive quando a
+    interface chama esta rota sem passar pela página do curso.
+    """
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -222,6 +250,8 @@ def materiais_aluno(id_curso):
             (id_curso, get_jwt_identity()),
         )
         matriculado = bool(cursor.fetchone()[0])
+        # A prévia da lista existe sem matrícula. Só quem está matriculado e
+        # com assinatura ativa recebe o link ou pode baixar o arquivo.
         if matriculado:
             bloqueio = _bloqueio_assinatura_aluno(cursor, int(get_jwt_identity()))
             if bloqueio:
@@ -301,7 +331,7 @@ def editar_modulo_professor(id_curso, id_modulo):
         if cursor.rowcount == 0:
             return resposta("Modulo nao encontrado.", 404)
         con.commit()
-        # Sprint item 6: permite atualizar dados e imagem de um modulo.
+        # Sprint item 6 - Permitir que o instrutor divida o curso em módulos. permite atualizar dados e imagem de um modulo.
         return resposta("Modulo atualizado com sucesso.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -393,7 +423,7 @@ def excluir_modulo_professor(id_curso, id_modulo):
 
 
 
-# Sprint item 21: permite ao instrutor remover apenas complementos do próprio curso e apaga uploads privados.
+# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. permite ao instrutor remover apenas complementos do próprio curso e apaga uploads privados.
 @app.route("/professor/cursos/<int:id_curso>/materiais/<int:id_material>", methods=["DELETE"])
 @jwt_required()
 def excluir_material_professor(id_curso, id_material):
@@ -431,10 +461,15 @@ def excluir_material_professor(id_curso, id_material):
 
 
 
-# Sprint item 21: serve arquivos complementares privados apenas a alunos matriculados com assinatura ativa.
+# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. serve arquivos complementares privados apenas a alunos matriculados com assinatura ativa.
 @app.route("/aluno/cursos/<int:id_curso>/materiais/<int:id_material>/arquivo", methods=["GET"])
 @jwt_required()
 def baixar_material_aluno(id_curso, id_material):
+    """Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. envia arquivo privado depois de conferir aluno e material.
+
+    ``basename`` reduz o caminho salvo ao nome do arquivo; a rota monta o
+    diretório privado no servidor e responde com ``send_file``.
+    """
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -469,12 +504,19 @@ def baixar_material_aluno(id_curso, id_material):
 @app.route("/taxonomias/<string:tipo>", methods=["GET", "POST"])
 @jwt_required()
 def taxonomias(tipo):
+    """Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. lista ou cadastra categorias e temas sem nomes duplicados.
+
+    Normalização ignora diferenças de caixa e espaços; assim uma mesma
+    categoria não aparece duas vezes na busca dos cursos.
+    """
     if tipo not in {"categorias", "temas"}:
         return resposta("Tipo de taxonomia invalido.", 400)
 
     garantir_estrutura_banco()
     tabela = "CATEGORIAS_CURSO" if tipo == "categorias" else "TEMAS_CURSO"
     coluna = "ID_CATEGORIA" if tipo == "categorias" else "ID_TEMA"
+    # Estes nomes vêm de uma escolha fechada acima. Valores digitados pelo
+    # usuário nunca são interpolados como nome de tabela ou coluna SQL.
     con = get_db()
     cursor = con.cursor()
 
@@ -490,11 +532,13 @@ def taxonomias(tipo):
         nome = (request.get_json() or {}).get("nome") or ""
         nome = nome.strip()
         normalizado = normalizar_taxonomia(nome)
+        # Guardamos o nome para exibição e a forma normalizada para impedir
+        # que diferenças de maiúsculas ou espaços criem o mesmo tema duas vezes.
 
         if not normalizado:
             return resposta("Nome e obrigatorio.", 400)
 
-        # Sprint item 28: rejeita nomes já cadastrados sem diferenciar maiúsculas de minúsculas.
+        # Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. rejeita nomes já cadastrados sem diferenciar maiúsculas de minúsculas.
         cursor.execute(f"SELECT {coluna}, NOME FROM {tabela} WHERE NOME_NORMALIZADO = ?", (normalizado,))
         existente = cursor.fetchone()
         if existente:
@@ -520,6 +564,11 @@ def taxonomias(tipo):
 @app.route("/professor/cursos/<int:id_curso>/taxonomia", methods=["GET", "PUT"])
 @jwt_required()
 def taxonomia_curso_professor(id_curso):
+    """Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. lê ou atualiza os vínculos de categoria/tema de um curso.
+
+    A API confirma que os IDs escolhidos existem e que o curso pertence ao
+    professor antes de gravar a classificação usada na pesquisa do aluno.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -561,6 +610,8 @@ def taxonomia_curso_professor(id_curso):
         ):
             if valor_id in (None, ""):
                 continue
+            # O professor escolhe IDs da lista. Validá-los no banco impede
+            # associar o curso a categoria ou tema que não existe.
             try:
                 valor_id = int(valor_id)
             except (TypeError, ValueError):
@@ -573,7 +624,7 @@ def taxonomia_curso_professor(id_curso):
             else:
                 id_tema = valor_id
 
-        # Sprint item 28: associa ao curso somente categorias e temas existentes.
+        # Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. associa ao curso somente categorias e temas existentes.
         cursor.execute(
             """
             UPDATE OR INSERT INTO CURSO_TAXONOMIA (ID_CURSO, ID_CATEGORIA, ID_TEMA)
@@ -592,15 +643,20 @@ def taxonomia_curso_professor(id_curso):
         con.close()
 
 
-# Sprint item 6: cadastro de aulas e vínculo com módulos.
+# Sprint item 6 - Permitir que o instrutor divida o curso em módulos. cadastro de aulas e vínculo com módulos.
 @app.route("/professor/cursos/<int:id_curso>/aulas", methods=["POST"])
 @jwt_required()
 def criar_aula_professor(id_curso):
+    """Sprint item 6 - Permitir que o instrutor divida o curso em módulos. cria aula no módulo escolhido de um curso do professor.
+
+    Confere vínculo com o curso, módulo escolhido e arquivo antes de gravar.
+    O curso é publicado em outra rota, após ter uma prova pronta.
+    """
     negado = exigir_professor()
     if negado:
         return negado
 
-    # Sprint item 6: valida e grava a aula somente no módulo escolhido pelo instrutor.
+    # Sprint item 6 - Permitir que o instrutor divida o curso em módulos. valida e grava a aula somente no módulo escolhido pelo instrutor.
     from estrutura_banco import garantir_estrutura_banco
     garantir_estrutura_banco()
 
@@ -724,7 +780,7 @@ def mover_aula_para_modulo(id_aula):
         else:
             cursor.execute("UPDATE VIDEOS SET ID_MODULO = ?, STATUS = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_VIDEO = ?", (id_modulo, modulo[0], id_aula))
         con.commit()
-        # Sprint item 6: permite incluir aulas antigas em um dos módulos criados pelo instrutor.
+        # Sprint item 6 - Permitir que o instrutor divida o curso em módulos. permite incluir aulas antigas em um dos módulos criados pelo instrutor.
         return resposta_professor("Aula movida para o modulo.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -733,10 +789,17 @@ def mover_aula_para_modulo(id_aula):
         cursor.close()
         con.close()
 
-# Sprint item 7: publicação e arquivamento de cursos.
+# publicação/arquivamento do curso; a publicação exige
+# prova pronta e só envia o e-mail depois de confirmar a mudança no banco.
 @app.route("/professor/cursos/<int:id_curso>/status", methods=["PATCH"])
 @jwt_required()
 def alterar_status_curso(id_curso):
+    """Itens 11 e 20: publica ou arquiva um curso do professor.
+
+    Ao publicar, exige prova publicada, busca destinatários com matrícula ativa
+    em outros cursos e confirma a mudança no banco. Só depois envia os e-mails;
+    uma falha de SMTP não desfaz a publicação já confirmada.
+    """
     negado = exigir_professor()
     if negado:
         return negado
@@ -768,7 +831,7 @@ def alterar_status_curso(id_curso):
         status_anterior, titulo_curso = curso_atual
 
         if status == STATUS_PUBLICADO:
-            # Sprint item 20: só libera o status público se a prova final do curso já estiver publicada.
+            # Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. só libera o status público se a prova final do curso já estiver publicada.
             try:
                 cursor.execute(
                     """
@@ -783,7 +846,7 @@ def alterar_status_curso(id_curso):
             except Exception:
                 return resposta_professor("Cadastre e publique uma prova antes de publicar o curso.", 400)
 
-        # Sprint item 11: seleciona uma única vez os alunos ativos dos outros cursos do instrutor ao publicar um curso novo.
+        # Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado. seleciona uma única vez os alunos ativos dos outros cursos do instrutor ao publicar um curso novo.
         destinatarios = []
         if status == STATUS_PUBLICADO and status_anterior != STATUS_PUBLICADO:
             cursor.execute(
@@ -817,7 +880,7 @@ def alterar_status_curso(id_curso):
         )
         con.commit()
         if status == STATUS_PUBLICADO and status_anterior != STATUS_PUBLICADO:
-            # Sprint item 11: envia o aviso depois do commit, sem deixar falhas SMTP reverterem a publicação.
+            # Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado. envia o aviso depois do commit, sem deixar falhas SMTP reverterem a publicação.
             from chat_cursos import notificar_alunos_novo_curso
             notificar_alunos_novo_curso(destinatarios, titulo_curso)
         return resposta_professor(f"Curso definido como {STATUS_NOMES[status]}.", 200, "sucesso")

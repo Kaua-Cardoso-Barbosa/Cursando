@@ -124,7 +124,7 @@
     }
 }
 
-/* Sprint item 9: transforma o perfil compartilhado em um formulário alinhado aos três painéis. */
+/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. transforma o perfil compartilhado em um formulário alinhado aos três painéis. */
 .perfil {
     align-items: flex-start;
 }

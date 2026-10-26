@@ -28,7 +28,7 @@ function formatarJson(valor) {
   }
 }
 
-// Sprint item 24: mostra logs por perfil no app e permite filtrar, buscar e abrir detalhes.
+// Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. mostra logs por perfil no app e permite filtrar, buscar e abrir detalhes.
 export default function LogsAdminScreen({ token, onError }) {
   const onErrorRef = useRef(onError);
   const [perfil, setPerfil] = useState("0");
@@ -49,7 +49,7 @@ export default function LogsAdminScreen({ token, onError }) {
       const params = new URLSearchParams({ tipo: perfil, limite: "100", offset: String(offset) });
       if (evento) params.set("evento", evento);
       if (busca.trim()) params.set("busca", busca.trim());
-      // Sprint item 25: envia o período escolhido para restringir os logs exibidos ao administrador.
+      // Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. envia o período escolhido para restringir os logs exibidos ao administrador.
       if (inicio) params.set("inicio", inicio);
       if (fim) params.set("fim", fim);
       const dados = await apiRequest(`/admin/logs-gravacao?${params.toString()}`, {}, token);
@@ -76,9 +76,9 @@ export default function LogsAdminScreen({ token, onError }) {
           </Pressable>
         ))}
       </ScrollView>
-      {/* Sprint item 25: localiza logs pelo nome ou e-mail do usuário que realizou a ação. */}
+      {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. localiza logs pelo nome ou e-mail do usuário que realizou a ação. */}
       <TextInput value={busca} onChangeText={setBusca} placeholder="Buscar nome, email ou acao" placeholderTextColor={colors.textMuted} style={styles.search} />
-      {/* Sprint item 25: oferece filtros de data para consultar logs do período desejado. */}
+      {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. oferece filtros de data para consultar logs do período desejado. */}
       <View style={styles.dateFilters}>
         <TextInput value={inicio} onChangeText={setInicio} placeholder="Data inicial (AAAA-MM-DD)" placeholderTextColor={colors.textMuted} style={[styles.search, styles.dateInput]} />
         <TextInput value={fim} onChangeText={setFim} placeholder="Data final (AAAA-MM-DD)" placeholderTextColor={colors.textMuted} style={[styles.search, styles.dateInput]} />

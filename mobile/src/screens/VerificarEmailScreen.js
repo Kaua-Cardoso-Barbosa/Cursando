@@ -32,7 +32,7 @@ export default function VerificarEmailScreen({ email, codigoEnviado, onVerified 
     setCarregando(true);
     setErro("");
     try {
-      // Sprint item 1: confirma no app o código do cadastro criado pelo mesmo endpoint usado no site.
+      // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. confirma no app o código do cadastro criado pelo mesmo endpoint usado no site.
       const dados = await apiRequest("/verificar_email_cadastro", {
         method: "POST",
         body: JSON.stringify({ email: emailAtual, codigo: codigo.trim() })
@@ -50,7 +50,7 @@ export default function VerificarEmailScreen({ email, codigoEnviado, onVerified 
     setErro("");
     setMensagem("");
     try {
-      // Sprint item 1: solicita outro código no fluxo de verificação do cadastro móvel.
+      // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. solicita outro código no fluxo de verificação do cadastro móvel.
       const dados = await apiRequest("/reenviar_codigo_cadastro", {
         method: "POST",
         body: JSON.stringify({ email: emailAtual })
@@ -67,7 +67,7 @@ export default function VerificarEmailScreen({ email, codigoEnviado, onVerified 
     try {
       const dados = await apiRequest("/corrigir_email_cadastro", {
         method: "POST",
-        // Sprint item 1: normaliza o novo endereço como no site e remove ponto acidental ao final.
+        // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. normaliza o novo endereço como no site e remove ponto acidental ao final.
         body: JSON.stringify({ email_atual: emailAtual, novo_email: novoEmail.trim().toLowerCase().replace(/\.+$/, ""), senha })
       });
       setEmailAtual(dados.email);

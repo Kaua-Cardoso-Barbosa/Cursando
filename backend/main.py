@@ -1,3 +1,10 @@
+"""Ponto de entrada da API: registra autenticação e rotas de cada sprint.
+
+Os imports dos módulos carregam seus ``@app.route`` no Flask. Site e app
+chamam essas mesmas rotas; a regra de acesso fica no servidor. O endpoint de
+diagnóstico da Arkhé (item 1) só responde a administradores autenticados.
+"""
+
 from flask import Flask, jsonify, request
 from app import app
 from flask_cors import CORS
@@ -38,7 +45,7 @@ print("\nROTAS REGISTRADAS ANTES DA ROTA ARKHÉ:")
 for regra in app.url_map.iter_rules():
     print(regra, "->", regra.endpoint)
 
-# Sprint item 1: deixa o diagnóstico ARKHÉ restrito a administradores e não retorna dados bancários.
+# Sprint item 2 - Integrar pagamentos pelo ARKHE. deixa o diagnóstico ARKHÉ restrito a administradores e não retorna dados bancários.
 @app.route("/rodar-teste-arkhe", methods=["GET"])
 @jwt_required()
 def rodar_teste_arkhe():

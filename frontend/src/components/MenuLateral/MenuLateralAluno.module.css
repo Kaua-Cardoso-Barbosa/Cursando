@@ -61,7 +61,7 @@
     color: #ffffff;
 }
 
-/* Sprint item 7: adapta o menu do aluno para navegacao horizontal em telas pequenas. */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas. adapta o menu do aluno para navegacao horizontal em telas pequenas. */
 @media (max-width: 860px) {
     .menuLateral {
         width: 100%;
@@ -90,7 +90,7 @@
     }
 }
 
-/* Sprint item 9: refina navegação lateral e item ativo mantendo o verde institucional e o contraste. */
+/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. refina navegação lateral e item ativo mantendo o verde institucional e o contraste. */
 .menuLateral {
     background: linear-gradient(180deg, #075132 0%, #06472f 100%);
     box-shadow: 8px 0 24px rgba(15, 63, 40, 0.08);

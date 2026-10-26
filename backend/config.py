@@ -1,3 +1,10 @@
+"""Configuração lida do .env ao iniciar o backend.
+
+Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado. DB_NAME aponta para o banco principal e DB_LOG_NAME para o
+banco separado de auditoria. Trocar os caminhos seleciona o par de bancos;
+as funções de conexão usam esses valores sem alterar as rotas.
+"""
+
 import os
 from datetime import timedelta
 

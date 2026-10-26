@@ -1,0 +1,40 @@
+1. Implementar cadastro de alunos pelo aplicativo.
+2. Integrar pagamentos pelo ARKHE.
+3. Sincronizar dados entre aplicativo e sistema web.
+4. Salvar o progresso das aulas para que o aluno continue de onde parou.
+5. Gerar certificado ao concluir o curso.
+6. Permitir que o instrutor divida o curso em módulos.
+7. Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas.
+8. Criar dashboard com gráficos para administrador e instrutor.
+9. Exibir acessos aos cursos, compras realizadas e taxa de conversão.
+10. Bloquear captura de tela durante o curso.
+11. Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado.
+12. Exibir valores recebidos, disponíveis para saque e já sacados pelo instrutor.
+13. Criar gestão financeira do sistema.
+14. Exibir total arrecadado e total repassado aos instrutores.
+15. Exibir saldo disponível em caixa. (Esse é tanto para adm e instrutor, para o instrutor ele vai apenas mostrar o saldo bruto que ele pode sacar, para o adm, como o professor recebe uma comissão em porcentagem para cada aula que o aluno viu do curso dele, altere o valor da assinatura para 500 e para mostrar o saldo do adm, deve descontar as comissão e ai mostrar quanto vai sobrar para saque)
+16. Exibir indicadores da saúde financeira da empresa.
+17. Integrar o aplicativo com a API.
+18. Integrar recursos nativos: biometria, câmera, vibração e notificações.
+19. Implementar chat entre instrutor e aluno no aplicativo e no sistema web.
+20. Permitir que o instrutor cadastre provas para validar a conclusão do curso.
+21. Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos.
+22. Criar relatórios com filtros por período, instrutor e curso.
+23. Exibir relatórios de alunos, cursos, módulos e horas assistidas.
+24. Registrar as ações realizadas pelos usuários no sistema.
+25. Permitir acesso e relatórios dos logs somente para o administrador por data e usuário.
+26. Bloquear gravação de tela durante o curso.
+27. Permitir que o aluno avalie o curso após a conclusão.
+28. Permitir filtro de cursos por tema, categoria e avaliação.
+29. Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno.
+30. Criar gestão financeira do instrutor.
+31. Exibir cursos que mais geraram receita para o instrutor.
+32. Permitir solicitação de saque para a conta ARKHE.
+33. Exibir total gasto e histórico de faturas do aluno.
+34. Exibir faturas em aberto.
+35. Calcular ticket médio por aluno.
+36. Permitir cadastro e acompanhamento dos custos da plataforma.
+37. Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado.
+38. Tornar todas as telas do sistema web responsivas.
+39. Desenvolver todas as telas do aplicativo.
+40. Explicar o funcionamento de cada item desenvolvido.

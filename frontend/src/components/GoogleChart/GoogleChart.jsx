@@ -3,7 +3,7 @@ import css from "./GoogleChart.module.css";
 
 let carregadorGoogleCharts;
 
-// Sprint item 8: carrega uma única vez o Google Charts e compartilha a biblioteca entre os painéis.
+// Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. carrega uma única vez o Google Charts e compartilha a biblioteca entre os painéis.
 function carregarGoogleCharts() {
     if (window.google?.visualization) return Promise.resolve(window.google);
 
@@ -43,7 +43,7 @@ export default function GoogleChart({ data, options, titulo }) {
         let grafico;
         let googleCarregado;
 
-        // Sprint item 8: desenha o gráfico com a largura real do contêiner e o atualiza ao redimensionar a página web.
+        // Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. desenha o gráfico com a largura real do contêiner e o atualiza ao redimensionar a página web.
         const desenharGrafico = async () => {
             try {
                 googleCarregado = googleCarregado || await carregarGoogleCharts();
@@ -69,7 +69,7 @@ export default function GoogleChart({ data, options, titulo }) {
         };
 
         desenharGrafico();
-        // Sprint item 8: observa a área do gráfico para acompanhar telas estreitas e mudanças de orientação no site mobile.
+        // Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. observa a área do gráfico para acompanhar telas estreitas e mudanças de orientação no site mobile.
         const observadorTamanho = typeof ResizeObserver === "undefined"
             ? null
             : new ResizeObserver(desenharGrafico);

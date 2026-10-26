@@ -45,7 +45,7 @@ def proximo_id(cursor, tabela, coluna):
 
 
 def _decodificar_respostas_prova(valor):
-    """Sprint item 20: lê apenas respostas JSON da prova atual."""
+    """Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. lê apenas respostas JSON da prova atual."""
     texto = de_blob_texto(valor)
     if not texto:
         return {}
@@ -70,7 +70,11 @@ def _decodificar_alternativas(valor):
 
 
 def registrar_evento_curso(cursor, id_curso, id_usuario, tipo_evento):
-    # Sprint item 9: registra uma visita ou inscrição uma vez por aluno, curso e mês para manter taxas mensais consistentes.
+    """Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. conta acesso ou inscrição uma vez por aluno, curso e mês.
+
+    O primeiro dia identifica a competência mensal. Se o evento já existe,
+    devolve False; quem chamou decide quando confirmar a transação.
+    """
     mes_referencia = datetime.now().date().replace(day=1)
     cursor.execute(
         """
@@ -108,6 +112,11 @@ def percentual_instrutores(cursor):
 
 
 def pesos_pool_instrutores(cursor):
+    """Itens 14 e 30: pesa instrutores por aulas concluídas no fundo de receita.
+
+    Enquanto não houver nenhuma conclusão, usa matrículas ativas para que o
+    valor estimado ainda possa ser apresentado no painel.
+    """
     cursor.execute(
         """
         SELECT
@@ -141,8 +150,11 @@ def pesos_pool_instrutores(cursor):
 
 
 def calcular_saldo_saque(cursor, id_usuario, pool_instrutores, pesos_instrutores, peso_total):
-    # Sprint item 15: calcula o saldo bruto do instrutor e desconta as solicitações de saque registradas.
-    # Sprint item 1: usa o mesmo saldo apresentado no painel para limitar saques enviados à Arkhé.
+    """Itens 15 e 32: calcula quanto o professor ainda pode solicitar.
+
+    Divide o fundo pelo peso do professor e subtrai saques pagos e pedidos
+    pendentes. A análise e o pagamento desses pedidos são manuais.
+    """
     peso_instrutor = pesos_instrutores.get(int(id_usuario), 0)
     estimado = pool_instrutores * (peso_instrutor / peso_total) if peso_total else 0
     cursor.execute(
@@ -158,7 +170,7 @@ def calcular_saldo_saque(cursor, id_usuario, pool_instrutores, pesos_instrutores
 
 
 def normalizar_taxonomia(valor):
-    # Sprint item 28: normaliza caixa e espaços para evitar categorias e temas duplicados.
+    # Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. normaliza caixa e espaços para evitar categorias e temas duplicados.
     return " ".join((valor or "").strip().casefold().split())
 
 
@@ -221,7 +233,12 @@ def _pdf_simples(titulo, linhas):
 
 
 def _pdf_certificado(dados):
-    # Sprint item 5: monta um certificado A4 horizontal com dados de conclusao e validacao.
+    """Sprint item 5 - Gerar certificado ao concluir o curso. desenha o certificado e devolve seus bytes para download.
+
+    A página A4 horizontal é composta por comandos PDF: formas, texto e fontes.
+    As funções internas medem e quebram nomes longos para caber na página.
+    O código e a URL de verificação vêm dos dados conferidos pela rota emissora.
+    """
     largura = 842
     comandos = [
         "0.97 0.98 0.95 rg 0 0 842 595 re f",
@@ -230,6 +247,8 @@ def _pdf_certificado(dados):
         "0.02 0.31 0.19 rg 0 575 842 20 re f",
     ]
 
+    # Larguras aproximadas da fonte Helvetica: servem para centralizar e
+    # decidir onde quebrar nomes de alunos e títulos de cursos longos.
     larguras = {
         " ": 278, "i": 222, "l": 222, "j": 222, "f": 278, "t": 278,
         "r": 333, "m": 833, "w": 722, "a": 556, "b": 556, "c": 500,
@@ -323,6 +342,8 @@ def _pdf_certificado(dados):
     texto(f"Código de autenticidade: {dados.get('codigo', '')}", 70, 9, "F2", (0.02, 0.31, 0.19))
     texto(f"Verifique em: {dados.get('url_verificacao', '')}", 51, 8, "F1", (0.38, 0.43, 0.40))
 
+    # O stream contém as instruções de desenho. Os objetos seguintes formam
+    # o documento PDF que o navegador recebe como arquivo.
     stream = "\n".join(comandos).encode("cp1252", errors="replace")
     objetos = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
@@ -362,6 +383,7 @@ def _data_certificado(valor):
 
 
 def _curso_do_professor(cursor, id_curso, id_professor):
+    """Itens 6, 19, 20 e 21: confere vínculo antes de editar ou ver dados do curso."""
     cursor.execute(
         """
         SELECT 1
@@ -376,6 +398,7 @@ def _curso_do_professor(cursor, id_curso, id_professor):
 
 
 def _aluno_matriculado(cursor, id_curso, id_aluno):
+    """Itens 19 a 21: só dá acesso ao conteúdo e ao chat a matrículas ativas."""
     cursor.execute(
         """
         SELECT 1
@@ -389,7 +412,7 @@ def _aluno_matriculado(cursor, id_curso, id_aluno):
 
 
 def _bloqueio_assinatura_aluno(cursor, id_aluno):
-    # Sprint item 34: materiais de curso usam o mesmo aviso de fatura pendente e bloqueio das aulas.
+    # Sprint item 34 - Exibir faturas em aberto. materiais de curso usam o mesmo aviso de fatura pendente e bloqueio das aulas.
     from aluno import exigir_assinatura_ativa
     return exigir_assinatura_ativa(cursor, id_aluno)
 

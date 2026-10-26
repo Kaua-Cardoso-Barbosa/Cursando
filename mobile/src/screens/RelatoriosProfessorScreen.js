@@ -10,7 +10,7 @@ function numero(valor) {
   return Number(valor || 0);
 }
 
-// Sprint item 22: filtra os relatórios do instrutor autenticado por período de criação dos cursos e curso escolhido.
+// Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. filtra os relatórios do instrutor autenticado por período de criação dos cursos e curso escolhido.
 export default function RelatoriosProfessorScreen({ token, cursos = [], carregando }) {
   const { mostrarAlerta } = useFeedback();
   const [relatorio, setRelatorio] = useState(null);
@@ -44,7 +44,7 @@ export default function RelatoriosProfessorScreen({ token, cursos = [], carregan
   const linhas = relatorio?.cursos || [];
   const mensal = relatorio?.mensal || [];
 
-  // Sprint item 23: baixa e compartilha o PDF com os totais mensais de alunos, cursos, módulos e horas.
+  // Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas. baixa e compartilha o PDF com os totais mensais de alunos, cursos, módulos e horas.
   async function baixarPdf() {
     setBaixandoPdf(true);
     try {
@@ -122,7 +122,7 @@ export default function RelatoriosProfessorScreen({ token, cursos = [], carregan
         {!loading && linhas.length === 0 ? <Text style={globalStyles.message}>Nenhum curso encontrado com os filtros selecionados.</Text> : null}
       </View>
       <View style={styles.table}>
-        {/* Sprint item 23: mostra cada competência mensal com alunos inscritos, cursos e módulos criados e horas. */}
+        {/* Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas. mostra cada competência mensal com alunos inscritos, cursos e módulos criados e horas. */}
         <Text style={styles.sectionTitle}>Resumo mensal</Text>
         <Text style={styles.periodHint}>Horas acumuladas antigas sem competência mensal: {numero(relatorio?.horas_sem_competencia).toFixed(2).replace(".", ",")}h.</Text>
         {mensal.map((item) => (

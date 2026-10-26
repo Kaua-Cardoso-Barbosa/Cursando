@@ -23,7 +23,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
   const [historico, setHistorico] = useState(null);
   const [erroHistorico, setErroHistorico] = useState("");
 
-  // Sprint item 33: mantém total pago e histórico acessíveis ao aluno que precisa renovar a assinatura.
+  // Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. mantém total pago e histórico acessíveis ao aluno que precisa renovar a assinatura.
   const carregarHistorico = useCallback(async () => {
     try {
       const dados = await apiRequest("/financeiro/faturas", {}, token);
@@ -42,7 +42,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
     return () => inscricao.remove();
   }, [carregarHistorico]);
 
-  // Sprint item 1: cria ou recupera a cobrança da assinatura com tempo suficiente para a Arkhé responder.
+  // Sprint item 2 - Integrar pagamentos pelo ARKHE. cria ou recupera a cobrança da assinatura com tempo suficiente para a Arkhé responder.
   async function iniciarPagamento() {
     setCarregando(true);
     setErro("");
@@ -53,7 +53,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
         body: JSON.stringify({})
       }, token, PAYMENT_REQUEST_TIMEOUT_MS, false);
 
-      // Sprint item 10: evita exibir uma tela de pagamento vazia se a resposta vier sem o Pix.
+      // Sprint item 2 - Integrar pagamentos pelo ARKHE. evita exibir uma tela de pagamento vazia se a resposta vier sem o Pix.
       if (typeof dados?.codigo_pagamento !== "string" || !dados.codigo_pagamento.trim()) {
         throw new Error("O servidor não retornou o código Pix. Tente novamente em instantes.");
       }
@@ -66,7 +66,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
     }
   }
 
-  // Sprint item 1: confirma sob demanda sem polling e aguarda a consulta remota da Arkhé.
+  // Sprint item 2 - Integrar pagamentos pelo ARKHE. confirma sob demanda sem polling e aguarda a consulta remota da Arkhé.
   async function verificarPagamento() {
     setVerificando(true);
     setErro("");
@@ -176,7 +176,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
       </View>
 
       <View style={styles.historico}>
-        {/* Sprint item 33: mostra o histórico mesmo quando o acesso aos cursos está suspenso. */}
+        {/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. mostra o histórico mesmo quando o acesso aos cursos está suspenso. */}
         {historico && (
           <HistoricoFaturasAluno
             faturas={historico.faturas || []}
@@ -199,7 +199,7 @@ export default function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva })
   );
 }
 
-// Sprint item 10: mostra o motivo devolvido pelo backend sem expor a resposta completa da Arkhé.
+// Sprint item 2 - Integrar pagamentos pelo ARKHE. mostra o motivo devolvido pelo backend sem expor a resposta completa da Arkhé.
 function formatarErroPagamento(error, fallback) {
   const mensagem = error?.message || fallback;
   const detalhe = typeof error?.dados?.detalhes === "string"

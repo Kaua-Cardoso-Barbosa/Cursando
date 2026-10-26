@@ -5,6 +5,9 @@ import {
     FaUser,
     FaPlay,
     FaFolder,
+    FaUsers,
+    FaCheckCircle,
+    FaClock,
     FaGooglePlay,
     FaLinux,
     FaWindows
@@ -40,6 +43,7 @@ const ROTULOS_TABELAS_LOG = {
 };
 
 const ROTULOS_CAMPOS_LOG = {
+    NOME: "nome",
     TITULO: "título",
     DESCRICAO: "descrição",
     STATUS: "situação",
@@ -91,7 +95,7 @@ function rotuloCampoLog(campo) {
 
 function formatarValorCampoLog(campo, valor, tabela) {
     if (valor === null || valor === undefined || valor === "") return "não informado";
-    if (campo.startsWith("ID_")) return "registrado";
+    if (campo.startsWith("ID_")) return `#${valor}`;
     if (campo === "PUBLICADA") return Number(valor) === 1 ? "publicada" : "rascunho";
     if (campo === "EXCLUIDO") return Number(valor) === 1 ? "sim" : "não";
     if (campo === "EMAIL_VERIFICADO") return Number(valor) === 1 ? "sim" : "não";
@@ -114,97 +118,33 @@ function formatarValorCampoLog(campo, valor, tabela) {
     return String(valor);
 }
 
-function fraseLog(log) {
-    const ator = log.nome || "Uma pessoa usuária";
-    const tabela = log.tabela;
-    const antes = lerSnapshotLog(log.valores_antes);
-    const depois = lerSnapshotLog(log.valores_depois);
-    const dados = Object.keys(depois).length ? depois : antes;
-    const item = dados.TITULO
-        || log.contexto?.usuario_afetado?.nome
-        || log.contexto?.aula
-        || log.contexto?.modulo
-        || log.contexto?.material
-        || log.contexto?.prova;
-    let alvo;
-    if (tabela === "USUARIOS") alvo = item ? `“${item}”` : "";
-    else if (tabela === "MATRICULAS") alvo = log.contexto?.curso ? `“${log.contexto.curso}”` : "";
-    else if (tabela === "CURSO_TAXONOMIA") alvo = log.contexto?.curso ? `“${log.contexto.curso}”` : "";
-    else if (tabela === "RESPOSTAS_PROVA") alvo = log.contexto?.prova ? `“${log.contexto.prova}”` : "";
-    else if (tabela === "QUESTOES_PROVA") alvo = log.contexto?.prova ? `“${log.contexto.prova}”` : "";
-    else if (tabela === "CERTIFICADOS") alvo = "";
-    else if (tabela === "SAQUES_INSTRUTOR") alvo = log.acao === "UPDATE" && Number(depois.STATUS) === 1 ? "o pagamento ao professor" : log.acao === "UPDATE" ? "a solicitação de pagamento do professor" : "um pagamento ao professor";
-    else if (tabela === "PROFESSORES_CURSO") alvo = log.contexto?.curso ? `ao curso “${log.contexto.curso}”` : "a um curso";
-    else if (tabela === "AVALIACOES_CURSO") alvo = log.contexto?.curso ? `sobre o curso “${log.contexto.curso}”` : "sobre um curso";
-    else if (["CURSOS", "VIDEOS", "MODULOS_CURSO", "MATERIAIS_CURSO", "PROVAS_CURSO"].includes(tabela)) {
-        const artigos = { CURSOS: "o curso", VIDEOS: "a aula", MODULOS_CURSO: "o módulo", MATERIAIS_CURSO: "o material", PROVAS_CURSO: "a prova" };
-        alvo = item ? `${artigos[tabela]} “${item}”` : artigos[tabela];
-    } else if (tabela === "PROGRESSO_AULAS") alvo = log.contexto?.aula ? `da aula “${log.contexto.aula}”` : "de uma aula";
-    else alvo = ROTULOS_TABELAS_LOG[tabela] || "registro da plataforma";
-    let verbo;
-    if (tabela === "USUARIOS") {
-        const tipo = dados.TIPO_USUARIO;
-        const perfil = ({ 0: "administrador", 1: "professor", 2: "aluno" })[tipo] || "usuário";
-        verbo = log.acao === "INSERT" ? `cadastrou a conta de ${perfil}` : log.acao === "DELETE" ? `removeu a conta de ${perfil}` : `atualizou a conta de ${perfil}`;
-    } else if (tabela === "MATRICULAS") {
-        verbo = log.acao === "INSERT" ? "matriculou um aluno no curso" : log.acao === "DELETE" ? "removeu a matrícula do curso" : "atualizou a matrícula do curso";
-    } else if (tabela === "RESPOSTAS_PROVA") {
-        verbo = log.acao === "INSERT" ? "enviou respostas para a prova" : log.acao === "DELETE" ? "removeu uma resposta da prova" : "corrigiu a prova";
-    } else if (tabela === "PROVAS_CURSO" && log.acao === "UPDATE" && Number(depois.PUBLICADA) === 1 && Number(antes.PUBLICADA) !== 1) {
-        verbo = "publicou";
-    } else if (tabela === "PROFESSORES_CURSO") {
-        verbo = log.acao === "INSERT" ? "vinculou um instrutor" : log.acao === "DELETE" ? "removeu o vínculo de instrutor" : "atualizou o vínculo de instrutor";
-    } else if (tabela === "AVALIACOES_CURSO") {
-        verbo = log.acao === "INSERT" ? "enviou uma avaliação" : log.acao === "DELETE" ? "removeu uma avaliação" : "atualizou uma avaliação";
-    } else if (tabela === "QUESTOES_PROVA") {
-        verbo = log.acao === "INSERT" ? "adicionou uma questão à prova" : log.acao === "DELETE" ? "removeu uma questão da prova" : "atualizou uma questão da prova";
-    } else if (tabela === "CERTIFICADOS") {
-        verbo = log.acao === "INSERT" ? "emitiu um certificado" : log.acao === "DELETE" ? "removeu um certificado" : "atualizou um certificado";
-    } else if (tabela === "SAQUES_INSTRUTOR" && log.acao === "UPDATE") {
-        verbo = Number(depois.STATUS) === 1 ? "confirmou" : Number(depois.STATUS) === 2 ? "recusou" : "atualizou";
-    } else {
-        const verbos = {
-            CURSOS: { INSERT: "criou", UPDATE: "atualizou", DELETE: "excluiu" },
-            VIDEOS: { INSERT: "adicionou", UPDATE: "atualizou", DELETE: "removeu" },
-            MODULOS_CURSO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
-            MATERIAIS_CURSO: { INSERT: "adicionou", UPDATE: "atualizou", DELETE: "removeu" },
-            PROVAS_CURSO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
-            AVALIACOES_CURSO: { INSERT: "enviou uma avaliação", UPDATE: "atualizou uma avaliação", DELETE: "removeu uma avaliação" },
-            SAQUES_INSTRUTOR: { INSERT: "solicitou", UPDATE: "atualizou", DELETE: "removeu" },
-            ASSINATURAS: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
-            MENSAGENS_CHAT: { INSERT: "enviou", UPDATE: "atualizou", DELETE: "removeu" },
-            CUSTOS_PLATAFORMA: { INSERT: "registrou", UPDATE: "atualizou", DELETE: "removeu" },
-            FINANCEIRO_CONFIG: { INSERT: "criou", UPDATE: "alterou", DELETE: "removeu" },
-            CATEGORIAS_CUSTO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
-            CATEGORIAS_CURSO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
-            TEMAS_CURSO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
-            CERTIFICADOS: { INSERT: "emitiu", UPDATE: "atualizou", DELETE: "removeu" },
-            CURSO_TAXONOMIA: { INSERT: "atualizou a classificação do curso", UPDATE: "atualizou a classificação do curso", DELETE: "removeu a classificação do curso" },
-            PROGRESSO_AULAS: { INSERT: "registrou o progresso", UPDATE: "atualizou o progresso", DELETE: "removeu o progresso" }
-        };
-        verbo = verbos[tabela]?.[log.acao] || ({ INSERT: "adicionou", UPDATE: "alterou", DELETE: "removeu" })[log.acao] || "registrou uma ação em";
-    }
-    const atorComPerfil = log.tipo_usuario !== null && log.tipo_usuario !== undefined
-        ? `${ator} (${({ 0: "administrador", 1: "professor", 2: "aluno" })[log.tipo_usuario] || "usuário"})`
-        : ator;
-    return `${atorComPerfil} ${verbo}${alvo ? ` ${alvo}` : ""}.`;
+// Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado. o trigger grava a ação, o registro e os valores permitidos.
+// A interface organiza esses dados em campos curtos, sem inventar valores que não foram armazenados.
+function tipoAcaoLog(acao) {
+    return ({ INSERT: "Criação", CRIACAO: "Criação", UPDATE: "Alteração", ALTERACAO: "Alteração", PATCH: "Alteração", PUT: "Alteração", DELETE: "Exclusão", EXCLUSAO: "Exclusão", POST: "Registro" })[acao] || "Atividade";
 }
 
-function camposAlteradosLegiveis(log) {
-    if (log.acao !== "UPDATE") return "";
+function objetoLog(log) {
+    const tipo = ROTULOS_TABELAS_LOG[log.tabela] || "registro do sistema";
+    // A identificação do registro é estável; nomes atuais podem ser diferentes dos valores no momento do log.
+    return `${tipo}${log.id_registro ? ` #${log.id_registro}` : ""}`;
+}
+
+function alteracoesLog(log) {
     const antes = lerSnapshotLog(log.valores_antes);
     const depois = lerSnapshotLog(log.valores_depois);
-    const campos = String(log.campos_alterados || "").split(",").map((campo) => campo.trim()).filter(Boolean);
-    if (!campos.length) return "";
-    if (campos.some((campo) => campo.includes("omitido"))) return "O conteúdo dessa alteração não foi guardado por conter informações pessoais ou extensas.";
-    const alteracoes = campos.filter((campo) => !campo.startsWith("ID_") && ROTULOS_CAMPOS_LOG[campo]).map((campo) => {
-        const rotulo = rotuloCampoLog(campo);
-        if (Object.hasOwn(antes, campo) || Object.hasOwn(depois, campo)) {
-            return `O campo ${rotulo} passou de ${formatarValorCampoLog(campo, antes[campo], log.tabela)} para ${formatarValorCampoLog(campo, depois[campo], log.tabela)}.`;
-        }
-        return `O campo ${rotulo} foi alterado.`;
-    });
-    return alteracoes.join(" ") || "Outras informações deste registro foram atualizadas.";
+    const campos = ["UPDATE", "ALTERACAO", "PATCH", "PUT"].includes(log.acao)
+        ? String(log.campos_alterados || "").split(",").map((campo) => campo.trim()).filter((campo) => campo && !campo.startsWith("["))
+        : [...new Set([...Object.keys(antes), ...Object.keys(depois)])];
+
+    return campos.map((campo) => ({
+        campo,
+        rotulo: rotuloCampoLog(campo) || campo.toLowerCase().replaceAll("_", " "),
+        antes: log.acao === "INSERT" ? "—" : Object.hasOwn(antes, campo)
+            ? formatarValorCampoLog(campo, antes[campo], log.tabela) : "Valor não registrado",
+        depois: log.acao === "DELETE" ? "—" : Object.hasOwn(depois, campo)
+            ? formatarValorCampoLog(campo, depois[campo], log.tabela) : "Valor não registrado"
+    }));
 }
 
 export default function DashboardAdm({
@@ -218,7 +158,7 @@ export default function DashboardAdm({
     const exibindoPerfil = location.pathname.endsWith("/perfil");
     const exibindoFinanceiro = location.pathname.endsWith("/Financeiro");
     const exibindoLogs = location.pathname.endsWith("/Logs");
-    // Sprint item 22: identifica a tela administrativa de relatórios e seus filtros selecionados.
+    // Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. identifica a tela administrativa de relatórios e seus filtros selecionados.
     const exibindoRelatorios = location.pathname.endsWith("/Relatorios");
     const [dashboard, setDashboard] = useState(null);
     const [financeiro, setFinanceiro] = useState(null);
@@ -233,7 +173,7 @@ export default function DashboardAdm({
     const [novaCategoriaCusto, setNovaCategoriaCusto] = useState("");
     const [filtrosTransacoes, setFiltrosTransacoes] = useState({ tipo: "", categoria: "", inicio: "", fim: "", status: "" });
     const [logsGravacao, setLogsGravacao] = useState([]);
-    // Sprint item 24: separa a consulta de auditoria por perfil e categoria de atividade.
+    // Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. separa a consulta de auditoria por perfil e categoria de atividade.
     const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "0", evento: "", acao: "", inicio: "", fim: "" });
     const [logExpandido, setLogExpandido] = useState(null);
     const [temMaisLogs, setTemMaisLogs] = useState(false);
@@ -292,7 +232,7 @@ export default function DashboardAdm({
         carregarDashboard();
     }, [api, exibindoFinanceiro, exibindoLogs, exibindoPerfil, exibindoRelatorios, setMensagem]);
 
-    // Sprint item 22: carrega as opções administrativas e gera relatório geral filtrável por período, instrutor e curso.
+    // Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. carrega as opções administrativas e gera relatório geral filtrável por período, instrutor e curso.
     useEffect(() => {
         if (!exibindoRelatorios) return;
         let ativo = true;
@@ -529,7 +469,7 @@ export default function DashboardAdm({
         carregarLogs();
     }, [api, exibindoLogs, filtrosLogs, setMensagem]);
 
-    // Sprint item 24: pagina os registros para que a busca de um usuario possa percorrer todo o historico.
+    // Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. pagina os registros para que a busca de um usuario possa percorrer todo o historico.
     async function carregarMaisLogs() {
         setCarregandoMaisLogs(true);
         try {
@@ -582,7 +522,7 @@ export default function DashboardAdm({
         ];
     }, [dashboard]);
 
-    // Sprint item 8: prepara os indicadores administrativos para o gráfico único de resumo da plataforma.
+    // Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. prepara os indicadores administrativos para o gráfico único de resumo da plataforma.
     const dadosGraficoAdmin = useMemo(() => [
         ["Indicador", "Quantidade"],
         ["Professores", Number(dashboard?.total_professores || 0)],
@@ -599,7 +539,7 @@ export default function DashboardAdm({
         hAxis: { textStyle: { color: "#4c5b53" } },
         backgroundColor: "transparent"
     }), []);
-    // Sprint item 36: filtra o livro de transações por período, tipo, categoria e status.
+    // Sprint item 36 - Permitir cadastro e acompanhamento dos custos da plataforma. filtra o livro de transações por período, tipo, categoria e status.
     const transacoesFiltradas = useMemo(() => transacoes.filter((transacao) => {
         const data = (transacao.data || "").slice(0, 10);
         return (!filtrosTransacoes.tipo || transacao.tipo === filtrosTransacoes.tipo)
@@ -628,7 +568,7 @@ export default function DashboardAdm({
                         </header>
                     )}
 
-                    {/* Sprint item 9: identifica a área administrativa atual e orienta a leitura da página. */}
+                    {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. identifica a área administrativa atual e orienta a leitura da página. */}
                     <section className={css.cabecalhoPagina}>
                         <div>
                             <span className={css.etiquetaPagina}>
@@ -651,8 +591,8 @@ export default function DashboardAdm({
                         <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                     ) : exibindoFinanceiro ? (
                         <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
-                            {/* Sprint itens 13, 14, 15 e 16: cards de gestao financeira administrativa. */}
-                            {/* Sprint item 15: mostra o caixa administrativo após reservar as comissões do fundo de receita e os custos. */}
+                            {/* cards de gestao financeira administrativa. */}
+                            {/* Sprint item 15 - Exibir saldo disponível em caixa. (Esse é tanto para adm e instrutor, para o instrutor ele vai apenas mostrar o saldo bruto que ele pode sacar, para o adm, como o professor recebe uma comissão em porcentagem para cada aula que o aluno viu do curso dele, altere o valor da assinatura para 500 e para mostrar o saldo do adm, deve descontar as comissão e ai mostrar quanto vai sobrar para saque) mostra o caixa administrativo após reservar as comissões do fundo de receita e os custos. */}
                             {[
                                 ["Assinaturas pagas (total)", financeiro?.total_arrecadado, "Soma das mensalidades confirmadas"],
                                 ["Professores pagos", financeiro?.total_repassado, "Pagamentos confirmados pelo administrador"],
@@ -677,7 +617,7 @@ export default function DashboardAdm({
                                 <span className={css.metricaVariacao}>{financeiro?.alunos_pagantes || 0} alunos com mensalidade paga</span>
                                 <div className={css.metricaNumero}>R$ {Number(financeiro?.ticket_medio_aluno || 0).toFixed(2).replace(".", ",")}</div>
                             </div>
-                            {/* Sprint item 16: apresenta a margem histórica da empresa depois das comissões do fundo de receita e dos custos. */}
+                            {/* Sprint item 16 - Exibir indicadores da saúde financeira da empresa. apresenta a margem histórica da empresa depois das comissões do fundo de receita e dos custos. */}
                             <div className={css.cardMetrica}>
                                 <div className={css.metricaTopo}>
                                     <h2>Saude financeira</h2>
@@ -738,7 +678,7 @@ export default function DashboardAdm({
                                     {!saques.length && <p>Nenhuma solicitação de pagamento registrada.</p>}
                                 </div>
                             </section>
-                            {/* Sprint item 35: detalha faturas pagas, gasto total e média mensal de cada aluno. */}
+                            {/* Sprint item 35 - Calcular ticket médio por aluno. detalha faturas pagas, gasto total e média mensal de cada aluno. */}
                             <section className={css.listaTransacoes}>
                                 <h2>Ticket por aluno</h2>
                                 <div className={css.tabelaTransacoes}>
@@ -760,7 +700,7 @@ export default function DashboardAdm({
                                     </table>
                                 </div>
                             </section>
-                            {/* Sprint item 36: separa cadastro de categorias, pagamentos únicos e despesas mensais. */}
+                            {/* Sprint item 36 - Permitir cadastro e acompanhamento dos custos da plataforma. separa cadastro de categorias, pagamentos únicos e despesas mensais. */}
                             <div className={`${css.cardMetrica} ${css.cardCadastroCusto}`}>
                                 <div className={css.metricaTopo}>
                                     <h2>Pagamento Único</h2>
@@ -801,7 +741,7 @@ export default function DashboardAdm({
                                 <p className={css.textoFinanceiro}>{categoriasCusto.length} categorias disponíveis para selecionar.</p>
                             </div>
                             <section className={css.listaTransacoes}>
-                                {/* Sprint item 13: exibe as assinaturas pagas ou pendentes, despesas e saques enviados ao administrador. */}
+                                {/* Sprint item 13 - Criar gestão financeira do sistema. exibe as assinaturas pagas ou pendentes, despesas e saques enviados ao administrador. */}
                                 <h2>Transações financeiras</h2>
                                 <form className={css.formFinanceiro + " " + css.filtrosTransacoes}>
                                     <label>Tipo<select value={filtrosTransacoes.tipo} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, tipo: evento.target.value })}><option value="">Todos</option><option>Assinatura</option><option>Despesa mensal</option><option>Pagamento Único</option><option>Pagamento ao professor</option></select></label>
@@ -837,7 +777,7 @@ export default function DashboardAdm({
                         </section>
                     ) : exibindoRelatorios ? (
                         <section className={css.listaTransacoes}>
-                            {/* Sprint item 22: aplica os filtros de período, instrutor e curso ao relatório geral da plataforma. */}
+                            {/* Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. aplica os filtros de período, instrutor e curso ao relatório geral da plataforma. */}
                             <h2>Filtros do relatório</h2>
                             <p>O período considera a data de criação dos cursos.</p>
                             <form className={`${css.formFinanceiro} ${css.filtrosRelatorio}`} onSubmit={(evento) => { evento.preventDefault(); carregarRelatorio(); }}>
@@ -848,7 +788,23 @@ export default function DashboardAdm({
                                 <button className={css.botaoFinanceiro} type="submit" disabled={carregandoRelatorio}>{carregandoRelatorio ? "Gerando..." : "Aplicar filtros"}</button>
                             </form>
                             <div className={css.secaoMetricas}>
-                                {[["Matrículas", relatorio?.resumo?.alunos], ["Cursos", relatorio?.resumo?.cursos], ["Aulas concluídas", relatorio?.resumo?.aulas_assistidas], ["Cursos concluídos", relatorio?.resumo?.conclusoes], ["Módulos concluídos", relatorio?.resumo?.modulos], ["Horas assistidas", `${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`]].map(([titulo, valor]) => <div className={css.cardMetrica} key={titulo}><h2>{titulo}</h2><div className={css.metricaNumero}>{valor ?? 0}</div></div>)}
+                                {/* Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. as seis métricas do relatório usam o mesmo cabeçalho e ícone dos cards do painel. */}
+                                {[
+                                    ["Matrículas", relatorio?.resumo?.alunos, <FaUsers />],
+                                    ["Cursos", relatorio?.resumo?.cursos, <FaGraduationCap />],
+                                    ["Aulas concluídas", relatorio?.resumo?.aulas_assistidas, <FaPlay />],
+                                    ["Cursos concluídos", relatorio?.resumo?.conclusoes, <FaCheckCircle />],
+                                    ["Módulos concluídos", relatorio?.resumo?.modulos, <FaFolder />],
+                                    ["Horas assistidas", `${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`, <FaClock />]
+                                ].map(([titulo, valor, icone]) => (
+                                    <article className={css.cardMetrica} key={titulo}>
+                                        <div className={css.metricaTopo}>
+                                            <h2>{titulo}</h2>
+                                            <div className={css.iconeBadge} aria-hidden="true">{icone}</div>
+                                        </div>
+                                        <strong className={css.metricaNumero}>{valor ?? 0}</strong>
+                                    </article>
+                                ))}
                             </div>
                             <h2>Detalhamento por curso</h2>
                             <div className={css.tabelaTransacoes}><table><thead><tr><th>Curso</th><th>Instrutor</th><th>Matrículas</th><th>Aulas concluídas</th><th>Conclusões</th><th>Horas</th><th>Avaliação</th></tr></thead><tbody>
@@ -859,7 +815,7 @@ export default function DashboardAdm({
                     ) : exibindoLogs ? (
                         <section className={css.listaLogs}>
                             <h2>Histórico de atividades</h2>
-                            {/* Sprint item 25: permite filtrar os logs por usuário e datas no painel administrativo. */}
+                            {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. permite filtrar os logs por usuário e datas no painel administrativo. */}
                             <div className={css.abasLogs}>
                                 {[["0", "Administradores"], ["1", "Professores"], ["2", "Alunos"]].map(([tipo, label]) => (
                                     <button key={tipo} className={filtrosLogs.tipo === tipo ? css.abaAtiva : css.abaLog} onClick={() => { setFiltrosLogs({ ...filtrosLogs, tipo, evento: "", acao: "" }); setLogExpandido(null); }} type="button">{label}</button>
@@ -876,32 +832,66 @@ export default function DashboardAdm({
                                 <input type="date" value={filtrosLogs.inicio} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, inicio: e.target.value })} />
                                 <input type="date" value={filtrosLogs.fim} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, fim: e.target.value })} />
                             </div>
-                            {/* Sprint item 24: permite abrir cada acao para conferir campos e valores registrados. */}
+                            {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. cada evento do trigger apresenta ator, data, recurso e diferenças entre antes e depois. */}
                             {logsGravacao.length === 0 && <p>Nenhuma atividade registrada.</p>}
                             {logsGravacao.map((log) => {
                                 const expandido = logExpandido === log.id;
                                 const perfilUsuario = { 0: "Administrador", 1: "Professor", 2: "Aluno" }[log.tipo_usuario];
+                                const alteracoes = alteracoesLog(log);
+                                const ator = log.nome
+                                    ? `${log.nome}${log.id_usuario ? ` (#${log.id_usuario})` : ""}`
+                                    : log.id_usuario ? `Usuário #${log.id_usuario}`
+                                        : log.origem === "BANCO" ? "Operação direta no banco" : "Não identificado";
                                 return (
                                     <article key={log.id} className={css.logItem}>
                                         <button className={css.logResumo} type="button" aria-expanded={expandido} onClick={() => setLogExpandido(expandido ? null : log.id)}>
                                             <div className={css.logTopo}>
-                                                <strong>{fraseLog(log)}</strong>
+                                                <strong>{tipoAcaoLog(log.acao)} · {objetoLog(log)}</strong>
                                                 <small>{formatarDataLog(log.criado_em)}</small>
                                             </div>
-                                            {camposAlteradosLegiveis(log) && <p>{camposAlteradosLegiveis(log)}</p>}
-                                            <small>{expandido ? "Recolher" : "Ver mais sobre esta atividade"}</small>
+                                            <span>{ator}{perfilUsuario ? ` · ${perfilUsuario}` : ""}</span>
+                                            {alteracoes.length > 0 && <span className={css.logPrevia}>Campo: {alteracoes[0].rotulo} · Antes: {alteracoes[0].antes} · Depois: {alteracoes[0].depois}{alteracoes.length > 1 ? ` · mais ${alteracoes.length - 1} ${alteracoes.length === 2 ? "campo" : "campos"}` : ""}</span>}
+                                            <small>{expandido ? "Ocultar detalhes" : "Ver detalhes e valores alterados"}</small>
                                         </button>
                                         {expandido && <div className={css.logDetalhes}>
-                                            <p>A atividade foi registrada em {formatarDataLog(log.criado_em)}.</p>
-                                            <p>Quem realizou foi {log.nome || "uma pessoa não identificada"}{perfilUsuario ? `, com perfil de ${perfilUsuario.toLowerCase()}` : ""}{log.email ? `, usando a conta ${log.email}` : ""}.</p>
-                                            {log.contexto?.usuario_afetado && <p>A conta envolvida pertence a {log.contexto.usuario_afetado.nome}.</p>}
-                                            {log.contexto?.curso && <p>O curso envolvido foi “{log.contexto.curso}”.</p>}
-                                            {log.contexto?.professor && <p>O professor responsável pelo curso é {log.contexto.professor.nome}.</p>}
-                                            {log.contexto?.aula && <p>A aula envolvida foi “{log.contexto.aula}”.</p>}
-                                            {log.contexto?.modulo && <p>O módulo envolvido foi “{log.contexto.modulo}”.</p>}
-                                            {log.contexto?.material && <p>O material envolvido foi “{log.contexto.material}”.</p>}
-                                            {log.contexto?.prova && <p>A prova envolvida foi “{log.contexto.prova}”.</p>}
-                                            {log.acao === "UPDATE" && <p>{camposAlteradosLegiveis(log) || "O conteúdo alterado não foi armazenado neste histórico."}</p>}
+                                            <dl className={css.logInformacoes}>
+                                                <div><dt>Quem alterou:</dt><dd>{ator}</dd></div>
+                                                <div><dt>Quando alterou:</dt><dd>{formatarDataLog(log.criado_em) || "Não informado"}</dd></div>
+                                                <div><dt>Tipo de usuário:</dt><dd>{perfilUsuario || "Não identificado"}</dd></div>
+                                                <div><dt>Registro afetado:</dt><dd>{objetoLog(log)}</dd></div>
+                                                <div><dt>Ação realizada:</dt><dd>{tipoAcaoLog(log.acao)}</dd></div>
+                                                <div><dt>O que foi alterado:</dt><dd>{alteracoes.length ? alteracoes.map((item) => item.rotulo).join(", ") : "Campos não registrados"}</dd></div>
+                                                {log.email && <div><dt>Conta utilizada:</dt><dd>{log.email}</dd></div>}
+                                                {log.contexto?.curso && <div><dt>Curso relacionado:</dt><dd>{log.contexto.curso}</dd></div>}
+                                                {log.contexto?.prova && <div><dt>Prova relacionada:</dt><dd>{log.contexto.prova}</dd></div>}
+                                                {log.contexto?.professor?.nome && <div><dt>Professor relacionado:</dt><dd>{log.contexto.professor.nome}</dd></div>}
+                                            </dl>
+                                            <div className={css.logAlteracoes}>
+                                                <h3>Antes e depois de cada campo</h3>
+                                                {alteracoes.length ? (
+                                                    <div className={css.tabelaTransacoes}>
+                                                        <table>
+                                                            <thead><tr><th>Campo alterado</th><th>Valor anterior</th><th>Novo valor</th></tr></thead>
+                                                            <tbody>{alteracoes.map((item) => (
+                                                                <tr key={item.campo}><td>{item.rotulo}</td><td>{item.antes}</td><td>{item.depois}</td></tr>
+                                                            ))}</tbody>
+                                                        </table>
+                                                    </div>
+                                                ) : <p>Valores não registrados para esta atividade.</p>}
+                                                {alteracoes.some((item) => item.antes === "Valor não registrado" || item.depois === "Valor não registrado") && (
+                                                    <p className={css.avisoLog}>Alguns valores foram omitidos pelo trigger por conter dados sensíveis ou conteúdo extenso.</p>
+                                                )}
+                                            </div>
+                                            <details className={css.detalhesTecnicos}>
+                                                <summary>Dados técnicos do registro</summary>
+                                                <dl className={css.logInformacoes}>
+                                                    <div><dt>Origem:</dt><dd>{log.origem || "Não informada"}</dd></div>
+                                                    <div><dt>Registro:</dt><dd>{log.id_registro || "Não informado"}</dd></div>
+                                                    {log.rota && <div><dt>Rota:</dt><dd>{log.metodo} {log.rota}</dd></div>}
+                                                    {log.ip && <div><dt>IP:</dt><dd>{log.ip}</dd></div>}
+                                                    {log.request_id && <div><dt>ID da requisição:</dt><dd>{log.request_id}</dd></div>}
+                                                </dl>
+                                            </details>
                                         </div>}
                                     </article>
                                 );
@@ -910,7 +900,7 @@ export default function DashboardAdm({
                         </section>
                     ) : (
                         <>
-                            {/* Sprint item 8: apresenta um gráfico único com os totais principais disponíveis para o administrador. */}
+                            {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. apresenta um gráfico único com os totais principais disponíveis para o administrador. */}
                             <GoogleChart titulo="Indicadores da plataforma" data={dadosGraficoAdmin} options={opcoesGraficoAdmin} />
                             <section className={css.secaoMetricas}>
                                 {metricas.map((metrica) => (

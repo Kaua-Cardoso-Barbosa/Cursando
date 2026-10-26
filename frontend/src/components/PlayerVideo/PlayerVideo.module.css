@@ -15,7 +15,7 @@
     -webkit-touch-callout: none;
 }
 
-/* Sprint item 10: sobrepõe a identificação da sessão ao vídeo web para dificultar cópias sem origem rastreável. */
+/* Sprint item 10 - Bloquear captura de tela durante o curso. sobrepõe a identificação da sessão ao vídeo web para dificultar cópias sem origem rastreável. */
 .marcaDagua {
     position: absolute;
     z-index: 2;

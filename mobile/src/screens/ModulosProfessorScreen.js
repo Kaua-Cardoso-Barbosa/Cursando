@@ -9,7 +9,7 @@ import { colors, globalStyles } from "../styles";
 
 export default function ModulosProfessorScreen({ curso, token, onBack }) {
   const { mostrarAlerta } = useFeedback();
-  // Sprint item 6: organiza módulos, capas e videoaulas do curso no aplicativo do instrutor.
+  // Sprint item 6 - Permitir que o instrutor divida o curso em módulos. organiza módulos, capas e videoaulas do curso no aplicativo do instrutor.
   const [modulos, setModulos] = useState([]);
   const [modulo, setModulo] = useState(null);
   const [aulas, setAulas] = useState([]);
@@ -59,7 +59,7 @@ export default function ModulosProfessorScreen({ curso, token, onBack }) {
     if (!result.canceled) setImagemModulo(result.assets[0]);
   }
 
-  // Sprint item 18: abre a câmera para capturar a imagem de capa do módulo.
+  // Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações. abre a câmera para capturar a imagem de capa do módulo.
   async function tirarFotoModulo() {
     const permissao = await ImagePicker.requestCameraPermissionsAsync();
     if (!permissao.granted) {

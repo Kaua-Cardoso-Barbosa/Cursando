@@ -3,7 +3,7 @@ import css from "./ProvasProfessor.module.css";
 
 const questaoVazia = () => ({ enunciado: "", tipo: "objetiva", alternativas: ["", ""], resposta_esperada: "" });
 
-// Sprint item 20: permite ao instrutor montar e publicar a prova do curso e corrigir respostas enviadas.
+// Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. permite ao instrutor montar e publicar a prova do curso e corrigir respostas enviadas.
 export default function ProvasProfessor({ api, idCurso, setMensagem }) {
     const [prova, setProva] = useState(null);
     const [titulo, setTitulo] = useState("");
@@ -91,7 +91,7 @@ export default function ProvasProfessor({ api, idCurso, setMensagem }) {
         }
     }
 
-    // Sprint item 20: a exclusão limpa a prova inteira e libera a criação de outra.
+    // Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. a exclusão limpa a prova inteira e libera a criação de outra.
     async function excluirProva() {
         if (!prova?.id || !window.confirm("Excluir a prova e todas as respostas dos alunos?")) return;
         setSalvando(true);

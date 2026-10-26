@@ -5,8 +5,8 @@ const USER_KEY = "cursando_usuario";
 
 const API_PORT = 5000;
 const REQUEST_TIMEOUT_MS = 3000;
-// Sprint item 1: pagamentos podem aguardar a resposta da Arkhé por até 10 segundos.
-// Sprint item 10: tolera o tempo do backend, da Arkhé e da rede móvel sem repetir um POST financeiro.
+// Sprint item 2 - Integrar pagamentos pelo ARKHE. pagamentos podem aguardar a resposta da Arkhé por até 10 segundos.
+// Sprint item 2 - Integrar pagamentos pelo ARKHE. tolera o tempo do backend, da Arkhé e da rede móvel sem repetir um POST financeiro.
 export const PAYMENT_REQUEST_TIMEOUT_MS = 30000;
 
 const API_HOSTS = [
@@ -44,7 +44,7 @@ function getApiUrlCandidates() {
 export const API_URL = getApiUrlCandidates()[0];
 
 
-// Sprint item 5: usa no download do certificado o mesmo servidor API validado pelas requisicoes do app.
+// Sprint item 5 - Gerar certificado ao concluir o curso. usa no download do certificado o mesmo servidor API validado pelas requisicoes do app.
 export function getApiBaseUrl() {
   return activeApiUrl || API_URL;
 }
@@ -135,7 +135,7 @@ export async function apiRequest(
     timeoutMs = REQUEST_TIMEOUT_MS,
     retryOnAbort = true
 ) {
-  // Sprint item 17: centraliza a conexão autenticada do aplicativo com a API e reaproveita o primeiro endereço que responder.
+  // Sprint item 17 - Integrar o aplicativo com a API. centraliza a conexão autenticada do aplicativo com a API e reaproveita o primeiro endereço que responder.
   // JSON e token Bearer sao enviados nos formatos esperados pela API.
   const headers = {
     Accept: "application/json",
@@ -187,7 +187,7 @@ export async function apiRequest(
           .catch(() => ({}));
 
       if (!response.ok) {
-        // Sprint item 3: mantém o status e os dados da resposta para o app distinguir falhas de sincronização da falta de acesso.
+        // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. mantém o status e os dados da resposta para o app distinguir falhas de sincronização da falta de acesso.
         const error = new Error(
             data?.mensagem?.descricao ||
             data?.mensagem ||
@@ -208,7 +208,7 @@ export async function apiRequest(
       return data;
 
     } catch (error) {
-      // Sprint item 1: não repete POST financeiro se o tempo esgotar após a API talvez ter criado a cobrança.
+      // Sprint item 2 - Integrar pagamentos pelo ARKHE. não repete POST financeiro se o tempo esgotar após a API talvez ter criado a cobrança.
       if (error?.name === "AbortError" && !retryOnAbort) {
         throw new Error("A API demorou para responder. Consulte os pagamentos antes de tentar novamente.");
       }

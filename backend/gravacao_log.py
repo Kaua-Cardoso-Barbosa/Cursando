@@ -1,3 +1,13 @@
+"""leitura administrativa do histórico de auditoria.
+
+Os triggers escrevem em LOG_GRAVACAO, no banco de logs. O histórico antigo
+LOG_ACOES também fica nesse banco. As rotas conferem se o solicitante é
+administrador, aplicam filtros no SQL e limitam a página. A rota dos triggers
+consulta depois o banco principal para mostrar nomes de recursos que
+ainda existem. Valores OLD/NEW ausentes não são reconstruídos a partir do
+estado atual do banco, pois ele pode ter mudado outra vez.
+"""
+
 import json
 
 from flask import jsonify, request
@@ -17,6 +27,11 @@ from utilitarios_backend import _resumo_detalhes_log, exigir_tipo, resposta
 @app.route("/admin/logs", methods=["GET"])
 @jwt_required()
 def logs_admin():
+    """Itens 24 e 25: consulta o histórico LOG_ACOES no banco separado.
+
+    Aplica os filtros recebidos antes de limitar o retorno aos 200 eventos
+    mais recentes. Essa tabela contém eventos antigos migrados do principal.
+    """
     negado = exigir_tipo(0)
     if negado:
         return negado
@@ -28,7 +43,8 @@ def logs_admin():
     id_usuario_filtro = request.args.get("id_usuario")
     inicio = request.args.get("inicio")
     fim = request.args.get("fim")
-    con = get_db()
+    # Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. mesmo os registros antigos de LOG_ACOES são lidos do banco de logs.
+    con = get_log_db()
     cursor = con.cursor()
 
     try:
@@ -89,12 +105,13 @@ def logs_admin():
 @app.route("/admin/logs/<int:id_log>", methods=["GET"])
 @jwt_required()
 def detalhe_log_admin(id_log):
+    """Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. abre um evento antigo pelo ID, sempre no banco de logs."""
     negado = exigir_tipo(0)
     if negado:
         return negado
 
     garantir_estrutura_banco()
-    con = get_db()
+    con = get_log_db()
     cursor = con.cursor()
 
     try:
@@ -132,7 +149,11 @@ def detalhe_log_admin(id_log):
 
 
 def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_depois):
-    """Resolve nomes dos recursos relacionados ao registro auditado quando ainda existem."""
+    """Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. acrescenta nomes legíveis a IDs ainda presentes no banco.
+
+    O snapshot do trigger preserva o antes/depois. Estas consultas servem só
+    para contexto visual; um nome atual não substitui o valor histórico.
+    """
     def ler_snapshot(valor):
         try:
             return json.loads(de_blob_texto(valor) or "{}")
@@ -226,10 +247,16 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
 
 
 
-# Sprint item 25: restringe a consulta de logs ao administrador e permite filtrar registros por usuário e período.
+# Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. restringe a consulta de logs ao administrador e permite filtrar registros por usuário e período.
 @app.route("/admin/logs-gravacao", methods=["GET"])
 @jwt_required()
 def logs_gravacao_admin():
+    """Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. filtra e pagina os registros criados pelos triggers.
+
+    ``filtros`` monta condições SQL e ``params`` guarda os valores de ``?``;
+    eles nunca são concatenados diretamente na consulta. O limite máximo
+    evita trazer todo o histórico de uma vez. Só admin acessa esta rota.
+    """
     negado = exigir_tipo(0)
     if negado:
         return negado
@@ -245,6 +272,8 @@ def logs_gravacao_admin():
         filtros = []
         params = []
         if termo:
+            # Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. nomes atuais vivem no banco principal; procuramos seus
+            # IDs lá e depois combinamos com os textos salvos no banco de log.
             contexto_cursor.execute(
                 "SELECT ID_USUARIO FROM USUARIOS WHERE LOWER(NOME) LIKE ? OR LOWER(EMAIL) LIKE ?",
                 (f"%{termo}%", f"%{termo}%"),
@@ -291,6 +320,8 @@ def logs_gravacao_admin():
             "alterar_configuracao": ("FINANCEIRO_CONFIG", "UPDATE"),
         }
         if evento in eventos:
+            # A interface usa nomes de eventos; a auditoria grava operação SQL
+            # e tabela. Este mapa traduz o filtro sem alterar o log original.
             tabela_evento, acao_evento = eventos[evento]
             filtros.extend(["LG.TABELA_AFETADA = ?", "LG.ACAO = ?"])
             params.extend([tabela_evento, acao_evento])
@@ -333,8 +364,11 @@ def logs_gravacao_admin():
             """,
             tuple(params),
         )
-        # Sprint item 6: lista o log de gravacao salvo no banco separado para a aba administrativa.
+        # lê uma página do banco separado e associa os IDs
+        # dos autores a nomes do banco principal sem alterar os eventos gravados.
         rows = cursor.fetchall()
+        # Usamos os IDs apenas para enriquecer a apresentação com nomes.
+        # O snapshot OLD/NEW permanece o registro histórico do trigger.
         ids_atores = sorted({int(row[1]) for row in rows if row[1] is not None})
         atores = {}
         if ids_atores:
@@ -346,6 +380,7 @@ def logs_gravacao_admin():
         logs = []
         for row in rows:
             ator = atores.get(int(row[1])) if row[1] is not None else None
+            detalhes = de_blob_texto(row[11])
             log = {
                 "id": row[0],
                 "id_usuario": row[1],
@@ -360,8 +395,10 @@ def logs_gravacao_admin():
                 "campos_alterados": de_blob_texto(row[8]),
                 "valores_antes": de_blob_texto(row[9]),
                 "valores_depois": de_blob_texto(row[10]),
-                "detalhes": de_blob_texto(row[11]),
-                "resumo": _resumo_detalhes_log(de_blob_texto(row[11])),
+                "detalhes": detalhes,
+                # O trigger novo grava estes dados em colunas próprias. Logs
+                # antigos ainda podem conter o JSON completo em DETALHES.
+                "resumo": _resumo_detalhes_log(detalhes) if detalhes else f"{row[3]} em {row[4]}",
                 "ip": row[12],
                 "user_agent": row[13],
                 "request_id": row[14],

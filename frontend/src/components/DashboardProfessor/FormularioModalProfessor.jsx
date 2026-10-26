@@ -77,7 +77,7 @@ export default function FormularioModalProfessor({ api, tipo, item, salvando, on
         onSalvar(form);
     }
 
-    // Sprint item 6: permite selecionar a capa do módulo do curso.
+    // Sprint item 6 - Permitir que o instrutor divida o curso em módulos. permite selecionar a capa do módulo do curso.
     const titulo = `${editando ? "Editar" : "Adicionar"} ${tipo === "curso" ? "Curso" : tipo === "modulo" ? "Módulo" : "Aula"}`;
     const arquivoLabel = tipo === "aula" ? "Enviar vídeo" : tipo === "modulo" ? "Enviar imagem do módulo" : "Enviar imagem";
     const thumbLabel = "Enviar thumb";
@@ -114,7 +114,7 @@ export default function FormularioModalProfessor({ api, tipo, item, salvando, on
 
                     {tipo === "curso" && (
                         <div className={css.taxonomiasCurso}>
-                            {/* Sprint item 28: permite selecionar categorias e temas existentes ou iniciar o cadastro de novos. */}
+                            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. permite selecionar categorias e temas existentes ou iniciar o cadastro de novos. */}
                             <label>
                                 Categoria
                                 <select value={form.id_categoria} onChange={(e) => setForm({ ...form, id_categoria: e.target.value, nova_categoria: "" })}>

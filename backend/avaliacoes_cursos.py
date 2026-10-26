@@ -1,8 +1,8 @@
-"""Sprint item 27: estrelas e comentários públicos do curso.
+"""Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. estrelas e comentários públicos do curso.
 
 Uma rota recebe a avaliação, confirma matrícula, conclusão e aprovação na prova,
 e só então grava o comentário. As regras ficam no servidor para serem iguais
-no site e no aplicativo. O cursor executa SQL; commit confirma a grava??o.
+no site e no aplicativo. O cursor executa SQL; commit confirma a gravação.
 """
 from flask import jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -14,11 +14,16 @@ from professor import de_blob_texto, para_blob_texto
 from utilitarios_backend import _bloqueio_assinatura_aluno, exigir_tipo, proximo_id, resposta
 
 
-# Sprint item 27: a avaliação só é aceita após matrícula, conclusão das aulas
+# Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. a avaliação só é aceita após matrícula, conclusão das aulas
 # e aprovação na prova final. O mesmo endpoint atende site e aplicativo.
 @app.route("/aluno/cursos/<int:id_curso>/avaliacoes", methods=["POST"])
 @jwt_required()
 def avaliar_curso(id_curso):
+    """Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. recebe nota/comentário depois de curso e prova concluídos.
+
+    Mesmo que a tela já tenha mostrado o botão, a API revalida matrícula,
+    assinatura, progresso e aprovação para impedir avaliação antecipada.
+    """
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -67,10 +72,14 @@ def avaliar_curso(id_curso):
             (get_jwt_identity(), id_curso),
         )
         status_prova = cursor.fetchone()
+        # Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. progresso de 100% libera a prova, mas a avaliação pública
+        # espera aprovação (status 1), não apenas envio ou correção pendente.
         if not status_prova or int(status_prova[0] or 0) != 1:
             return resposta("Avaliacao liberada somente apos aprovacao na prova.", 403)
 
-        # Sprint item 27: persiste a nota em estrelas e o comentario vinculados ao curso e ao aluno.
+        # Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. persiste a nota em estrelas e o comentario vinculados ao curso e ao aluno.
+        # MATCHING mantém uma avaliação por par curso/aluno: uma nova nota
+        # substitui a anterior em vez de duplicar avaliações no catálogo.
         cursor.execute(
             """
             UPDATE OR INSERT INTO AVALIACOES_CURSO (

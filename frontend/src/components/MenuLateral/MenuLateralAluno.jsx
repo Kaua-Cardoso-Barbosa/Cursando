@@ -25,7 +25,7 @@ export default function MenuLateralAluno({ itemAtivo = "inicio" }) {
                     >
                         Descobrir
                     </Link>
-                    {/* Sprint item 34: mantém assinatura e faturas acessíveis no menu do aluno. */}
+                    {/* Sprint item 34 - Exibir faturas em aberto. mantém assinatura e faturas acessíveis no menu do aluno. */}
                     <Link
                         to="/DashboardAluno/assinatura"
                         className={`${css.linkItem} ${itemAtivo === "assinatura" ? css.ativo : ""}`}

@@ -58,7 +58,7 @@ export default function ItemCardProfessor({
                             <div>
                                 <h3>{item.titulo}</h3>
                                 <p>{item.descricao}</p>
-                                {/* Sprint item 9: exibe o total de alunos com matrícula ativa neste curso. */}
+                                {/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. exibe o total de alunos com matrícula ativa neste curso. */}
                                 <span className={css.infoInscritos}>
                                 <FaUsers /> {item.total_inscritos || 0} {item.total_inscritos === 1 ? "inscrito" : "inscritos"}
                             </span>

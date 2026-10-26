@@ -1,3 +1,12 @@
+"""Rotas e funções básicas do professor usadas pelos itens 6, 7 e 8.
+
+Este arquivo define os estados de cursos e aulas, transforma linhas do banco
+em JSON e reúne funções para uploads e mídia. As rotas detalhadas de módulos,
+materiais e publicação estão em ``curso_conteudo.py``; o relatório fica em
+``relatorio.py``. ``exigir_professor`` lê o perfil do token antes de permitir
+ações reservadas ao instrutor.
+"""
+
 import os
 import re
 import subprocess
@@ -92,6 +101,12 @@ def de_blob_texto(valor):
 
 
 def salvar_upload(arquivo, subpasta, extensoes):
+    """Sprint item 6 - Permitir que o instrutor divida o curso em módulos. valida extensão e salva imagem ou vídeo de curso/módulo/aula.
+
+    O UUID evita colisão entre nomes iguais; a função devolve caminho interno
+    para manutenção e URL para carregar o arquivo no site e no app.
+    Arquivos privados dos complementos seguem outra rota e outra pasta.
+    """
     if not arquivo or not arquivo.filename:
         return None
 
@@ -142,6 +157,11 @@ def thumb_aula_por_id(id_aula):
 
 
 def curso_para_dict(row):
+    """Converte a ordem de colunas do SELECT em nomes usados pelas telas.
+
+    Se uma consulta mudar a ordem, esta conversão também precisa ser revista.
+    A descrição pode vir como BLOB e é transformada em texto aqui.
+    """
     return {
         "id": row[0],
         "titulo": row[1],
@@ -169,6 +189,11 @@ def aula_para_dict(row):
     }
 
 def converter_video_dash(caminho_video, id_video):
+    """empacota vídeo e áudio em DASH e devolve o manifesto.
+
+    O player carrega manifest.mpd em vez do arquivo de origem. Se o upload não
+    tiver faixa de áudio, a segunda execução empacota somente o vídeo.
+    """
     pasta_drm = os.path.join(
         current_app.root_path,
         "static",
@@ -229,6 +254,8 @@ def converter_video_dash(caminho_video, id_video):
 
     erro_packager = f"{resultado.stdout}\n{resultado.stderr}".lower()
     if resultado.returncode != 0 and "stream=audio not available" in erro_packager:
+        # Alguns vídeos de aula não têm áudio. Limpamos arquivos parciais e
+        # repetimos o empacotamento sem exigir essa faixa inexistente.
         for caminho_saida in (video_saida, audio_saida, manifest_saida):
             if os.path.isfile(caminho_saida):
                 os.remove(caminho_saida)

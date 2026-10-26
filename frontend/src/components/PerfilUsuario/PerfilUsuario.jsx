@@ -65,7 +65,7 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
             });
             const dados = await lerResposta(resposta);
 
-            // Sprint item 3: descarta uma resposta antiga se o usuario comecou a editar durante a requisicao.
+            // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. descarta uma resposta antiga se o usuario comecou a editar durante a requisicao.
             if (alteradoLocalmenteRef.current) return;
 
             setPerfil({
@@ -92,7 +92,7 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
 
     useEffect(() => {
         function sincronizarPerfil() {
-            // Sprint item 3: evita substituir rascunhos enquanto atualiza o perfil salvo no outro cliente.
+            // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. evita substituir rascunhos enquanto atualiza o perfil salvo no outro cliente.
             if (!document.hidden && !alteradoLocalmente && !salvando) carregarPerfil();
         }
 
@@ -114,7 +114,7 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
     }
 
     function atualizarCampoPerfil(campo, valor) {
-        // Sprint item 3: protege dados ainda nao salvos ao sincronizar o perfil vindo de outro cliente.
+        // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. protege dados ainda nao salvos ao sincronizar o perfil vindo de outro cliente.
         setPerfil((atual) => ({ ...atual, [campo]: valor }));
         alteradoLocalmenteRef.current = true;
         setAlteradoLocalmente(true);

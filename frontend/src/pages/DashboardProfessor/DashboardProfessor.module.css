@@ -103,7 +103,7 @@
 }
 
 .metricaTopo h2 {
-    color: #1a1a1a;
+    color: #244338;
     font-size: 1rem;
     line-height: 1.35;
     font-weight: 650;
@@ -115,7 +115,7 @@
     height: 42px;
     border-radius: 13px;
     background: #e5f5ec;
-    color: #004727;
+    color: #087044;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -132,7 +132,7 @@
 }
 
 .metricaNumero {
-    color: #111111;
+    color: #123c2a;
     font-size: clamp(1.55rem, 2vw, 1.9rem);
     line-height: 1.15;
     font-weight: 650;
@@ -248,7 +248,7 @@
     gap: 38px 24px;
 }
 
-/* Sprint item 6: organiza os módulos com o mesmo card de cursos e aulas. */
+/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos. organiza os módulos com o mesmo card de cursos e aulas. */
 .gradeModulos {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -830,7 +830,7 @@
     }
 }
 
-/* Sprint item 8: deixa as áreas de início, financeiro e relatórios com hierarquia clara e responsiva. */
+/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. deixa as áreas de início, financeiro e relatórios com hierarquia clara e responsiva. */
 .cabecalhoInicio,
 .cabecalhoPagina {
     display: flex;
@@ -886,7 +886,7 @@
     margin-bottom: 34px;
 }
 
-/* Sprint item 9: separa indicadores, gráfico e tabela mensal com o mesmo ritmo.
+/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. separa indicadores, gráfico e tabela mensal com o mesmo ritmo.
    O cartão do gráfico já tem espaço interno; sua margem padrão não deve
    duplicar a distância até a explicação abaixo. */
 .resultadosMes {
@@ -939,9 +939,12 @@
     gap: 16px;
 }
 
-.gridMetricasInicio,
-.gridMetricasFinanceiro {
+.gridMetricasInicio {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.gridMetricasFinanceiro {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .gridMetricasSecundarias {
@@ -951,36 +954,6 @@
 .gridMetricasFinanceiro .metricaNumero {
     font-size: clamp(1.12rem, 1.55vw, 1.65rem);
     white-space: nowrap;
-}
-
-/* Sprint item 30: destaca o valor estimado do fundo de receita por aula concluída. */
-.valorEstimadoView {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 4px 16px;
-    margin-top: 16px;
-    padding: 14px 16px;
-    border: 1px solid #d7e8df;
-    border-radius: 12px;
-    background: #f3fbf7;
-}
-
-.valorEstimadoView span {
-    color: #315342;
-    font-weight: 650;
-}
-
-.valorEstimadoView strong {
-    color: #123126;
-    font-size: 1.2rem;
-}
-
-.valorEstimadoView p {
-    grid-column: 1 / -1;
-    margin: 0;
-    color: #53645c;
-    font-size: 0.85rem;
 }
 
 .gridMetricasRelatorio {
@@ -1363,7 +1336,7 @@
     }
 }
 
-/* Sprint item 9: aplica o estilo claro do dashboard às listagens, módulos, alunos e formulários do professor. */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas. aplica o estilo claro do dashboard às listagens, módulos, alunos e formulários do professor. */
 .painelProfessor {
     background: #f5f8f6;
 }
@@ -1562,8 +1535,45 @@
 
 .cabecalhoListaAlunos,
 .linhaAlunoCurso {
-    grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1.2fr) auto;
     padding: 15px 20px;
+}
+
+.acaoChatAluno {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    justify-self: start;
+    min-height: 38px;
+    padding: 8px 13px;
+    border: 0;
+    border-radius: 9px;
+    background: #087044;
+    color: #ffffff;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.acaoChatAluno:hover {
+    background: #065b38;
+}
+
+.acaoChatAluno:focus-visible {
+    outline: 3px solid #087044;
+    outline-offset: 3px;
+}
+
+@media (max-width: 650px) {
+    .cabecalhoListaAlunos {
+        display: none;
+    }
+
+    .linhaAlunoCurso {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 7px;
+    }
 }
 
 .cabecalhoListaAlunos {
@@ -1630,7 +1640,7 @@
         gap: 6px;
     }
 }
-/* Sprint item 28: define o estilo dos campos de categoria e tema no formulário do curso. */
+/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. define o estilo dos campos de categoria e tema no formulário do curso. */
 .taxonomiasCurso {
     display: grid;
     gap: 12px;

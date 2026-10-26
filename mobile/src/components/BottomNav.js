@@ -12,7 +12,7 @@ const baseItems = [
 
 export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  // Sprint item 24: inclui a aba de auditoria na navegacao do administrador no app.
+  // Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. inclui a aba de auditoria na navegacao do administrador no app.
   const items = Number(tipoUsuario) === 0
     ? [
       { key: "logs", label: "Logs", icon: "document-text-outline" },

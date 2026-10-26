@@ -65,7 +65,7 @@ export default function CursosScreen({ cursos, carregando, onRefresh, onEdit, on
                         <AppIcon name="document-text-outline" size={20} color={colors.darkGreen} />
                       </Pressable>
                     ) : null}
-                    {/* Sprint item 21: abre a gestao de links e arquivos complementares do curso. */}
+                    {/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. abre a gestao de links e arquivos complementares do curso. */}
                     {onComplements ? (
                       <Pressable style={styles.iconButton} onPress={() => onComplements(curso)} hitSlop={10} accessibilityLabel="Gerenciar complementos do curso">
                         <AppIcon name="attach-outline" size={20} color={colors.darkGreen} />

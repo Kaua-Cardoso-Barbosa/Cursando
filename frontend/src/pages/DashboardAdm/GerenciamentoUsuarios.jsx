@@ -1,9 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+    FaBookOpen,
+    FaChartLine,
+    FaCheckCircle,
+    FaClock,
+    FaFileInvoiceDollar,
     FaGooglePlay,
     FaLinux,
     FaPlus,
     FaSearch,
+    FaWallet,
     FaWindows
 } from "react-icons/fa";
 import Button from "../../components/Button/Button.jsx";
@@ -158,11 +164,11 @@ export default function GerenciamentoUsuarios({
         });
     }
 
-    // Sprint item 35: abre os dados financeiros e acadêmicos do aluno selecionado pelo administrador.
+    // Sprint item 35 - Calcular ticket médio por aluno. abre os dados financeiros e acadêmicos do aluno selecionado pelo administrador.
     async function abrirPerfilFinanceiroAluno(item) {
         setPerfilFinanceiroAluno({ carregando: true, aluno: { nome: item.nome, email: item.email } });
         try {
-            const resposta = await fetch(`${api}/admin/alunos/${item.id}/financeiro`, { credentials: "include" });
+            const resposta = await fetch(`${api}/admin/alunos/${item.id}/financeiro`, { credentials: "include", cache: "no-store" });
             setPerfilFinanceiroAluno(await lerResposta(resposta));
         } catch (error) {
             setPerfilFinanceiroAluno({ erro: error.message, aluno: { nome: item.nome, email: item.email } });
@@ -294,35 +300,55 @@ export default function GerenciamentoUsuarios({
         <div className={css.painelAdmin}>
             {perfilFinanceiroAluno && (
                 <div className={css.overlayModal} onClick={() => setPerfilFinanceiroAluno(null)}>
-                    <section className={`${css.modalEdicao} ${css.modalFinanceiroAluno}`} onClick={(evento) => evento.stopPropagation()}>
+                    <section className={`${css.modalEdicao} ${css.modalFinanceiroAluno}`} role="dialog" aria-modal="true" aria-labelledby="titulo-perfil-aluno" onClick={(evento) => evento.stopPropagation()}>
                         <button type="button" className={css.fecharModal} onClick={() => setPerfilFinanceiroAluno(null)} aria-label="Fechar perfil">×</button>
-                        <h2>Perfil do aluno</h2>
-                        <p className={css.identificacaoAluno}>{perfilFinanceiroAluno.aluno?.nome} · {perfilFinanceiroAluno.aluno?.email}</p>
+                        <header className={css.cabecalhoPerfilAluno}>
+                            <span className={css.sobretituloPerfilAluno}>Visão administrativa</span>
+                            <h2 id="titulo-perfil-aluno">Perfil do aluno</h2>
+                            <p className={css.identificacaoAluno}>{perfilFinanceiroAluno.aluno?.nome} · {perfilFinanceiroAluno.aluno?.email}</p>
+                        </header>
                         {perfilFinanceiroAluno.carregando ? <p>Carregando dados do aluno...</p> : null}
                         {perfilFinanceiroAluno.erro ? <p className={css.erro}>{perfilFinanceiroAluno.erro}</p> : null}
                         {!perfilFinanceiroAluno.carregando && !perfilFinanceiroAluno.erro && (
                             <>
-                                <div className={css.metricasPerfilAluno}>
-                                    <article><span>Total pago em mensalidades</span><strong>{moeda(perfilFinanceiroAluno.total_pago)}</strong></article>
-                                    <article><span>Ticket médio mensal</span><strong>{moeda(perfilFinanceiroAluno.ticket_medio)}</strong></article>
-                                    <article><span>Faturas pagas</span><strong>{perfilFinanceiroAluno.faturas_pagas || 0}</strong></article>
-                                    <article><span>Em aberto</span><strong>{moeda(perfilFinanceiroAluno.total_aberto)}</strong></article>
-                                    <article><span>Aulas assistidas</span><strong>{perfilFinanceiroAluno.aulas_assistidas || 0}</strong></article>
+                                <div className={css.estadosPerfilAluno}>
+                                    <span className={perfilFinanceiroAluno.aluno?.bloqueado ? css.estadoAtencao : css.estadoRegular}>
+                                        Conta {perfilFinanceiroAluno.aluno?.bloqueado ? "bloqueada" : "ativa"}
+                                    </span>
+                                    <span className={perfilFinanceiroAluno.acesso_atual === "Ativo" ? css.estadoRegular : css.estadoAtencao}>
+                                        Acesso: {perfilFinanceiroAluno.acesso_atual || "Não informado"}
+                                    </span>
                                 </div>
                                 <section className={css.secaoPerfilAluno}>
-                                    <h3>Cursos inscritos</h3>
+                                    <h3>Dados da conta</h3>
+                                    <dl className={css.dadosContaAluno}>
+                                        <div><dt>ID do aluno</dt><dd>#{perfilFinanceiroAluno.aluno?.id}</dd></div>
+                                        <div><dt>CPF</dt><dd>{perfilFinanceiroAluno.aluno?.cpf || "Não informado"}</dd></div>
+                                        <div><dt>E-mail confirmado</dt><dd>{perfilFinanceiroAluno.aluno?.email_verificado == null ? "Não informado" : perfilFinanceiroAluno.aluno.email_verificado ? "Sim" : "Não"}</dd></div>
+                                        <div><dt>Cadastro</dt><dd>{perfilFinanceiroAluno.aluno?.criado_em ? dataBrasileira(perfilFinanceiroAluno.aluno.criado_em) : "Data não registrada"}</dd></div>
+                                    </dl>
+                                </section>
+                                <div className={css.metricasPerfilAluno}>
+                                    <article><div className={css.topoMetricaAluno}><span>Total pago em mensalidades</span><FaWallet /></div><strong>{moeda(perfilFinanceiroAluno.total_pago)}</strong></article>
+                                    <article><div className={css.topoMetricaAluno}><span>Ticket médio mensal</span><FaChartLine /></div><strong>{moeda(perfilFinanceiroAluno.ticket_medio)}</strong></article>
+                                    <article><div className={css.topoMetricaAluno}><span>Faturas pagas</span><FaCheckCircle /></div><strong>{perfilFinanceiroAluno.faturas_pagas || 0}</strong></article>
+                                    <article><div className={css.topoMetricaAluno}><span>Em aberto</span><FaFileInvoiceDollar /></div><strong>{moeda(perfilFinanceiroAluno.total_aberto)}</strong></article>
+                                    <article><div className={css.topoMetricaAluno}><span>Aulas concluídas</span><FaClock /></div><strong>{perfilFinanceiroAluno.aulas_concluidas || 0}</strong></article>
+                                </div>
+                                <section className={css.secaoPerfilAluno}>
+                                    <h3><FaBookOpen /> Cursos inscritos</h3>
                                     {(perfilFinanceiroAluno.cursos || []).map((curso) => (
                                         <div className={css.linhaPerfilAluno} key={curso.id}>
-                                            <span>{curso.titulo}</span><strong>{curso.progresso}%</strong>
+                                            <span>{curso.titulo}<small>Inscrição: {dataBrasileira(curso.data_inscricao)}</small></span><strong>{curso.progresso}% concluído</strong>
                                         </div>
                                     ))}
                                     {!(perfilFinanceiroAluno.cursos || []).length && <p>Nenhum curso inscrito.</p>}
                                 </section>
                                 <section className={css.secaoPerfilAluno}>
-                                    <h3>Histórico de mensalidades</h3>
+                                    <h3><FaFileInvoiceDollar /> Histórico de mensalidades</h3>
                                     {(perfilFinanceiroAluno.faturas || []).map((fatura) => (
                                         <div className={css.linhaPerfilAluno} key={fatura.id}>
-                                            <span>Mensalidade #{fatura.id} · {fatura.status_label}<small>{fatura.data_pagamento ? `Pagamento: ${dataBrasileira(fatura.data_pagamento)}` : `Vencimento: ${dataBrasileira(fatura.data_vencimento || fatura.criado_em)}`}</small></span>
+                                            <span>Mensalidade #{fatura.id} · {fatura.status_label}<small>{fatura.data_pagamento ? `Pagamento: ${dataBrasileira(fatura.data_pagamento)}` : `Vencimento: ${dataBrasileira(fatura.data_vencimento || fatura.criado_em)}`}</small>{fatura.acesso_label && <small>{fatura.acesso_label}{fatura.data_expiracao ? ` ${fatura.acesso_label === "Acesso válido" ? "até" : "em"} ${dataBrasileira(fatura.data_expiracao)}` : ""}</small>}</span>
                                             <strong>{moeda(fatura.valor)}</strong>
                                         </div>
                                     ))}
@@ -428,7 +454,7 @@ export default function GerenciamentoUsuarios({
 
             <div className={css.conteudoPrincipal}>
                 <main className={css.areaConteudo}>
-                    {/* Sprint item 9: introduz a área de usuários com um resumo dos controles disponíveis. */}
+                    {/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. introduz a área de usuários com um resumo dos controles disponíveis. */}
                     <section className={css.cabecalhoPagina}>
                         <span className={css.etiquetaPagina}>ADMINISTRAÇÃO</span>
                         <h2>Gerenciar usuários</h2>

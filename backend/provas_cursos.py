@@ -1,4 +1,4 @@
-"""Sprint item 20: ciclo da prova final de cada curso.
+"""Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. ciclo da prova final de cada curso.
 
 O professor monta as questões e escolhe o gabarito das objetivas. A API
 valida tudo antes de salvar. Depois de publicada e concluídas as aulas, o
@@ -27,7 +27,7 @@ NOTA_MINIMA_APROVACAO = 70
 def _apagar_conteudo_prova(cursor, id_prova, apagar_cabecalho=False):
     """Remove dados dependentes antes da prova; o chamador confirma a transação.
 
-    Sprint item 20: a mesma ordem serve para editar e excluir. Em uma edição,
+    Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. a mesma ordem serve para editar e excluir. Em uma edição,
     mantemos ID, título e publicação, mas as tentativas e questões antigas
     deixam de existir. Na exclusão também removemos o registro da prova.
     """
@@ -38,7 +38,7 @@ def _apagar_conteudo_prova(cursor, id_prova, apagar_cabecalho=False):
 
 
 def _pontuar_prova(cursor, id_prova, respostas, correcoes=None):
-    """Sprint item 20: soma objetivas e dissertativas corrigidas.
+    """Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. soma objetivas e dissertativas corrigidas.
 
     Cada questão vale a mesma fração dos 100 pontos. A objetiva compara o
     texto selecionado com o gabarito; a dissertativa espera o professor marcar
@@ -69,13 +69,19 @@ def _pontuar_prova(cursor, id_prova, respostas, correcoes=None):
 
 
 
-# Sprint item 20: GET entrega prova e gabarito apenas ao professor do curso.
+# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. GET entrega prova e gabarito apenas ao professor do curso.
 # POST valida perguntas e alternativas, substitui as questões e apaga tentativas
 # anteriores: depois de uma edição elas já não representam a prova atual.
 # DELETE remove prova, questões e tentativas; o professor pode recomeçar do zero.
 @app.route("/professor/cursos/<int:id_curso>/prova", methods=["GET", "POST", "DELETE"])
 @jwt_required()
 def prova_professor(id_curso):
+    """Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. permite consultar, salvar ou excluir a prova do próprio curso.
+
+    GET devolve questões e gabarito ao professor. POST valida todas as questões
+    e alternativas antes de substituir o conteúdo; tentativas da versão antiga
+    são apagadas. DELETE remove prova, questões e respostas na mesma transação.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -89,6 +95,8 @@ def prova_professor(id_curso):
             return resposta("Curso nao encontrado para este instrutor.", 404)
 
         if request.method == "GET":
+            # Item 20, apresentação: este ramo entrega o gabarito somente ao
+            # professor. A rota do aluno abaixo omite RESPOSTA_ESPERADA.
             cursor.execute(
                 """
                 SELECT FIRST 1 ID_PROVA, TITULO, PUBLICADA
@@ -131,6 +139,8 @@ def prova_professor(id_curso):
             })
 
         if request.method == "DELETE":
+            # Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. removemos primeiro respostas e questões de cada prova;
+            # assim não sobra tentativa ligada a uma prova que deixou de existir.
             cursor.execute("SELECT ID_PROVA FROM PROVAS_CURSO WHERE ID_CURSO = ?", (id_curso,))
             ids_provas = [row[0] for row in cursor.fetchall()]
             for id_prova in ids_provas:
@@ -149,6 +159,8 @@ def prova_professor(id_curso):
             return resposta("Cadastre ao menos uma questao.", 400)
 
         questoes_validadas = []
+        # Validar tudo antes de escrever no banco impede salvar meia prova se
+        # uma alternativa for repetida ou o gabarito não estiver nas opções.
         for questao in questoes:
             if not isinstance(questao, dict):
                 return resposta("Questão inválida.", 400)
@@ -193,7 +205,8 @@ def prova_professor(id_curso):
             )
 
         for enunciado, tipo, alternativas, resposta_esperada in questoes_validadas:
-
+            # Cada questão recebe ID próprio. As alternativas viram JSON no
+            # BLOB; o gabarito fica separado para correção e não vai ao aluno.
             cursor.execute(
                 """
                 INSERT INTO QUESTOES_PROVA (
@@ -223,6 +236,11 @@ def prova_professor(id_curso):
 @app.route("/professor/provas/<int:id_prova>/publicar", methods=["PATCH"])
 @jwt_required()
 def publicar_prova(id_prova):
+    """Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. só libera ao aluno uma prova válida publicada pelo professor.
+
+    O professor precisa pertencer ao curso e as perguntas precisam cumprir
+    as regras da avaliação antes de mudar PUBLICADA para 1.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -264,10 +282,16 @@ def publicar_prova(id_prova):
 
 
 
-# Sprint item 20: libera a avaliação após a conclusão e bloqueia reenvio até um dia após uma reprovação.
+# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. libera a avaliação após a conclusão e bloqueia reenvio até um dia após uma reprovação.
 @app.route("/aluno/cursos/<int:id_curso>/prova", methods=["GET", "POST"])
 @jwt_required()
 def prova_aluno(id_curso):
+    """Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. GET entrega prova; POST grava a tentativa do aluno.
+
+    Primeiro exige matrícula, assinatura e 100% das aulas. Objetivas são
+    pontuadas na hora; dissertativas ficam pendentes de correção. Reprovação
+    libera nova tentativa após um dia, calculado da correção ou do envio.
+    """
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -310,6 +334,8 @@ def prova_aluno(id_curso):
             return resposta("Curso ainda nao possui prova publicada.", 403)
 
         if request.method == "GET":
+            # Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. mostramos a última tentativa e a data de nova chance;
+            # a consulta das perguntas não seleciona a coluna do gabarito.
             cursor.execute(
                 """
                 SELECT FIRST 1 STATUS, FEEDBACK, CRIADO_EM, CORRIGIDO_EM, RESPOSTAS,
@@ -371,6 +397,8 @@ def prova_aluno(id_curso):
         )
         envio_anterior = cursor.fetchone()
         if envio_anterior:
+            # Pendente e aprovado não podem reenviar. Reprovado conta um dia a
+            # partir da correção, ou do envio quando a correção foi automática.
             if int(envio_anterior[0] or 0) == 0:
                 return resposta("Sua prova ainda aguarda correcao do instrutor.", 409)
             if int(envio_anterior[0] or 0) == 1:
@@ -382,6 +410,8 @@ def prova_aluno(id_curso):
         cursor.execute("SELECT ID_QUESTAO, TIPO, ALTERNATIVAS FROM QUESTOES_PROVA WHERE ID_PROVA = ?", (prova[0],))
         questoes_da_prova = cursor.fetchall()
         chaves_questoes = {str(row[0]) for row in questoes_da_prova}
+        # Comparamos os IDs recebidos com os IDs da prova atual; isso impede
+        # respostas incompletas ou de uma versão anterior da avaliação.
         if set(respostas) != chaves_questoes or any(not str(valor).strip() for valor in respostas.values()):
             return resposta("Responda todas as questoes antes de enviar.", 400)
         for id_questao, tipo_questao, alternativas_salvas in questoes_da_prova:
@@ -395,6 +425,8 @@ def prova_aluno(id_curso):
                 return resposta("Selecione uma alternativa valida para cada questao objetiva.", 400)
 
         resultado = _pontuar_prova(cursor, prova[0], respostas)
+        # STATUS 0 significa que ainda há dissertativa para o professor;
+        # 1 é aprovação e 2 é reprovação com nota final.
         cursor.execute(
             """
             INSERT INTO RESPOSTAS_PROVA
@@ -437,10 +469,15 @@ def prova_aluno(id_curso):
 
 
 
-# Sprint item 20: entrega ao instrutor as respostas dos alunos com as perguntas correspondentes para correção manual.
+# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. entrega ao instrutor as respostas dos alunos com as perguntas correspondentes para correção manual.
 @app.route("/professor/provas/respostas", methods=["GET"])
 @jwt_required()
 def respostas_prova_professor():
+    """Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. lista tentativas dos cursos do professor com suas perguntas.
+
+    O JOIN com PROFESSORES_CURSO restringe a consulta. As perguntas são
+    carregadas uma vez por prova e reutilizadas para seus vários envios.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -468,6 +505,8 @@ def respostas_prova_professor():
         )
         envios = cursor.fetchall()
         questoes_por_prova = {}
+        # Uma prova pode ter muitos alunos: este dicionário evita repetir a
+        # mesma consulta de questões para cada tentativa retornada.
         for envio in envios:
             if envio[1] in questoes_por_prova:
                 continue
@@ -511,6 +550,11 @@ def respostas_prova_professor():
 @app.route("/professor/provas/respostas/<int:id_resposta>/questoes/<int:id_questao>", methods=["PATCH"])
 @jwt_required()
 def corrigir_questao_dissertativa(id_resposta, id_questao):
+    """Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. corrige uma questão e recalcula a nota da tentativa.
+
+    Só o professor do curso pode marcar correta/incorreta. Quando não restam
+    dissertativas pendentes, a nota final decide aprovação ou reprovação.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -543,6 +587,8 @@ def corrigir_questao_dissertativa(id_resposta, id_questao):
             (id_resposta,),
         )
         estado_atual = cursor.fetchone()
+        # O lock protege duas correções simultâneas da mesma tentativa;
+        # reler o status impede corrigir uma prova já finalizada.
         if not estado_atual or int(estado_atual[0] or 0) != 0:
             return resposta("Esta prova já foi corrigida.", 409)
         cursor.execute("SELECT TIPO FROM QUESTOES_PROVA WHERE ID_QUESTAO = ? AND ID_PROVA = ?", (id_questao, envio[0]))
@@ -551,6 +597,8 @@ def corrigir_questao_dissertativa(id_resposta, id_questao):
             return resposta("Questão dissertativa não encontrada nesta prova.", 404)
         correcoes = _decodificar_respostas_prova(estado_atual[2])
         correcoes[str(id_questao)] = dados["correta"]
+        # Recalcula a prova inteira após esta questão. Enquanto restar alguma
+        # dissertativa sem correção, o status continua pendente.
         resultado = _pontuar_prova(cursor, envio[0], _decodificar_respostas_prova(estado_atual[1]), correcoes)
         cursor.execute(
             """UPDATE RESPOSTAS_PROVA

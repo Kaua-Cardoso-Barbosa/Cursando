@@ -213,9 +213,9 @@
 .listaTransacoes {
     grid-column: 1 / -1;
     min-width: 0;
-    padding: 22px;
+    padding: clamp(18px, 2.4vw, 26px);
     border: 1px solid #dfe9e3;
-    border-radius: 16px;
+    border-radius: 18px;
     background: #ffffff;
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
 }
@@ -521,7 +521,7 @@
     }
 }
 
-/* Sprint item 9: aproxima dashboard, financeiro e auditoria administrativa da identidade dos demais painéis. */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas. aproxima dashboard, financeiro e auditoria administrativa da identidade dos demais painéis. */
 .painelAdm {
     background: #f5f8f6;
 }
@@ -620,16 +620,12 @@
 
 .cardMetrica {
     min-width: 0;
-    min-height: 150px;
-    padding: 20px;
+    min-height: 148px;
+    padding: 22px 23px;
     border: 1px solid #dfe9e3;
-    border-radius: 17px;
+    border-radius: 18px;
     background: #ffffff;
-    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.05);
-}
-
-.paginaFinanceiro .cardMetrica:last-child {
-    grid-column: 1 / -1;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
 }
 
 .metricaTopo h2 {
@@ -640,21 +636,24 @@
 }
 
 .iconeBadge {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
     background: #e5f5ec;
     color: #087044;
 }
 
 .metricaVariacao {
-    color: #607468;
-    font-size: 0.84rem;
+    color: #507363;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    font-weight: 500;
+    margin-bottom: 10px;
 }
 
 .metricaNumero {
     color: #123c2a;
-    font-size: clamp(1.5rem, 2.3vw, 2rem);
+    font-size: clamp(1.55rem, 2vw, 1.9rem);
     line-height: 1.15;
     font-weight: 650;
     overflow-wrap: anywhere;
@@ -799,19 +798,87 @@
 
 .logItem {
     border: 1px solid #dfe9e3;
-    border-radius: 14px;
-    padding: 16px;
-    background: #fbfdfc;
+    border-radius: 17px;
+    padding: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
 }
 
 .logItem strong {
     color: #087044;
 }
 
+.logResumo .logPrevia {
+    color: #456253;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
 .logDetalhes {
     border: 1px solid #e2ebe5;
     border-radius: 10px;
     background: #f4f8f6;
+    padding: 18px;
+    font-size: 0.9rem;
+    white-space: normal;
+}
+
+/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. organiza o contexto da ação e os snapshots do trigger em pares de rótulo e valor. */
+.logInformacoes {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+}
+
+.logInformacoes > div {
+    display: grid;
+    grid-template-columns: minmax(145px, 190px) minmax(0, 1fr);
+    gap: 8px 16px;
+}
+
+.logInformacoes dt {
+    color: #456253;
+    font-weight: 700;
+}
+
+.logInformacoes dd {
+    margin: 0;
+    color: #233c2f;
+    overflow-wrap: anywhere;
+}
+
+.logAlteracoes {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.logAlteracoes h3 {
+    color: #183d2c;
+    font-size: 1rem;
+}
+
+.logAlteracoes table {
+    min-width: 540px;
+}
+
+.logAlteracoes td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.logAlteracoes .avisoLog {
+    color: #607468;
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.logDetalhes .detalhesTecnicos {
+    margin-top: 18px;
+}
+
+.detalhesTecnicos .logInformacoes {
+    margin-top: 12px;
 }
 
 .rodapePagina {
@@ -826,6 +893,11 @@
 }
 
 @media (max-width: 860px) {
+    .logInformacoes > div {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+
     .areaConteudo {
         padding: 22px 18px 30px;
     }

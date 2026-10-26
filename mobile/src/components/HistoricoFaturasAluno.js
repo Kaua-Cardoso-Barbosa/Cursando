@@ -11,7 +11,7 @@ function dataBrasileira(valor) {
 }
 
 export default function HistoricoFaturasAluno({ faturas = [], totalGasto, mostrarTotal = false }) {
-  // Sprint item 33: preserva no histórico mensalidades pagas mesmo depois de a assinatura expirar.
+  // Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. preserva no histórico mensalidades pagas mesmo depois de a assinatura expirar.
   const pagas = faturas.filter((fatura) => [1, 3].includes(Number(fatura.status)));
 
   return (

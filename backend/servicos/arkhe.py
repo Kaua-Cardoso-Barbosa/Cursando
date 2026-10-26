@@ -1,3 +1,11 @@
+"""Sprint item 2 - Integrar pagamentos pelo ARKHE. comunicação HTTP com a Arkhé para cobranças Pix.
+
+Este módulo conhece as credenciais e o formato de resposta do provedor.
+As rotas da API chamam estas funções em vez de montar requisições HTTP em
+cada tela. ``ArkheError`` indica falha de integração que a rota converte em
+mensagem para o usuário; dados de autenticação ficam só no servidor.
+"""
+
 import requests
 from flask import current_app
 
@@ -28,7 +36,7 @@ def _url(caminho):
 
 
 def _requisitar_arkhe(metodo, caminho, **opcoes):
-    # Sprint item 1: converte falhas de rede da Arkhé em erro de integração tratável pelas rotas.
+    # Sprint item 2 - Integrar pagamentos pelo ARKHE. converte falhas de rede da Arkhé em erro de integração tratável pelas rotas.
     try:
         return requests.request(metodo, _url(caminho), timeout=10, **opcoes)
     except requests.RequestException as erro:
@@ -74,7 +82,13 @@ def _primeiro_valor(dados, *chaves):
 
 
 def _normalizar_cobranca(dados, exigir_codigo_pix=True):
-    # Sprint item 1: padroniza os campos da resposta da Arkhé consumidos pelo site e aplicativo.
+    """Sprint item 2 - Integrar pagamentos pelo ARKHE. transforma nomes variáveis da Arkhé em campos usados pela API.
+
+    Ao criar um Pix, o código copiável é obrigatório para mostrar ao aluno.
+    Ao consultar pagamento, o status pode chegar sem esse código; por isso
+    quem chama escolhe se o campo é exigido.
+    """
+    # Sprint item 2 - Integrar pagamentos pelo ARKHE. padroniza os campos da resposta da Arkhé consumidos pelo site e aplicativo.
     id_cobranca = _primeiro_valor(dados, "id_cobranca", "id", "cobranca_id", "charge_id")
     valor = _primeiro_valor(dados, "valor", "amount")
     codigo_pagamento = _primeiro_valor(
@@ -127,7 +141,12 @@ def _normalizar_cobranca(dados, exigir_codigo_pix=True):
 
 
 def criar_cobranca_pix(valor):
-    # Sprint item 1: cria a cobrança PIX na Arkhé para o fluxo de assinatura e financeiro.
+    """Sprint item 2 - Integrar pagamentos pelo ARKHE. valida valor, cria cobrança remota e devolve dados padronizados.
+
+    A requisição HTTP ocorre no servidor com as credenciais do .env. Uma
+    resposta de erro ou sem campos obrigatórios vira ArkheError para a rota.
+    """
+    # Sprint item 2 - Integrar pagamentos pelo ARKHE. cria a cobrança PIX na Arkhé para o fluxo de assinatura e financeiro.
     try:
         valor = round(float(valor), 2)
     except (TypeError, ValueError) as erro:
@@ -159,7 +178,12 @@ def criar_cobranca_pix(valor):
 
 
 def consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=True):
-    # Sprint item 1: consulta a cobrança na Arkhé para confirmar o pagamento antes de liberar acesso.
+    """Sprint item 2 - Integrar pagamentos pelo ARKHE. consulta a cobrança existente antes de liberar a assinatura.
+
+    Esta função só obtém o estado remoto; a rota de pagamento decide se ele
+    representa quitação e quando atualizar a mensalidade no banco local.
+    """
+    # Sprint item 2 - Integrar pagamentos pelo ARKHE. consulta a cobrança na Arkhé para confirmar o pagamento antes de liberar acesso.
     resposta = _requisitar_arkhe(
         "GET",
         f"/api/v1/cobrancas/pix/{id_cobranca}",
@@ -171,7 +195,7 @@ def consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=True):
     if not resposta.ok:
         raise ArkheError(_mensagem_erro(dados, "Erro ao consultar cobranca Pix"))
 
-    # Sprint item 1: consultas de confirmação precisam do status, mesmo se a Arkhé omitir o código Pix.
+    # Sprint item 2 - Integrar pagamentos pelo ARKHE. consultas de confirmação precisam do status, mesmo se a Arkhé omitir o código Pix.
     return _normalizar_cobranca(dados, exigir_codigo_pix=exigir_codigo_pix)
 
 

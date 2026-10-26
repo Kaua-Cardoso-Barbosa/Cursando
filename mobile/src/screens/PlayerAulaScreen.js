@@ -19,8 +19,8 @@ function formatarPosicaoAula(milissegundos) {
 }
 
 export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFinish, onSaveProgress }) {
-  // Sprint item 10: ativa a proteção nativa do Android (FLAG_SECURE) durante a exibição da aula.
-  // Sprint item 26: mantém o bloqueio nativo de capturas ativo enquanto o player da aula está aberto.
+  // Sprint item 10 - Bloquear captura de tela durante o curso. ativa a proteção nativa do Android (FLAG_SECURE) durante a exibição da aula.
+  // Sprint item 26 - Bloquear gravação de tela durante o curso. mantém o bloqueio nativo de capturas ativo enquanto o player da aula está aberto.
   usePreventScreenCapture("aula-protegida");
   // Reproduz a URL de mídia autenticada e registra a conclusão enviada pelo player nativo.
   const aula = detalhe?.aula;
@@ -38,11 +38,11 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
   function enfileirarProgresso(idAula, posicaoMillis, forcar = false) {
     const posicaoSegundos = Math.max(0, Number(posicaoMillis || 0) / 1000);
     if (!idAula || !Number.isFinite(posicaoSegundos)) return filaSalvamentosRef.current;
-    // Sprint item 7: deixa passar heartbeats de pausa e início mesmo sem alteração na posição.
+    // Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. deixa passar heartbeats de pausa e início mesmo sem alteração na posição.
     if (!forcar && Math.abs(posicaoSegundos - ultimaPosicaoEnviadaRef.current) < 0.5) return filaSalvamentosRef.current;
 
     ultimaPosicaoEnviadaRef.current = posicaoSegundos;
-    // Sprint item 4: serializa os salvamentos para que uma resposta lenta nao sobrescreva uma posicao mais recente.
+    // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. serializa os salvamentos para que uma resposta lenta nao sobrescreva uma posicao mais recente.
     filaSalvamentosRef.current = filaSalvamentosRef.current
       .then(() => onSaveProgressRef.current?.(idAula, posicaoSegundos))
       .catch((error) => console.error("Erro ao salvar posicao da aula:", error));
@@ -54,8 +54,8 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
     if (!atual.idAula || !atual.carregado || atual.concluido) return filaSalvamentosRef.current;
 
     const diferenca = Math.abs(atual.posicaoMillis / 1000 - ultimaPosicaoEnviadaRef.current);
-    // Sprint item 7: renova o relógio ao pausar, mesmo quando o ponto de reprodução não mudou.
-    // Sprint item 4: grava durante aulas curtas também; cinco segundos vistos
+    // Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. renova o relógio ao pausar, mesmo quando o ponto de reprodução não mudou.
+    // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. grava durante aulas curtas também; cinco segundos vistos
     // precisam existir no banco mesmo sem uma pausa manual.
     if ((!forcar && diferenca < 1) || (diferenca < 0.5 && !registrarMesmoPonto)) return filaSalvamentosRef.current;
     return enfileirarProgresso(atual.idAula, atual.posicaoMillis, registrarMesmoPonto);
@@ -121,7 +121,7 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
     atual.posicaoMillis = Number(status.positionMillis || 0);
     const estavaReproduzindo = Boolean(atual.estavaReproduzindo);
     atual.estavaReproduzindo = Boolean(status.isPlaying);
-    // Sprint item 7: grava o ponto inicial ao começar a reprodução para contar desde os primeiros segundos.
+    // Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. grava o ponto inicial ao começar a reprodução para contar desde os primeiros segundos.
     if (status.isPlaying && !atual.inicioRegistrado) {
       atual.inicioRegistrado = true;
       ultimaPosicaoEnviadaRef.current = atual.posicaoMillis / 1000 - 0.5;
@@ -129,7 +129,7 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
     }
     if (status.didJustFinish) {
       if (atual.concluido) return;
-      // Sprint item 7: registra o último intervalo assistido antes de encerrar a aula.
+      // Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. registra o último intervalo assistido antes de encerrar a aula.
       salvarPosicaoAtual(true, true);
       atual.concluido = true;
       const aulaConcluida = aula;
@@ -142,7 +142,7 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
       return;
     }
 
-    // Sprint item 4: salva durante a reproducao e imediatamente quando o aluno pausa.
+    // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. salva durante a reproducao e imediatamente quando o aluno pausa.
     salvarPosicaoAtual(!status.isPlaying);
   }
 

@@ -1,4 +1,14 @@
 
+"""conversa privada e avisos por e-mail.
+
+Aluno só acessa chat do curso em que está matriculado; professor só acessa
+alunos de cursos sob sua responsabilidade. Abrir um chat vazio não grava
+mensagem: a conversa entra na caixa de entrada após o primeiro envio.
+Ao publicar curso novo ou reprovar prova, o servidor prepara destinatários e
+dispara e-mails em segundo plano, sem transformar falha de SMTP em falha do
+curso ou da correção já confirmada no banco.
+"""
+
 import smtplib
 import threading
 from email.mime.multipart import MIMEMultipart
@@ -18,10 +28,17 @@ from utilitarios_backend import _aluno_matriculado, _bloqueio_assinatura_aluno, 
 
 
 
-# Sprint item 19: lista cursos matriculados para alunos e conversas recebidas para instrutores, com nome e avatar do contato.
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. lista cursos matriculados para alunos e somente conversas
+# com mensagens para instrutores. O professor pode abrir um chat pela lista de
+# alunos do curso; a conversa entra na caixa de entrada apos o primeiro envio.
 @app.route("/chat/conversas", methods=["GET"])
 @jwt_required()
 def chat_conversas():
+    """Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. lista as conversas visíveis para o perfil do token.
+
+    O professor só recebe conversas que já têm mensagem; para iniciar outra,
+    abre um aluno da lista do curso. O aluno vê os cursos em que está inscrito.
+    """
     garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = int(get_jwt_identity())
@@ -30,6 +47,8 @@ def chat_conversas():
 
     try:
         if tipo == 1:
+            # Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. a lista do professor nasce de MENSAGENS_CHAT. Um aluno
+            # selecionado no curso ainda não aparece aqui até o primeiro POST.
             cursor.execute(
                 """
                 SELECT
@@ -65,6 +84,8 @@ def chat_conversas():
             ])
 
         if tipo == 2:
+            # O aluno vê seus cursos com matrícula ativa, mesmo que ainda não
+            # exista mensagem. LEFT JOIN preserva essas conversas vazias.
             cursor.execute(
                 """
                 SELECT
@@ -110,10 +131,16 @@ def chat_conversas():
 
 
 
-# Sprint item 19: valida matrícula e autoria, registra mensagens e retorna identidade visual de cada remetente.
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. valida matrícula e autoria, registra mensagens e retorna identidade visual de cada remetente.
 @app.route("/chat/cursos/<int:id_curso>/mensagens", methods=["GET", "POST"])
 @jwt_required()
 def chat_mensagens(id_curso):
+    """Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. GET lê mensagens; POST valida participantes e grava o envio.
+
+    A checagem no backend impede consultar ou mandar mensagens para qualquer
+    aluno/curso por simples alteração da URL. O primeiro POST cria a conversa
+    que passa a aparecer na caixa de entrada do professor.
+    """
     garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = int(get_jwt_identity())
@@ -122,6 +149,8 @@ def chat_mensagens(id_curso):
 
     try:
         if tipo == 2:
+            # Para aluno, o ID da conversa é o próprio ID do token; ele não
+            # pode escolher outro aluno alterando parâmetros da requisição.
             id_aluno = id_usuario
             if not _aluno_matriculado(cursor, id_curso, id_aluno):
                 return resposta("Aluno sem matricula ativa neste curso.", 403)
@@ -129,6 +158,8 @@ def chat_mensagens(id_curso):
             if bloqueio:
                 return bloqueio
         elif tipo == 1:
+            # O professor escolhe o aluno, mas o backend confere tanto o seu
+            # vínculo com o curso quanto a matrícula ativa do destinatário.
             if not _curso_do_professor(cursor, id_curso, id_usuario):
                 return resposta("Curso nao encontrado para este instrutor.", 404)
             id_aluno = int((request.args.get("id_aluno") or (request.get_json(silent=True) or {}).get("id_aluno") or 0))
@@ -138,6 +169,8 @@ def chat_mensagens(id_curso):
             return resposta("Chat disponivel apenas para alunos e instrutores.", 403)
 
         if request.method == "GET":
+            # Abrir a conversa marca apenas as mensagens recebidas como lidas;
+            # a seleção seguinte devolve o histórico em ordem de envio.
             cursor.execute(
                 """
                 UPDATE MENSAGENS_CHAT
@@ -179,6 +212,8 @@ def chat_mensagens(id_curso):
             return resposta("Mensagem nao pode ficar vazia.", 400)
 
         if tipo == 2:
+            # O aluno envia ao professor responsável; o professor envia ao
+            # aluno escolhido. ID_ALUNO identifica a conversa nos dois casos.
             id_destinatario = _professor_responsavel(cursor, id_curso)
             if not id_destinatario:
                 return resposta("Curso sem instrutor responsavel.", 400)
@@ -211,7 +246,7 @@ def chat_mensagens(id_curso):
         con.close()
 
 
-# Sprint itens 11 e 20: avisos por e-mail relacionados a cursos e provas.
+# avisos por e-mail relacionados a cursos e provas.
 def notificar_alunos_novo_curso(destinatarios, titulo_curso):
     """Envia, em segundo plano, um aviso para cada aluno elegível."""
     if not destinatarios:
@@ -228,7 +263,7 @@ def notificar_alunos_novo_curso(destinatarios, titulo_curso):
         current_app.logger.warning("Aviso de novo curso não enviado: SMTP_PASSWORD não configurada.")
         return
 
-    # Sprint item 11: envia avisos individuais em segundo plano para não atrasar a publicação do curso.
+    # Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado. envia avisos individuais em segundo plano para não atrasar a publicação do curso.
     thread = threading.Thread(
         target=_enviar_avisos,
         args=(list(set(destinatarios)), titulo_curso, config),
@@ -237,7 +272,7 @@ def notificar_alunos_novo_curso(destinatarios, titulo_curso):
     thread.start()
 
 
-# Sprint item 20: comunica ao aluno a reprovação e informa quando poderá refazer a avaliação.
+# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. comunica ao aluno a reprovação e informa quando poderá refazer a avaliação.
 def notificar_reprovacao_prova(destinatario, titulo_curso, feedback=""):
     if not destinatario:
         return

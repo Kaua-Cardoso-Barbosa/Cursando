@@ -5,7 +5,7 @@ import { apiRequest } from "../api/client";
 import AppIcon from "../components/AppIcon";
 import { colors, globalStyles } from "../styles";
 
-// Sprint item 21: permite ao instrutor cadastrar e remover links e arquivos complementares pelo aplicativo.
+// Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. permite ao instrutor cadastrar e remover links e arquivos complementares pelo aplicativo.
 export default function MateriaisProfessorScreen({ curso, token, onBack }) {
   const [materiais, setMateriais] = useState([]);
   const [titulo, setTitulo] = useState("");

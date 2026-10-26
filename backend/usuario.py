@@ -1,3 +1,12 @@
+"""cadastro, login e acesso à conta do aluno.
+
+Cadastro valida o e-mail por código antes de liberar a sessão. Login devolve
+um token; as outras rotas usam o ID e o tipo desse token para autorizar ações.
+Assinatura vencida não impede abrir o painel financeiro e pagar uma nova
+mensalidade. As funções de esquema atualizam colunas antigas e recompilam o
+trigger de USUARIOS quando uma alteração de tabela exigir isso.
+"""
+
 import os
 import re
 import unicodedata
@@ -92,6 +101,11 @@ def normalizar_email(email):
 
 
 def cpf_valido(cpf):
+    """Valida os dois dígitos verificadores depois de remover pontuação.
+
+    Onze dígitos iguais são recusados antes da conta. Esta função valida o
+    formato matemático; não consulta uma identidade externa.
+    """
     digitos = re.sub(r"\D", "", cpf or "")
     if len(digitos) != 11 or len(set(digitos)) == 1:
         return False
@@ -106,6 +120,11 @@ def cpf_valido(cpf):
 
 
 def garantir_coluna_email_verificado(cursor, con):
+    """Prepara o campo do cadastro e recompila o trigger após mudar o esquema.
+
+    Firebird confirma a alteração de coluna com commit; o trigger precisa
+    enxergar a estrutura nova para registrar as mudanças seguintes.
+    """
     cursor.execute("""
         SELECT 1 FROM RDB$RELATION_FIELDS
         WHERE RDB$RELATION_NAME = 'USUARIOS'
@@ -115,6 +134,18 @@ def garantir_coluna_email_verificado(cursor, con):
         cursor.execute(
             "ALTER TABLE USUARIOS ADD EMAIL_VERIFICADO SMALLINT DEFAULT 1 NOT NULL"
         )
+        con.commit()
+        garantir_gatilhos_auditoria({"USUARIOS"}, force=True)
+
+
+def garantir_coluna_data_cadastro(cursor, con):
+    """Guarda a data de contas novas sem inventar uma data para contas antigas."""
+    cursor.execute("""
+        SELECT 1 FROM RDB$RELATION_FIELDS
+        WHERE RDB$RELATION_NAME = 'USUARIOS' AND RDB$FIELD_NAME = 'CRIADO_EM'
+    """)
+    if not cursor.fetchone():
+        cursor.execute("ALTER TABLE USUARIOS ADD CRIADO_EM TIMESTAMP")
         con.commit()
         garantir_gatilhos_auditoria({"USUARIOS"}, force=True)
 
@@ -551,7 +582,7 @@ def login():
             expires_delta=duracao_token,
             additional_claims={"tipo": tipo},
         )
-        # Sprint item 34: permite entrar no dashboard e consultar faturas mesmo sem mensalidade ativa.
+        # Sprint item 34 - Exibir faturas em aberto. permite entrar no dashboard e consultar faturas mesmo sem mensalidade ativa.
         redirecionar = None
 
         resposta = make_response(
@@ -776,6 +807,7 @@ def cadastrar_colaborador():
     cursor = con.cursor()
 
     try:
+        garantir_coluna_data_cadastro(cursor, con)
         cursor.execute("SELECT 1 FROM USUARIOS WHERE EMAIL = ?", (email,))
         if cursor.fetchone():
             return resposta_mensagem("E-mail ja cadastrado", 400)
@@ -786,8 +818,8 @@ def cadastrar_colaborador():
 
         cursor.execute(
             """
-            INSERT INTO USUARIOS (NOME, EMAIL, CPF, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS)
-            VALUES (?, ?, ?, ?, ?, 0, 0)
+            INSERT INTO USUARIOS (NOME, EMAIL, CPF, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS, CRIADO_EM)
+            VALUES (?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP)
             RETURNING ID_USUARIO
             """,
             (nome, email, cpf, generate_password_hash(senha), tipo),
@@ -896,7 +928,7 @@ def alterar_senha():
 # Mantém as funções e rotas da sprint acessíveis pelos imports existentes.
 from pagamento_arkhe import criar_pagamento_pix, criar_pix_assinatura, verificar_pagamento_assinatura
 
-# Sprint item 1: cadastro e verificação de e-mail do aluno.
+# Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. cadastro e verificação de e-mail do aluno.
 @app.route("/cadastrar", methods=["POST"])
 def cadastrar():
     dados = request.get_json() or {}
@@ -919,6 +951,7 @@ def cadastrar():
 
     try:
         garantir_coluna_email_verificado(cursor, con)
+        garantir_coluna_data_cadastro(cursor, con)
         cursor.execute("SELECT 1 FROM USUARIOS WHERE EMAIL = ?", (email,))
         if cursor.fetchone():
             return resposta_mensagem("E-mail ja cadastrado", 400)
@@ -929,8 +962,8 @@ def cadastrar():
 
         cursor.execute(
             """
-            INSERT INTO USUARIOS (NOME, EMAIL, CPF, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS, EMAIL_VERIFICADO)
-            VALUES (?, ?, ?, ?, 2, 0, 0, 0)
+            INSERT INTO USUARIOS (NOME, EMAIL, CPF, SENHA, TIPO_USUARIO, SITUACAO, TENTATIVAS, EMAIL_VERIFICADO, CRIADO_EM)
+            VALUES (?, ?, ?, ?, 2, 0, 0, 0, CURRENT_TIMESTAMP)
             RETURNING ID_USUARIO
             """,
             (nome, email, cpf, generate_password_hash(senha)),
@@ -962,7 +995,7 @@ def cadastrar():
         con.close()
 
 
-# Sprint item 1: valida o código do cadastro e devolve a sessão para o app seguir à etapa de pagamento.
+# Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. valida o código do cadastro e devolve a sessão para o app seguir à etapa de pagamento.
 @app.route("/verificar_email_cadastro", methods=["POST"])
 def verificar_email_cadastro():
     dados = request.get_json() or {}
@@ -1022,7 +1055,7 @@ def verificar_email_cadastro():
         con.close()
 
 
-# Sprint item 1: permite ao site e aplicativo pedir outro código para o cadastro pendente.
+# Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. permite ao site e aplicativo pedir outro código para o cadastro pendente.
 @app.route("/reenviar_codigo_cadastro", methods=["POST"])
 def reenviar_codigo_cadastro():
     dados = request.get_json() or {}
@@ -1056,7 +1089,7 @@ def reenviar_codigo_cadastro():
     return resposta_mensagem(mensagem, 200 if tipo_envio == "sucesso" else 503, tipo_envio)
 
 
-# Sprint item 1: corrige o endereço do cadastro pendente nos dois clientes e dispara nova verificação.
+# Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. corrige o endereço do cadastro pendente nos dois clientes e dispara nova verificação.
 @app.route("/corrigir_email_cadastro", methods=["POST"])
 def corrigir_email_cadastro():
     dados = request.get_json() or {}

@@ -57,16 +57,18 @@ function AppContent() {
   const [tab, setTab] = useState("home");
   const [editingCourse, setEditingCourse] = useState(null);
   const [studentsCourse, setStudentsCourse] = useState(null);
-  // Sprint item 6: abre o gerenciamento de módulos e aulas para o curso escolhido.
+  // Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. guarda o aluno escolhido até abrir o chat privado no app.
+  const [chatInicial, setChatInicial] = useState(null);
+  // Sprint item 6 - Permitir que o instrutor divida o curso em módulos. abre o gerenciamento de módulos e aulas para o curso escolhido.
   const [managingCourse, setManagingCourse] = useState(null);
-  // Sprint item 20: guarda o curso selecionado para configurar sua prova e corrigir envios no app.
+  // Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. guarda o curso selecionado para configurar sua prova e corrigir envios no app.
   const [examCourse, setExamCourse] = useState(null);
   const [examAlunoAberto, setExamAlunoAberto] = useState(false);
   const [materialsCourse, setMaterialsCourse] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Sprint item 1: controla o formulário de cadastro e a verificação do aluno antes do pagamento.
+  // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. controla o formulário de cadastro e a verificação do aluno antes do pagamento.
   const [cadastroAberto, setCadastroAberto] = useState(false);
   const [emailPendente, setEmailPendente] = useState("");
   const [codigoEmailEnviado, setCodigoEmailEnviado] = useState(null);
@@ -94,7 +96,7 @@ function AppContent() {
       const cursosPath = tipo === 2 ? "/aluno/cursos" : "/professor/cursos?status=todos";
       const requisicoes = [
         apiRequest(dashboardPath, {}, authToken),
-        // Sprint item 34: a listagem bloqueada não impede o acesso ao restante do dashboard.
+        // Sprint item 34 - Exibir faturas em aberto. a listagem bloqueada não impede o acesso ao restante do dashboard.
         apiRequest(cursosPath, {}, authToken).catch((error) => {
           if (tipo === 2 && error?.status === 402) return [];
           throw error;
@@ -102,7 +104,7 @@ function AppContent() {
         apiRequest("/perfil", {}, authToken)
       ];
 
-      // Sprint item 8: carrega o financeiro no app tambem para alunos, nao apenas professores.
+      // Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. carrega o financeiro no app tambem para alunos, nao apenas professores.
       if (tipo === 1 || tipo === 2) {
         requisicoes.push(apiRequest("/financeiro/resumo", {}, authToken));
       }
@@ -114,7 +116,7 @@ function AppContent() {
       setFinanceiro((tipo === 1 || tipo === 2) ? financeiroData : null);
       const usuarioAtualizado = { ...(authUser || {}), ...perfilData, tipo };
       setUsuario(usuarioAtualizado);
-      // Sprint item 3: persiste no app o mesmo perfil atualizado que o site acabou de ler do backend.
+      // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. persiste no app o mesmo perfil atualizado que o site acabou de ler do backend.
       await salvarSessao(authToken, usuarioAtualizado);
     } catch (error) {
       mostrarAlerta("Erro", error.message, "erro");
@@ -123,7 +125,7 @@ function AppContent() {
     }
   }
 
-  // Sprint item 18: pede biometria do aparelho ao restaurar uma sessão salva, quando disponível.
+  // Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações. pede biometria do aparelho ao restaurar uma sessão salva, quando disponível.
   async function confirmarBiometriaDisponivel() {
     const compativel = await LocalAuthentication.hasHardwareAsync();
     const cadastrado = compativel ? await LocalAuthentication.isEnrolledAsync() : false;
@@ -141,7 +143,7 @@ function AppContent() {
     return resultado.success === true;
   }
 
-  // Sprint item 18: confirma o início da sessão com vibração e uma notificação local.
+  // Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações. confirma o início da sessão com vibração e uma notificação local.
   async function avisarSessaoAtiva() {
     Vibration.vibrate(60);
 
@@ -188,14 +190,14 @@ function AppContent() {
       return true;
     }
 
-    // Sprint item 3: distingue falta de assinatura de falha de rede para manter os dados dos dois clientes coerentes.
+    // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. distingue falta de assinatura de falha de rede para manter os dados dos dois clientes coerentes.
     setValidandoAssinatura(true);
     setAssinaturaAtiva(null);
     try {
       const dados = await apiRequest("/assinaturas/verificar", {}, authToken);
       const ativa = dados?.assinatura === true;
       setAssinaturaAtiva(ativa);
-      // Sprint item 34: mantém início, catálogo e financeiro acessíveis sem mensalidade ativa.
+      // Sprint item 34 - Exibir faturas em aberto. mantém início, catálogo e financeiro acessíveis sem mensalidade ativa.
       await carregarDados(authToken, authUser);
       return ativa;
     } catch (error) {
@@ -242,10 +244,10 @@ function AppContent() {
       sincronizandoApp.current = true;
 
       try {
-        // Sprint item 3: ao voltar ao app, revalida acesso e busca no servidor os dados alterados no site.
+        // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. ao voltar ao app, revalida acesso e busca no servidor os dados alterados no site.
         const acessoAtivo = await validarAcesso(token, usuario);
         if (!acessoAtivo) {
-          // Sprint item 34: se o pagamento venceu durante a sessão, leva o aluno ao financeiro.
+          // Sprint item 34 - Exibir faturas em aberto. se o pagamento venceu durante a sessão, leva o aluno ao financeiro.
           setDetalheCursoAluno(null);
           setDetalheAulaAluno(null);
           if (tab === "courses" || tab === "discover") setTab("finance");
@@ -277,6 +279,7 @@ function AppContent() {
     setDetalheCursoAluno(null);
     setDetalheAulaAluno(null);
     setExamAlunoAberto(false);
+    setChatInicial(null);
     setTab("home");
   }
 
@@ -303,7 +306,7 @@ function AppContent() {
       setTab(destino);
     } catch (error) {
       if (error.status === 402) {
-        // Sprint item 34: avisa sobre a fatura pendente e abre a aba de pagamento.
+        // Sprint item 34 - Exibir faturas em aberto. avisa sobre a fatura pendente e abre a aba de pagamento.
         mostrarAlerta("Fatura em aberto", error.message, "erro");
         setDetalheCursoAluno(null);
         setDetalheAulaAluno(null);
@@ -359,7 +362,7 @@ function AppContent() {
     }
   }
 
-  // Sprint item 4: envia ao backend a posicao usada para retomar a aula no site e no app.
+  // Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou. envia ao backend a posicao usada para retomar a aula no site e no app.
   async function salvarProgressoAula(idAula, posicaoSegundos) {
     try {
       await apiRequest(`/aluno/aulas/${idAula}/progresso`, {
@@ -376,7 +379,7 @@ function AppContent() {
       await apiRequest(`/aluno/aulas/${aula.id}/assistir`, { method: "POST" }, token);
       await carregarDados();
       if (detalheCursoAluno?.curso?.id) {
-        // Sprint item 3: atualiza progresso, materiais e prova com os mesmos dados exibidos no site.
+        // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. atualiza progresso, materiais e prova com os mesmos dados exibidos no site.
         setDetalheCursoAluno(await buscarDetalheCursoAluno(detalheCursoAluno.curso.id));
       }
     } catch (error) {
@@ -384,7 +387,7 @@ function AppContent() {
     }
   }
 
-  // Sprint item 20: envia as respostas do aluno ao servidor para correção pelo instrutor.
+  // Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. envia as respostas do aluno ao servidor para correção pelo instrutor.
   async function enviarProvaAluno(respostas) {
     if (!detalheCursoAluno?.curso?.id) return;
 
@@ -396,13 +399,13 @@ function AppContent() {
     return resultado;
   }
 
-  // Sprint item 20: solicita o PDF ao servidor, que só o emite após aprovação na prova final.
+  // Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. solicita o PDF ao servidor, que só o emite após aprovação na prova final.
   async function baixarCertificadoAluno() {
     const idCurso = detalheCursoAluno?.curso?.id;
     if (!idCurso || !token) return;
 
     try {
-      // Sprint item 5: baixa o PDF autenticado e abre as opcoes nativas para salvar ou compartilhar.
+      // Sprint item 5 - Gerar certificado ao concluir o curso. baixa o PDF autenticado e abre as opcoes nativas para salvar ou compartilhar.
       const destino = `${FileSystem.documentDirectory}certificado-${idCurso}-${Date.now()}.pdf`;
       const download = await FileSystem.downloadAsync(
         `${getApiBaseUrl()}/aluno/cursos/${idCurso}/certificado`,
@@ -439,7 +442,7 @@ function AppContent() {
   async function avaliarCursoAluno(dados) {
     if (!detalheCursoAluno?.curso?.id) return;
 
-    // Sprint item 27: envia a nota em estrelas e o comentario do aluno ao endpoint que valida a conclusao e a prova.
+    // Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão. envia a nota em estrelas e o comentario do aluno ao endpoint que valida a conclusao e a prova.
     await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/avaliacoes`, {
       method: "POST",
       body: JSON.stringify(dados)
@@ -449,6 +452,7 @@ function AppContent() {
 
   function trocarAba(key) {
     setTab(key);
+    if (key !== "chat") setChatInicial(null);
     setExamAlunoAberto(false);
     setStudentsCourse(null);
     if (key !== "courses") {
@@ -463,7 +467,7 @@ function AppContent() {
   async function salvarCurso({ titulo, descricao, imagem, idCategoria, idTema, novaCategoria, novoTema, nomeNovaCategoria, nomeNovoTema }) {
     setSaving(true);
     try {
-      // Sprint item 28: cadastra novas categorias e temas pela API, que verifica duplicidades.
+      // Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. cadastra novas categorias e temas pela API, que verifica duplicidades.
       let categoriaSelecionada = idCategoria || null;
       let temaSelecionado = idTema || null;
       if (novaCategoria) {
@@ -527,7 +531,7 @@ function AppContent() {
       setPerfil(novoPerfil);
       const usuarioAtualizado = { ...(usuario || {}), ...novoPerfil };
       setUsuario(usuarioAtualizado);
-      // Sprint item 3: grava o perfil atualizado no cache persistente usado pelo próximo início do app.
+      // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. grava o perfil atualizado no cache persistente usado pelo próximo início do app.
       await salvarSessao(token, usuarioAtualizado);
       setEditingProfile(false);
     } catch (error) {
@@ -538,7 +542,7 @@ function AppContent() {
   }
 
   if (!token) {
-    // Sprint item 1: mantém o código de verificação como próxima etapa do cadastro no app.
+    // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. mantém o código de verificação como próxima etapa do cadastro no app.
     if (emailPendente) {
       return (
         <SafeAreaView style={[globalStyles.app, styles.loginApp]}>
@@ -547,7 +551,7 @@ function AppContent() {
             email={emailPendente}
             codigoEnviado={codigoEmailEnviado}
             onVerified={async (novoToken, novoUsuario) => {
-              // Sprint item 1: salva a sessão verificada e inicia a validação da assinatura, como no site.
+              // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. salva a sessão verificada e inicia a validação da assinatura, como no site.
               await salvarSessao(novoToken, novoUsuario);
               setEmailPendente("");
               setCodigoEmailEnviado(null);
@@ -568,7 +572,7 @@ function AppContent() {
           <CadastroScreen
             onBack={() => setCadastroAberto(false)}
             onRegistered={(email, codigoEnviado) => {
-              // Sprint item 1: cadastro concluído abre a verificação do e-mail antes do pagamento.
+              // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. cadastro concluído abre a verificação do e-mail antes do pagamento.
               setCadastroAberto(false);
               setEmailPendente(email);
               setCodigoEmailEnviado(codigoEnviado);
@@ -591,7 +595,7 @@ function AppContent() {
           validarAcesso(novoToken, novoUsuario);
         }}
           onSignup={() => {
-            // Sprint item 1: o botão da tela de login abre o cadastro de aluno no aplicativo.
+            // Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. o botão da tela de login abre o cadastro de aluno no aplicativo.
             setCadastroAberto(true);
           }}
           onVerifyEmail={(email) => {
@@ -647,7 +651,7 @@ function AppContent() {
     );
   }
 
-  // Sprint item 21: baixa complemento privado com o token da matrícula e permite abri-lo no dispositivo.
+  // Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. baixa complemento privado com o token da matrícula e permite abri-lo no dispositivo.
   async function abrirMaterialCurso(material) {
     try {
       const destino = `${FileSystem.documentDirectory}${encodeURIComponent(material.nome_arquivo || `complemento-${material.id}`)}`;
@@ -720,6 +724,18 @@ function AppContent() {
             curso={studentsCourse}
             token={token}
             onBack={() => setStudentsCourse(null)}
+            onOpenChat={(aluno) => {
+              // Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. abre a conversa somente com o aluno selecionado.
+              // A lista de chats passa a guardá-la após a primeira mensagem.
+              setChatInicial({
+                id_curso: studentsCourse.id,
+                id_aluno: aluno.id_usuario,
+                nome: aluno.nome,
+                curso: studentsCourse.titulo
+              });
+              setStudentsCourse(null);
+              setTab("chat");
+            }}
           />
         )}
         {tab === "courses" && tipoUsuario === 2 && !detalheCursoAluno && !detalheAulaAluno && (
@@ -785,12 +801,13 @@ function AppContent() {
           />
         )}
         {tab === "profile" && <PerfilScreen perfil={perfil} onEdit={() => setEditingProfile(true)} onLogout={sair} />}
-        {/* Sprint item 19: disponibiliza a caixa de mensagens do curso para alunos e instrutores no app. */}
+        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. disponibiliza a caixa de mensagens do curso para alunos e instrutores no app. */}
         {tab === "chat" && (
           <ChatScreen
             token={token}
             tipoUsuario={tipoUsuario}
             cursos={cursos}
+            conversaInicial={chatInicial}
             carregando={loading}
             onRefresh={carregarDados}
           />
@@ -811,7 +828,7 @@ function AppContent() {
             carregando={loading}
           />
         )}
-        {/* Sprint item 25: exibe a consulta de logs somente na sessão de administrador. */}
+        {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. exibe a consulta de logs somente na sessão de administrador. */}
         {tab === "logs" && tipoUsuario === 0 && (
           <LogsAdminScreen token={token} onError={(error) => mostrarAlerta("Logs", error.message, "erro")} />
         )}

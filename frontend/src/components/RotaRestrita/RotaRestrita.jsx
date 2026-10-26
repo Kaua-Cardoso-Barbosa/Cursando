@@ -78,12 +78,12 @@ export default function RotaProtegida({
                     if (assinatura.ok) {
                         setAssinaturaValida(true);
                     } else if (assinatura.status === 403) {
-                        // Sprint item 3: sincroniza a permissao de acesso se o pagamento mudou no outro cliente.
+                        // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. sincroniza a permissao de acesso se o pagamento mudou no outro cliente.
                         setAssinaturaValida(false);
                     }
                 }
             } catch (erro) {
-                // Sprint item 3: conserva a sessao carregada quando a verificacao falha por falta de rede.
+                // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. conserva a sessao carregada quando a verificacao falha por falta de rede.
                 console.error("Erro ao sincronizar sessao:", erro);
             }
         }
@@ -100,7 +100,7 @@ export default function RotaProtegida({
         return <Navigate to="/login" replace />;
     }
 
-    // Sprint item 34: ignora o redirecionamento antigo para permitir navegar pelo painel com fatura aberta.
+    // Sprint item 34 - Exibir faturas em aberto. ignora o redirecionamento antigo para permitir navegar pelo painel com fatura aberta.
     const destinoSessao = Number(usuario.tipo) === 2 && usuario.redirecionar === "/assinatura"
         ? null
         : usuario.redirecionar;

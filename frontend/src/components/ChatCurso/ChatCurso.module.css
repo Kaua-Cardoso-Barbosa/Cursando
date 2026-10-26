@@ -50,7 +50,7 @@
     font-size: 1.6rem;
 }
 
-/* Sprint item 19: exibe a foto e a identidade de cada participante ao lado das conversas e mensagens. */
+/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. exibe a foto e a identidade de cada participante ao lado das conversas e mensagens. */
 .avatar img,
 .identidadeMensagem img,
 .fotoCabecalho {
@@ -236,7 +236,7 @@
     }
 }
 
-/* Sprint item 9: suaviza bordas e estados do chat compartilhado em todos os dashboards. */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas. suaviza bordas e estados do chat compartilhado em todos os dashboards. */
 .chat {
     --altura-chat: clamp(500px, calc(100vh - 220px), 680px);
 }

@@ -4,7 +4,7 @@ import css from "./MateriaisProfessor.module.css";
 
 const tipos = ["link", "pdf", "livro", "apostila", "codigo", "arquivo", "outro"];
 
-// Sprint item 21: o professor publica links ou arquivos para complementar
+// Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. o professor publica links ou arquivos para complementar
 // as aulas. Após o cadastro, a lista mostra o que o aluno encontrará;
 // arquivos ficam privados e a API só permite baixar com matrícula ativa.
 export default function MateriaisProfessor({ api, idCurso, avisar }) {

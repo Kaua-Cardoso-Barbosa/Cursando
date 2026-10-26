@@ -50,7 +50,7 @@ function AppConteudo() {
             return dados;
         } catch (erro) {
             console.error("Erro ao verificar sessao:", erro);
-            // Sprint item 3: preserva a sessao em falha de rede para nao divergir do estado salvo no servidor.
+            // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. preserva a sessao em falha de rede para nao divergir do estado salvo no servidor.
             return null;
         }
     }, [api]);
@@ -63,7 +63,7 @@ function AppConteudo() {
         function sincronizarAoRetomar() {
             if (document.hidden) return;
 
-            // Sprint item 3: revalida perfil e avisa os paineis web para buscar dados alterados no aplicativo.
+            // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. revalida perfil e avisa os paineis web para buscar dados alterados no aplicativo.
             atualizarSessao();
             window.dispatchEvent(new Event("cursando:sincronizar"));
         }
@@ -120,7 +120,7 @@ function AppConteudo() {
             "/DashboardAluno/cursos": "Meus Cursos - Cursando",
             "/DashboardAluno/descobrir": "Descobrir Cursos - Cursando",
             "/DashboardAluno/perfil": "Meu Perfil - Cursando",
-            // Sprint item 34: identifica a assinatura como parte da Dashboard Aluno.
+            // Sprint item 34 - Exibir faturas em aberto. identifica a assinatura como parte da Dashboard Aluno.
             "/DashboardAluno/assinatura": "Assinatura - Cursando",
 
             "/DashboardProfessor": "Dashboard Professor - Cursando",
@@ -169,7 +169,7 @@ function AppConteudo() {
                 <Route path="/certificados/:codigo/verificar" element={<VerificarCertificado api={api}/>}/>
                 <Route path="/certificados/verificar" element={<VerificarCertificado api={api}/>}/>
 
-                {/* Sprint item 34: links antigos de assinatura abrem a seção dentro da Dashboard Aluno. */}
+                {/* Sprint item 34 - Exibir faturas em aberto. links antigos de assinatura abrem a seção dentro da Dashboard Aluno. */}
                 <Route path="/assinatura" element={<Navigate to="/DashboardAluno/assinatura" replace />}/>
 
                 <Route path="/DashboardAluno/*" element={
@@ -202,14 +202,14 @@ function AppConteudo() {
                     </RotaRestrita>
                 }/>
 
-                {/* Sprint item 22: protege a consulta administrativa de relatórios por período, instrutor e curso. */}
+                {/* Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. protege a consulta administrativa de relatórios por período, instrutor e curso. */}
                 <Route path="/DashboardAdm/Relatorios" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
                         <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>
                     </RotaRestrita>
                 }/>
 
-                {/* Sprint item 25: limita a tela de consulta de logs aos administradores autenticados. */}
+                {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário. limita a tela de consulta de logs aos administradores autenticados. */}
                 <Route path="/DashboardAdm/Logs" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
                         <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>

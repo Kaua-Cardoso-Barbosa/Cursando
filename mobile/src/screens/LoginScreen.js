@@ -143,7 +143,7 @@ export default function LoginScreen({ onLogin, onSignup, onVerifyEmail }) {
               )}
             </Pressable>
 
-            {/* Sprint item 1: botão que inicia no app o mesmo cadastro de aluno disponível no site. */}
+            {/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo. botão que inicia no app o mesmo cadastro de aluno disponível no site. */}
             <Pressable
               style={styles.signupButton}
               onPress={onSignup}

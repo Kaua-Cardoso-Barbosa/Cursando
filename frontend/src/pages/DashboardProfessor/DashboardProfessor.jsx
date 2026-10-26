@@ -5,6 +5,7 @@ import {
     FaArchive,
     FaCheckCircle,
     FaChartLine,
+    FaCommentDots,
     FaClock,
     FaEdit,
     FaEye,
@@ -67,16 +68,16 @@ export default function DashboardProfessor({
     const [analiticosMensais, setAnaliticosMensais] = useState(null);
     const [cursos, setCursos] = useState([]);
     const [aulas, setAulas] = useState([]);
-    // Sprint item 6: mantém módulos do curso e o módulo aberto no painel do professor.
+    // Sprint item 6 - Permitir que o instrutor divida o curso em módulos. mantém módulos do curso e o módulo aberto no painel do professor.
     const [modulos, setModulos] = useState([]);
     const [idModuloSelecionado, setIdModuloSelecionado] = useState(null);
-    // Sprint item 21: alterna entre a estrutura das aulas e os materiais complementares do curso.
+    // Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos. alterna entre a estrutura das aulas e os materiais complementares do curso.
     const [abaGestaoCurso, setAbaGestaoCurso] = useState("modulos");
     const [destinosModulo, setDestinosModulo] = useState({});
     const [alunos, setAlunos] = useState([]);
     const [financeiro, setFinanceiro] = useState(null);
     const [relatorio, setRelatorio] = useState(null);
-    // Sprint item 22: aplica período e curso ao relatório restrito aos cursos do instrutor autenticado.
+    // Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso. aplica período e curso ao relatório restrito aos cursos do instrutor autenticado.
     const [filtrosRelatorio, setFiltrosRelatorio] = useState({ inicio: "", fim: "", id_curso: "" });
     const [valorSaque, setValorSaque] = useState("");
     const [chavePix, setChavePix] = useState("");
@@ -311,7 +312,7 @@ export default function DashboardProfessor({
     useEffect(() => {
         if (visao !== "inicio") return undefined;
 
-        // Sprint item 9: atualiza os indicadores durante o mês e congela o período quando o calendário muda de mês.
+        // Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. atualiza os indicadores durante o mês e congela o período quando o calendário muda de mês.
         carregarAnaliticosMensais();
         const dataInicial = new Date();
         const mesInicial = `${dataInicial.getFullYear()}-${String(dataInicial.getMonth() + 1).padStart(2, "0")}`;
@@ -403,7 +404,7 @@ export default function DashboardProfessor({
                     })());
                 }
 
-                // Sprint item 3: sincroniza dashboard, cursos, aulas e financeiro ao retornar do aplicativo.
+                // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. sincroniza dashboard, cursos, aulas e financeiro ao retornar do aplicativo.
                 await Promise.allSettled(tarefas);
             } finally {
                 sincronizando = false;
@@ -456,7 +457,7 @@ export default function DashboardProfessor({
     useEffect(() => {
         function sincronizarRelatorio() {
             if (!document.hidden && visao === "relatorios") {
-                // Sprint item 3: atualiza indicadores de atividade e aulas assistidas modificados no aplicativo.
+                // Sprint item 3 - Sincronizar dados entre aplicativo e sistema web. atualiza indicadores de atividade e aulas assistidas modificados no aplicativo.
                 carregarRelatorio();
             }
         }
@@ -506,7 +507,7 @@ export default function DashboardProfessor({
             let idCategoria = form.id_categoria && form.id_categoria !== "__nova__" ? Number(form.id_categoria) : null;
             let idTema = form.id_tema && form.id_tema !== "__novo__" ? Number(form.id_tema) : null;
 
-            // Sprint item 28: valida os novos nomes antes de cadastrar as categorias e os temas do curso.
+            // Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação. valida os novos nomes antes de cadastrar as categorias e os temas do curso.
             if (modal.tipo === "curso" && form.id_categoria === "__nova__") {
                 const nome = form.nova_categoria?.trim();
                 if (!nome) throw new Error("Digite o nome da nova categoria.");
@@ -711,7 +712,7 @@ export default function DashboardProfessor({
     }
 
     async function solicitarSaque() {
-        // Sprint item 1: evita enviar duas solicitações de saque por toques repetidos.
+        // Sprint item 32 - Permitir solicitação de saque para a conta ARKHE. evita enviar duas solicitações de saque por toques repetidos.
         if (solicitandoSaque) return;
         if (!saqueValido) {
             avisar({ tipo: "erro", descricao: "Informe um valor de saque válido dentro do saldo disponível." });
@@ -771,14 +772,14 @@ export default function DashboardProfessor({
         hAxis: { textStyle: { color: "#4c5b53" } },
         backgroundColor: "transparent"
     }), []);
-    // Sprint item 9: prepara acessos e novas inscrições do mês atual para o gráfico de conversão por curso.
+    // Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. prepara acessos e novas inscrições do mês atual para o gráfico de conversão por curso.
     const dadosGraficoMensal = useMemo(() => {
         const linhas = (analiticosMensais?.cursos || []).map((curso) => [curso.curso, curso.acessos, curso.inscricoes_mes]);
         return [["Curso", "Acessos no mês", "Inscrições no mês"], ...(linhas.length ? linhas : [["Sem dados no mês", 0, 0]])];
     }, [analiticosMensais]);
     const recentes = dashboard?.recentes || [];
     const cursosRelatorio = relatorio?.cursos || [];
-    // Sprint item 23: apresenta os totais de alunos, cursos, módulos e horas assistidas por competência mensal.
+    // Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas. apresenta os totais de alunos, cursos, módulos e horas assistidas por competência mensal.
     const relatorioMensal = relatorio?.mensal || [];
     const moduloSelecionado = modulos.find((modulo) => Number(modulo.id) === Number(idModuloSelecionado));
     const valorSaqueNumero = Number(valorSaque);
@@ -802,7 +803,7 @@ export default function DashboardProfessor({
 
                     {visao === "inicio" && (
                         <>
-                            {/* Sprint item 8: organiza a abertura do painel em desempenho, conteúdo e atalhos claros. */}
+                            {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. organiza a abertura do painel em desempenho, conteúdo e atalhos claros. */}
                             <section className={css.cabecalhoInicio}>
                                 <div>
                                     <span className={css.etiquetaPagina}>PAINEL DO PROFESSOR</span>
@@ -823,7 +824,7 @@ export default function DashboardProfessor({
                                 </div>
                                 <div className={css.gridMetricasInicio}>
                                     <CardMetricaProfessor titulo="Total de alunos" detalhe="Alunos matriculados nos seus cursos" valor={formatarNumero(metricas.total_alunos)} icone={<FaUsers />} />
-                                    {/* Sprint item 7: exibe conclusões e horas registradas pelo player no painel do instrutor. */}
+                                    {/* Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. exibe conclusões e horas registradas pelo player no painel do instrutor. */}
                                     <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(metricas.cursos_concluidos)} icone={<FaCheckCircle />} />
                                     <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(metricas.modulos_concluidos)} icone={<FaListAlt />} />
                                     <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(metricas.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} icone={<FaClock />} />
@@ -831,7 +832,7 @@ export default function DashboardProfessor({
                             </section>
 
                             <section className={`${css.secaoPainel} ${css.resultadosMes}`}>
-                                {/* Sprint item 9: mostra visitas, inscrições convertidas e conversão acumuladas no mês vigente. */}
+                                {/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. mostra acessos, inscrições, conversão e alunos inscritos no mês vigente em quatro cards alinhados. */}
                                 <div className={css.cabecalhoBloco}>
                                     <div>
                                         <h3>Resultados do mês</h3>
@@ -840,13 +841,13 @@ export default function DashboardProfessor({
                                             : "Carregando período mensal..."}</p>
                                     </div>
                                 </div>
-                                <div className={css.gridMetricasFinanceiro}>
+                                <div className={css.gridMetricasInicio}>
                                     <CardMetricaProfessor titulo="Acessos aos cursos" detalhe="Alunos únicos neste mês" valor={formatarNumero(analiticosMensais?.total_acessos)} icone={<FaEye />} />
                                     <CardMetricaProfessor titulo="Inscrições no mês" detalhe="Novas matrículas convertidas" valor={formatarNumero(analiticosMensais?.inscricoes_mes)} icone={<FaUserPlus />} />
                                     <CardMetricaProfessor titulo="Taxa de conversão" detalhe="Inscrições ÷ acessos únicos" valor={`${Number(analiticosMensais?.conversao_percentual || 0).toFixed(2).replace(".", ",")}%`} icone={<FaChartLine />} />
                                     <CardMetricaProfessor titulo="Alunos inscritos" detalhe="Matrículas ativas nos cursos" valor={formatarNumero(analiticosMensais?.alunos_inscritos)} icone={<FaUsers />} />
                                 </div>
-                                {/* Sprint item 9: compara por curso os acessos únicos e as inscrições obtidos durante o mês. */}
+                                {/* Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão. compara por curso os acessos únicos e as inscrições obtidos durante o mês. */}
                                 <GoogleChart titulo="Acessos e conversões por curso" data={dadosGraficoMensal} options={opcoesGraficoInstrutor} />
                                 <p className={css.textoApoio}>O Cursando cobra uma assinatura geral, não compras por curso. As inscrições são exibidas como conversões; a contagem mensal fica associada ao mês em que ocorreu.</p>
                                 <div className={css.containerTabelaRelatorio}>
@@ -905,7 +906,7 @@ export default function DashboardProfessor({
 
                     {visao === "cursos" && (
                         <section className={css.secaoCursos}>
-                            {/* Sprint item 9: deixa a gestão de cursos com hierarquia clara entre ação, filtro e listagem. */}
+                            {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. deixa a gestão de cursos com hierarquia clara entre ação, filtro e listagem. */}
                             <div className={css.barraTitulo}>
                                 <div>
                                     <h2>{tituloCursos}</h2>
@@ -967,7 +968,7 @@ export default function DashboardProfessor({
                                 </div>
                             </div>
 
-                            {/* Sprint item 20: reúne a configuração e correção de provas às opções de gestão do curso. */}
+                            {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. reúne a configuração e correção de provas às opções de gestão do curso. */}
                             <div className={css.barraTitulo}>
                                 <button className={abaGestaoCurso === "modulos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("modulos"); setIdModuloSelecionado(null); }}>Módulos</button>
                                 <button className={abaGestaoCurso === "complementos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("complementos"); setIdModuloSelecionado(null); }}>Complementos</button>
@@ -989,7 +990,7 @@ export default function DashboardProfessor({
                                     <div className={css.gradeModulos}>
                                         {modulos.map((modulo) => (
                                             <article className={css.cardCurso} key={modulo.id}>
-                                                {/* Sprint item 6: a área principal abre o módulo; ações de gestão
+                                                {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos. a área principal abre o módulo; ações de gestão
                                                     ficam fora dela para que seus cliques não abram as aulas. */}
                                                 <button type="button" className={css.areaCardClicavel} onClick={() => abrirModulo(modulo)} aria-label={`Abrir módulo ${modulo.titulo}`}>
                                                     <img src={modulo.imagem ? resolverUrlMidia(api, modulo.imagem) : PLACEHOLDER_CURSO} alt="" className={css.imagemCurso} />
@@ -1105,11 +1106,30 @@ export default function DashboardProfessor({
                                     <div className={css.cabecalhoListaAlunos}>
                                         <span>Nome</span>
                                         <span>E-mail</span>
+                                        <span>Ação</span>
                                     </div>
                                     {alunos.map((aluno) => (
                                         <div key={aluno.id_usuario} className={css.linhaAlunoCurso}>
                                             <span>{aluno.nome}</span>
                                             <span>{aluno.email}</span>
+                                            {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. abre apenas o chat deste aluno e curso. A conversa entra na lista após a primeira mensagem. */}
+                                            <button
+                                                type="button"
+                                                className={css.acaoChatAluno}
+                                                onClick={() => navigate("/DashboardProfessor/chat", {
+                                                    state: {
+                                                        conversaInicial: {
+                                                            id_curso: cursoSelecionado.id,
+                                                            id_aluno: aluno.id_usuario,
+                                                            nome: aluno.nome,
+                                                            curso: cursoSelecionado.titulo
+                                                        }
+                                                    }
+                                                })}
+                                                aria-label={`Conversar com ${aluno.nome} sobre ${cursoSelecionado.titulo}`}
+                                            >
+                                                <FaCommentDots aria-hidden="true" /> Conversar
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
@@ -1125,7 +1145,7 @@ export default function DashboardProfessor({
 
                     {visao === "financeiro" && (
                         <section className={`${css.secaoCursos} ${css.paginaFinanceiro}`}>
-                            {/* Sprint item 8: separa resumo financeiro, ação de saque e detalhamento por curso. */}
+                            {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. separa resumo financeiro, ação de saque e detalhamento por curso. */}
                             <header className={css.cabecalhoPagina}>
                                 <div>
                                     <span className={css.etiquetaPagina}>PAGAMENTOS</span>
@@ -1133,7 +1153,7 @@ export default function DashboardProfessor({
                                     <p>Consulte seus valores e solicite o pagamento ao administrador.</p>
                                 </div>
                             </header>
-                            {/* Sprint itens 12, 30, 31 e 32: cards financeiros e solicitacao de saque do instrutor. */}
+                            {/* cards financeiros e solicitacao de saque do instrutor. */}
                             <section className={css.secaoPainel}>
                                 <div className={css.cabecalhoBloco}>
                                     <div>
@@ -1143,19 +1163,20 @@ export default function DashboardProfessor({
                                 </div>
                                 <div className={css.gridMetricasFinanceiro}>
                                     <CardMetricaProfessor titulo="Ganhos estimados" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} icone={<FaChartLine />} />
-                                    {/* Sprint item 15: apresenta ao instrutor o saldo bruto restante que pode solicitar para saque. */}
+                                    {/* Sprint item 15 - Exibir saldo disponível em caixa. (Esse é tanto para adm e instrutor, para o instrutor ele vai apenas mostrar o saldo bruto que ele pode sacar, para o adm, como o professor recebe uma comissão em porcentagem para cada aula que o aluno viu do curso dele, altere o valor da assinatura para 500 e para mostrar o saldo do adm, deve descontar as comissão e ai mostrar quanto vai sobrar para saque) apresenta ao instrutor o saldo bruto restante que pode solicitar para saque. */}
                                     <div className={css.cardSaldoDisponivel}>
                                         <CardMetricaProfessor titulo="Disponível para solicitar" detalhe="Após pagamentos e pedidos pendentes" valor={formatarMoeda(financeiro?.disponivel_saque)} icone={<FaWallet />} />
                                     </div>
                                     <CardMetricaProfessor titulo="Pagamentos confirmados" detalhe="Registrados pelo administrador" valor={formatarMoeda(financeiro?.ja_sacado)} icone={<FaMoneyBillWave />} />
                                     <CardMetricaProfessor titulo="Aguardando análise" detalhe="Pedidos enviados ao administrador" valor={formatarMoeda(financeiro?.em_analise)} icone={<FaClock />} />
                                     <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} icone={<FaUsers />} />
-                                </div>
-                                {/* Sprint item 30: exibe a estimativa por aula concluída com base no fundo de receita compartilhado. */}
-                                <div className={css.valorEstimadoView}>
-                                    <span>Valor estimado por view concluída</span>
-                                    <strong>{financeiro?.valor_por_view === null || financeiro?.valor_por_view === undefined ? "Aguardando aulas concluídas" : formatarMoeda(financeiro.valor_por_view)}</strong>
-                                    <p>Estimativa por aula concluída, usada para calcular a receita de cada curso.</p>
+                                    {/* Sprint item 30 - Criar gestão financeira do instrutor. usa o mesmo card dos demais indicadores para a estimativa por aula concluída. */}
+                                    <CardMetricaProfessor
+                                        titulo="Valor estimado por view"
+                                        detalhe={financeiro?.valor_por_view == null ? "Aguardando aulas concluídas" : "Por aula concluída"}
+                                        valor={financeiro?.valor_por_view == null ? "—" : formatarMoeda(financeiro.valor_por_view)}
+                                        icone={<FaPlayCircle />}
+                                    />
                                 </div>
                             </section>
 
@@ -1211,7 +1232,7 @@ export default function DashboardProfessor({
                             </section>
 
                             <section className={css.painelTabelaFinanceiro}>
-                                {/* Sprint item 31: exibe os cursos do instrutor em ordem decrescente de receita estimada. */}
+                                {/* Sprint item 31 - Exibir cursos que mais geraram receita para o instrutor. exibe os cursos do instrutor em ordem decrescente de receita estimada. */}
                                 <div className={css.cabecalhoBloco}>
                                     <div>
                                         <h3>Cursos que mais geraram receita</h3>
@@ -1243,14 +1264,14 @@ export default function DashboardProfessor({
 
                     {visao === "chat" && (
                         <section className={css.secaoCursos}>
-                            {/* Sprint item 9: contextualiza o chat compartilhado dentro do painel do professor. */}
-                            <ChatCurso api={api} perfil="professor" setMensagem={setMensagem} />
+                            {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web. contextualiza o chat compartilhado dentro do painel do professor. */}
+                            <ChatCurso api={api} perfil="professor" setMensagem={setMensagem} conversaInicial={location.state?.conversaInicial} />
                         </section>
                     )}
 
                     {visao === "relatorios" && (
                         <section className={`${css.secaoCursos} ${css.paginaRelatorios}`}>
-                            {/* Sprint item 8: agrupa filtros, indicadores e tabela em uma leitura contínua do relatório. */}
+                            {/* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor. agrupa filtros, indicadores e tabela em uma leitura contínua do relatório. */}
                             <header className={css.cabecalhoPagina}>
                                 <div>
                                     <span className={css.etiquetaPagina}>ACOMPANHAMENTO</span>
@@ -1302,7 +1323,7 @@ export default function DashboardProfessor({
                                     <CardMetricaProfessor titulo="Matrículas" detalhe="Inscrições ativas nos cursos" valor={formatarNumero(relatorio?.resumo?.alunos)} icone={<FaUsers />} />
                                     <CardMetricaProfessor titulo="Cursos" detalhe="Cursos incluídos no filtro" valor={formatarNumero(relatorio?.resumo?.cursos)} icone={<FaGraduationCap />} />
                                     <CardMetricaProfessor titulo="Aulas concluídas" detalhe="Concluídas pelos alunos" valor={formatarNumero(relatorio?.resumo?.aulas_assistidas)} icone={<FaPlayCircle />} />
-                                    {/* Sprint item 7: mantém visíveis as conclusões e o tempo registrado pelo player. */}
+                                    {/* Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas. mantém visíveis as conclusões e o tempo registrado pelo player. */}
                                     <CardMetricaProfessor titulo="Cursos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.conclusoes)} icone={<FaCheckCircle />} />
                                     <CardMetricaProfessor titulo="Módulos concluídos" detalhe="Conclusões por aluno" valor={formatarNumero(relatorio?.resumo?.modulos)} icone={<FaListAlt />} />
                                     <CardMetricaProfessor titulo="Horas assistidas" detalhe="Tempo registrado pelo player" valor={`${Number(relatorio?.resumo?.horas_assistidas || 0).toFixed(2).replace(".", ",")}h`} icone={<FaClock />} />
@@ -1343,7 +1364,7 @@ export default function DashboardProfessor({
                                 </div>
                             </section>
                             <section className={css.painelTabelaRelatorio}>
-                                {/* Sprint item 23: detalha mês a mês alunos inscritos, cursos, módulos e horas assistidas. */}
+                                {/* Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas. detalha mês a mês alunos inscritos, cursos, módulos e horas assistidas. */}
                                 <div className={css.cabecalhoBloco}><div><h3>Resumo mensal</h3><p>Alunos inscritos, cursos e módulos criados e horas assistidas em cada mês.</p><p>Horas antigas sem data mensal: {Number(relatorio?.horas_sem_competencia || 0).toFixed(2).replace(".", ",")}h.</p></div></div>
                                 <div className={css.containerTabelaRelatorio}>
                                     <table className={css.tabelaRelatorio}>

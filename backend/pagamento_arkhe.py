@@ -1,3 +1,16 @@
+"""mensalidades Pix e pedidos de saque.
+
+Fluxo da mensalidade: localizar/criar uma fatura aberta, pedir a cobrança à
+Arkhé, devolver o Pix ao aluno e consultar a Arkhé antes de marcar como paga.
+Fatura paga continua no histórico após vencer; vencimento controla o acesso,
+enquanto pagamento controla receita. O ``Lock`` evita pedidos simultâneos
+criando duas faturas para a mesma mensalidade.
+
+Fluxo do saque: calcular o saldo do professor, validar valor e chave Pix,
+registrar a solicitação e permitir que o administrador a aprove ou recuse.
+``cursor.execute`` executa SQL; ``commit`` confirma e ``rollback`` desfaz.
+"""
+
 from datetime import datetime, timedelta
 from threading import Lock
 from decimal import Decimal, InvalidOperation
@@ -22,7 +35,7 @@ _faturas_lock = Lock()
 def _fatura_para_dict(row, numero=None):
     status = int(row[2] or 0)
     valor_padrao = valor_assinatura_config()
-    # Sprint item 33: a assinatura expirada continua sendo uma mensalidade paga no histórico.
+    # Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. a assinatura expirada continua sendo uma mensalidade paga no histórico.
     paga = status in (1, 3)
     return {
         "id": row[0],
@@ -70,7 +83,7 @@ def aluno_tem_fatura_aberta(cursor, id_usuario):
     if cursor.fetchone() is not None:
         return True
 
-    # Sprint item 34: avisa sobre a mensalidade vencida mesmo antes de abrir a aba Financeiro.
+    # Sprint item 34 - Exibir faturas em aberto. avisa sobre a mensalidade vencida mesmo antes de abrir a aba Financeiro.
     cursor.execute(
         """
         SELECT FIRST 1 ID_ASSINATURA
@@ -85,10 +98,16 @@ def aluno_tem_fatura_aberta(cursor, id_usuario):
 
 
 
-# Sprint item 1: gera e lista cobranças PIX de mensalidades usando a Arkhé.
+# Sprint item 2 - Integrar pagamentos pelo ARKHE. gera e lista cobranças PIX de mensalidades usando a Arkhé.
 @app.route("/financeiro/faturas", methods=["GET", "POST"])
 @jwt_required()
 def faturas_aluno():
+    """Itens 1, 33 e 34: GET lista faturas; POST recupera ou cria um Pix.
+
+    O token limita a operação ao aluno autenticado. Antes de POST, a rota
+    verifica vencimento e fatura pendente para evitar duplicidade. Uma cobrança
+    ainda não equivale a pagamento: a confirmação ocorre em outra rota.
+    """
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -99,14 +118,14 @@ def faturas_aluno():
     cursor = con.cursor()
 
     try:
-        # Sprint item 34: uma assinatura vencida ganha sua fatura aberta antes da consulta financeira.
+        # Sprint item 34 - Exibir faturas em aberto. uma assinatura vencida ganha sua fatura aberta antes da consulta financeira.
         garantir_fatura_vencida(cursor, con, id_usuario)
         if request.method == "POST":
-            # Sprint item 1: serializa a criacao para evitar cobrancas duplicadas em pedidos simultaneos.
+            # Sprint item 2 - Integrar pagamentos pelo ARKHE. serializa a criacao para evitar cobrancas duplicadas em pedidos simultaneos.
             with _faturas_lock:
                 dados = request.get_json(silent=True) or {}
                 valor = valor_assinatura_config()
-                # Sprint item 34: cada cobrança representa exatamente uma mensalidade.
+                # Sprint item 34 - Exibir faturas em aberto. cada cobrança representa exatamente uma mensalidade.
                 if str(dados.get("meses") or 1) != "1":
                     return resposta("Pague uma mensalidade por vez para manter o histórico correto.", 400)
                 id_solicitado = dados.get("id_assinatura")
@@ -117,7 +136,7 @@ def faturas_aluno():
                         return resposta("Mensalidade inválida.", 400)
                     if id_solicitado <= 0:
                         return resposta("Mensalidade inválida.", 400)
-                # Sprint item 34: seleciona a fatura do aluno sem parâmetro de tipo indefinido no Firebird.
+                # Sprint item 34 - Exibir faturas em aberto. seleciona a fatura do aluno sem parâmetro de tipo indefinido no Firebird.
                 filtro_fatura = "AND ID_ASSINATURA = ?" if id_solicitado is not None else ""
                 cursor.execute(
                     f"""
@@ -179,7 +198,7 @@ def faturas_aluno():
         faturas = list(reversed(faturas))
         faturas_abertas = [item for item in faturas if item["aberta"]]
         faturas_pagas = [item for item in faturas if item["status"] in (1, 3)]
-        # Sprint item 33: devolve o total pago e o histórico completo das mensalidades, mesmo após o vencimento.
+        # Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. devolve o total pago e o histórico completo das mensalidades, mesmo após o vencimento.
         total_gasto = sum(item["valor"] for item in faturas_pagas)
         total_aberto = sum(item["valor"] for item in faturas_abertas)
         return jsonify({
@@ -202,10 +221,16 @@ def faturas_aluno():
 
 
 
-# Sprint item 1: consulta e baixa a cobrança da mensalidade antes de atualizar a assinatura.
+# Sprint item 2 - Integrar pagamentos pelo ARKHE. consulta e baixa a cobrança da mensalidade antes de atualizar a assinatura.
 @app.route("/financeiro/faturas/<int:id_assinatura>/verificar", methods=["POST"])
 @jwt_required()
 def verificar_fatura_aluno(id_assinatura):
+    """Sprint item 2 - Integrar pagamentos pelo ARKHE. só marca a mensalidade paga após consultar o status na Arkhé.
+
+    Confere se a fatura pertence ao aluno, consulta o ID remoto, rejeita status
+    pendente e só então atualiza a assinatura. ``rollback`` impede confirmar
+    parte da operação se alguma etapa falhar.
+    """
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -233,16 +258,16 @@ def verificar_fatura_aluno(id_assinatura):
         if int(status or 0) == 1:
             return jsonify({"assinatura": True, "status": "ativa", "id_assinatura": id_assinatura}), 200
 
-        # Sprint item 33: uma mensalidade já paga e expirada não pode ser confirmada de novo.
+        # Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. uma mensalidade já paga e expirada não pode ser confirmada de novo.
         if int(status or 0) == 3:
             return resposta("Esta mensalidade já foi paga e expirou.", 409)
 
         if not id_cobranca:
             return resposta("Mensalidade aguardando código de cobrança.", 409)
 
-        # Sprint item 1: confirma o status remoto sem depender do campo de cópia do Pix.
+        # Sprint item 2 - Integrar pagamentos pelo ARKHE. confirma o status remoto sem depender do campo de cópia do Pix.
         cobranca = consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=False)
-        # Sprint item 1: confirma apenas o status pago informado pela Arkhé, tolerando espaços no retorno.
+        # Sprint item 2 - Integrar pagamentos pelo ARKHE. confirma apenas o status pago informado pela Arkhé, tolerando espaços no retorno.
         if str(cobranca["status"]).strip().lower() not in STATUS_PAGOS:
             return resposta("Pagamento ainda não confirmado.", 402, status_cobranca=cobranca["status"])
 
@@ -259,6 +284,8 @@ def verificar_fatura_aluno(id_assinatura):
             (id_usuario, agora),
         )
         assinatura_ativa = cursor.fetchone()
+        # Sprint item 34 - Exibir faturas em aberto. se o aluno renovou antes de vencer, os 30 dias começam no
+        # fim do período atual; caso contrário começam agora.
         data_inicio = assinatura_ativa[0] if assinatura_ativa and assinatura_ativa[0] and assinatura_ativa[0] > agora else agora
         data_expiracao = data_inicio + timedelta(days=30)
 
@@ -299,6 +326,12 @@ def verificar_fatura_aluno(id_assinatura):
 @app.route("/professor/saques", methods=["POST"])
 @jwt_required()
 def solicitar_saque():
+    """Itens 15 e 32: recebe chave Pix e valor do professor.
+
+    Decimal valida centavos sem arredondar silenciosamente. O lock no registro
+    de configuração serializa pedidos simultâneos; depois o saldo é recalculado
+    no servidor e o pedido fica pendente para o administrador analisar.
+    """
     negado = exigir_tipo(1)
     if negado:
         return negado
@@ -329,17 +362,17 @@ def solicitar_saque():
     cursor = con.cursor()
 
     try:
-        # Sprint item 32: serializa saques para evitar saldo e ID local duplicados em chamadas simultâneas.
+        # Sprint item 32 - Permitir solicitação de saque para a conta ARKHE. serializa saques para evitar saldo e ID local duplicados em chamadas simultâneas.
         cursor.execute("SELECT ID_CONFIG FROM FINANCEIRO_CONFIG WHERE ID_CONFIG = 1 WITH LOCK")
         if not cursor.fetchone():
             raise RuntimeError("Configuração financeira não encontrada.")
 
-        # Sprint item 1: valida o saque contra o saldo disponível calculado no backend.
+        # Sprint item 32 - Permitir solicitação de saque para a conta ARKHE. recalcula o saldo antes de registrar o pedido manual de saque.
         percentual = percentual_instrutores(cursor)
-        # Sprint item 33: mensalidades pagas e expiradas permanecem na receita histórica.
+        # Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. mensalidades pagas e expiradas permanecem na receita histórica.
         cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS IN (1, 3)")
         total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
-        # Sprint item 15: valida o saque pelo mesmo fundo de receita baseado em pagamentos reais mostrado aos dois perfis.
+        # Sprint item 15 - Exibir saldo disponível em caixa. (Esse é tanto para adm e instrutor, para o instrutor ele vai apenas mostrar o saldo bruto que ele pode sacar, para o adm, como o professor recebe uma comissão em porcentagem para cada aula que o aluno viu do curso dele, altere o valor da assinatura para 500 e para mostrar o saldo do adm, deve descontar as comissão e ai mostrar quanto vai sobrar para saque) valida o saque pelo mesmo fundo de receita baseado em pagamentos reais mostrado aos dois perfis.
         pool_instrutores = total_arrecadado * (percentual / 100)
         pesos_instrutores = pesos_pool_instrutores(cursor)
         peso_total = sum(pesos_instrutores.values())
@@ -352,6 +385,8 @@ def solicitar_saque():
         )
 
         if valor > disponivel_saque:
+            # A comparação ocorre após recalcular a receita sob lock; o valor
+            # exibido no card pode ter mudado desde que o professor abriu a tela.
             return resposta(
                 "O valor solicitado excede o saldo disponível para saque.",
                 400,
@@ -359,6 +394,8 @@ def solicitar_saque():
             )
 
         id_saque = proximo_id(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE")
+        # STATUS 0 reserva o valor como pendente. Ainda não significa Pix pago;
+        # somente o admin registra pagamento (1) ou recusa (2) depois.
         cursor.execute(
             """
             INSERT INTO SAQUES_INSTRUTOR (ID_SAQUE, ID_USUARIO, VALOR, STATUS, CHAVE_PIX)
@@ -449,6 +486,12 @@ def listar_saques_admin():
 @app.route("/admin/saques/<int:id_saque>", methods=["PATCH"])
 @jwt_required()
 def analisar_saque_admin(id_saque):
+    """Sprint item 32 - Permitir solicitação de saque para a conta ARKHE. registra pagamento manual ou recusa, uma única vez.
+
+    A referência informada pelo admin representa um pagamento feito fora do
+    sistema. O status deixa de ser pendente após o commit; uma nova tentativa
+    de analisar a mesma solicitação recebe conflito.
+    """
     negado = exigir_tipo(0)
     if negado:
         return negado
@@ -478,6 +521,8 @@ def analisar_saque_admin(id_saque):
         if acao == "pago" and not saque[1]:
             return resposta("Solicitação antiga sem chave Pix. Recuse e peça uma nova solicitação ao professor.", 400)
         if acao == "pago":
+            # A referência identifica um pagamento externo. Impedir sua
+            # reutilização evita marcar dois pedidos com o mesmo comprovante.
             cursor.execute("SELECT 1 FROM SAQUES_INSTRUTOR WHERE STATUS = 1 AND COMPROVANTE = ?", (texto,))
             if cursor.fetchone():
                 return resposta("Esta referência de pagamento já foi usada em outra solicitação.", 409)
@@ -490,6 +535,8 @@ def analisar_saque_admin(id_saque):
         )
         if cursor.rowcount != 1:
             return resposta("Esta solicitação já foi analisada.", 409)
+        # O commit finaliza a análise. Se recusado, o saldo do professor volta
+        # a ficar disponível porque apenas pedidos pagos/pendentes o reduzem.
         con.commit()
         return resposta("Pagamento confirmado no sistema." if acao == "pago" else "Solicitação recusada; saldo liberado ao professor.", 200, "sucesso")
     except Exception as erro:
@@ -505,7 +552,12 @@ _pendencias_lock = Lock()
 
 
 def garantir_fatura_vencida(cursor, con, id_usuario):
-    # Sprint item 34: ao vencer a última mensalidade paga, registra a próxima como aberta.
+    """Sprint item 34 - Exibir faturas em aberto. cria só uma próxima mensalidade aberta após a última expirar.
+
+    A mensalidade antiga passa a status de paga e expirada, preservando sua
+    contribuição à receita histórica do item 33.
+    """
+    # Sprint item 34 - Exibir faturas em aberto. ao vencer a última mensalidade paga, registra a próxima como aberta.
     with _pendencias_lock:
         cursor.execute(
             """
@@ -520,6 +572,8 @@ def garantir_fatura_vencida(cursor, con, id_usuario):
         if not ultima_paga or not ultima_paga[2] or ultima_paga[2] >= datetime.now():
             return
 
+        # Uma fatura aberta já representa a renovação pendente: criá-la de
+        # novo multiplicaria a dívida apresentada ao aluno.
         cursor.execute(
             "SELECT FIRST 1 ID_ASSINATURA FROM ASSINATURAS WHERE ID_USUARIO = ? AND STATUS = 0",
             (id_usuario,),
@@ -543,7 +597,7 @@ def garantir_fatura_vencida(cursor, con, id_usuario):
 
 
 def preparar_pagamento_fatura(cursor, con, id_assinatura, id_cobranca, valor, vencimento):
-    # Sprint item 34: recupera a cobrança escolhida, inclusive de uma mensalidade anterior.
+    # Sprint item 34 - Exibir faturas em aberto. recupera a cobrança escolhida, inclusive de uma mensalidade anterior.
     if id_cobranca:
         anterior = consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=False)
         if str(anterior["status"]).strip().lower() in STATUS_PAGOS:
@@ -560,7 +614,7 @@ def preparar_pagamento_fatura(cursor, con, id_assinatura, id_cobranca, valor, ve
                 "fatura_existente": True,
             }
 
-    # Sprint item 34: um Pix vencido recebe um novo código sem criar outra fatura em aberto.
+    # Sprint item 34 - Exibir faturas em aberto. um Pix vencido recebe um novo código sem criar outra fatura em aberto.
     cobranca = criar_cobranca_pix(valor)
     cursor.execute(
         "UPDATE ASSINATURAS SET ID_COBRANCA_ARKHE = ?, DATA_VENCIMENTO = ? WHERE ID_ASSINATURA = ? AND STATUS = 0",
@@ -578,7 +632,7 @@ def preparar_pagamento_fatura(cursor, con, id_assinatura, id_cobranca, valor, ve
     }
 
 
-# Sprint item 1: cobranças Pix avulsas e assinatura do usuário.
+# Sprint item 2 - Integrar pagamentos pelo ARKHE. cobranças Pix avulsas e assinatura do usuário.
 @app.route("/pagamentos/pix", methods=["POST"])
 @jwt_required()
 def criar_pagamento_pix():
@@ -594,7 +648,7 @@ def criar_pagamento_pix():
                 "mensagem": "Valor do pagamento é obrigatório"
             }), 400
 
-        # Sprint item 1: rejeita valores PIX inválidos antes de chamar a Arkhé.
+        # Sprint item 2 - Integrar pagamentos pelo ARKHE. rejeita valores PIX inválidos antes de chamar a Arkhé.
         try:
             valor_decimal = Decimal(str(valor_recebido))
             if not valor_decimal.is_finite():
@@ -669,7 +723,7 @@ def criar_pix_assinatura():
                 "mensagem": "Usuário já possui uma assinatura ativa"
             }), 409
 
-        # Sprint item 1: reutiliza apenas PIX pendente e dentro do vencimento, sem gerar cobranças duplicadas.
+        # Sprint item 2 - Integrar pagamentos pelo ARKHE. reutiliza apenas PIX pendente e dentro do vencimento, sem gerar cobranças duplicadas.
         cursor.execute(
             """
             SELECT FIRST 1 ID_ASSINATURA, ID_COBRANCA_ARKHE, VALOR
@@ -699,7 +753,7 @@ def criar_pix_assinatura():
                     "cobranca_existente": True
                 }), 200
 
-        # Sprint item 1: usa o preco do servidor quando nao houver PIX pendente reutilizavel.
+        # Sprint item 2 - Integrar pagamentos pelo ARKHE. usa o preco do servidor quando nao houver PIX pendente reutilizavel.
         valor = valor_assinatura_config()
 
         # Solicita à Arkhé uma cobrança PIX vinculada ao valor do plano.
@@ -850,7 +904,7 @@ def verificar_pagamento_assinatura():
                 "mensagem": "A assinatura do usuário expirou."
             }), 200
 
-        # Sprint item 33: uma mensalidade paga e expirada permanece no histórico;
+        # Sprint item 33 - Exibir total gasto e histórico de faturas do aluno. uma mensalidade paga e expirada permanece no histórico;
         # somente cobranças pendentes podem confirmar uma nova assinatura.
         # Verifica todas as cobranças pendentes para aceitar o pagamento de
         # uma mensalidade antiga caso existam duplicatas no histórico.
@@ -859,7 +913,7 @@ def verificar_pagamento_assinatura():
         for assinatura_candidata in assinaturas:
             if assinatura_candidata[2] != 0 or not assinatura_candidata[1]:
                 continue
-            # Sprint item 1: consulta o status sem depender de um novo código para a cobrança existente.
+            # Sprint item 2 - Integrar pagamentos pelo ARKHE. consulta o status sem depender de um novo código para a cobrança existente.
             cobranca_candidata = consultar_cobranca_pix(
                 assinatura_candidata[1],
                 exigir_codigo_pix=False,
@@ -881,7 +935,7 @@ def verificar_pagamento_assinatura():
 
         status_cobranca = cobranca["status"]
 
-        # Sprint item 1: reconhece status numérico ou textual da cobrança confirmada pela Arkhé.
+        # Sprint item 2 - Integrar pagamentos pelo ARKHE. reconhece status numérico ou textual da cobrança confirmada pela Arkhé.
         # STATUS 1 da cobrança indica pagamento confirmado: ativa por 30 dias
         # a partir do momento desta confirmação e salva as duas datas no banco.
         if str(status_cobranca).strip().lower() in {

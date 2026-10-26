@@ -1,8 +1,9 @@
-"""Sprint item 5: emiss?o do PDF e verifica??o p?blica do certificado.
+"""Sprint item 5 - Gerar certificado ao concluir o curso. emissão do PDF e verificação pública do certificado.
 
-Etapas para apresentar: concluir as aulas e a prova; baixar o PDF autenticado;
-abrir o endere?o p?blico impresso nele e conferir os dados. A rota p?blica
-consulta um c?digo emitido; ela n?o exige login nem permite emitir certificados.
+Etapas: concluir as aulas, ser aprovado na prova, abrir a rota autenticada,
+reaproveitar/criar um código único e gerar o PDF. A rota pública recebe o
+código impresso no documento, consulta o registro e confirma sua validade;
+ela não exige login nem pode emitir certificados novos.
 """
 from datetime import datetime
 import secrets
@@ -21,6 +22,12 @@ from utilitarios_backend import _bloqueio_assinatura_aluno, _data_certificado, _
 @app.route("/aluno/cursos/<int:id_curso>/certificado", methods=["GET"])
 @jwt_required()
 def certificado_aluno(id_curso):
+    """Sprint item 5 - Gerar certificado ao concluir o curso. verifica requisitos, registra código único e devolve o PDF.
+
+    Consulta matrícula, aulas publicadas concluídas e prova aprovada antes de
+    emitir. Se o certificado já existe, reutiliza o código, evitando cópias
+    com identidades diferentes para a mesma conclusão.
+    """
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -48,7 +55,7 @@ def certificado_aluno(id_curso):
         if not row or int(row[2] or 0) < 100:
             return resposta("Certificado liberado somente apos concluir o curso.", 403)
 
-        # Sprint item 5: confirma que todas as aulas publicadas foram marcadas como concluidas.
+        # Sprint item 5 - Gerar certificado ao concluir o curso. confirma que todas as aulas publicadas foram marcadas como concluidas.
         cursor.execute(
             """
             SELECT COUNT(V.ID_VIDEO), COUNT(PA.ID_VIDEO), MAX(PA.ASSISTIDO_EM)
@@ -60,10 +67,12 @@ def certificado_aluno(id_curso):
             (get_jwt_identity(), id_curso),
         )
         total_aulas, aulas_concluidas, concluido_em = cursor.fetchone() or (0, 0, None)
+        # Não basta confiar no percentual salvo na matrícula. A consulta
+        # compara aulas publicadas com marcações reais de conclusão do aluno.
         if not total_aulas or aulas_concluidas != total_aulas:
             return resposta("Certificado liberado somente apos concluir todas as aulas do curso.", 403)
 
-        # Sprint item 20: exige uma submissão aprovada na prova final antes de emitir ou baixar o PDF.
+        # Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso. exige uma submissão aprovada na prova final antes de emitir ou baixar o PDF.
         cursor.execute(
             """
             SELECT FIRST 1 P.ID_PROVA, R.STATUS, R.FEEDBACK
@@ -98,7 +107,9 @@ def certificado_aluno(id_curso):
         )
         certificado = cursor.fetchone()
         if not certificado:
-            # Sprint item 5: reutiliza sempre o mesmo código para cada certificado emitido.
+            # Sprint item 5 - Gerar certificado ao concluir o curso. o código é criado apenas na primeira emissão. Quando o
+            # aluno baixa de novo, o documento conserva a identidade anterior.
+            # Sprint item 5 - Gerar certificado ao concluir o curso. reutiliza sempre o mesmo código para cada certificado emitido.
             codigo = f"CURSANDO-{secrets.token_hex(6).upper()}"
             cursor.execute(
                 """
@@ -136,7 +147,7 @@ def certificado_aluno(id_curso):
         concluido_em = concluido_em or emitido_em
         url_verificacao = f"{FRONTEND_URL}/certificados/{codigo}/verificar"
 
-        # Sprint item 5: o PDF reúne aluno, curso, aprovação, instrutor, datas e código verificável.
+        # Sprint item 5 - Gerar certificado ao concluir o curso. o PDF reúne aluno, curso, aprovação, instrutor, datas e código verificável.
         pdf = _pdf_certificado({
             "aluno": row[0],
             "curso": row[1],
@@ -166,9 +177,14 @@ def certificado_aluno(id_curso):
 
 @app.route("/certificados/<string:codigo>/verificar", methods=["GET"])
 def verificar_certificado(codigo):
+    """Sprint item 5 - Gerar certificado ao concluir o curso. confere publicamente um código emitido sem criar certificado.
+
+    O código do PDF funciona como chave de consulta; a resposta mostra se há
+    um registro correspondente no banco.
+    """
     if request.accept_mimetypes.accept_html and request.accept_mimetypes.best != "application/json":
         return redirect(f"{FRONTEND_URL}/certificados/{codigo}/verificar", code=302)
-    # Sprint item 5: permite conferir publicamente se o código do PDF foi emitido pelo Cursando.
+    # Sprint item 5 - Gerar certificado ao concluir o curso. permite conferir publicamente se o código do PDF foi emitido pelo Cursando.
     garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()

@@ -1,3 +1,9 @@
+"""Funções de sessão e de verificação de e-mail usadas no cadastro.
+
+Item 1 da sprint: a autenticação do aluno antecede as cobranças Pix.
+Sprint item 34 - Exibir faturas em aberto. validar o token mantém o acesso ao financeiro para pagar faturas.
+"""
+
 import jwt
 import datetime
 from app import app
@@ -120,7 +126,7 @@ def verificar_token():
         usuario = cursor.fetchone()
         redirecionar = None
 
-        # Sprint item 34: a sessão do aluno continua válida para consultar e pagar faturas.
+        # Sprint item 34 - Exibir faturas em aberto. a sessão do aluno continua válida para consultar e pagar faturas.
 
         cursor.close()
 
@@ -148,6 +154,11 @@ def verificar_token():
 
 
 def email_verificacao(destinatario, assunto, mensagem, mensagem_secundaria=""):
+    """Gera código para conta existente, grava no banco e envia por SMTP.
+
+    O código é confirmado antes de iniciar o envio em outra thread; uma falha
+    no servidor de e-mail não desfaz o registro já gravado.
+    """
     if not app.config.get("SMTP_PASSWORD"):
         return "Configure SMTP_PASSWORD no arquivo backend/.env para enviar codigos.", "erro"
 
