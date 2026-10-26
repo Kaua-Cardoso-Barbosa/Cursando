@@ -1,0 +1,47 @@
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+                                                                                                                    
+.resumo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin: 0 0 28px;
+    padding: 22px 24px;
+    border: 1px solid #b9ddca;
+    border-left: 5px solid #07834e;
+    border-radius: 14px;
+    background: #f3faf6;
+}
+
+.rotulo {
+    color: #006338;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.resumo h3 {
+    margin: 6px 0 8px;
+    color: #12432d;
+    font-size: 1.4rem;
+}
+
+.resumo p {
+    max-width: 620px;
+    line-height: 1.5;
+}
+
+.datas {
+    display: grid;
+    gap: 8px;
+    flex: 0 0 auto;
+    color: #295642;
+}
+
+@media (max-width: 760px) {
+    .resumo { flex-direction: column; align-items: stretch; }
+    .datas { flex: auto; }
+}
+
+/* Fim item 38 */

@@ -1,4 +1,4 @@
-import css from './Input.module.css'
+import css from './Input_38.module.css'
 import {IMaskInput} from "react-imask";
 
 export default function Input({tipoInp, label, htmlFor, placeholder, classe = '', value, funcao, maxlength, checado, opcoeslabel, opcoes, disabled=false, minLength, mask, required=false, obrigatorio="Nao", margin ='auto'}) {

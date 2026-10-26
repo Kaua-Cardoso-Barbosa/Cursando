@@ -1,6 +1,6 @@
 import React from 'react';
 import CartaoCurso from '../CartaoCurso/CartaoCurso';
-import css from '../../pages/Home/Home.module.css';
+import css from '../../pages/Home/Home_38.module.css';
 import {Link} from "react-router-dom";
 
 const SecaoCursos = ({ tituloPrincipal, subtitulo, cursos, mensagemVazia }) => {

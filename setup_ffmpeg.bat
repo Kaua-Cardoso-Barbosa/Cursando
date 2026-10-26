@@ -6,17 +6,14 @@ echo        Configuracao do FFmpeg
 echo ==========================================
 echo.
 
-REM Caminhos
 set "ROOT=%~dp0"
 set "FFMPEG_DIR=%ROOT%ferramentas\ffmpeg"
 set "BIN_DIR=%FFMPEG_DIR%\bin"
 set "ZIP=%TEMP%\ffmpeg.zip"
 set "EXTRACT_DIR=%TEMP%\ffmpeg_extract"
 
-REM URL do build Essentials
 set "URL=https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
 
-REM Verifica se ja esta instalado
 if exist "%BIN_DIR%\ffmpeg.exe" if exist "%BIN_DIR%\ffprobe.exe" (
     echo FFmpeg ja esta instalado.
     echo.
@@ -33,14 +30,11 @@ echo FFmpeg nao encontrado.
 echo Iniciando download...
 echo.
 
-REM Limpa arquivos temporarios antigos
 if exist "%ZIP%" del /q "%ZIP%"
 if exist "%EXTRACT_DIR%" rmdir /s /q "%EXTRACT_DIR%"
 
-REM Cria pasta de destino
 if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
-REM Baixa o FFmpeg
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '%URL%' -OutFile '%ZIP%'"
 
@@ -55,7 +49,6 @@ if errorlevel 1 (
 echo Download concluido.
 echo.
 
-REM Extrai o ZIP usando PowerShell
 echo Extraindo arquivo...
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -72,7 +65,6 @@ if errorlevel 1 (
 echo Extracao concluida.
 echo.
 
-REM Procura e copia somente os executaveis necessarios
 echo Copiando ffmpeg.exe...
 
 for /r "%EXTRACT_DIR%" %%F in (ffmpeg.exe) do (
@@ -100,7 +92,6 @@ goto :error
 
 :ffprobe_found
 
-REM Limpa temporarios
 echo.
 echo Limpando arquivos temporarios...
 

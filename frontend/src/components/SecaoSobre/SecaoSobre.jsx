@@ -1,5 +1,5 @@
 import React from 'react';
-import css from '../../pages/Home/Home.module.css';
+import css from '../../pages/Home/Home_38.module.css';
 
 const SecaoSobre = () => {
     return (

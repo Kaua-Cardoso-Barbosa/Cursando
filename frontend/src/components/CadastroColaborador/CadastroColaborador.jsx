@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Input from "../Input/Input";
 import Button from "../Button/Button";
-import css from "./CadastroColaborador.module.css";
+import css from "./CadastroColaborador_38.module.css";
 
 export default function CadastroColaborador({
                                                      api,

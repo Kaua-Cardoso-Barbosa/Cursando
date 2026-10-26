@@ -1,0 +1,362 @@
+
+
+
+import smtplib
+import threading
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formataddr
+
+from flask import current_app, jsonify, request
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
+
+from app import app
+from banco_37 import get_db
+from professor_6 import de_blob_texto, para_blob_texto
+
+
+from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
+from utilitarios_backend_5_9_20_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _professor_responsavel, proximo_id, resposta
+
+
+
+
+
+
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+@app.route("/chat/conversas", methods=["GET"])
+@jwt_required()
+def chat_conversas():
+    
+    garantir_estrutura_banco()
+    tipo = int(get_jwt().get("tipo", -1))
+    id_usuario = int(get_jwt_identity())
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if tipo == 1:
+            
+            
+            cursor.execute(
+                """
+                SELECT
+                    M.ID_CURSO,
+                    M.ID_ALUNO,
+                    C.TITULO,
+                    U.NOME,
+                    U.EMAIL,
+                    U.IMAGEM_PERFIL,
+                    MAX(M.CRIADO_EM),
+                    SUM(CASE WHEN M.ID_DESTINATARIO = ? AND M.LIDA = 0 THEN 1 ELSE 0 END)
+                FROM MENSAGENS_CHAT M
+                JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
+                JOIN USUARIOS U ON U.ID_USUARIO = M.ID_ALUNO
+                JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = M.ID_CURSO AND PC.ID_USUARIO = ?
+                GROUP BY M.ID_CURSO, M.ID_ALUNO, C.TITULO, U.NOME, U.EMAIL, U.IMAGEM_PERFIL
+                ORDER BY MAX(M.CRIADO_EM) DESC
+                """,
+                (id_usuario, id_usuario),
+            )
+            return jsonify([
+                {
+                    "id_curso": row[0],
+                    "id_aluno": row[1],
+                    "curso": row[2],
+                    "nome": row[3],
+                    "email": row[4],
+                    "imagem_perfil": row[5],
+                    "ultima_mensagem_em": row[6].isoformat() if row[6] else None,
+                    "nao_lidas": int(row[7] or 0),
+                }
+                for row in cursor.fetchall()
+            ])
+
+        if tipo == 2:
+            
+            
+            cursor.execute(
+                """
+                SELECT
+                    C.ID_CURSO,
+                    MT.ID_USUARIO,
+                    C.TITULO,
+                    U.NOME,
+                    U.EMAIL,
+                    U.IMAGEM_PERFIL,
+                    MAX(M.CRIADO_EM),
+                    SUM(CASE WHEN M.ID_DESTINATARIO = ? AND M.LIDA = 0 THEN 1 ELSE 0 END)
+                FROM MATRICULAS MT
+                JOIN CURSOS C ON C.ID_CURSO = MT.ID_CURSO AND C.EXCLUIDO = 0
+                JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
+                JOIN USUARIOS U ON U.ID_USUARIO = PC.ID_USUARIO
+                LEFT JOIN MENSAGENS_CHAT M ON M.ID_CURSO = C.ID_CURSO AND M.ID_ALUNO = MT.ID_USUARIO
+                WHERE MT.ID_USUARIO = ? AND MT.STATUS_MATRICULA = 1
+                GROUP BY C.ID_CURSO, MT.ID_USUARIO, C.TITULO, U.NOME, U.EMAIL, U.IMAGEM_PERFIL
+                ORDER BY MAX(M.CRIADO_EM) DESC, C.TITULO
+                """,
+                (id_usuario, id_usuario),
+            )
+            return jsonify([
+                {
+                    "id_curso": row[0],
+                    "id_aluno": row[1],
+                    "curso": row[2],
+                    "nome": row[3],
+                    "email": row[4],
+                    "imagem_perfil": row[5],
+                    "ultima_mensagem_em": row[6].isoformat() if row[6] else None,
+                    "nao_lidas": int(row[7] or 0),
+                }
+                for row in cursor.fetchall()
+            ])
+
+        return resposta("Chat disponivel apenas para alunos e instrutores.", 403)
+    except Exception as erro:
+        return resposta(f"Erro ao listar conversas: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+# Fim item 19
+
+
+
+
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+@app.route("/chat/cursos/<int:id_curso>/mensagens", methods=["GET", "POST"])
+@jwt_required()
+def chat_mensagens(id_curso):
+    
+    garantir_estrutura_banco()
+    tipo = int(get_jwt().get("tipo", -1))
+    id_usuario = int(get_jwt_identity())
+    con = get_db()
+    cursor = con.cursor()
+
+    try:
+        if tipo == 2:
+            
+            
+            id_aluno = id_usuario
+            if not _aluno_matriculado(cursor, id_curso, id_aluno):
+                return resposta("Aluno sem matricula ativa neste curso.", 403)
+            bloqueio = _bloqueio_assinatura_aluno(cursor, id_aluno)
+            if bloqueio:
+                return bloqueio
+        elif tipo == 1:
+            
+            
+            if not _curso_do_professor(cursor, id_curso, id_usuario):
+                return resposta("Curso nao encontrado para este instrutor.", 404)
+            id_aluno = int((request.args.get("id_aluno") or (request.get_json(silent=True) or {}).get("id_aluno") or 0))
+            if not id_aluno or not _aluno_matriculado(cursor, id_curso, id_aluno):
+                return resposta("Informe um aluno matriculado para a conversa.", 400)
+        else:
+            return resposta("Chat disponivel apenas para alunos e instrutores.", 403)
+
+        if request.method == "GET":
+            
+            
+            cursor.execute(
+                """
+                UPDATE MENSAGENS_CHAT
+                SET LIDA = 1
+                WHERE ID_CURSO = ? AND ID_ALUNO = ? AND ID_DESTINATARIO = ?
+                """,
+                (id_curso, id_aluno, id_usuario),
+            )
+            cursor.execute(
+                """
+                SELECT M.ID_MENSAGEM, M.ID_REMETENTE, U.NOME, U.EMAIL, U.IMAGEM_PERFIL, M.TEXTO, M.LIDA, M.CRIADO_EM
+                FROM MENSAGENS_CHAT M
+                JOIN USUARIOS U ON U.ID_USUARIO = M.ID_REMETENTE
+                WHERE M.ID_CURSO = ? AND M.ID_ALUNO = ?
+                ORDER BY M.ID_MENSAGEM
+                """,
+                (id_curso, id_aluno),
+            )
+            mensagens = [
+                {
+                    "id": row[0],
+                    "id_remetente": row[1],
+                    "nome": row[2],
+                    "email": row[3],
+                    "imagem_perfil": row[4],
+                    "texto": de_blob_texto(row[5]),
+                    "lida": row[6] == 1,
+                    "criado_em": row[7].isoformat() if row[7] else None,
+                    "minha": int(row[1]) == id_usuario,
+                }
+                for row in cursor.fetchall()
+            ]
+            con.commit()
+            return jsonify(mensagens)
+
+        dados = request.get_json() or {}
+        texto = (dados.get("texto") or "").strip()
+        if not texto:
+            return resposta("Mensagem nao pode ficar vazia.", 400)
+
+        if tipo == 2:
+            
+            
+            id_destinatario = _professor_responsavel(cursor, id_curso)
+            if not id_destinatario:
+                return resposta("Curso sem instrutor responsavel.", 400)
+        else:
+            id_destinatario = id_aluno
+
+        cursor.execute(
+            """
+            INSERT INTO MENSAGENS_CHAT (
+                ID_MENSAGEM, ID_CURSO, ID_ALUNO, ID_REMETENTE, ID_DESTINATARIO, TEXTO
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                proximo_id(cursor, "MENSAGENS_CHAT", "ID_MENSAGEM"),
+                id_curso,
+                id_aluno,
+                id_usuario,
+                id_destinatario,
+                para_blob_texto(texto),
+            ),
+        )
+        con.commit()
+        return resposta("Mensagem enviada.", 201, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao processar chat: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+# Fim item 19
+
+
+
+# Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+def notificar_alunos_novo_curso(destinatarios, titulo_curso):
+    
+    if not destinatarios:
+        return
+
+    config = {
+        "SMTP_HOST": current_app.config.get("SMTP_HOST", "smtp.gmail.com"),
+        "SMTP_PORT": current_app.config.get("SMTP_PORT", 465),
+        "SMTP_EMAIL": current_app.config.get("SMTP_EMAIL", ""),
+        "SMTP_PASSWORD": current_app.config.get("SMTP_PASSWORD", ""),
+        "SMTP_USE_SSL": current_app.config.get("SMTP_USE_SSL", True),
+    }
+    if not config["SMTP_PASSWORD"]:
+        current_app.logger.warning("Aviso de novo curso não enviado: SMTP_PASSWORD não configurada.")
+        return
+
+    
+    thread = threading.Thread(
+        target=_enviar_avisos,
+        args=(list(set(destinatarios)), titulo_curso, config),
+        daemon=True,
+    )
+    thread.start()
+# Fim item 19
+# Fim item 11
+
+
+
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
+def notificar_reprovacao_prova(destinatario, titulo_curso, feedback=""):
+    if not destinatario:
+        return
+    config = {
+        "SMTP_HOST": current_app.config.get("SMTP_HOST", "smtp.gmail.com"),
+        "SMTP_PORT": current_app.config.get("SMTP_PORT", 465),
+        "SMTP_EMAIL": current_app.config.get("SMTP_EMAIL", ""),
+        "SMTP_PASSWORD": current_app.config.get("SMTP_PASSWORD", ""),
+        "SMTP_USE_SSL": current_app.config.get("SMTP_USE_SSL", True),
+    }
+    if not config["SMTP_PASSWORD"]:
+        current_app.logger.warning("Aviso de reprovacao nao enviado: SMTP_PASSWORD nao configurada.")
+        return
+    thread = threading.Thread(
+        target=_enviar_aviso_reprovacao,
+        args=(destinatario, titulo_curso, feedback, config),
+        daemon=True,
+    )
+    thread.start()
+# Fim item 20
+# Fim item 19
+
+
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+def _enviar_aviso_reprovacao(destinatario, titulo_curso, feedback, config):
+    try:
+        if config["SMTP_USE_SSL"]:
+            servidor = smtplib.SMTP_SSL(config["SMTP_HOST"], config["SMTP_PORT"], timeout=20)
+        else:
+            servidor = smtplib.SMTP(config["SMTP_HOST"], config["SMTP_PORT"], timeout=20)
+            servidor.starttls()
+        try:
+            servidor.login(config["SMTP_EMAIL"], config["SMTP_PASSWORD"])
+            mensagem = MIMEMultipart("alternative")
+            mensagem["Subject"] = f"Resultado da prova: {titulo_curso}"
+            mensagem["From"] = formataddr(("Cursando", config["SMTP_EMAIL"]))
+            mensagem["To"] = destinatario
+            motivo = f"\nFeedback do instrutor: {feedback}" if feedback else ""
+            mensagem.attach(MIMEText(
+                f"Sua prova do curso {titulo_curso} foi corrigida e voce foi reprovado. "
+                f"Voce podera tentar novamente depois de 1 dia da correcao.{motivo}",
+                "plain",
+                "utf-8",
+            ))
+            servidor.send_message(mensagem)
+        finally:
+            servidor.quit()
+    except Exception:
+        print("Erro ao enviar aviso de reprovacao; confira as configuracoes SMTP.")
+# Fim item 19
+
+
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+def _enviar_avisos(destinatarios, titulo_curso, config):
+    try:
+        if config["SMTP_USE_SSL"]:
+            servidor = smtplib.SMTP_SSL(config["SMTP_HOST"], config["SMTP_PORT"], timeout=20)
+        else:
+            servidor = smtplib.SMTP(config["SMTP_HOST"], config["SMTP_PORT"], timeout=20)
+            servidor.starttls()
+        try:
+            servidor.login(config["SMTP_EMAIL"], config["SMTP_PASSWORD"])
+            for destinatario in destinatarios:
+                mensagem = MIMEMultipart("alternative")
+                mensagem["Subject"] = f"Novo curso disponível: {titulo_curso}"
+                mensagem["From"] = formataddr(("Cursando", config["SMTP_EMAIL"]))
+                mensagem["To"] = destinatario
+                texto = (
+                    f"Um instrutor de quem você já acompanha cursos publicou um novo curso: {titulo_curso}.\n\n"
+                    "Acesse a plataforma Cursando para conferir."
+                )
+                html = (
+                    "<html><body>"
+                    "<p>Um instrutor de quem você já acompanha cursos publicou um novo curso:</p>"
+                    f"<p><strong>{_escapar_html(titulo_curso)}</strong></p>"
+                    "<p>Acesse a plataforma Cursando para conferir.</p>"
+                    "</body></html>"
+                )
+                mensagem.attach(MIMEText(texto, "plain", "utf-8"))
+                mensagem.attach(MIMEText(html, "html", "utf-8"))
+                servidor.send_message(mensagem)
+        finally:
+            servidor.quit()
+    except Exception:
+        
+        print("Erro ao enviar aviso de novo curso; confira as configurações SMTP.")
+# Fim item 19
+
+
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+def _escapar_html(valor):
+    return (str(valor).replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"))
+# Fim item 19

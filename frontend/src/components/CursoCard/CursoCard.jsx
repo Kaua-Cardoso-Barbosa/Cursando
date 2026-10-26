@@ -1,4 +1,4 @@
-import css from "./CursoCard.module.css";
+import css from "./CursoCard_38.module.css";
 
 const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
 

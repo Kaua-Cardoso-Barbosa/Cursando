@@ -3,7 +3,7 @@ import {
     FaLinux,
     FaWindows
 } from "react-icons/fa";
-import css from "../../pages/DashboardProfessor/DashboardProfessor.module.css";
+import css from "../../pages/DashboardProfessor/DashboardProfessor_38.module.css";
 
 export default function RodapeProfessor() {
     return (

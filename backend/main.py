@@ -1,9 +1,4 @@
-"""Ponto de entrada da API: registra autenticação e rotas de cada sprint.
 
-Os imports dos módulos carregam seus ``@app.route`` no Flask. Site e app
-chamam essas mesmas rotas; a regra de acesso fica no servidor. O endpoint de
-diagnóstico da Arkhé (item 1) só responde a administradores autenticados.
-"""
 
 from flask import Flask, jsonify, request
 from app import app
@@ -27,25 +22,26 @@ CORS(
 def health():
     return {"status": "ok"}, 200
 
-from usuario import *
-from professor import *
-from aluno import *
-# Registra explicitamente as rotas por área funcional.
-import curso_conteudo
-import chat_cursos
-import provas_cursos
-import gravacao_log
-import financeiro
-import pagamento_arkhe
-import relatorio
-from utilitarios_backend import exigir_tipo
-from servicos.arkhe import ArkheError, consultar_conta
+from usuario_1_34 import *
+from professor_6 import *
+from aluno_4_34 import *
+
+import curso_conteudo_6_11_20_21_28 as curso_conteudo
+import chat_cursos_11_19_20 as chat_cursos
+import provas_cursos_20 as provas_cursos
+import gravacao_log_24_25_37 as gravacao_log
+import financeiro_12_13_14_15_16_30_31_33_34_35_36 as financeiro
+import pagamento_arkhe_2_15_32_33_34 as pagamento_arkhe
+import relatorio_7_9_22_23 as relatorio
+from utilitarios_backend_5_9_20_28_34 import exigir_tipo
+from servicos.arkhe_2 import ArkheError, consultar_conta
 
 print("\nROTAS REGISTRADAS ANTES DA ROTA ARKHÉ:")
 for regra in app.url_map.iter_rules():
     print(regra, "->", regra.endpoint)
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE. deixa o diagnóstico ARKHÉ restrito a administradores e não retorna dados bancários.
+
+# Sprint item 2 - Integrar pagamentos pelo ARKHE
 @app.route("/rodar-teste-arkhe", methods=["GET"])
 @jwt_required()
 def rodar_teste_arkhe():
@@ -65,6 +61,7 @@ def rodar_teste_arkhe():
             "status": "erro",
             "mensagem": "Não foi possível validar a conexão com a Arkhé."
         }), 502
+# Fim item 2
 
 
 if __name__ == '__main__':

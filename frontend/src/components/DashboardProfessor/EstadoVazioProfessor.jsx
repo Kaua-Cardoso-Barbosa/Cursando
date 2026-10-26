@@ -1,5 +1,5 @@
 import { FaBoxOpen } from "react-icons/fa";
-import css from "../../pages/DashboardProfessor/DashboardProfessor.module.css";
+import css from "../../pages/DashboardProfessor/DashboardProfessor_38.module.css";
 
 export default function EstadoVazioProfessor({ texto }) {
     return (

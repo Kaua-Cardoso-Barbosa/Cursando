@@ -5,7 +5,7 @@ import {
     FaLock,
     FaTrash
 } from "react-icons/fa";
-import css from "../../pages/DashboardProfessor/DashboardProfessor.module.css";
+import css from "../../pages/DashboardProfessor/DashboardProfessor_38.module.css";
 
 const STATUS_PRIVADO = 0;
 const STATUS_PUBLICADO = 1;

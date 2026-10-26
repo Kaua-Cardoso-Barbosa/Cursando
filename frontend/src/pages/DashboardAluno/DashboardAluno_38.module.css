@@ -1,0 +1,1844 @@
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+:global(*) {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.painelAluno {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-height: 100vh;
+    background: #ffffff;
+    color: #101010;
+}
+
+.conteudoPrincipal {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.areaConteudo {
+    flex: 1;
+    padding: 30px 42px 42px;
+    width: 100%;
+}
+
+.cabecalhoUsuario {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.dadosUsuario {
+    border-bottom: 4px solid #06a663;
+    min-width: min(430px, 100%);
+    padding-bottom: 6px;
+}
+
+.dadosUsuario h1 {
+    color: #111111;
+    font-size: 2.1rem;
+    line-height: 1.08;
+    font-weight: 400;
+    margin: 0;
+    letter-spacing: 0;
+}
+
+.cargoUsuario {
+    color: #02693e;
+    display: block;
+    font-size: 0.95rem;
+    line-height: 1.1;
+    margin-top: 2px;
+}
+
+.acoesUsuario {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.fotoPerfil {
+    width: 54px;
+    height: 54px;
+    border: 1.8px solid #000000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.65rem;
+}
+
+.gridMetricas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin: 0 0 40px;
+}
+
+.cardMetrica {
+    background: #fafafa;
+    border: 1.5px solid #666666;
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.metricaTopo {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.metricaTopo h2 {
+    color: #1a1a1a;
+    font-size: 1.35rem;
+    font-weight: 400;
+    margin: 0;
+}
+
+.iconeBadge {
+    width: 42px;
+    height: 38px;
+    border-radius: 10px;
+    background: #9fe0c3;
+    color: #004727;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex: 0 0 auto;
+}
+
+.metricaVariacao {
+    color: #32b978;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.metricaNumero {
+    color: #111111;
+    font-size: 2rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.secaoCursos,
+.secaoDetalheCurso,
+.secaoAulaAberta,
+.secaoPerfil {
+    width: 100%;
+}
+
+.secaoUltimasAulas {
+    width: 100%;
+    margin-bottom: 38px;
+}
+
+.secaoMetricas {
+    width: 100%;
+}
+
+.areaFinanceiro {
+    display: grid;
+    gap: 24px;
+}
+
+.blocoFinanceiro {
+    border-top: 2px solid #06a663;
+    padding-top: 18px;
+}
+
+.blocoFinanceiro h2 {
+    color: #111111;
+    font-size: 1.6rem;
+    font-weight: 400;
+    line-height: 1.15;
+    margin: 0 0 16px;
+}
+
+.cabecalhoBlocoFinanceiro {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 16px;
+}
+
+.cabecalhoBlocoFinanceiro p {
+    color: #555555;
+    font-size: 0.98rem;
+    line-height: 1.35;
+    margin: -8px 0 0;
+}
+
+.cardPagamentoPix {
+    background: linear-gradient(135deg, #f2fff7 0%, #ffffff 58%);
+    border: 1.5px solid #06a663;
+    border-radius: 8px;
+    box-shadow: 0 16px 34px rgba(6, 166, 99, 0.12);
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    margin-bottom: 28px;
+}
+
+.pagamentoPixTopo {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.pagamentoPixTopo span,
+.caixaCodigoPixFinanceiro span {
+    color: #02693e;
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.pagamentoPixTopo strong {
+    color: #111111;
+    display: block;
+    font-size: 1.6rem;
+    margin-top: 4px;
+}
+
+.pagamentoPixTopo small {
+    color: #555555;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.caixaCodigoPixFinanceiro {
+    background: #ffffff;
+    border: 1px solid #b9e8cd;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.codigoPixFinanceiro {
+    color: #202020;
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    margin: 8px 0 0;
+    max-height: 140px;
+    overflow: auto;
+    overflow-wrap: anywhere;
+}
+
+.acoesPagamentoPix {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.botaoSecundarioFinanceiro {
+    min-height: 42px;
+    border: 1.5px solid #02693e;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #02693e;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0 16px;
+    transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.botaoSecundarioFinanceiro:hover,
+.botaoCodigoCopiado {
+    background: #02693e;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.tituloUltimasAulas {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 2px solid #06a663;
+    margin-bottom: 18px;
+    padding-bottom: 8px;
+}
+
+.tituloUltimasAulas h2 {
+    color: #111111;
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 400;
+    margin: 0;
+}
+
+.tituloUltimasAulas span {
+    color: #02693e;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.secaoCursos h2,
+.secaoDetalheCurso h2,
+.secaoAulaAberta h2 {
+    color: #111111;
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 400;
+    letter-spacing: 0;
+    margin: 0 0 26px;
+}
+
+.textoApoio,
+.descricaoCurso {
+    color: #202020;
+    font-size: 1rem;
+    line-height: 1.35;
+    margin: 0 0 22px;
+    overflow-wrap: anywhere;
+}
+
+.descricaoCurso {
+    font-size: 1.2rem;
+    max-width: 1180px;
+}
+
+.carrosselCursos {
+    display: flex;
+    gap: 28px;
+    overflow-x: auto;
+    padding: 4px 4px 18px;
+    scrollbar-width: thin;
+    scrollbar-color: #6bc39e transparent;
+}
+
+.carrosselCursos .cardAula {
+    flex: 0 0 360px;
+}
+
+.gridCursos,
+.gridAulas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(260px, 1fr));
+    gap: 38px 24px;
+}
+
+.cardCurso,
+.cardAula {
+    border: 1.5px solid #111111;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.areaCardClicavel {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 0;
+    cursor: pointer;
+    display: block;
+    color: inherit;
+}
+
+.imagemCursoContainer {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #d9d9d9;
+}
+
+.imagemCurso {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    background: #d9d9d9;
+}
+
+.infoCurso,
+.infoAula {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px 12px;
+    min-height: 68px;
+}
+
+.infoCurso {
+    align-items: stretch;
+}
+
+.textoCurso {
+    flex: 1;
+    min-width: 0;
+}
+
+.infoCurso h3,
+.infoAula h3 {
+    color: #111111;
+    font-size: 1.28rem;
+    line-height: 1.1;
+    font-weight: 400;
+    letter-spacing: 0;
+    margin: 0 0 4px;
+    overflow-wrap: anywhere;
+}
+
+.infoCurso p,
+.infoAula p {
+    color: #202020;
+    font-size: 0.88rem;
+    line-height: 1.28;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+                                                                                                                                                              
+.retomadaAula {
+    display: inline-block;
+    margin-top: 7px;
+    color: #087a4c;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.progressoCurso {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    display: grid;
+    justify-items: end;
+    gap: 5px;
+    width: min(92px, 42%);
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    color: #075132;
+    font-size: 0.82rem;
+    line-height: 1.1;
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: right;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.barraProgresso {
+    width: 100%;
+    height: 7px;
+    border: 1px solid #b7cfc0;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #eff5f1;
+}
+
+.barraProgresso i {
+    height: 100%;
+    display: block;
+    background: #06a663;
+}
+
+.previewAula {
+    height: 150px;
+    background: #ececec;
+    border-bottom: 1.5px solid #111111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.previewAula img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.playBadge {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    font-size: 3.5rem;
+    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.6));
+}
+
+.checkAula {
+    color: #06a663;
+    font-size: 1.9rem;
+    flex: 0 0 auto;
+    margin-top: auto;
+}
+
+.areaBusca {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 20px;
+}
+
+.filtrosDescobrir {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.campoBusca {
+    flex: 1 1 300px;
+    width: min(700px, 100%);
+    min-height: 40px;
+    border: 2px solid #02693e;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    margin-bottom: 0;
+}
+
+.campoBusca svg {
+    color: #6f6f6f;
+    flex: 0 0 auto;
+}
+
+.campoBusca input {
+    flex: 1;
+    border: none;
+    outline: none;
+    min-width: 0;
+    font: inherit;
+    font-size: 1.1rem;
+    color: #111111;
+}
+
+                                                                                                                                                                            
+.campoBusca textarea,
+.campoBusca select {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    padding: 8px 0;
+    background: transparent;
+    color: #111111;
+    font: inherit;
+}
+
+.avisoReprovacao {
+    border-left: 4px solid #bd7b19;
+    border-radius: 5px;
+    background: #fff7e8;
+    color: #61420c;
+    padding: 12px 14px;
+}
+
+.campoBuscaButton {
+    border: none;
+    background: #06a663;
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 7px 12px;
+    cursor: pointer;
+}
+
+.filtroOrdenacao {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    color: #333333;
+    font-size: 0.9rem;
+}
+
+.filtroOrdenacao select {
+    min-height: 40px;
+    max-width: 100%;
+    border: 1px solid #8a8a8a;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #111111;
+    padding: 0 10px;
+    font: inherit;
+}
+
+.filtroNovos {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    color: #333333;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.filtroNovos input {
+    width: 17px;
+    height: 17px;
+    accent-color: #02693e;
+}
+
+.linkVoltar {
+    min-height: 36px;
+    border-radius: 7px;
+    border: 1.4px solid #111111;
+    background: #ffffff;
+    color: #111111;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 7px 14px;
+    margin-bottom: 14px;
+}
+
+.heroCurso {
+    display: grid;
+    grid-template-columns: minmax(300px, 1.2fr) minmax(280px, 0.8fr);
+    gap: 0;
+    align-items: stretch;
+    margin-bottom: 24px;
+}
+
+.heroCurso img {
+    width: 100%;
+    height: 100%;
+    min-height: 340px;
+    border: 0;
+    border-radius: 0;
+    display: block;
+    object-fit: cover;
+}
+
+.resumoCurso h2 {
+    font-size: clamp(2rem, 4vw, 2.7rem);
+    line-height: 1.08;
+    margin: 0 0 8px;
+}
+
+.resumoCurso p {
+    color: #555555;
+    font-size: 1rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.resumoCurso {
+    border: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    justify-content: center;
+    padding: 22px;
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+}
+
+.botaoInscrever {
+    align-self: flex-start;
+    min-width: 220px;
+    min-height: 52px;
+    border: 1.5px solid #111111;
+    border-radius: 8px;
+    background: #06a663;
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.botaoCertificado {
+    min-height: 44px;
+    border: 1.5px solid #02693e;
+    border-radius: 7px;
+    background: #02693e;
+    color: #ffffff;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 10px 18px;
+    margin: 0 0 24px;
+}
+
+.botaoCertificado:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.navegacaoCurso {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 4px;
+    max-width: 100%;
+    margin: 6px 0 22px;
+    padding: 4px;
+    border: 1px solid #c7d8cf;
+    border-radius: 8px;
+    background: #f4f8f6;
+}
+
+.abaCurso,
+.abaAtiva {
+    min-height: 42px;
+    border: 0;
+    border-radius: 6px;
+    padding: 0 18px;
+    color: #244338;
+    font: inherit;
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.15;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.abaCurso {
+    background: transparent;
+}
+
+.abaCurso:hover {
+    background: #e4f1eb;
+    color: #02693e;
+}
+
+.abaCurso:focus-visible,
+.abaAtiva:focus-visible {
+    outline: 3px solid rgba(6, 166, 99, 0.25);
+    outline-offset: 2px;
+}
+
+.abaAtiva {
+    background: #02693e;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(2, 105, 62, 0.18);
+}
+
+.conteudoCurso {
+    width: 100%;
+    margin: 0 0 26px;
+    padding: 22px;
+    border: 1px solid #d9e5df;
+    border-radius: 8px;
+    background: #fbfdfc;
+}
+
+.conteudoCurso h2 {
+    margin-bottom: 16px;
+    font-size: 1.45rem;
+}
+
+.listaMateriais {
+    display: grid;
+    gap: 12px;
+}
+
+                                                                                                                                                                      
+.conteudoComplementos { padding: 0; overflow: hidden; border-radius: 18px; background: #f7faf8; }
+.cabecalhoComplementos { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 25px; background: linear-gradient(115deg, #e4f4e9, #f5fbf7); }
+.cabecalhoComplementos span, .tipoMaterial { color: #087044 !important; font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.cabecalhoComplementos h2 { margin: 6px 0; color: #173e2c; }
+.cabecalhoComplementos p { margin: 0; color: #607268; }
+.cabecalhoComplementos > strong { white-space: nowrap; padding: 9px 12px; border-radius: 999px; background: #fff; color: #087044; }
+.conteudoComplementos .listaMateriais { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); padding: 20px; }
+.conteudoComplementos .estadoVazio { margin: 20px; }
+.conteudoComplementos .cardMaterial { align-content: start; gap: 10px; min-height: 180px; border-color: #d8e8dd; border-radius: 14px; box-shadow: 0 8px 20px #153b2010; }
+.conteudoComplementos .cardMaterial strong { font-size: 1.12rem; }
+.conteudoComplementos .cardMaterial p { margin: 0; line-height: 1.5; }
+.conteudoComplementos .cardMaterial a, .conteudoComplementos .cardMaterial button { width: fit-content; align-self: end; margin-top: auto; padding: 9px 13px; border: 0; border-radius: 9px; background: #087044; color: #fff; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+@media (max-width: 600px) { .cabecalhoComplementos { align-items: start; flex-direction: column; } }
+
+                                                                                                                                                    
+.gradeModulosAluno {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+}
+
+.cardModuloAluno {
+    padding: 0;
+    overflow: hidden;
+    border: 1.5px solid #cbd8d1;
+    border-radius: 9px;
+    background: #ffffff;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cardModuloAluno:hover,
+.cardModuloAluno:focus-visible {
+    border-color: #02693e;
+    box-shadow: 0 5px 15px rgba(2, 105, 62, 0.12);
+}
+
+.cardModuloAluno > img {
+    display: block;
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    background: #e9f0ec;
+}
+
+.infoCardModuloAluno {
+    display: grid;
+    gap: 7px;
+    padding: 14px;
+}
+
+.infoCardModuloAluno strong {
+    color: #111111;
+    font-size: 1.05rem;
+}
+
+.infoCardModuloAluno small,
+.infoCardModuloAluno em {
+    color: #02693e;
+    font-size: 0.9rem;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.infoCardModuloAluno > span {
+    color: #555555;
+    line-height: 1.4;
+}
+
+.detalheModuloAluno {
+    display: grid;
+    gap: 12px;
+}
+
+.detalheModuloAluno h3 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.detalheModuloAluno h4 {
+    margin: 8px 0 0;
+    font-size: 1.1rem;
+}
+
+.detalheModuloAluno p {
+    color: #4b4b4b;
+    line-height: 1.45;
+}
+
+.capaModuloAluno {
+    width: min(100%, 640px);
+    max-height: 300px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.avisoPreviewModulo {
+    color: #02693e !important;
+    font-weight: 700;
+}
+
+.cardMaterial {
+    border: 1.5px solid #666666;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 14px 16px;
+    display: grid;
+    gap: 6px;
+}
+
+.cardMaterial strong {
+    color: #111111;
+    font-size: 1rem;
+}
+
+.cardMaterial span,
+.cardMaterial p,
+.cardMaterial small {
+    color: #555555;
+    overflow-wrap: anywhere;
+}
+
+.cardMaterial a {
+    color: #02693e;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.playerSeguro {
+    width: 100%;
+    max-width: 1080px;
+    aspect-ratio: 16 / 8.2;
+    min-height: 360px;
+    background: #111111;
+    border: 1.5px solid #111111;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.playerSeguro video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    background: #111111;
+}
+
+.tituloNoVideo {
+    position: absolute;
+    top: 18px;
+    left: 22px;
+    right: 22px;
+    color: #ffffff;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.tituloNoVideo h1 {
+    font-size: 1.8rem;
+    line-height: 1.1;
+    font-weight: 400;
+    margin: 0 0 4px;
+}
+
+.tituloNoVideo p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.playerProtegido video {
+    filter: blur(18px) brightness(0.12);
+}
+
+.playerProtegido {
+    position: relative;
+}
+
+.avisoProtecao {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.86);
+    color: #ffffff;
+    font-size: 1.2rem;
+    z-index: 3;
+}
+
+.avisoProtecao svg {
+    font-size: 2rem;
+}
+
+.estadoVazio {
+    min-height: 128px;
+    border: 1.5px dashed #9d9d9d;
+    border-radius: 8px;
+    color: #555555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    width: 100%;
+    font-size: 1.1rem;
+}
+
+.estadoVazio svg {
+    color: #02693e;
+    font-size: 1.5rem;
+}
+
+.rodapePagina {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    background: #02693e;
+    color: #ffffff;
+    padding: 24px 42px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+.colunaRodape {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.colunaRodape h4 {
+    color: #ffffff;
+    font-size: 1.25rem;
+    line-height: 1.1;
+    margin: 0 0 8px;
+}
+
+.colunaRodape p,
+.colunaRodape a {
+    color: #ffffff;
+    font-size: 0.92rem;
+    line-height: 1.35;
+    text-decoration: none;
+    margin: 0;
+}
+
+@media (max-width: 1180px) {
+    .gridMetricas,
+    .gridAssinatura,
+    .gridCursos,
+    .gridAulas {
+        grid-template-columns: repeat(2, minmax(240px, 1fr));
+    }
+
+    .heroCurso {
+        grid-template-columns: 1fr;
+    }
+
+    .resumoCurso p {
+        margin-bottom: 28px;
+    }
+}
+
+@media (max-width: 860px) {
+    .painelAluno {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .conteudoPrincipal {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .rodapePagina {
+        grid-row: 3;
+    }
+
+    .areaConteudo {
+        padding: 24px 18px 32px;
+    }
+
+    .cabecalhoUsuario {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .acoesUsuario {
+        justify-content: space-between;
+    }
+
+    .dadosUsuario {
+        min-width: 0;
+    }
+
+    .dadosUsuario h1,
+    .secaoCursos h2,
+    .secaoDetalheCurso h2,
+    .secaoAulaAberta h2 {
+        font-size: 1.75rem;
+    }
+
+    .gridMetricas,
+    .gridCursos,
+    .gridAulas,
+    .rodapePagina {
+        grid-template-columns: 1fr;
+    }
+
+    .carrosselCursos .cardAula {
+        flex-basis: 290px;
+    }
+
+    .heroCurso img {
+        height: 220px;
+    }
+
+    .resumoCurso h2 {
+        font-size: 2rem;
+    }
+
+    .botaoInscrever {
+        width: 100%;
+        min-width: 0;
+        font-size: 1.5rem;
+    }
+
+    .navegacaoCurso {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .abaCurso,
+    .abaAtiva {
+        width: 100%;
+        white-space: normal;
+    }
+
+    .conteudoCurso {
+        padding: 16px;
+    }
+
+    .cabecalhoBlocoFinanceiro {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .playerSeguro {
+        min-height: 230px;
+    }
+}
+
+                                                                                                                                                            
+.painelAluno {
+    background: #f5f8f6;
+}
+
+.areaConteudo {
+    padding: clamp(22px, 3vw, 42px);
+}
+
+.cabecalhoUsuario {
+    margin-bottom: 24px;
+}
+
+.dadosUsuario {
+    border-bottom: 0;
+    border-left: 4px solid #06a663;
+    padding: 2px 0 2px 14px;
+}
+
+.dadosUsuario h1 {
+    color: #173e2c;
+    font-size: clamp(1.55rem, 2.3vw, 2rem);
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
+.cargoUsuario {
+    color: #607468;
+    margin-top: 5px;
+}
+
+.cabecalhoPagina {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 24px;
+    padding: clamp(23px, 3vw, 34px);
+    border: 1px solid #dcebe2;
+    border-radius: 21px;
+    background: linear-gradient(115deg, #f0faf4 0%, #ffffff 78%);
+}
+
+.cabecalhoPagina h2 {
+    margin: 0;
+    color: #123c2a;
+    font-size: clamp(1.75rem, 3vw, 2.3rem);
+    line-height: 1.1;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+}
+
+.cabecalhoPagina p {
+    max-width: 690px;
+    margin: 0;
+    color: #53675c;
+    font-size: 0.97rem;
+    line-height: 1.55;
+}
+
+.etiquetaPagina {
+    color: #087044;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: 0.11em;
+}
+
+.secaoUltimasAulas,
+.secaoMetricas:not(.paginaFinanceiro) {
+    margin-bottom: 28px;
+    padding: clamp(18px, 2.4vw, 26px);
+    border: 1px solid #dfe9e3;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
+}
+
+.tituloUltimasAulas {
+    align-items: flex-start;
+    border: 0;
+    margin-bottom: 17px;
+    padding: 0;
+}
+
+.tituloUltimasAulas h2 {
+    color: #183d2c;
+    font-size: 1.2rem;
+    font-weight: 650;
+}
+
+.tituloUltimasAulas span {
+    color: #607468;
+    font-size: 0.87rem;
+}
+
+.gridMetricas {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+}
+
+.paginaFinanceiro .gridMetricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cardMetrica {
+    min-width: 0;
+    min-height: 148px;
+    padding: 22px 23px;
+    border: 1px solid #dfe9e3;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
+}
+
+.metricaTopo h2 {
+    color: #244338;
+    font-size: 1rem;
+    line-height: 1.35;
+    font-weight: 650;
+}
+
+.iconeBadge {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    background: #e5f5ec;
+    color: #087044;
+}
+
+.metricaVariacao {
+    color: #507363;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+.metricaNumero {
+    color: #123c2a;
+    font-size: clamp(1.55rem, 2vw, 1.9rem);
+    line-height: 1.15;
+    font-weight: 650;
+}
+
+.secaoCursos > h2,
+.secaoAulaAberta > h2 {
+    color: #183d2c;
+    font-size: 1.25rem;
+    font-weight: 650;
+    margin-bottom: 16px;
+}
+
+.filtrosDescobrir {
+    margin-bottom: 20px;
+    padding: 17px;
+    border: 1px solid #dfe9e3;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 7px 18px rgba(15, 63, 40, 0.04);
+}
+
+                                                                                       
+.filtrosDescobrir > .campoBusca {
+    flex: 1 0 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.campoBusca,
+.filtroOrdenacao select {
+    border-color: #cbd9d0;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.campoBusca:focus-within,
+.filtroOrdenacao select:focus {
+    outline: 0;
+    border-color: #06a663;
+    box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
+}
+
+                                                                                                                                               
+.seletorEstrelas {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 14px;
+}
+
+.seletorEstrelas button {
+    min-width: 38px;
+    min-height: 38px;
+    border: 1px solid #cbd9d0;
+    border-radius: 7px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.seletorEstrelas button:focus-visible {
+    outline: 3px solid rgba(6, 166, 99, 0.3);
+    outline-offset: 2px;
+}
+
+.estrela,
+.estrelaAtiva {
+    color: #8b8b8b;
+    font-size: 1.5rem;
+}
+
+.estrelaAtiva {
+    color: #e5a400;
+}
+
+.estrelasZero,
+.estrelasZeroAtivo {
+    color: #244338;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.estrelasZeroAtivo {
+    border-color: #02693e !important;
+    background: #02693e !important;
+    color: #ffffff;
+}
+
+.seletorEstrelas span {
+    color: #555555;
+    font-size: 0.9rem;
+}
+
+.textoAvaliacao {
+    display: block;
+    width: 100%;
+    min-height: 96px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid #cbd9d0;
+    border-radius: 7px;
+    color: #111111;
+    font: inherit;
+    resize: vertical;
+}
+
+                                                                                                                                                      
+.comentariosCurso {
+    width: 100%;
+    margin: 24px 0 0;
+    padding: 22px;
+    border: 1px solid #d9e5df;
+    border-radius: 8px;
+    background: #fbfdfc;
+}
+
+.comentariosCurso h2 {
+    margin: 0 0 16px;
+    font-size: 1.45rem;
+}
+
+.listaComentariosCurso {
+    display: grid;
+    gap: 12px;
+}
+
+.comentarioCurso {
+    padding: 14px;
+    border: 1px solid #d9e5df;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.cabecalhoComentarioCurso {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.fotoComentarioCurso,
+.fotoComentarioVazia {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.fotoComentarioVazia {
+    color: #6b8c7c;
+    font-size: 42px;
+}
+
+.notaComentarioCurso {
+    margin-left: auto;
+    color: #e5a400;
+    font-size: 1.2rem;
+    white-space: nowrap;
+}
+
+.notaComentarioCurso small {
+    color: #555555;
+    font-size: 0.78rem;
+}
+
+.comentarioCurso p {
+    margin: 10px 0 0;
+    color: #333333;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.gridCursos,
+.gridAulas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.cardCurso,
+.cardAula,
+.cardModuloAluno,
+.cardMaterial,
+.conteudoCurso,
+.blocoFinanceiro {
+    border: 1px solid #dfe9e3;
+    border-radius: 17px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 63, 40, 0.05);
+}
+
+.cardCurso,
+.cardAula,
+.cardModuloAluno {
+    transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.cardCurso:hover,
+.cardAula:hover,
+.cardModuloAluno:hover {
+    box-shadow: 0 14px 28px rgba(15, 63, 40, 0.1);
+    transform: translateY(-2px);
+}
+
+.heroCurso {
+    overflow: hidden;
+    border: 1px solid #dce9e1;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 10px 26px rgba(15, 63, 40, 0.06);
+}
+
+.heroCurso img {
+    border-radius: 0;
+}
+
+.resumoCurso {
+    padding: clamp(22px, 3vw, 34px);
+}
+
+.resumoCurso h2 {
+    color: #123c2a;
+    font-weight: 650;
+}
+
+.descricaoCurso {
+    max-width: 64ch;
+}
+
+.navegacaoCurso {
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+    padding: 5px;
+    border: 1px solid #dfe9e3;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.abaCurso,
+.abaAtiva {
+    min-height: 42px;
+    border: 0;
+    border-radius: 10px;
+    font-size: 0.94rem;
+    font-weight: 650;
+}
+
+.abaCurso {
+    color: #486355;
+    background: transparent;
+}
+
+.abaAtiva {
+    color: #ffffff;
+    background: #087044;
+}
+
+.conteudoCurso {
+    margin-bottom: 17px;
+    padding: clamp(18px, 2.5vw, 25px);
+}
+
+.conteudoCurso h2,
+.detalheModuloAluno h3 {
+    color: #183d2c;
+    font-size: 1.2rem;
+    font-weight: 650;
+}
+
+.painelProva {
+    max-width: 900px;
+    padding: clamp(22px, 4vw, 38px);
+}
+
+.cabecalhoProva {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid #dfe9e3;
+}
+
+.rotuloProva {
+    color: #087044;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.cabecalhoProva h2 {
+    margin: 8px 0 !important;
+    font-size: clamp(1.5rem, 3vw, 2rem) !important;
+}
+
+.cabecalhoProva p {
+    margin: 0;
+    color: #607468;
+}
+
+.statusProva {
+    border-radius: 999px;
+    padding: 8px 13px;
+    background: #e7f5ed;
+    color: #075132;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.listaQuestoes {
+    display: grid;
+    gap: 20px;
+    padding-top: 24px;
+}
+
+.cartaoQuestao {
+    min-width: 0;
+    margin: 0;
+    padding: 20px;
+    border: 1px solid #dce9e1;
+    border-radius: 14px;
+    background: #f8fbf9;
+}
+
+.cartaoQuestao legend {
+    padding: 0 8px;
+    color: #087044;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.enunciadoQuestao {
+    margin: 0 0 18px;
+    color: #183d2c;
+    font-size: 1.05rem;
+    font-weight: 650;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.alternativasQuestao {
+    display: grid;
+    gap: 10px;
+}
+
+.alternativaQuestao {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 15px;
+    border: 1px solid #dce9e1;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.alternativaQuestao:has(input:checked) {
+    border-color: #087044;
+    background: #eaf6ef;
+}
+
+.alternativaQuestao input {
+    margin: 3px 0 0;
+    accent-color: #087044;
+    flex: 0 0 auto;
+}
+
+.respostaDissertativa {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    padding: 14px;
+    border: 1px solid #bfd3c5;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #183d2c;
+    font: inherit;
+    line-height: 1.5;
+}
+
+.respostaDissertativa:focus-visible,
+.alternativaQuestao:focus-within {
+    outline: 2px solid #087044;
+    outline-offset: 2px;
+}
+
+.rodapeProva {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    color: #607468;
+}
+
+.rodapeProva .botaoInscrever:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.avaliacaoAposProva {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid #dfe9e3;
+}
+
+.gradeModulosAluno {
+    gap: 17px;
+}
+
+.cardModuloAluno {
+    overflow: hidden;
+    padding: 0;
+}
+
+.cardModuloAluno img {
+    background: #e8f1eb;
+}
+
+.infoCardModuloAluno {
+    gap: 8px;
+    padding: 16px;
+}
+
+.infoCardModuloAluno strong {
+    color: #173e2c;
+    font-size: 1rem;
+}
+
+.infoCardModuloAluno small,
+.infoCardModuloAluno em {
+    color: #087044;
+}
+
+.detalheModuloAluno {
+    border: 1px solid #dfe9e3;
+    border-radius: 15px;
+    padding: 17px;
+    background: #f8fbf9;
+}
+
+.cardMaterial {
+    padding: 17px;
+}
+
+.cardMaterial strong {
+    color: #173e2c;
+}
+
+.estadoVazio {
+    border-color: #cad9cf;
+    border-radius: 16px;
+    background: #ffffff;
+    color: #607468;
+}
+
+.paginaFinanceiro {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.paginaFinanceiro .cabecalhoPagina {
+    width: 100%;
+    margin: 0;
+}
+
+.paginaFinanceiro .gridMetricas {
+    width: 100%;
+}
+
+.blocoFinanceiro {
+    border-top: 1px solid #dfe9e3;
+    padding: 20px;
+}
+
+.blocoFinanceiro h2 {
+    color: #183d2c;
+    font-size: 1.18rem;
+    font-weight: 650;
+}
+
+.cabecalhoBlocoFinanceiro p {
+    margin: 4px 0 0;
+    color: #607468;
+    line-height: 1.5;
+}
+
+.cardPagamentoPix {
+    border-color: #c6e5d2;
+    border-radius: 16px;
+}
+
+.botaoInscrever,
+.botaoCertificado,
+.botaoSecundarioFinanceiro {
+    min-height: 44px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+.botaoInscrever,
+.botaoCertificado {
+    background: #087044;
+}
+
+.secaoPerfil {
+    padding: clamp(18px, 3vw, 30px);
+    border: 1px solid #dfe9e3;
+    border-radius: 20px;
+    background: #ffffff;
+}
+
+.rodapePagina {
+    background: #075132;
+}
+
+                                                                                                                                                                              
+@media (max-width: 1180px) {
+    .gridMetricas {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 860px) {
+    .areaConteudo {
+        padding: 22px 18px 30px;
+    }
+
+    .gridMetricas {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cabecalhoPagina {
+        border-radius: 17px;
+    }
+
+    .secaoUltimasAulas,
+    .secaoMetricas:not(.paginaFinanceiro) {
+        padding: 17px;
+    }
+
+    .navegacaoCurso {
+        display: flex;
+    }
+
+    .botaoInscrever {
+        min-width: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 560px) {
+    .gridMetricas,
+    .paginaFinanceiro .gridMetricas {
+        grid-template-columns: 1fr;
+    }
+
+    .cabecalhoPagina {
+        padding: 21px 18px;
+    }
+
+    .cabecalhoPagina h2 {
+        font-size: 1.75rem;
+    }
+
+    .tituloUltimasAulas {
+        align-items: flex-start;
+    }
+
+    .cardPagamentoPix,
+    .blocoFinanceiro {
+        padding: 15px;
+    }
+
+    .acoesPagamentoPix > button {
+        flex: 1 1 100%;
+    }
+}
+
+/* Fim item 38 */

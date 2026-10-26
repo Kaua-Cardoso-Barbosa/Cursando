@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import css from "./MenuLateralProf.module.css";
+import css from "./MenuLateralProf_38.module.css";
 
 export default function MenuLateralProf({ itemAtivo = "inicio" }) {
     return (

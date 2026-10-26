@@ -1,0 +1,27 @@
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+.pagina { min-height: calc(100vh - 80px); padding: clamp(24px, 5vw, 72px) 18px; background: linear-gradient(145deg, #e9f5ed, #f8fbf9 55%, #e9f0eb); }
+.painel { max-width: 780px; margin: 0 auto; padding: clamp(24px, 5vw, 48px); background: #fff; border: 1px solid #dce9e0; border-radius: 22px; box-shadow: 0 18px 60px #163b2814; color: #183d2c; }
+.icone { width: 60px; height: 60px; display: grid; place-items: center; border-radius: 16px; background: #e3f4e9; color: #087044; font-size: 28px; }
+.sobretitulo { margin: 28px 0 6px; color: #087044; font-size: .78rem; font-weight: 750; text-transform: uppercase; letter-spacing: .1em; }
+.painel h1 { margin: 0 0 12px; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+.introducao { margin: 0 0 28px; color: #52675b; line-height: 1.55; }
+.formulario label { display: block; margin-bottom: 8px; font-weight: 700; }
+.linhaBusca { display: flex; gap: 10px; }
+.linhaBusca input { flex: 1; min-width: 0; padding: 13px 15px; border: 1px solid #b7cbbd; border-radius: 10px; font: inherit; }
+.linhaBusca button { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 12px 20px; border: 0; border-radius: 10px; background: #087044; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+.linhaBusca button:hover { background: #075a38; }
+.resultado { margin-top: 28px; }
+.valido, .invalido { padding: 22px; border-radius: 14px; }
+.valido { background: #eef8f1; border: 1px solid #b9dfc4; }
+.invalido { display: flex; gap: 14px; background: #fff6f2; border: 1px solid #f2c9ba; color: #843b27; }
+.invalido > svg, .cabecalhoResultado > svg { flex: 0 0 auto; font-size: 26px; }
+.cabecalhoResultado { display: flex; gap: 14px; color: #087044; }
+.valido h2, .invalido h2 { margin: 0 0 5px; font-size: 1.2rem; }
+.valido p, .invalido p { margin: 0; line-height: 1.45; }
+.valido dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 22px 0 0; }
+.valido dt { color: #52675b; font-size: .85rem; }
+.valido dd { margin: 4px 0 0; font-weight: 700; overflow-wrap: anywhere; }
+.voltar { display: inline-block; margin-top: 28px; color: #087044; font-weight: 650; }
+@media (max-width: 600px) { .linhaBusca { flex-direction: column; } .linhaBusca button { min-height: 44px; } .valido dl { grid-template-columns: 1fr; } }
+
+/* Fim item 38 */

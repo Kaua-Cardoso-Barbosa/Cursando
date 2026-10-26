@@ -4,7 +4,7 @@ import SecaoCursos from '../../components/SecaoCursos/SecaoCursos';
 import SecaoSobre from '../../components/SecaoSobre/SecaoSobre';
 import SecaoPlanos from '../../components/SecaoPlanos/SecaoPlanos';
 import Rodape from '../../components/Rodape/Rodape';
-import css from './Home.module.css';
+import css from './Home_38.module.css';
 
 const Home = () => {
     const api = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5000`;

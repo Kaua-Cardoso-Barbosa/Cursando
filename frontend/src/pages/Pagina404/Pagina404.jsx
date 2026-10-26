@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import styles from "./Pagina404.module.css";
+import styles from "./Pagina404_38.module.css";
 
 export default function Pagina404() {
   return (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import css from "./Alerts.module.css";
+import css from "./Alerts_38.module.css";
 
 export default function Alerts({
                                    titulo = "Aviso",
@@ -15,7 +15,7 @@ export default function Alerts({
     const fecharAlerta = useCallback(() => {
         setSaindo(true);
 
-        // Espera a animação terminar
+                                     
         setTimeout(() => {
             setVisivel(false);
 

@@ -1,5 +1,5 @@
 import { FaExclamationTriangle } from "react-icons/fa";
-import css from "./ConfirmAlert.module.css";
+import css from "./ConfirmAlert_38.module.css";
 
 export default function ConfirmAlert({
                                          aberto,

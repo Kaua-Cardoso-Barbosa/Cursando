@@ -1,6 +1,6 @@
 import React from 'react';
-import CartaoPlano from '../CartaoPlano/CartaoPlano';
-import css from '../../pages/Home/Home.module.css';
+import CartaoPlano from '../CartaoPlano/CartaoPlano_34';
+import css from '../../pages/Home/Home_38.module.css';
 
 const SecaoPlanos = () => {
     const beneficiosMensal = [
