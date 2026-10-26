@@ -28,16 +28,22 @@ export default function PlayerVideo({
         let filaSalvamentos = Promise.resolve();
         let aulaConcluida = false;
         let progressoInicialRegistrado = false;
+        let retomadaPronta = false;
+        let desmontado = false;
 
         function salvarPosicao(forcar = false) {
-            if (aulaConcluida) return filaSalvamentos;
+            // Sprint item 4: durante o carregamento, o elemento de vídeo ainda
+            // pode estar em 0. Não devemos sobrescrever o segundo salvo na API.
+            if (aulaConcluida || !retomadaPronta) return filaSalvamentos;
 
             const posicao = Number(video.currentTime);
             if (!Number.isFinite(posicao) || posicao < 0) return filaSalvamentos;
 
             const diferenca = Math.abs(posicao - ultimaPosicaoSalva);
-            // Sprint item 7: atualizações forçadas também renovam o relógio quando uma pausa não moveu o vídeo.
-            if (!forcar && diferenca < 10) return filaSalvamentos;
+            // Sprint item 4: timeupdate grava a cada segundo. Assim, fechar uma
+            // aula curta após cinco segundos não perde dez segundos de progresso.
+            // Pausa, busca e saída da página sempre gravam o segundo exato.
+            if (!forcar && diferenca < 1) return filaSalvamentos;
 
             ultimaPosicaoSalva = posicao;
             const idAula = videoAula.id;
@@ -125,7 +131,7 @@ export default function PlayerVideo({
 
         // Sprint item 7: grava o ponto inicial quando o aluno realmente começa a reproduzir a aula.
         const quandoIniciar = () => {
-            if (progressoInicialRegistrado || aulaConcluida) return;
+            if (!retomadaPronta || progressoInicialRegistrado || aulaConcluida) return;
             progressoInicialRegistrado = true;
             ultimaPosicaoSalva = Number(video.currentTime) - 0.5;
             salvarPosicao(true);
@@ -161,15 +167,13 @@ export default function PlayerVideo({
                     "Player anexado ao vídeo"
                 );
 
-                await player.load(videoUrl);
-
-                if (posicaoInicial > 0) {
-                    const duracao = Number(video.duration);
-                    const posicao = Number.isFinite(duracao) && duracao > 0
-                        ? Math.min(posicaoInicial, Math.max(0, duracao - 1))
-                        : posicaoInicial;
-                    video.currentTime = posicao;
-                }
+                // Sprint item 4: Shaka recebe a posição ao carregar o manifesto
+                // e prepara os segmentos a partir desse segundo. Alterar
+                // currentTime depois do load podia deixar o player em zero.
+                await player.load(videoUrl, posicaoInicial > 0 ? posicaoInicial : null);
+                if (desmontado) return;
+                retomadaPronta = true;
+                if (!video.paused) quandoIniciar();
 
                 console.log(
                     "Vídeo carregado com sucesso!"
@@ -208,6 +212,7 @@ export default function PlayerVideo({
 
         return () => {
             salvarPosicao(true);
+            desmontado = true;
             video.removeEventListener(
                 "ended",
                 quandoTerminar

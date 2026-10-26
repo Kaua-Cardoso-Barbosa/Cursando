@@ -4,7 +4,9 @@ import css from "./MateriaisProfessor.module.css";
 
 const tipos = ["link", "pdf", "livro", "apostila", "codigo", "arquivo", "outro"];
 
-// Sprint item 21: cadastra links e arquivos privados como materiais complementares do curso.
+// Sprint item 21: o professor publica links ou arquivos para complementar
+// as aulas. Após o cadastro, a lista mostra o que o aluno encontrará;
+// arquivos ficam privados e a API só permite baixar com matrícula ativa.
 export default function MateriaisProfessor({ api, idCurso, avisar }) {
     const [materiais, setMateriais] = useState([]);
     const [titulo, setTitulo] = useState("");
@@ -70,8 +72,9 @@ export default function MateriaisProfessor({ api, idCurso, avisar }) {
 
     return (
         <div className={css.area}>
-            <header><div><h2>Complementos do curso</h2><p>Adicione links, livros, apostilas, códigos e arquivos para os alunos matriculados.</p></div></header>
+            <header className={css.cabecalho}><div><span className={css.etiqueta}>MATERIAIS DE APOIO</span><h2>Complementos do curso</h2><p>Reúna leituras, arquivos e links que ajudam os alunos a praticar o conteúdo.</p></div><strong>{materiais.length} {materiais.length === 1 ? "material" : "materiais"}</strong></header>
             <form className={css.formulario} onSubmit={cadastrar}>
+                <div className={css.introFormulario}><h3>Adicionar material</h3><p>Escolha um arquivo ou informe um link. O aluno encontrará o material na aba Complementos do curso.</p></div>
                 <label>Título<input value={titulo} onChange={(event) => setTitulo(event.target.value)} required maxLength={150} /></label>
                 <label>Tipo<select value={tipo} onChange={(event) => setTipo(event.target.value)}>{tipos.map((opcao) => <option key={opcao} value={opcao}>{opcao === "codigo" ? "Código" : opcao[0].toUpperCase() + opcao.slice(1)}</option>)}</select></label>
                 <label>Descrição<textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} maxLength={3000} /></label>
@@ -81,10 +84,11 @@ export default function MateriaisProfessor({ api, idCurso, avisar }) {
                 <button type="submit" disabled={salvando}><FaPlus /> {salvando ? "Salvando..." : "Adicionar complemento"}</button>
             </form>
             <div className={css.lista}>
+                <h3>Materiais publicados</h3>
                 {carregando && <p>Carregando complementos...</p>}
                 {!carregando && materiais.length === 0 && <p>Nenhum complemento cadastrado.</p>}
                 {materiais.map((item) => <article key={item.id} className={css.item}>
-                    <div className={css.icone}><FaFileAlt /></div><div className={css.detalhe}><strong>{item.titulo}</strong><span>{item.tipo}{item.nome_arquivo ? ` · ${item.nome_arquivo}` : ""}</span>{item.descricao && <p>{item.descricao}</p>}{item.url && !item.arquivo && <a href={item.url} target="_blank" rel="noreferrer">Abrir link <FaExternalLinkAlt /></a>}</div>
+                    <div className={css.icone}>{item.url && !item.arquivo ? <FaExternalLinkAlt /> : <FaFileAlt />}</div><div className={css.detalhe}><span className={css.tipo}>{item.tipo}{item.nome_arquivo ? ` · ${item.nome_arquivo}` : ""}</span><strong>{item.titulo}</strong>{item.descricao && <p>{item.descricao}</p>}{item.url && !item.arquivo && <a href={item.url} target="_blank" rel="noreferrer">Abrir link <FaExternalLinkAlt /></a>}</div>
                     <button type="button" className={css.excluir} onClick={() => excluir(item)} aria-label={`Remover ${item.titulo}`}><FaTrash /></button>
                 </article>)}
             </div>

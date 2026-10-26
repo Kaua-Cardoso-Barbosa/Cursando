@@ -248,64 +248,23 @@
     gap: 38px 24px;
 }
 
-/* Sprint item 6: apresenta módulos com capa e acesso ao gerenciamento das aulas. */
+/* Sprint item 6: organiza os módulos com o mesmo card de cursos e aulas. */
 .gradeModulos {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
 }
 
-.cardModuloProfessor {
-    overflow: hidden;
-    border: 1.5px solid #cbd8d1;
-    border-radius: 10px;
-    background: #ffffff;
-}
-
-.cardModuloProfessor > img {
-    display: block;
-    width: 100%;
-    height: 170px;
-    object-fit: cover;
-    background: #eef3ef;
-}
-
-.infoModuloProfessor {
-    display: grid;
-    gap: 8px;
-    padding: 16px;
-}
-
-.infoModuloProfessor h3,
 .aulasSemModulo h3 {
     margin: 0;
     font-size: 1.2rem;
 }
 
-.infoModuloProfessor p,
 .resumoModuloProfessor p {
     margin: 0;
     color: #4b4b4b;
     line-height: 1.45;
     overflow-wrap: anywhere;
-}
-
-.infoModuloProfessor small {
-    color: #02693e;
-    font-weight: 600;
-}
-
-.acoesModuloProfessor {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 5px;
-}
-
-.acoesModuloProfessor button {
-    min-height: 38px;
-    padding: 8px 12px;
-    font-size: 0.9rem;
 }
 
 .resumoModuloProfessor {
@@ -477,6 +436,11 @@
 
 .acoesCard .botaoExcluir {
     color: #e21d0b;
+}
+
+.acoesCard button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
 }
 
 .cardAula {
@@ -922,6 +886,28 @@
     margin-bottom: 34px;
 }
 
+/* Sprint item 9: separa indicadores, gráfico e tabela mensal com o mesmo ritmo.
+   O cartão do gráfico já tem espaço interno; sua margem padrão não deve
+   duplicar a distância até a explicação abaixo. */
+.resultadosMes {
+    display: grid;
+    gap: 24px;
+}
+
+.resultadosMes .cabecalhoBloco,
+.resultadosMes > section,
+.resultadosMes > p {
+    margin: 0;
+}
+
+.resultadosMes > section {
+    padding: clamp(20px, 2.5vw, 30px);
+}
+
+.resultadosMes > section h3 {
+    margin-bottom: 18px;
+}
+
 .cabecalhoBloco {
     display: flex;
     align-items: flex-end;
@@ -1124,6 +1110,13 @@
 .formularioSaque > label {
     font-size: 0.92rem;
     font-weight: 650;
+}
+
+.formularioSaque > input {
+    min-height: 48px;
+    border-radius: 10px;
+    border-color: #cbd9d0;
+    background: #fff;
 }
 
 .campoValorSaque {
@@ -1337,6 +1330,10 @@
 }
 
 @media (max-width: 560px) {
+    .resultadosMes {
+        gap: 18px;
+    }
+
     .gridMetricasInicio,
     .gridMetricasFinanceiro,
     .gridMetricasSecundarias,
@@ -1496,8 +1493,7 @@
 }
 
 .cardCurso,
-.cardAula,
-.cardModuloProfessor {
+.cardAula {
     border: 1px solid #dfe9e3;
     border-radius: 17px;
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
@@ -1505,8 +1501,7 @@
 }
 
 .cardCurso:hover,
-.cardAula:hover,
-.cardModuloProfessor:hover {
+.cardAula:hover {
     box-shadow: 0 14px 28px rgba(15, 63, 40, 0.1);
     transform: translateY(-2px);
 }
@@ -1552,20 +1547,6 @@
     gap: 18px;
 }
 
-.cardModuloProfessor {
-    overflow: hidden;
-}
-
-.cardModuloProfessor > img {
-    height: 185px;
-}
-
-.infoModuloProfessor {
-    gap: 10px;
-    padding: 18px;
-}
-
-.infoModuloProfessor h3,
 .aulasSemModulo h3 {
     color: #173e2c;
     font-size: 1.12rem;

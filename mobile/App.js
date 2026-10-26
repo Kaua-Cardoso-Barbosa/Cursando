@@ -22,6 +22,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
 import PlayerAulaScreen from "./src/screens/PlayerAulaScreen";
 import ProvasProfessorScreen from "./src/screens/ProvasProfessorScreen";
+import ProvaAlunoScreen from "./src/screens/ProvaAlunoScreen";
 import MateriaisProfessorScreen from "./src/screens/MateriaisProfessorScreen";
 import RelatoriosProfessorScreen from "./src/screens/RelatoriosProfessorScreen";
 import LogsAdminScreen from "./src/screens/LogsAdminScreen";
@@ -59,6 +60,7 @@ function AppContent() {
   const [managingCourse, setManagingCourse] = useState(null);
   // Sprint item 20: guarda o curso selecionado para configurar sua prova e corrigir envios no app.
   const [examCourse, setExamCourse] = useState(null);
+  const [examAlunoAberto, setExamAlunoAberto] = useState(false);
   const [materialsCourse, setMaterialsCourse] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -268,6 +270,7 @@ function AppContent() {
     setCursos([]);
     setDetalheCursoAluno(null);
     setDetalheAulaAluno(null);
+    setExamAlunoAberto(false);
     setTab("home");
   }
 
@@ -288,6 +291,7 @@ function AppContent() {
   async function abrirCursoAluno(curso, destino = "courses") {
     setLoading(true);
     try {
+      setExamAlunoAberto(false);
       setDetalheCursoAluno(await buscarDetalheCursoAluno(curso.id));
       setDetalheAulaAluno(null);
       setTab(destino);
@@ -378,11 +382,12 @@ function AppContent() {
   async function enviarProvaAluno(respostas) {
     if (!detalheCursoAluno?.curso?.id) return;
 
-    await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/prova`, {
+    const resultado = await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/prova`, {
       method: "POST",
       body: JSON.stringify({ respostas })
     }, token);
-    await abrirCursoAluno(detalheCursoAluno.curso);
+    setDetalheCursoAluno(await buscarDetalheCursoAluno(detalheCursoAluno.curso.id));
+    return resultado;
   }
 
   // Sprint item 20: solicita o PDF ao servidor, que só o emite após aprovação na prova final.
@@ -438,6 +443,7 @@ function AppContent() {
 
   function trocarAba(key) {
     setTab(key);
+    setExamAlunoAberto(false);
     setStudentsCourse(null);
     if (key !== "courses") {
       setDetalheCursoAluno(null);
@@ -655,6 +661,10 @@ function AppContent() {
     );
   }
 
+  if (examAlunoAberto && detalheCursoAluno?.prova?.prova) {
+    return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><ProvaAlunoScreen curso={detalheCursoAluno.curso} prova={detalheCursoAluno.prova} onBack={() => setExamAlunoAberto(false)} onSubmit={enviarProvaAluno} /></SafeAreaView>;
+  }
+
   if (materialsCourse) {
     return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><MateriaisProfessorScreen curso={materialsCourse} token={token} onBack={() => setMaterialsCourse(null)} /></SafeAreaView>;
   }
@@ -720,10 +730,10 @@ function AppContent() {
             detalhe={detalheCursoAluno}
             carregando={loading}
             onRefresh={() => abrirCursoAluno(detalheCursoAluno.curso)}
-            onBack={() => setDetalheCursoAluno(null)}
+            onBack={() => { setExamAlunoAberto(false); setDetalheCursoAluno(null); }}
             onOpenLesson={abrirAulaAluno}
             onEnroll={inscreverCursoAluno}
-            onSubmitExam={enviarProvaAluno}
+            onOpenExam={() => setExamAlunoAberto(true)}
             onDownloadCertificate={baixarCertificadoAluno}
             onReview={avaliarCursoAluno}
             onOpenMaterial={abrirMaterialCurso}
@@ -750,10 +760,10 @@ function AppContent() {
             detalhe={detalheCursoAluno}
             carregando={loading}
             onRefresh={() => abrirCursoAluno(detalheCursoAluno.curso, "discover")}
-            onBack={() => setDetalheCursoAluno(null)}
+            onBack={() => { setExamAlunoAberto(false); setDetalheCursoAluno(null); }}
             onOpenLesson={abrirAulaAluno}
             onEnroll={inscreverCursoAluno}
-            onSubmitExam={enviarProvaAluno}
+            onOpenExam={() => setExamAlunoAberto(true)}
             onDownloadCertificate={baixarCertificadoAluno}
             onReview={avaliarCursoAluno}
             onOpenMaterial={abrirMaterialCurso}

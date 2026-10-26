@@ -1,5 +1,11 @@
+"""Funções pequenas compartilhadas pelas rotas da sprint.
+
+`resposta` padroniza JSON de erro e sucesso; `proximo_id` calcula o próximo
+identificador nas tabelas sem gerador; os decodificadores leem texto JSON
+guardado no Firebird. As rotas por assunto ficam em arquivos separados.
+"""
+
 import io
-import ast
 import json
 import unicodedata
 from datetime import datetime
@@ -32,22 +38,22 @@ def resposta(descricao, status=200, tipo="erro", **extra):
 
 
 def proximo_id(cursor, tabela, coluna):
+    """Lê o maior ID da tabela e soma um; o chamador deve cuidar da transação."""
     cursor.execute(f"SELECT COALESCE(MAX({coluna}), 0) + 1 FROM {tabela}")
     return cursor.fetchone()[0]
 
 
 
 def _decodificar_respostas_prova(valor):
+    """Sprint item 20: lê apenas respostas JSON da prova atual."""
     texto = de_blob_texto(valor)
     if not texto:
         return {}
     try:
-        return json.loads(texto)
+        dados = json.loads(texto)
+        return dados if isinstance(dados, dict) else {}
     except (TypeError, ValueError):
-        try:
-            return ast.literal_eval(texto)
-        except (ValueError, SyntaxError):
-            return {}
+        return {}
 
 
 
@@ -140,12 +146,14 @@ def calcular_saldo_saque(cursor, id_usuario, pool_instrutores, pesos_instrutores
     peso_instrutor = pesos_instrutores.get(int(id_usuario), 0)
     estimado = pool_instrutores * (peso_instrutor / peso_total) if peso_total else 0
     cursor.execute(
-        "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?",
+        """SELECT COALESCE(CAST(SUM(CASE WHEN STATUS = 1 THEN VALOR ELSE 0 END) AS DOUBLE PRECISION), 0),
+                  COALESCE(CAST(SUM(CASE WHEN STATUS = 0 THEN VALOR ELSE 0 END) AS DOUBLE PRECISION), 0)
+           FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ?""",
         (id_usuario,),
     )
-    sacado = float((cursor.fetchone() or (0,))[0] or 0)
-    disponivel = round(max(estimado - sacado, 0), 2)
-    return peso_instrutor, estimado, sacado, disponivel
+    pago, pendente = (float(valor or 0) for valor in cursor.fetchone())
+    disponivel = round(max(estimado - pago - pendente, 0), 2)
+    return peso_instrutor, estimado, pago, disponivel
 
 
 

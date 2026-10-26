@@ -8,8 +8,8 @@ from banco import get_db
 
 
 from professor import AULA_STATUS_FILTRO, CURSO_STATUS_FILTRO, STATUS_ARQUIVADO, STATUS_NOMES, STATUS_PRIVADO, STATUS_PUBLICADO, banco_nao_preparado, criar_mensagem, curso_para_dict, exigir_professor, resposta as resposta_professor
-from sprint_schema import garantir_sprint_schema
-from sprint_comum import _pdf_simples, exigir_tipo, resposta
+from estrutura_banco import garantir_estrutura_banco
+from utilitarios_backend import _pdf_simples, exigir_tipo, resposta
 
 
 
@@ -36,7 +36,7 @@ def _filtros_periodo(prefixo=""):
 @app.route("/relatorios/professor", methods=["GET"])
 @jwt_required()
 def relatorio_professor():
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = int(get_jwt_identity())
     id_curso = request.args.get("id_curso")
@@ -305,7 +305,7 @@ def analiticos_mensais_professor():
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     id_instrutor = int(get_jwt_identity())
     hoje = datetime.now().date()
     inicio_mes = hoje.replace(day=1)
@@ -386,10 +386,10 @@ def professor_dashboard():
 
     id_professor = get_jwt_identity()
     # Sprint item 7: garante as tabelas de módulos e progresso usadas pelas métricas do painel.
-    from sprint_schema import garantir_sprint_schema
+    from estrutura_banco import garantir_estrutura_banco
     from aluno import garantir_tabela_progresso
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 

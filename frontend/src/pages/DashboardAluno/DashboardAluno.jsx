@@ -195,6 +195,7 @@ export default function DashboardAluno({
     const [materiaisCurso, setMateriaisCurso] = useState([]);
     const [provaAluno, setProvaAluno] = useState(null);
     const [respostasProva, setRespostasProva] = useState({});
+    const [enviandoProva, setEnviandoProva] = useState(false);
     const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
     const [aulaAtual, setAulaAtual] = useState(null);
     const [protecaoAtiva, setProtecaoAtiva] = useState(false);
@@ -322,12 +323,17 @@ export default function DashboardAluno({
             setDetalheCurso(dadosCurso);
             setIdModuloAberto(null);
             setAbaCurso("modulos");
+            setRespostasProva({});
             setMateriaisCurso(await lerResposta(respostaMateriais));
 
-            if (dadosCurso?.curso?.matriculado) {
+            if (dadosCurso?.curso?.matriculado && Number(dadosCurso.curso.progresso || 0) >= 100) {
                 try {
                     const respostaProva = await fetch(`${api}/aluno/cursos/${idCurso}/prova`, { credentials: "include" });
-                    setProvaAluno(await lerResposta(respostaProva));
+                    if (respostaProva.ok) {
+                        setProvaAluno(await lerResposta(respostaProva));
+                    } else {
+                        setProvaAluno(null);
+                    }
                 } catch {
                     setProvaAluno(null);
                 }
@@ -366,12 +372,14 @@ export default function DashboardAluno({
         }
     }, [api, lerResposta]);
 
-    // Sprint item 4: envia ao backend o ponto de reproducao que sera compartilhado com o aplicativo.
+    // Sprint item 4: o player envia segundos de reprodução. O servidor os
+    // guarda por aluno e aula; a próxima abertura devolve o ponto ao player.
     const salvarProgressoAula = useCallback(async (idAula, posicaoSegundos) => {
         try {
             const resposta = await fetch(`${api}/aluno/aulas/${idAula}/progresso`, {
                 method: "PUT",
                 credentials: "include",
+                keepalive: true,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ posicao_segundos: posicaoSegundos })
             });
@@ -692,14 +700,24 @@ export default function DashboardAluno({
 
     // Sprint item 20: envia a avaliação final para correção manual pelo instrutor.
     async function enviarProvaAluno() {
-        const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/prova`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ respostas: respostasProva })
-        });
-        await lerResposta(resposta);
-        await carregarDetalheCurso(cursoDetalhe.id);
+        if (enviandoProva) return;
+        setEnviandoProva(true);
+        try {
+            const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/prova`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ respostas: respostasProva })
+            });
+            await lerResposta(resposta);
+            await carregarDetalheCurso(cursoDetalhe.id);
+            setAbaCurso("prova");
+            setRespostasProva({});
+        } catch (erro) {
+            if (!erro.status) avisar({ tipo: "erro", descricao: "Não foi possível enviar a prova." });
+        } finally {
+            setEnviandoProva(false);
+        }
     }
 
     // Sprint item 27: envia as estrelas e o comentario; o servidor revalida conclusao e aprovacao antes de salvar.
@@ -901,6 +919,14 @@ export default function DashboardAluno({
                                 >
                                     Complementos
                                 </button>
+                                {cursoDetalhe.matriculado && provaAluno?.prova && (
+                                    <button
+                                        className={abaCurso === "prova" ? css.abaAtiva : css.abaCurso}
+                                        onClick={() => setAbaCurso("prova")}
+                                    >
+                                        Prova final
+                                    </button>
+                                )}
                             </div>
 
                             {abaCurso === "modulos" && (
@@ -944,20 +970,22 @@ export default function DashboardAluno({
                             )}
 
                             {abaCurso === "complementos" && (
-                                <div className={css.conteudoCurso}>
-                                    <h2>Complementos</h2>
+                                <div className={`${css.conteudoCurso} ${css.conteudoComplementos}`}>
+                                    {/* Sprint item 21: a prévia mostra títulos; matrícula e assinatura
+                                        ativas liberam links e downloads privados pela API. */}
+                                    <header className={css.cabecalhoComplementos}><div><span>MATERIAIS DE APOIO</span><h2>Vá além da aula</h2><p>Leituras, arquivos e links escolhidos pelo professor para este curso.</p></div><strong>{materiaisCurso.length} {materiaisCurso.length === 1 ? "material" : "materiais"}</strong></header>
 
                                     {materiaisCurso.length === 0 && <EstadoVazio texto="Nenhum complemento disponível neste curso." />}
                                     <div className={css.listaMateriais}>
                                         {materiaisCurso.map((material) => (
                                             <article key={material.id} className={css.cardMaterial}>
+                                                <span className={css.tipoMaterial}>{material.tipo}</span>
                                                 <strong>{material.titulo}</strong>
-                                                <span>{material.tipo}</span>
                                                 <p>{material.descricao}</p>
                                                 {material.bloqueado ? (
                                                     <small>Disponível após inscrição no curso.</small>
                                                 ) : (
-                                                    material.arquivo_url ? <button type="button" onClick={() => baixarMaterial(material)}>Baixar {material.nome_arquivo || "arquivo"}</button> : material.url ? <a href={material.url} target="_blank" rel="noreferrer">Abrir material</a> : <small>Material indisponível.</small>
+                                                    material.arquivo_url ? <button type="button" onClick={() => baixarMaterial(material)}>Baixar {material.nome_arquivo || "arquivo"}</button> : material.url ? <a href={material.url} target="_blank" rel="noreferrer">Abrir material ↗</a> : <small>Material indisponível.</small>
                                                 )}
                                             </article>
                                         ))}
@@ -965,45 +993,64 @@ export default function DashboardAluno({
                                 </div>
                             )}
 
-                            {cursoDetalhe.matriculado && Number(cursoDetalhe.progresso || 0) >= 100 && (
-                                <>
-                                    {provaAluno?.prova && (
-                                        <section className={css.conteudoCurso}>
-                                            <h2>Prova final</h2>
-                                            {provaAluno.envio && <p>Status: {provaAluno.envio.status === 1 ? "Aprovado" : provaAluno.envio.status === 2 ? "Reprovado" : "Aguardando correção"}</p>}
-                                            {/* Sprint item 20: informa reprovação e feedback e aplica o prazo antes de permitir nova tentativa. */}
-                                            {provaAluno.envio?.status === 2 && <p className={css.avisoReprovacao}>Você foi reprovado. {provaAluno.envio.feedback ? `Feedback: ${provaAluno.envio.feedback}. ` : ""}{provaAluno.envio.pode_tentar_em ? `Tente novamente após ${new Date(provaAluno.envio.pode_tentar_em).toLocaleString("pt-BR")}.` : "Tente novamente após 1 dia da correção."}</p>}
-                                            {(!provaAluno.envio || (provaAluno.envio.status === 2 && (!provaAluno.envio.pode_tentar_em || Date.now() >= new Date(provaAluno.envio.pode_tentar_em).getTime()))) && provaAluno.questoes?.map((questao) => (
-                                                <label key={questao.id} className={css.campoBusca}>
-                                                    {questao.enunciado}
-                                                    {questao.tipo === "objetiva" ? <select value={respostasProva[questao.id] || ""} onChange={(e) => setRespostasProva({ ...respostasProva, [questao.id]: e.target.value })}><option value="">Selecione uma alternativa</option>{(questao.alternativas || []).map((opcao) => <option key={opcao} value={opcao}>{opcao}</option>)}</select> : <textarea value={respostasProva[questao.id] || ""} onChange={(e) => setRespostasProva({ ...respostasProva, [questao.id]: e.target.value })} />}
-                                                </label>
-                                            ))}
-                                            {(!provaAluno.envio || (provaAluno.envio.status === 2 && (!provaAluno.envio.pode_tentar_em || Date.now() >= new Date(provaAluno.envio.pode_tentar_em).getTime()))) && <button className={css.botaoInscrever} onClick={enviarProvaAluno}>Enviar prova</button>}
-                                            {/* Sprint item 27: só mostra avaliação depois da conclusão do curso e da aprovação na prova final. */}
-                                            {provaAluno.envio?.status === 1 && (
-                                                <>
-                                                    <button className={css.botaoCertificado} type="button" onClick={() => baixarCertificado(cursoDetalhe)} disabled={baixandoCertificado}>
-                                                        {baixandoCertificado ? "Gerando certificado..." : "Baixar certificado PDF"}
-                                                    </button>
-                                                    <div className={css.conteudoCurso}>
-                                                        {/* Sprint item 27: permite selecionar de zero a cinco estrelas e escrever uma avaliação após a conclusão e aprovação. */}
-                                                        <h2>Avaliar curso</h2>
-                                                        <div className={css.seletorEstrelas} role="radiogroup" aria-label="Nota de 0 a 5 estrelas">
-                                                            <button type="button" className={avaliacao.nota === 0 ? css.estrelasZeroAtivo : css.estrelasZero} aria-label="0 estrelas" aria-pressed={avaliacao.nota === 0} onClick={() => setAvaliacao({ ...avaliacao, nota: 0 })}>0</button>
-                                                            {[1, 2, 3, 4, 5].map((nota) => (
-                                                                <button key={nota} type="button" className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} onClick={() => setAvaliacao({ ...avaliacao, nota })}>★</button>
+                            {abaCurso === "prova" && cursoDetalhe.matriculado && provaAluno?.prova && (
+                                <section className={`${css.conteudoCurso} ${css.painelProva}`}>
+                                    <div className={css.cabecalhoProva}>
+                                        <div>
+                                            <span className={css.rotuloProva}>AVALIAÇÃO FINAL</span>
+                                            <h2>{provaAluno.prova.titulo || "Prova final"}</h2>
+                                            <p>{provaAluno.questoes?.length || 0} questões · Nota de 0 a 100 · Aprovação com {provaAluno.prova.nota_minima ?? 70} pontos.</p>
+                                        </div>
+                                        {provaAluno.envio && <span className={css.statusProva}>{provaAluno.envio.status === 1 ? "Aprovado" : provaAluno.envio.status === 2 ? "Reprovado" : "Aguardando correção"}</span>}
+                                    </div>
+                                    {provaAluno.envio && <p><strong>{provaAluno.envio.nota ?? "Aguardando nota"}{provaAluno.envio.nota != null ? " pontos de 100" : ""}</strong> · {provaAluno.envio.acertos ?? 0} acertos de {provaAluno.envio.total_questoes || provaAluno.questoes?.length || 0} questões{provaAluno.envio.status === 0 ? " (resultado parcial)" : ""}.</p>}
+                                    {provaAluno.envio?.status === 2 && <p className={css.avisoReprovacao}>Você foi reprovado. {provaAluno.envio.feedback ? `Feedback: ${provaAluno.envio.feedback}. ` : ""}{provaAluno.envio.pode_tentar_em ? `Tente novamente após ${new Date(provaAluno.envio.pode_tentar_em).toLocaleString("pt-BR")}.` : "Tente novamente após 1 dia da correção."}</p>}
+                                    {(!provaAluno.envio || (provaAluno.envio.status === 2 && (!provaAluno.envio.pode_tentar_em || Date.now() >= new Date(provaAluno.envio.pode_tentar_em).getTime()))) && (
+                                        <div className={css.listaQuestoes}>
+                                            {provaAluno.questoes?.map((questao, indice) => (
+                                                <fieldset key={questao.id} className={css.cartaoQuestao}>
+                                                    <legend>Questão {indice + 1}</legend>
+                                                    <p className={css.enunciadoQuestao}>{questao.enunciado}</p>
+                                                    {questao.tipo === "objetiva" ? (
+                                                        <div className={css.alternativasQuestao}>
+                                                            {(questao.alternativas || []).map((opcao, opcaoIndice) => (
+                                                                <label key={`${questao.id}-${opcaoIndice}`} className={css.alternativaQuestao}>
+                                                                    <input type="radio" name={`questao-${questao.id}`} value={opcao} checked={respostasProva[questao.id] === opcao} onChange={() => setRespostasProva((atual) => ({ ...atual, [questao.id]: opcao }))} />
+                                                                    <span>{opcao}</span>
+                                                                </label>
                                                             ))}
-                                                            <span>{avaliacao.nota} de 5</span>
                                                         </div>
-                                                        <textarea className={css.textoAvaliacao} rows="4" value={avaliacao.comentario} onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })} placeholder="Escreva sua avaliação (opcional)" />
-                                                        <button className={css.botaoInscrever} onClick={enviarAvaliacaoCurso}>Enviar avaliação</button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </section>
+                                                    ) : (
+                                                        <textarea className={css.respostaDissertativa} aria-label={`Resposta da questão ${indice + 1}`} placeholder="Escreva sua resposta aqui" rows={5} value={respostasProva[questao.id] || ""} onChange={(e) => setRespostasProva((atual) => ({ ...atual, [questao.id]: e.target.value }))} />
+                                                    )}
+                                                </fieldset>
+                                            ))}
+                                            <div className={css.rodapeProva}>
+                                                <span>Confira suas respostas antes de enviar.</span>
+                                                <button className={css.botaoInscrever} onClick={enviarProvaAluno} disabled={enviandoProva || !provaAluno.questoes?.length || provaAluno.questoes.some((questao) => !String(respostasProva[questao.id] || "").trim())}>{enviandoProva ? "Enviando..." : "Enviar prova"}</button>
+                                            </div>
+                                        </div>
                                     )}
-                                </>
+                                    {provaAluno.envio?.status === 1 && (
+                                        <>
+                                            <button className={css.botaoCertificado} type="button" onClick={() => baixarCertificado(cursoDetalhe)} disabled={baixandoCertificado}>
+                                                {baixandoCertificado ? "Gerando certificado..." : "Baixar certificado PDF"}
+                                            </button>
+                                            <div className={css.avaliacaoAposProva}>
+                                                <h2>Avaliar curso</h2>
+                                                <div className={css.seletorEstrelas} role="radiogroup" aria-label="Nota de 0 a 5 estrelas">
+                                                    <button type="button" className={avaliacao.nota === 0 ? css.estrelasZeroAtivo : css.estrelasZero} aria-label="0 estrelas" aria-pressed={avaliacao.nota === 0} onClick={() => setAvaliacao({ ...avaliacao, nota: 0 })}>0</button>
+                                                    {[1, 2, 3, 4, 5].map((nota) => (
+                                                        <button key={nota} type="button" className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} onClick={() => setAvaliacao({ ...avaliacao, nota })}>★</button>
+                                                    ))}
+                                                    <span>{avaliacao.nota} de 5</span>
+                                                </div>
+                                                <textarea className={css.textoAvaliacao} rows="4" value={avaliacao.comentario} onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })} placeholder="Escreva sua avaliação (opcional)" />
+                                                <button className={css.botaoInscrever} onClick={enviarAvaliacaoCurso}>Enviar avaliação</button>
+                                            </div>
+                                        </>
+                                    )}
+                                </section>
                             )}
                             {modulosDetalhe.length === 0 && (
                                 <>

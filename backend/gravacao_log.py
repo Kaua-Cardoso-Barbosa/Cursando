@@ -9,8 +9,8 @@ from log_banco import get_log_db
 from professor import de_blob_texto
 
 
-from sprint_schema import garantir_sprint_schema
-from sprint_comum import _resumo_detalhes_log, exigir_tipo, resposta
+from estrutura_banco import garantir_estrutura_banco
+from utilitarios_backend import _resumo_detalhes_log, exigir_tipo, resposta
 
 
 
@@ -21,7 +21,7 @@ def logs_admin():
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     termo = (request.args.get("busca") or "").lower().strip()
     tipo = request.args.get("tipo")
     acao = (request.args.get("acao") or "").strip()
@@ -93,7 +93,7 @@ def detalhe_log_admin(id_log):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -146,6 +146,44 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
     id_alvo = str(id_registro or "").split(":", 1)[0].strip()
     id_curso = dados.get("ID_CURSO")
 
+    if tabela == "MODULOS_CURSO" and id_alvo.isdigit():
+        cursor.execute("SELECT TITULO, ID_CURSO FROM MODULOS_CURSO WHERE ID_MODULO = ?", (int(id_alvo),))
+        registro = cursor.fetchone()
+        if registro:
+            contexto["modulo"] = registro[0]
+            id_curso = registro[1]
+        elif dados.get("TITULO"):
+            contexto["modulo"] = dados["TITULO"]
+    elif tabela == "MATERIAIS_CURSO" and id_alvo.isdigit():
+        cursor.execute("SELECT TITULO, ID_CURSO FROM MATERIAIS_CURSO WHERE ID_MATERIAL = ?", (int(id_alvo),))
+        registro = cursor.fetchone()
+        if registro:
+            contexto["material"] = registro[0]
+            id_curso = registro[1]
+        elif dados.get("TITULO"):
+            contexto["material"] = dados["TITULO"]
+    elif tabela == "PROVAS_CURSO" and id_alvo.isdigit():
+        cursor.execute("SELECT TITULO, ID_CURSO FROM PROVAS_CURSO WHERE ID_PROVA = ?", (int(id_alvo),))
+        registro = cursor.fetchone()
+        if registro:
+            contexto["prova"] = registro[0]
+            id_curso = registro[1]
+        elif dados.get("TITULO"):
+            contexto["prova"] = dados["TITULO"]
+    elif tabela in {"RESPOSTAS_PROVA", "QUESTOES_PROVA"} and dados.get("ID_PROVA") is not None:
+        cursor.execute("SELECT TITULO, ID_CURSO FROM PROVAS_CURSO WHERE ID_PROVA = ?", (int(dados["ID_PROVA"]),))
+        prova = cursor.fetchone()
+        if prova:
+            contexto["prova"] = prova[0]
+            id_curso = prova[1]
+
+    if tabela == "PROGRESSO_AULAS" and dados.get("ID_VIDEO") is not None:
+        cursor.execute("SELECT TITULO, ID_CURSO FROM VIDEOS WHERE ID_VIDEO = ?", (int(dados["ID_VIDEO"]),))
+        aula = cursor.fetchone()
+        if aula:
+            contexto["aula"] = aula[0]
+            id_curso = aula[1]
+
     if tabela == "USUARIOS" and id_alvo.isdigit():
         cursor.execute("SELECT NOME, EMAIL, TIPO_USUARIO FROM USUARIOS WHERE ID_USUARIO = ?", (int(id_alvo),))
         usuario = cursor.fetchone()
@@ -196,7 +234,7 @@ def logs_gravacao_admin():
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     termo = (request.args.get("busca") or "").lower().strip()
     log_con = get_log_db()
     cursor = log_con.cursor()

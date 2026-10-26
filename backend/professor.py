@@ -444,8 +444,8 @@ def listar_aulas_professor(id_curso):
     if negado:
         return negado
 
-    from sprint_schema import garantir_sprint_schema
-    garantir_sprint_schema()
+    from estrutura_banco import garantir_estrutura_banco
+    garantir_estrutura_banco()
 
     filtro = request.args.get("status", "todos")
     status = AULA_STATUS_FILTRO.get(filtro, None)
@@ -635,10 +635,24 @@ def alterar_status_aula(id_aula):
     if status not in [STATUS_PRIVADO, STATUS_PUBLICADO]:
         return resposta("Status inválido para aula.", 400)
 
+    from estrutura_banco import garantir_estrutura_banco
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
     try:
+        if status == STATUS_PUBLICADO:
+            cursor.execute(
+                """
+                SELECT M.STATUS FROM VIDEOS V
+                JOIN MODULOS_CURSO M ON M.ID_MODULO = V.ID_MODULO AND M.ID_CURSO = V.ID_CURSO
+                WHERE V.ID_VIDEO = ? AND V.EXCLUIDO = 0
+                """,
+                (id_aula,),
+            )
+            modulo = cursor.fetchone()
+            if modulo and modulo[0] != STATUS_PUBLICADO:
+                return resposta("Publique o modulo antes de publicar esta aula.", 400)
         cursor.execute(
             """
             UPDATE VIDEOS V

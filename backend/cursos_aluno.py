@@ -1,4 +1,9 @@
-# Rotas da sprint organizadas por assunto; os comentários dos itens seguem junto ao código.
+"""Rotas de cursos do aluno e progresso das aulas.
+
+Itens 4, 7, 23, 28 e 29 da sprint. O aluno descobre cursos, abre o detalhe,
+salva a posição do vídeo e marca a aula como concluída. Posição de reprodução
+e conclusão são dados diferentes: pausar no segundo 5 não conclui a aula.
+"""
 import math
 from datetime import datetime
 from flask import jsonify, request
@@ -22,9 +27,9 @@ def detalhe_curso_aluno(id_curso):
 
     id_aluno = get_jwt_identity()
     # Sprint item 6: prepara a coluna de associacao antes de montar a previa publica dos modulos.
-    from sprint_schema import garantir_sprint_schema
-    from sprint_comum import registrar_evento_curso
-    garantir_sprint_schema()
+    from estrutura_banco import garantir_estrutura_banco
+    from utilitarios_backend import registrar_evento_curso
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -52,7 +57,7 @@ def detalhe_curso_aluno(id_curso):
             """
             SELECT ID_MODULO, TITULO, DESCRICAO, IMAGEM_URL, ORDEM
             FROM MODULOS_CURSO
-            WHERE ID_CURSO = ?
+            WHERE ID_CURSO = ? AND STATUS = 1
             ORDER BY ORDEM, ID_MODULO
             """,
             (id_curso,),
@@ -80,6 +85,9 @@ def detalhe_curso_aluno(id_curso):
             LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = ?
             LEFT JOIN PROGRESSO_REPRODUCAO PR ON PR.ID_VIDEO = V.ID_VIDEO AND PR.ID_USUARIO = ?
             WHERE V.ID_CURSO = ? AND V.EXCLUIDO = 0 AND V.STATUS = 1
+              AND (V.ID_MODULO IS NULL OR EXISTS (
+                  SELECT 1 FROM MODULOS_CURSO MC WHERE MC.ID_MODULO = V.ID_MODULO AND MC.STATUS = 1
+              ))
             ORDER BY V.POSICAO_PLAYLIST, V.DATA_UPLOAD, V.ID_VIDEO
             """,
             (id_aluno, id_aluno, id_curso),
@@ -141,9 +149,9 @@ def inscrever_curso(id_curso):
         return negado
 
     id_aluno = get_jwt_identity()
-    from sprint_schema import garantir_sprint_schema
-    from sprint_comum import registrar_evento_curso
-    garantir_sprint_schema()
+    from estrutura_banco import garantir_estrutura_banco
+    from utilitarios_backend import registrar_evento_curso
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -454,7 +462,11 @@ def garantir_tabela_progresso(con):
         cursor.close()
 
 
-# Sprint item 4: salva a posicao atual sem marcar a aula como concluida.
+# Sprint item 4: salva a posição atual sem concluir a aula. O player manda
+# segundos pela API durante a reprodução e ao pausar; a linha é identificada
+# por aluno e vídeo. A consulta da aula lê essa mesma linha para retomar.
+# Sprint itens 7 e 23: o avanço real do player também alimenta o tempo total
+# assistido e a competência mensal usada nos relatórios do professor.
 @app.route("/aluno/aulas/<int:id_aula>/progresso", methods=["PUT"])
 @jwt_required()
 def salvar_progresso_aula(id_aula):

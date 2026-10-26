@@ -190,31 +190,3 @@ def consultar_conta():
     return dados
 
 
-def solicitar_saque_conta(valor, referencia=None):
-    # Sprint item 1: envia a solicitacao de saque para a conta financeira da Arkhe.
-    # Sprint item 32: encaminha valor e referencia à API Arkhé para rastrear o pedido.
-    resposta = _requisitar_arkhe(
-        "POST",
-        "/api/v1/saques",
-        headers={
-            **_headers(),
-            "Content-Type": "application/json",
-        },
-        json={
-            "valor": valor,
-            "referencia": referencia,
-        },
-    )
-
-    dados = _json_resposta(resposta)
-
-    if not resposta.ok:
-        raise ArkheError(_mensagem_erro(dados, "Erro ao solicitar saque na Arkhé"))
-
-    id_saque = _primeiro_valor(dados, "id_saque", "id", "saque_id", "withdraw_id")
-
-    return {
-        **dados,
-        "id_saque": id_saque,
-        "status": _primeiro_valor(dados, "status", "situacao") or "solicitado",
-    }

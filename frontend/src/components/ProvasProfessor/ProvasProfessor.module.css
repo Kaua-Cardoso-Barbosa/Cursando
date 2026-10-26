@@ -11,11 +11,15 @@
 .questao, .resposta { display: grid; gap: 12px; padding: 16px; border: 1px solid #e1eae4; border-radius: 12px; background: #f8fbf9; }
 .alternativas { display: grid; gap: 14px; min-width: 0; }
 .alternativa { display: grid; gap: 8px; min-width: 0; padding: 14px; border: 1px solid #dfe9e3; border-radius: 10px; background: white; }
+.alternativa .gabarito { display: flex; align-items: center; gap: 8px; color: #087044; }
+.alternativa .gabarito input { width: auto; margin: 0; accent-color: #087044; }
 .questaoTopo, .acoes { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .acoes button, .questaoTopo button { border: 0; border-radius: 9px; padding: 10px 14px; background: #087044; color: white; font: inherit; font-weight: 700; cursor: pointer; }
 .questaoTopo button { background: #f3e6e6; color: #922; }
 .acoes button:disabled { opacity: .55; cursor: wait; }
 .publicada { color: #087044; font-weight: 700; }
+.avisoEdicao { margin: 0; padding: 12px 14px; border-radius: 10px; background: #fff8e7; color: #765618; }
+.acoes .botaoExcluir { background: #a83232; }
 .vazio { color: #607268; }
 .resposta p { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .pagina > header { align-items: stretch; flex-direction: column; } .cartao { padding: 14px; } }

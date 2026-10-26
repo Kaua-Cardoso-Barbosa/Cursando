@@ -9,11 +9,11 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from app import app
 from banco import get_db
 from professor import para_blob_texto
-from servicos.arkhe import ArkheError, criar_cobranca_pix, consultar_cobranca_pix, solicitar_saque_conta
+from servicos.arkhe import ArkheError, criar_cobranca_pix, consultar_cobranca_pix
 
 
-from sprint_schema import garantir_sprint_schema
-from sprint_comum import calcular_saldo_saque, exigir_tipo, percentual_instrutores, pesos_pool_instrutores, proximo_id, resposta, valor_assinatura_config
+from estrutura_banco import garantir_estrutura_banco
+from utilitarios_backend import calcular_saldo_saque, exigir_tipo, percentual_instrutores, pesos_pool_instrutores, proximo_id, resposta, valor_assinatura_config
 
 _faturas_lock = Lock()
 
@@ -42,7 +42,7 @@ def _fatura_para_dict(row, numero=None):
 
 
 def aluno_tem_fatura_aberta(cursor, id_usuario):
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     agora = datetime.now()
     cursor.execute(
         """
@@ -93,7 +93,7 @@ def faturas_aluno():
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     id_usuario = get_jwt_identity()
     con = get_db()
     cursor = con.cursor()
@@ -210,7 +210,7 @@ def verificar_fatura_aluno(id_assinatura):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     id_usuario = get_jwt_identity()
     con = get_db()
     cursor = con.cursor()
@@ -303,8 +303,15 @@ def solicitar_saque():
     if negado:
         return negado
 
-    garantir_sprint_schema()
-    valor_recebido = (request.get_json(silent=True) or {}).get("valor")
+    garantir_estrutura_banco()
+    dados = request.get_json(silent=True) or {}
+    if not isinstance(dados, dict):
+        return resposta("Dados da solicitação inválidos.", 400)
+    valor_recebido = dados.get("valor")
+    chave_pix = dados.get("chave_pix")
+    chave_pix = chave_pix.strip() if isinstance(chave_pix, str) else ""
+    if not 5 <= len(chave_pix) <= 140:
+        return resposta("Informe uma chave Pix válida para receber o pagamento.", 400)
     try:
         valor_decimal = Decimal(str(valor_recebido))
         if not valor_decimal.is_finite() or valor_decimal <= 0:
@@ -352,23 +359,142 @@ def solicitar_saque():
             )
 
         id_saque = proximo_id(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE")
-        # Sprint item 32: solicita o saque na Arkhé após validar o saldo disponível no backend.
-        saque_arkhe = solicitar_saque_conta(valor, referencia=f"SAQUE-{id_saque}-{get_jwt_identity()}")
         cursor.execute(
             """
-            INSERT INTO SAQUES_INSTRUTOR (ID_SAQUE, ID_USUARIO, VALOR, STATUS, ID_SAQUE_ARKHE, RESPOSTA_ARKHE)
-            VALUES (?, ?, ?, 0, ?, ?)
+            INSERT INTO SAQUES_INSTRUTOR (ID_SAQUE, ID_USUARIO, VALOR, STATUS, CHAVE_PIX)
+            VALUES (?, ?, ?, 0, ?)
             """,
-            (id_saque, get_jwt_identity(), valor, saque_arkhe.get("id_saque"), para_blob_texto(str(saque_arkhe))),
+            (id_saque, get_jwt_identity(), valor, chave_pix),
         )
         con.commit()
-        return resposta("Solicitação de saque registrada.", 201, "sucesso")
-    except ArkheError as erro:
-        con.rollback()
-        return resposta(f"Erro ao solicitar saque na Arkhé: {erro}", 502)
+        return resposta("Solicitação enviada ao administrador. O pagamento ainda não foi realizado.", 201, "sucesso", id_saque=id_saque)
     except Exception as erro:
         con.rollback()
         return resposta(f"Erro ao solicitar saque: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+def _saque_manual_para_dict(row):
+    status = int(row[4] or 0)
+    return {
+        "id": row[0],
+        "id_professor": row[1],
+        "professor": row[2],
+        "valor": float(row[3] or 0),
+        "status": status,
+        "status_nome": {0: "Solicitado", 1: "Pago", 2: "Recusado"}.get(status, "Desconhecido"),
+        "chave_pix": row[5] or "",
+        "comprovante": row[6] or "",
+        "motivo_recusa": row[7] or "",
+        "criado_em": row[8].isoformat() if row[8] else None,
+        "analisado_em": row[9].isoformat() if row[9] else None,
+    }
+
+
+@app.route("/professor/saques", methods=["GET"])
+@jwt_required()
+def listar_saques_professor():
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+    garantir_estrutura_banco()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        cursor.execute(
+            """SELECT S.ID_SAQUE, S.ID_USUARIO, U.NOME, S.VALOR, S.STATUS, S.CHAVE_PIX,
+                      S.COMPROVANTE, S.MOTIVO_RECUSA, S.CRIADO_EM, S.ANALISADO_EM
+               FROM SAQUES_INSTRUTOR S JOIN USUARIOS U ON U.ID_USUARIO = S.ID_USUARIO
+               WHERE S.ID_USUARIO = ? ORDER BY S.ID_SAQUE DESC""",
+            (get_jwt_identity(),),
+        )
+        retorno = jsonify([_saque_manual_para_dict(row) for row in cursor.fetchall()])
+        retorno.headers["Cache-Control"] = "private, no-store"
+        return retorno
+    except Exception as erro:
+        return resposta(f"Erro ao listar solicitações: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/admin/saques", methods=["GET"])
+@jwt_required()
+def listar_saques_admin():
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+    garantir_estrutura_banco()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        cursor.execute(
+            """SELECT S.ID_SAQUE, S.ID_USUARIO, U.NOME, S.VALOR, S.STATUS, S.CHAVE_PIX,
+                      S.COMPROVANTE, S.MOTIVO_RECUSA, S.CRIADO_EM, S.ANALISADO_EM
+               FROM SAQUES_INSTRUTOR S JOIN USUARIOS U ON U.ID_USUARIO = S.ID_USUARIO
+               ORDER BY CASE WHEN S.STATUS = 0 THEN 0 ELSE 1 END, S.ID_SAQUE DESC"""
+        )
+        retorno = jsonify([_saque_manual_para_dict(row) for row in cursor.fetchall()])
+        retorno.headers["Cache-Control"] = "private, no-store"
+        return retorno
+    except Exception as erro:
+        return resposta(f"Erro ao listar pagamentos de professores: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/admin/saques/<int:id_saque>", methods=["PATCH"])
+@jwt_required()
+def analisar_saque_admin(id_saque):
+    negado = exigir_tipo(0)
+    if negado:
+        return negado
+    dados = request.get_json(silent=True) or {}
+    if not isinstance(dados, dict):
+        return resposta("Dados da análise inválidos.", 400)
+    acao = dados.get("acao")
+    if acao not in {"pago", "recusado"}:
+        return resposta("Escolha marcar como pago ou recusar a solicitação.", 400)
+    texto = str(dados.get("comprovante" if acao == "pago" else "motivo") or "").strip()
+    if not 5 <= len(texto) <= 500:
+        return resposta("Informe a referência do pagamento ou o motivo da recusa (5 a 500 caracteres).", 400)
+
+    garantir_estrutura_banco()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        cursor.execute("SELECT ID_CONFIG FROM FINANCEIRO_CONFIG WHERE ID_CONFIG = 1 WITH LOCK")
+        if not cursor.fetchone():
+            return resposta("Configuração financeira não encontrada.", 500)
+        cursor.execute("SELECT STATUS, CHAVE_PIX FROM SAQUES_INSTRUTOR WHERE ID_SAQUE = ?", (id_saque,))
+        saque = cursor.fetchone()
+        if not saque:
+            return resposta("Solicitação não encontrada.", 404)
+        if int(saque[0] or 0) != 0:
+            return resposta("Esta solicitação já foi analisada.", 409)
+        if acao == "pago" and not saque[1]:
+            return resposta("Solicitação antiga sem chave Pix. Recuse e peça uma nova solicitação ao professor.", 400)
+        if acao == "pago":
+            cursor.execute("SELECT 1 FROM SAQUES_INSTRUTOR WHERE STATUS = 1 AND COMPROVANTE = ?", (texto,))
+            if cursor.fetchone():
+                return resposta("Esta referência de pagamento já foi usada em outra solicitação.", 409)
+        cursor.execute(
+            """UPDATE SAQUES_INSTRUTOR
+               SET STATUS = ?, COMPROVANTE = ?, MOTIVO_RECUSA = ?, ID_ADMIN = ?, ANALISADO_EM = CURRENT_TIMESTAMP
+               WHERE ID_SAQUE = ? AND STATUS = 0""",
+            (1 if acao == "pago" else 2, texto if acao == "pago" else None,
+             texto if acao == "recusado" else None, get_jwt_identity(), id_saque),
+        )
+        if cursor.rowcount != 1:
+            return resposta("Esta solicitação já foi analisada.", 409)
+        con.commit()
+        return resposta("Pagamento confirmado no sistema." if acao == "pago" else "Solicitação recusada; saldo liberado ao professor.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao analisar solicitação: {erro}", 500)
     finally:
         cursor.close()
         con.close()
@@ -517,10 +643,10 @@ def criar_pagamento_pix():
 @app.route("/assinaturas/pix", methods=["POST"])
 @jwt_required()
 def criar_pix_assinatura():
-    from sprint_schema import garantir_sprint_schema
-    from sprint_comum import valor_assinatura_config
+    from estrutura_banco import garantir_estrutura_banco
+    from utilitarios_backend import valor_assinatura_config
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -644,9 +770,9 @@ def criar_pix_assinatura():
 @app.route("/assinaturas/verificar", methods=["GET"])
 @jwt_required()
 def verificar_pagamento_assinatura():
-    from sprint_schema import garantir_sprint_schema
+    from estrutura_banco import garantir_estrutura_banco
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 

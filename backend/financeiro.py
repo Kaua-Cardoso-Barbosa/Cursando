@@ -1,3 +1,10 @@
+"""Itens financeiros da sprint: resumos, custos e transações.
+
+O backend calcula os valores uma vez para site e aplicativo. A separação entre
+mensalidade paga, fatura em aberto e despesa programada evita contar dinheiro
+que ainda não entrou ou ainda não saiu do caixa.
+"""
+
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
@@ -9,15 +16,15 @@ from banco import get_db
 from pagamento_arkhe import garantir_fatura_vencida
 
 
-from sprint_schema import garantir_sprint_schema
-from sprint_comum import calcular_saldo_saque, exigir_tipo, percentual_instrutores, pesos_pool_instrutores, proximo_id, resposta, valor_assinatura_config
+from estrutura_banco import garantir_estrutura_banco
+from utilitarios_backend import calcular_saldo_saque, exigir_tipo, percentual_instrutores, pesos_pool_instrutores, proximo_id, resposta, valor_assinatura_config
 
 
 
 @app.route("/financeiro/resumo", methods=["GET"])
 @jwt_required()
 def financeiro_resumo():
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = get_jwt_identity()
     con = get_db()
@@ -54,6 +61,11 @@ def financeiro_resumo():
                 pesos_instrutores,
                 peso_total,
             )
+            cursor.execute(
+                "SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM SAQUES_INSTRUTOR WHERE ID_USUARIO = ? AND STATUS = 0",
+                (id_usuario,),
+            )
+            em_analise = float((cursor.fetchone() or (0,))[0] or 0)
             cursor.execute(
                 """
                 SELECT COUNT(PA.ID_VIDEO)
@@ -107,6 +119,9 @@ def financeiro_resumo():
                 "perfil": "instrutor",
                 "recebido_estimado": round(estimado, 2),
                 "disponivel_saque": disponivel_saque,
+                "saques_habilitados": True,
+                "tipo_saque": "manual",
+                "em_analise": round(em_analise, 2),
                 "ja_sacado": round(sacado, 2),
                 "alunos_ativos": alunos,
                 "percentual_pool": round(percentual, 2),
@@ -193,8 +208,11 @@ def financeiro_resumo():
             (id_usuario,),
         )
         abertas, aberto = cursor.fetchone() or (0, 0)
-        # Sprint item 33: soma todas as mensalidades pagas, inclusive assinaturas já expiradas.
-        # Sprint item 34: separa as cobranças ainda em aberto do histórico pago.
+        # Sprint item 2: o resumo financeiro do aluno devolve contagens e
+        # totais gastos/em aberto para os cartões do painel. O histórico de
+        # cada fatura vem da rota de mensalidades em pagamento_arkhe.py.
+        # Sprint item 33: soma pagas mesmo quando a assinatura já expirou.
+        # Sprint item 34: separa cobranças abertas do histórico pago.
         return jsonify({
             "perfil": "aluno",
             "faturas": int(qtd or 0),
@@ -217,7 +235,7 @@ def financeiro_aluno_admin(id_aluno):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -296,7 +314,7 @@ def custos_plataforma_admin():
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
     try:
@@ -405,7 +423,7 @@ def categorias_custo_admin():
     negado = exigir_tipo(0)
     if negado:
         return negado
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
     try:
@@ -440,7 +458,7 @@ def transacoes_financeiras_admin():
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -500,11 +518,11 @@ def transacoes_financeiras_admin():
             transacoes.append({
                 "id": f"saque-{row[0]}",
                 "data": row[4].isoformat() if row[4] else None,
-                "tipo": "Saque de instrutor",
-                "descricao": f"Solicitação de {row[1] or 'instrutor'}",
-                "status": "Concluído" if status == 1 else "Solicitado",
+                "tipo": "Pagamento ao professor",
+                "descricao": f"Solicitação de {row[1] or 'professor'}",
+                "status": {0: "Solicitado", 1: "Concluído", 2: "Recusado"}.get(status, "Desconhecido"),
                 "valor": float(row[2] or 0),
-                "direcao": "saida",
+                "direcao": "saida" if status == 1 else "neutra",
             })
 
         transacoes.sort(key=lambda item: item["data"] or "", reverse=True)
@@ -524,7 +542,7 @@ def financeiro_config_admin():
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 

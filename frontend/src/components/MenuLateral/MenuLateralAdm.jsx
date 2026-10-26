@@ -36,7 +36,7 @@ export default function MenuLateralAdm({ itemAtivo = "inicio" }) {
                         to="/DashboardAdm/Logs"
                         className={`${css.linkItem} ${itemAtivo === "logs" ? css.ativo : ""}`}
                     >
-                        Logs
+                        Histórico de atividades
                     </Link>
                     <Link
                         to="/DashboardAdm/perfil"

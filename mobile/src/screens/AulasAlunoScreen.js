@@ -17,7 +17,7 @@ function formatarPosicaoAula(segundos) {
     : `${minutos}:${String(restante).padStart(2, "0")}`;
 }
 
-export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onOpenMaterial, onEnroll, onSubmitExam, onDownloadCertificate, onReview }) {
+export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onOpenMaterial, onEnroll, onOpenExam, onDownloadCertificate, onReview }) {
   // Exibe apenas as aulas disponibilizadas pelo detalhe do curso retornado pela API.
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
@@ -26,10 +26,10 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
   const aulasSemModulo = aulas.filter((aula) => !aula.id_modulo);
   const materiais = detalhe?.materiais || [];
   const prova = detalhe?.prova;
-  const [respostas, setRespostas] = useState({});
   const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
   const [baixandoCertificado, setBaixandoCertificado] = useState(false);
   const [moduloAberto, setModuloAberto] = useState(null);
+  const [abaCurso, setAbaCurso] = useState("modulos");
 
   async function baixarCertificado() {
     setBaixandoCertificado(true);
@@ -58,6 +58,7 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
         <View style={styles.courseInfo}>
           <Text style={styles.courseKicker}>{modulos.length ? "Modulos do curso" : "Video-aulas"}</Text>
           <Text style={styles.courseTitle}>{curso?.titulo || "Curso"}</Text>
+          {curso?.professor ? <Text style={styles.courseDescription}>Professor(a): {curso.professor}</Text> : null}
           {curso?.descricao ? <Text style={styles.courseDescription}>{curso.descricao}</Text> : null}
           {curso && !curso.matriculado ? (
             <Pressable style={styles.enrollButton} onPress={() => onEnroll?.(curso)} disabled={carregando}>
@@ -67,7 +68,11 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
         </View>
       </View>
 
-      <View style={styles.list}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+        {[["modulos", "Módulos"], ["complementos", "Complementos"], ...(curso?.matriculado && prova?.prova ? [["prova", "Prova final"]] : [])].map(([chave, rotulo]) => <Pressable key={chave} onPress={() => setAbaCurso(chave)} style={[styles.tab, abaCurso === chave && styles.tabActive]}><Text style={[styles.tabText, abaCurso === chave && styles.tabTextActive]}>{rotulo}</Text></Pressable>)}
+      </ScrollView>
+
+      {abaCurso === "modulos" && <View style={styles.list}>
         {modulos.map((modulo) => (
           <View key={modulo.id} style={[globalStyles.card, styles.moduleCard]}>
             <Pressable style={styles.moduleHeader} onPress={() => setModuloAberto(Number(moduloAberto) === Number(modulo.id) ? null : Number(modulo.id))}>
@@ -114,9 +119,9 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
           </Pressable>
         ))}
         {!carregando && aulas.length === 0 && modulos.length === 0 ? <Text style={globalStyles.message}>Nenhuma aula publicada neste curso.</Text> : null}
-      </View>
+      </View>}
 
-      <View style={styles.materials}>
+      {abaCurso === "complementos" && <View style={styles.materials}>
         <Text style={styles.sectionTitle}>Complementos</Text>
         {materiais.map((material) => (
           <View key={material.id} style={[globalStyles.card, styles.materialCard]}>
@@ -137,31 +142,14 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
           </View>
         ))}
         {!carregando && materiais.length === 0 ? <Text style={globalStyles.message}>Nenhum complemento disponivel.</Text> : null}
-      </View>
+      </View>}
 
-      {Number(curso?.progresso || 0) >= 100 && prova?.prova ? (
+      {abaCurso === "prova" && Number(curso?.progresso || 0) >= 100 && prova?.prova ? (
         <View style={styles.materials}>
           <Text style={styles.sectionTitle}>Prova final</Text>
-          {prova.envio ? (
-            <Text style={styles.locked}>
-              Status: {prova.envio.status === 1 ? "Aprovado" : prova.envio.status === 2 ? "Reprovado" : "Aguardando correcao"}
-            </Text>
-          ) : null}
-          {/* Sprint item 20: mostra reprovação, feedback e prazo e só aceita nova tentativa após um dia. */}
-          {prova.envio?.status === 2 ? <Text style={styles.locked}>Você foi reprovado. {prova.envio.feedback ? `Feedback: ${prova.envio.feedback}. ` : ""}{prova.envio.pode_tentar_em ? `Tente novamente após ${new Date(prova.envio.pode_tentar_em).toLocaleString("pt-BR")}.` : "Tente novamente após 1 dia da correção."}</Text> : null}
-          {(!prova.envio || (prova.envio.status === 2 && (!prova.envio.pode_tentar_em || Date.now() >= new Date(prova.envio.pode_tentar_em).getTime()))) && prova.questoes?.map((questao) => (
-            <View key={questao.id} style={[globalStyles.card, styles.materialCard]}>
-              <Text style={styles.materialTitle}>{questao.enunciado}</Text>
-              {questao.tipo === "objetiva" ? (questao.alternativas || []).map((opcao) => (
-                <Pressable key={opcao} onPress={() => setRespostas({ ...respostas, [questao.id]: opcao })} style={[styles.examOption, respostas[questao.id] === opcao && styles.examOptionSelected]}>
-                  <Text style={respostas[questao.id] === opcao ? styles.examOptionTextSelected : styles.examOptionText}>{opcao}</Text>
-                </Pressable>
-              )) : <TextInput value={respostas[questao.id] || ""} onChangeText={(valor) => setRespostas({ ...respostas, [questao.id]: valor })} style={globalStyles.input} multiline />}
-            </View>
-          ))}
-          {(!prova.envio || (prova.envio.status === 2 && (!prova.envio.pode_tentar_em || Date.now() >= new Date(prova.envio.pode_tentar_em).getTime()))) ? <Pressable style={globalStyles.primaryButton} onPress={() => onSubmitExam?.(respostas)}>
-            <Text style={globalStyles.buttonText}>Enviar prova</Text>
-          </Pressable> : null}
+          <Text style={styles.description}>{prova.questoes?.length || 0} questões · Nota de 0 a 100</Text>
+          {prova.envio ? <Text style={styles.locked}>{prova.envio.status === 1 ? "Aprovado" : prova.envio.status === 2 ? "Reprovado" : "Aguardando correção"}{prova.envio.nota != null ? ` · ${prova.envio.nota} pontos · ${prova.envio.acertos} de ${prova.envio.total_questoes || prova.questoes?.length || 0} acertos` : ""}</Text> : null}
+          <Pressable style={globalStyles.primaryButton} onPress={onOpenExam}><Text style={globalStyles.buttonText}>{prova.envio ? "Ver prova e resultado" : "Fazer prova"}</Text></Pressable>
           {/* Sprint item 27: só mostra avaliação depois da conclusão do curso e da aprovação na prova final. */}
           {prova.envio?.status === 1 ? (
             <>
@@ -232,6 +220,10 @@ export default function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBac
 }
 
 const styles = StyleSheet.create({
+  tabs: { gap: 8, marginBottom: 18, paddingRight: 12 },
+  tab: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.softGray },
+  tabActive: { backgroundColor: colors.darkGreen },
+  tabText: { color: colors.darkGreen, fontWeight: "700" }, tabTextActive: { color: colors.white },
   header: {
     marginBottom: 26
   },
@@ -422,10 +414,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700"
   },
-  examOption: { padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: colors.white, marginTop: 8 },
-  examOptionSelected: { borderColor: colors.green, backgroundColor: colors.softGray },
-  examOptionText: { color: colors.black },
-  examOptionTextSelected: { color: colors.darkGreen, fontWeight: "800" },
   materialType: {
     color: colors.darkGreen,
     fontSize: 13,

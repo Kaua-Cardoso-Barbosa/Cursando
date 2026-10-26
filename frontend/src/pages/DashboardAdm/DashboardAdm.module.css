@@ -375,10 +375,22 @@
     padding: 14px 16px;
     display: grid;
     gap: 5px;
+}
+
+.logResumo {
+    display: grid;
+    width: 100%;
+    gap: 5px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    font: inherit;
     cursor: pointer;
 }
 
-.logItem:focus-visible {
+.logResumo:focus-visible {
     outline: 3px solid #139a58;
     outline-offset: 2px;
 }
@@ -407,14 +419,35 @@
 }
 
 .logDetalhes {
-    max-height: 180px;
-    overflow: auto;
     margin: 2px 0 0;
     padding: 10px;
     border-radius: 6px;
     background: #f4f7f5;
     color: #222222;
     font-size: 0.85rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.detalhesTecnicos {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #d7e1db;
+}
+
+.detalhesTecnicos summary {
+    color: #456253;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.detalhesTecnicos pre {
+    max-height: 220px;
+    margin: 6px 0 12px;
+    padding: 10px;
+    overflow: auto;
+    border-radius: 6px;
+    background: #ffffff;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
@@ -540,6 +573,21 @@
 .paginaFinanceiro {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+
+.listaSaquesAdmin { display: grid; gap: 14px; margin-top: 18px; }
+.cardSaqueAdmin { min-width: 0; padding: 18px; border: 1px solid #dce9e1; border-radius: 14px; background: #f9fcfa; overflow-wrap: anywhere; }
+.cardSaqueAdmin p { margin: 10px 0 0; color: #354a3d; }
+.cabecalhoSaqueAdmin { display: flex; justify-content: space-between; gap: 16px; color: #173e2c; }
+.cabecalhoSaqueAdmin > div { display: grid; gap: 3px; }
+.cabecalhoSaqueAdmin small { color: #607468; }
+.acoesSaqueAdmin { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+.acoesSaqueAdmin form { display: grid; gap: 10px; align-content: end; }
+.acoesSaqueAdmin label { display: grid; gap: 6px; font-weight: 600; color: #354a3d; }
+.acoesSaqueAdmin input { width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; padding: 8px 10px; border: 1px solid #cbd9d0; border-radius: 10px; font: inherit; }
+.acoesSaqueAdmin button { min-height: 42px; cursor: pointer; }
+.acoesSaqueAdmin button:disabled { opacity: .5; cursor: not-allowed; }
+.botaoRecusarSaque { padding: 8px 14px; border: 1px solid #b75151; border-radius: 10px; background: #fff; color: #923737; font: inherit; font-weight: 650; }
+@media (max-width: 680px) { .acoesSaqueAdmin { grid-template-columns: 1fr; } .cabecalhoSaqueAdmin { flex-wrap: wrap; } }
 
 .paginaFinanceiro .cardCadastroCusto {
     align-self: start;

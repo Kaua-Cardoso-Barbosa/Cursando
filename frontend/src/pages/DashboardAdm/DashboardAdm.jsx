@@ -14,6 +14,199 @@ import css from "./DashboardAdm.module.css";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario.jsx";
 import GoogleChart from "../../components/GoogleChart/GoogleChart.jsx";
 
+const ROTULOS_TABELAS_LOG = {
+    USUARIOS: "conta de usuário",
+    CURSOS: "curso",
+    PROFESSORES_CURSO: "vínculo de instrutor ao curso",
+    VIDEOS: "aula",
+    MATRICULAS: "matrícula",
+    MODULOS_CURSO: "módulo",
+    MATERIAIS_CURSO: "material do curso",
+    PROVAS_CURSO: "prova",
+    AVALIACOES_CURSO: "avaliação do curso",
+    RESPOSTAS_PROVA: "resposta da prova",
+    QUESTOES_PROVA: "questão da prova",
+    CERTIFICADOS: "certificado",
+    SAQUES_INSTRUTOR: "pagamento ao professor",
+    ASSINATURAS: "assinatura",
+    MENSAGENS_CHAT: "mensagem do curso",
+    CUSTOS_PLATAFORMA: "despesa da plataforma",
+    FINANCEIRO_CONFIG: "configuração financeira",
+    PROGRESSO_AULAS: "progresso de aula",
+    CATEGORIAS_CUSTO: "categoria de despesa",
+    CATEGORIAS_CURSO: "categoria de curso",
+    TEMAS_CURSO: "tema de curso",
+    CURSO_TAXONOMIA: "classificação do curso"
+};
+
+const ROTULOS_CAMPOS_LOG = {
+    TITULO: "título",
+    DESCRICAO: "descrição",
+    STATUS: "situação",
+    EXCLUIDO: "exclusão",
+    PUBLICADA: "publicação da prova",
+    TIPO_USUARIO: "tipo de conta",
+    SITUACAO: "situação da conta",
+    EMAIL_VERIFICADO: "confirmação do e-mail",
+    VALOR: "valor",
+    DATA_CUSTO: "data da despesa",
+    CATEGORIA: "categoria",
+    TIPO_CUSTO: "tipo de despesa",
+    DATA_INICIO: "data de início",
+    DATA_FIM: "data de término",
+    STATUS_MATRICULA: "situação da matrícula",
+    NOTA: "nota",
+    ORDEM: "ordem",
+    TIPO: "tipo",
+    PERCENTUAL_INSTRUTORES: "percentual dos instrutores",
+    DATA_VENCIMENTO: "vencimento",
+    DATA_PAGAMENTO: "pagamento",
+    DATA_EXPIRACAO: "expiração",
+    CORRIGIDO_EM: "data da correção",
+    ID_CURSO: "curso associado",
+    ID_MODULO: "módulo associado",
+    ID_PROVA: "prova associada",
+    ID_VIDEO: "aula associada",
+    ID_USUARIO: "usuário associado",
+    ID_ALUNO: "aluno associado",
+    ID_REMETENTE: "remetente",
+    ID_DESTINATARIO: "destinatário",
+    ID_CATEGORIA: "categoria associada",
+    ID_TEMA: "tema associado",
+    ID_GRUPO_MENSAL: "grupo de mensalidades",
+    TENTATIVAS: "tentativas de acesso",
+    ASSISTIDO_EM: "data em que a aula foi assistida",
+    CRIADO_EM: "data de criação"
+};
+
+function lerSnapshotLog(valor) {
+    if (!valor) return {};
+    try { return JSON.parse(valor); }
+    catch { return {}; }
+}
+
+function rotuloCampoLog(campo) {
+    return ROTULOS_CAMPOS_LOG[campo] || null;
+}
+
+function formatarValorCampoLog(campo, valor, tabela) {
+    if (valor === null || valor === undefined || valor === "") return "não informado";
+    if (campo.startsWith("ID_")) return "registrado";
+    if (campo === "PUBLICADA") return Number(valor) === 1 ? "publicada" : "rascunho";
+    if (campo === "EXCLUIDO") return Number(valor) === 1 ? "sim" : "não";
+    if (campo === "EMAIL_VERIFICADO") return Number(valor) === 1 ? "sim" : "não";
+    if (campo === "SITUACAO") return Number(valor) === 1 ? "bloqueada" : "ativa";
+    if (campo === "STATUS_MATRICULA") return Number(valor) === 1 ? "ativa" : "inativa";
+    if (campo === "STATUS" && ["CURSOS", "VIDEOS", "MODULOS_CURSO"].includes(tabela)) return ({ 0: "privado", 1: "publicado", 2: "arquivado" })[valor] || String(valor);
+    if (campo === "STATUS" && tabela === "RESPOSTAS_PROVA") return ({ 0: "aguardando correção", 1: "aprovada", 2: "reprovada" })[valor] || String(valor);
+    if (campo === "STATUS" && tabela === "ASSINATURAS") return ({ 0: "pendente", 1: "paga", 3: "paga; ciclo encerrado" })[valor] || String(valor);
+    if (campo === "STATUS" && tabela === "SAQUES_INSTRUTOR") return ({ 0: "solicitado", 1: "pago", 2: "recusado" })[valor] || String(valor);
+    if (campo === "TIPO_USUARIO") return ({ 0: "administrador", 1: "professor", 2: "aluno" })[valor] || String(valor);
+    if (campo === "VALOR") {
+        const numero = Number(valor);
+        return Number.isFinite(numero) ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(numero) : String(valor);
+    }
+    if (campo === "PERCENTUAL_INSTRUTORES") return `${String(valor).replace(".", ",")}%`;
+    if (campo.startsWith("DATA_") || campo.endsWith("_EM")) {
+        const data = new Date(valor);
+        if (!Number.isNaN(data.getTime())) return new Intl.DateTimeFormat("pt-BR").format(data);
+    }
+    return String(valor);
+}
+
+function fraseLog(log) {
+    const ator = log.nome || "Uma pessoa usuária";
+    const tabela = log.tabela;
+    const antes = lerSnapshotLog(log.valores_antes);
+    const depois = lerSnapshotLog(log.valores_depois);
+    const dados = Object.keys(depois).length ? depois : antes;
+    const item = dados.TITULO
+        || log.contexto?.usuario_afetado?.nome
+        || log.contexto?.aula
+        || log.contexto?.modulo
+        || log.contexto?.material
+        || log.contexto?.prova;
+    let alvo;
+    if (tabela === "USUARIOS") alvo = item ? `“${item}”` : "";
+    else if (tabela === "MATRICULAS") alvo = log.contexto?.curso ? `“${log.contexto.curso}”` : "";
+    else if (tabela === "CURSO_TAXONOMIA") alvo = log.contexto?.curso ? `“${log.contexto.curso}”` : "";
+    else if (tabela === "RESPOSTAS_PROVA") alvo = log.contexto?.prova ? `“${log.contexto.prova}”` : "";
+    else if (tabela === "QUESTOES_PROVA") alvo = log.contexto?.prova ? `“${log.contexto.prova}”` : "";
+    else if (tabela === "CERTIFICADOS") alvo = "";
+    else if (tabela === "SAQUES_INSTRUTOR") alvo = log.acao === "UPDATE" && Number(depois.STATUS) === 1 ? "o pagamento ao professor" : log.acao === "UPDATE" ? "a solicitação de pagamento do professor" : "um pagamento ao professor";
+    else if (tabela === "PROFESSORES_CURSO") alvo = log.contexto?.curso ? `ao curso “${log.contexto.curso}”` : "a um curso";
+    else if (tabela === "AVALIACOES_CURSO") alvo = log.contexto?.curso ? `sobre o curso “${log.contexto.curso}”` : "sobre um curso";
+    else if (["CURSOS", "VIDEOS", "MODULOS_CURSO", "MATERIAIS_CURSO", "PROVAS_CURSO"].includes(tabela)) {
+        const artigos = { CURSOS: "o curso", VIDEOS: "a aula", MODULOS_CURSO: "o módulo", MATERIAIS_CURSO: "o material", PROVAS_CURSO: "a prova" };
+        alvo = item ? `${artigos[tabela]} “${item}”` : artigos[tabela];
+    } else if (tabela === "PROGRESSO_AULAS") alvo = log.contexto?.aula ? `da aula “${log.contexto.aula}”` : "de uma aula";
+    else alvo = ROTULOS_TABELAS_LOG[tabela] || "registro da plataforma";
+    let verbo;
+    if (tabela === "USUARIOS") {
+        const tipo = dados.TIPO_USUARIO;
+        const perfil = ({ 0: "administrador", 1: "professor", 2: "aluno" })[tipo] || "usuário";
+        verbo = log.acao === "INSERT" ? `cadastrou a conta de ${perfil}` : log.acao === "DELETE" ? `removeu a conta de ${perfil}` : `atualizou a conta de ${perfil}`;
+    } else if (tabela === "MATRICULAS") {
+        verbo = log.acao === "INSERT" ? "matriculou um aluno no curso" : log.acao === "DELETE" ? "removeu a matrícula do curso" : "atualizou a matrícula do curso";
+    } else if (tabela === "RESPOSTAS_PROVA") {
+        verbo = log.acao === "INSERT" ? "enviou respostas para a prova" : log.acao === "DELETE" ? "removeu uma resposta da prova" : "corrigiu a prova";
+    } else if (tabela === "PROVAS_CURSO" && log.acao === "UPDATE" && Number(depois.PUBLICADA) === 1 && Number(antes.PUBLICADA) !== 1) {
+        verbo = "publicou";
+    } else if (tabela === "PROFESSORES_CURSO") {
+        verbo = log.acao === "INSERT" ? "vinculou um instrutor" : log.acao === "DELETE" ? "removeu o vínculo de instrutor" : "atualizou o vínculo de instrutor";
+    } else if (tabela === "AVALIACOES_CURSO") {
+        verbo = log.acao === "INSERT" ? "enviou uma avaliação" : log.acao === "DELETE" ? "removeu uma avaliação" : "atualizou uma avaliação";
+    } else if (tabela === "QUESTOES_PROVA") {
+        verbo = log.acao === "INSERT" ? "adicionou uma questão à prova" : log.acao === "DELETE" ? "removeu uma questão da prova" : "atualizou uma questão da prova";
+    } else if (tabela === "CERTIFICADOS") {
+        verbo = log.acao === "INSERT" ? "emitiu um certificado" : log.acao === "DELETE" ? "removeu um certificado" : "atualizou um certificado";
+    } else if (tabela === "SAQUES_INSTRUTOR" && log.acao === "UPDATE") {
+        verbo = Number(depois.STATUS) === 1 ? "confirmou" : Number(depois.STATUS) === 2 ? "recusou" : "atualizou";
+    } else {
+        const verbos = {
+            CURSOS: { INSERT: "criou", UPDATE: "atualizou", DELETE: "excluiu" },
+            VIDEOS: { INSERT: "adicionou", UPDATE: "atualizou", DELETE: "removeu" },
+            MODULOS_CURSO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
+            MATERIAIS_CURSO: { INSERT: "adicionou", UPDATE: "atualizou", DELETE: "removeu" },
+            PROVAS_CURSO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
+            AVALIACOES_CURSO: { INSERT: "enviou uma avaliação", UPDATE: "atualizou uma avaliação", DELETE: "removeu uma avaliação" },
+            SAQUES_INSTRUTOR: { INSERT: "solicitou", UPDATE: "atualizou", DELETE: "removeu" },
+            ASSINATURAS: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
+            MENSAGENS_CHAT: { INSERT: "enviou", UPDATE: "atualizou", DELETE: "removeu" },
+            CUSTOS_PLATAFORMA: { INSERT: "registrou", UPDATE: "atualizou", DELETE: "removeu" },
+            FINANCEIRO_CONFIG: { INSERT: "criou", UPDATE: "alterou", DELETE: "removeu" },
+            CATEGORIAS_CUSTO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
+            CATEGORIAS_CURSO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
+            TEMAS_CURSO: { INSERT: "criou", UPDATE: "atualizou", DELETE: "removeu" },
+            CERTIFICADOS: { INSERT: "emitiu", UPDATE: "atualizou", DELETE: "removeu" },
+            CURSO_TAXONOMIA: { INSERT: "atualizou a classificação do curso", UPDATE: "atualizou a classificação do curso", DELETE: "removeu a classificação do curso" },
+            PROGRESSO_AULAS: { INSERT: "registrou o progresso", UPDATE: "atualizou o progresso", DELETE: "removeu o progresso" }
+        };
+        verbo = verbos[tabela]?.[log.acao] || ({ INSERT: "adicionou", UPDATE: "alterou", DELETE: "removeu" })[log.acao] || "registrou uma ação em";
+    }
+    const atorComPerfil = log.tipo_usuario !== null && log.tipo_usuario !== undefined
+        ? `${ator} (${({ 0: "administrador", 1: "professor", 2: "aluno" })[log.tipo_usuario] || "usuário"})`
+        : ator;
+    return `${atorComPerfil} ${verbo}${alvo ? ` ${alvo}` : ""}.`;
+}
+
+function camposAlteradosLegiveis(log) {
+    if (log.acao !== "UPDATE") return "";
+    const antes = lerSnapshotLog(log.valores_antes);
+    const depois = lerSnapshotLog(log.valores_depois);
+    const campos = String(log.campos_alterados || "").split(",").map((campo) => campo.trim()).filter(Boolean);
+    if (!campos.length) return "";
+    if (campos.some((campo) => campo.includes("omitido"))) return "O conteúdo dessa alteração não foi guardado por conter informações pessoais ou extensas.";
+    const alteracoes = campos.filter((campo) => !campo.startsWith("ID_") && ROTULOS_CAMPOS_LOG[campo]).map((campo) => {
+        const rotulo = rotuloCampoLog(campo);
+        if (Object.hasOwn(antes, campo) || Object.hasOwn(depois, campo)) {
+            return `O campo ${rotulo} passou de ${formatarValorCampoLog(campo, antes[campo], log.tabela)} para ${formatarValorCampoLog(campo, depois[campo], log.tabela)}.`;
+        }
+        return `O campo ${rotulo} foi alterado.`;
+    });
+    return alteracoes.join(" ") || "Outras informações deste registro foram atualizadas.";
+}
+
 export default function DashboardAdm({
                                          api,
                                          setMensagem,
@@ -32,6 +225,9 @@ export default function DashboardAdm({
     const [percentualInstrutores, setPercentualInstrutores] = useState("");
     const [categoriasCusto, setCategoriasCusto] = useState([]);
     const [transacoes, setTransacoes] = useState([]);
+    const [saques, setSaques] = useState([]);
+    const [dadosAnaliseSaque, setDadosAnaliseSaque] = useState({});
+    const [processandoSaque, setProcessandoSaque] = useState(null);
     const [novoCustoUnico, setNovoCustoUnico] = useState({ descricao: "", id_categoria: "", valor: "", data_custo: "" });
     const [novoCustoMensal, setNovoCustoMensal] = useState({ descricao: "", id_categoria: "", valor: "", data_inicio: "", data_fim: "" });
     const [novaCategoriaCusto, setNovaCategoriaCusto] = useState("");
@@ -55,20 +251,9 @@ export default function DashboardAdm({
         return erro?.message || "Ocorreu um erro ao comunicar com o servidor.";
     }
 
-    function rotuloAcaoLog(acao) {
-        return ({ INSERT: "Inclusao", UPDATE: "Alteracao", DELETE: "Exclusao" })[acao] || acao;
-    }
-
     function formatarDataLog(valor) {
         if (!valor) return "";
         return new Date(valor).toLocaleString("pt-BR");
-    }
-
-    // Sprint item 24: formata os snapshots de valores do log para leitura detalhada no site.
-    function formatarJson(valor) {
-        if (!valor) return "Sem dados registrados";
-        try { return JSON.stringify(JSON.parse(valor), null, 2); }
-        catch { return valor; }
     }
 
     // Busca as métricas agregadas no endpoint administrativo ao abrir o dashboard.
@@ -155,10 +340,11 @@ export default function DashboardAdm({
                 fetch(`${api}/financeiro/resumo`, { credentials: "include", cache: "no-store" }),
                 fetch(`${api}/admin/categorias-custo`, { credentials: "include", cache: "no-store" }),
                 fetch(`${api}/admin/financeiro/transacoes`, { credentials: "include", cache: "no-store" }),
+                fetch(`${api}/admin/saques`, { credentials: "include", cache: "no-store" }),
             ]);
             const erros = [];
 
-            const [resumo, categorias, transacoesAtuais] = resultados.map((resultado) => {
+            const [resumo, categorias, transacoesAtuais, saquesAtuais] = resultados.map((resultado) => {
                 if (resultado.status === "rejected") {
                     erros.push(resultado.reason);
                     return null;
@@ -188,6 +374,12 @@ export default function DashboardAdm({
                 else erros.push(new Error(dadosTransacoes?.mensagem?.descricao || "Erro ao carregar transações financeiras."));
             }
 
+            if (saquesAtuais) {
+                const dadosSaques = await saquesAtuais.json().catch(() => ([]));
+                if (saquesAtuais.ok) setSaques(Array.isArray(dadosSaques) ? dadosSaques : []);
+                else erros.push(new Error(dadosSaques?.mensagem?.descricao || "Erro ao carregar pagamentos dos professores."));
+            }
+
             if (erros.length) {
                 console.error("Erros ao carregar áreas do financeiro:", erros);
                 setMensagem?.({ tipo: "erro", descricao: descricaoErroApi(erros[0]) });
@@ -195,6 +387,8 @@ export default function DashboardAdm({
         }
 
         carregarFinanceiro();
+        window.addEventListener("cursando:sincronizar", carregarFinanceiro);
+        return () => window.removeEventListener("cursando:sincronizar", carregarFinanceiro);
     }, [api, exibindoFinanceiro, setMensagem]);
 
     async function salvarPercentualInstrutores() {
@@ -232,6 +426,39 @@ export default function DashboardAdm({
         const respostaTransacoes = await fetch(`${api}/admin/financeiro/transacoes`, { credentials: "include", cache: "no-store" });
         const dadosTransacoes = await respostaTransacoes.json().catch(() => ([]));
         if (respostaTransacoes.ok) setTransacoes(Array.isArray(dadosTransacoes) ? dadosTransacoes : []);
+    }
+
+    async function analisarSaque(evento, saque, acao) {
+        evento.preventDefault();
+        if (processandoSaque !== null) return;
+        const dadosFormulario = dadosAnaliseSaque[saque.id] || {};
+        const campo = acao === "pago" ? "comprovante" : "motivo";
+        const texto = String(dadosFormulario[campo] || "").trim();
+        if (texto.length < 5) {
+            setMensagem?.({ tipo: "erro", descricao: acao === "pago" ? "Informe a referência ou número do comprovante do pagamento." : "Informe o motivo da recusa." });
+            return;
+        }
+        setProcessandoSaque(saque.id);
+        try {
+            const resposta = await fetch(`${api}/admin/saques/${saque.id}`, {
+                method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ acao, [campo]: texto })
+            });
+            const dados = await resposta.json().catch(() => ({}));
+            if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || "Não foi possível analisar a solicitação.");
+            if (dados.mensagem) setMensagem?.(dados.mensagem);
+            const [lista, resumo] = await Promise.all([
+                fetch(`${api}/admin/saques`, { credentials: "include", cache: "no-store" }),
+                fetch(`${api}/financeiro/resumo`, { credentials: "include", cache: "no-store" })
+            ]);
+            if (lista.ok) setSaques(await lista.json());
+            if (resumo.ok) setFinanceiro(await resumo.json());
+            await atualizarTransacoesFinanceiras();
+        } catch (erro) {
+            setMensagem?.({ tipo: "erro", descricao: descricaoErroApi(erro) });
+        } finally {
+            setProcessandoSaque(null);
+        }
     }
 
     async function cadastrarCusto(evento, tipoCusto) {
@@ -428,7 +655,7 @@ export default function DashboardAdm({
                             {/* Sprint item 15: mostra o caixa administrativo após reservar as comissões do fundo de receita e os custos. */}
                             {[
                                 ["Assinaturas pagas (total)", financeiro?.total_arrecadado, "Soma das mensalidades confirmadas"],
-                                ["Saques concluídos", financeiro?.total_repassado, "Transferências registradas como concluídas"],
+                                ["Professores pagos", financeiro?.total_repassado, "Pagamentos confirmados pelo administrador"],
                                 ["Total do Revenue Pool (estimado)", financeiro?.total_repassado_estimado, "Percentual aplicado sobre mensalidades pagas"],
                                 ["Despesas cadastradas", financeiro?.custos, "Total de despesas registradas"],
                                 ["Disponível para saque (admin)", financeiro?.disponivel_saque_admin, "Receita paga menos comissão dos instrutores e despesas"]
@@ -484,6 +711,33 @@ export default function DashboardAdm({
                                     Salvar percentual
                                 </button>
                             </div>
+                            <section className={css.listaTransacoes}>
+                                <h2>Pagamentos aos professores</h2>
+                                <p className={css.textoFinanceiro}>Confira a chave Pix e o valor. Faça o pagamento fora do Cursando e registre a referência somente depois de confirmar a transferência.</p>
+                                <div className={css.listaSaquesAdmin}>
+                                    {saques.map((saque) => <article className={css.cardSaqueAdmin} key={saque.id}>
+                                        <div className={css.cabecalhoSaqueAdmin}>
+                                            <div><strong>{saque.professor}</strong><small>Pedido #{saque.id} · {saque.criado_em ? new Date(saque.criado_em).toLocaleDateString("pt-BR") : "—"}</small></div>
+                                            <strong>R$ {Number(saque.valor).toFixed(2).replace(".", ",")}</strong>
+                                        </div>
+                                        <p><b>Situação:</b> {saque.status_nome}</p>
+                                        <p><b>Chave Pix:</b> {saque.chave_pix || "Não informada"}</p>
+                                        {saque.status === 1 && <p><b>Referência do pagamento:</b> {saque.comprovante}</p>}
+                                        {saque.status === 2 && <p><b>Motivo da recusa:</b> {saque.motivo_recusa}</p>}
+                                        {saque.status === 0 && <div className={css.acoesSaqueAdmin}>
+                                            <form onSubmit={(evento) => analisarSaque(evento, saque, "pago")}>
+                                                <label>Referência ou número do comprovante<input required minLength={5} maxLength={500} value={dadosAnaliseSaque[saque.id]?.comprovante || ""} onChange={(evento) => setDadosAnaliseSaque((atual) => ({ ...atual, [saque.id]: { ...atual[saque.id], comprovante: evento.target.value } }))} placeholder="Informe após realizar o pagamento" /></label>
+                                                <button className={css.botaoFinanceiro} type="submit" disabled={processandoSaque !== null || !saque.chave_pix}>Confirmar como pago</button>
+                                            </form>
+                                            <form onSubmit={(evento) => analisarSaque(evento, saque, "recusado")}>
+                                                <label>Motivo da recusa<input required minLength={5} maxLength={500} value={dadosAnaliseSaque[saque.id]?.motivo || ""} onChange={(evento) => setDadosAnaliseSaque((atual) => ({ ...atual, [saque.id]: { ...atual[saque.id], motivo: evento.target.value } }))} placeholder="Explique ao professor" /></label>
+                                                <button className={css.botaoRecusarSaque} type="submit" disabled={processandoSaque !== null}>Recusar solicitação</button>
+                                            </form>
+                                        </div>}
+                                    </article>)}
+                                    {!saques.length && <p>Nenhuma solicitação de pagamento registrada.</p>}
+                                </div>
+                            </section>
                             {/* Sprint item 35: detalha faturas pagas, gasto total e média mensal de cada aluno. */}
                             <section className={css.listaTransacoes}>
                                 <h2>Ticket por aluno</h2>
@@ -550,11 +804,11 @@ export default function DashboardAdm({
                                 {/* Sprint item 13: exibe as assinaturas pagas ou pendentes, despesas e saques enviados ao administrador. */}
                                 <h2>Transações financeiras</h2>
                                 <form className={css.formFinanceiro + " " + css.filtrosTransacoes}>
-                                    <label>Tipo<select value={filtrosTransacoes.tipo} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, tipo: evento.target.value })}><option value="">Todos</option><option>Assinatura</option><option>Despesa mensal</option><option>Pagamento Único</option><option>Saque de instrutor</option></select></label>
+                                    <label>Tipo<select value={filtrosTransacoes.tipo} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, tipo: evento.target.value })}><option value="">Todos</option><option>Assinatura</option><option>Despesa mensal</option><option>Pagamento Único</option><option>Pagamento ao professor</option></select></label>
                                     <label>Categoria<select value={filtrosTransacoes.categoria} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, categoria: evento.target.value })}><option value="">Todas</option>{categoriasCusto.map((categoria) => <option key={categoria.id} value={categoria.nome}>{categoria.nome}</option>)}</select></label>
                                     <label>Data inicial<input type="date" value={filtrosTransacoes.inicio} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, inicio: evento.target.value })} /></label>
                                     <label>Data final<input type="date" value={filtrosTransacoes.fim} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, fim: evento.target.value })} /></label>
-                                    <label>Status<select value={filtrosTransacoes.status} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, status: evento.target.value })}><option value="">Todos</option><option>Paga</option><option>Pendente</option><option>Registrada</option><option>Programada</option><option>Concluído</option><option>Solicitado</option></select></label>
+                                    <label>Status<select value={filtrosTransacoes.status} onChange={(evento) => setFiltrosTransacoes({ ...filtrosTransacoes, status: evento.target.value })}><option value="">Todos</option><option>Paga</option><option>Pendente</option><option>Registrada</option><option>Programada</option><option>Concluído</option><option>Solicitado</option><option>Recusado</option></select></label>
                                     <button className={css.botaoLimparFiltros} type="button" onClick={() => setFiltrosTransacoes({ tipo: "", categoria: "", inicio: "", fim: "", status: "" })}>Limpar filtros</button>
                                 </form>
                                 <div className={css.tabelaTransacoes}>
@@ -604,7 +858,7 @@ export default function DashboardAdm({
                         </section>
                     ) : exibindoLogs ? (
                         <section className={css.listaLogs}>
-                            <h2>Logs do sistema</h2>
+                            <h2>Histórico de atividades</h2>
                             {/* Sprint item 25: permite filtrar os logs por usuário e datas no painel administrativo. */}
                             <div className={css.abasLogs}>
                                 {[["0", "Administradores"], ["1", "Professores"], ["2", "Alunos"]].map(([tipo, label]) => (
@@ -612,40 +866,42 @@ export default function DashboardAdm({
                                 ))}
                             </div>
                             <div className={css.filtrosLogs}>
-                                <input placeholder="Buscar nome, e-mail, acao ou registro" value={filtrosLogs.busca} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, busca: e.target.value })} />
+                                <input placeholder="Buscar por nome ou e-mail" value={filtrosLogs.busca} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, busca: e.target.value })} />
                                 <select value={filtrosLogs.evento} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, evento: e.target.value })}>
-                                    <option value="">Todas as acoes</option>
-                                    {filtrosLogs.tipo === "0" && <><option value="cadastro_professor">Cadastro de professor</option><option value="cadastro_aluno">Cadastro de aluno</option><option value="alterar_usuario">Alterou usuario</option><option value="registrar_custo">Registrou custo</option><option value="alterar_configuracao">Alterou configuracao financeira</option><option value="aprovar_saque">Atualizou saque</option></>}
-                                    {filtrosLogs.tipo === "1" && <><option value="criar_curso">Criou curso</option><option value="editar_curso">Alterou curso</option><option value="excluir_curso">Excluiu curso</option><option value="criar_aula">Criou aula</option><option value="editar_aula">Alterou aula</option><option value="excluir_aula">Excluiu aula</option><option value="criar_modulo">Criou modulo</option><option value="criar_material">Criou material</option><option value="criar_prova">Criou prova</option><option value="corrigir_prova">Corrigiu prova</option><option value="solicitar_saque">Solicitou saque</option><option value="mensagem_chat">Enviou mensagem</option></>}
-                                    {filtrosLogs.tipo === "2" && <><option value="inscricao_curso">Inscricao em curso</option><option value="assinar">Criou assinatura</option><option value="assistir_aula">Assistiu aula</option><option value="avaliar_curso">Avaliou curso</option><option value="enviar_prova">Enviou prova</option><option value="mensagem_chat">Enviou mensagem</option></>}
+                                    <option value="">Todas as atividades</option>
+                                    {filtrosLogs.tipo === "0" && <><option value="cadastro_professor">Cadastro de professor</option><option value="cadastro_aluno">Cadastro de aluno</option><option value="alterar_usuario">Alteração de conta</option><option value="registrar_custo">Registro de despesa</option><option value="alterar_configuracao">Alteração financeira</option><option value="aprovar_saque">Análise de saque</option></>}
+                                    {filtrosLogs.tipo === "1" && <><option value="criar_curso">Criação de curso</option><option value="editar_curso">Alteração de curso</option><option value="excluir_curso">Exclusão de curso</option><option value="criar_aula">Criação de aula</option><option value="editar_aula">Alteração de aula</option><option value="excluir_aula">Exclusão de aula</option><option value="criar_modulo">Criação de módulo</option><option value="criar_material">Inclusão de material</option><option value="criar_prova">Criação de prova</option><option value="corrigir_prova">Correção de prova</option><option value="solicitar_saque">Solicitação de saque</option><option value="mensagem_chat">Envio de mensagem</option></>}
+                                    {filtrosLogs.tipo === "2" && <><option value="inscricao_curso">Matrícula em curso</option><option value="assinar">Assinatura</option><option value="assistir_aula">Aula assistida</option><option value="avaliar_curso">Avaliação de curso</option><option value="enviar_prova">Envio de prova</option><option value="mensagem_chat">Envio de mensagem</option></>}
                                 </select>
                                 <input type="date" value={filtrosLogs.inicio} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, inicio: e.target.value })} />
                                 <input type="date" value={filtrosLogs.fim} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, fim: e.target.value })} />
                             </div>
                             {/* Sprint item 24: permite abrir cada acao para conferir campos e valores registrados. */}
-                            {logsGravacao.length === 0 && <p>Nenhum log registrado.</p>}
+                            {logsGravacao.length === 0 && <p>Nenhuma atividade registrada.</p>}
                             {logsGravacao.map((log) => {
                                 const expandido = logExpandido === log.id;
                                 const perfilUsuario = { 0: "Administrador", 1: "Professor", 2: "Aluno" }[log.tipo_usuario];
-                                const rotuloTabela = { USUARIOS: "usuario", CURSOS: "curso", VIDEOS: "aula", MATRICULAS: "inscricao em curso", MODULOS_CURSO: "modulo", MATERIAIS_CURSO: "material", PROVAS_CURSO: "prova", AVALIACOES_CURSO: "avaliacao", RESPOSTAS_PROVA: "resposta de prova", SAQUES_INSTRUTOR: "solicitacao de saque" }[log.tabela] || log.tabela;
                                 return (
-                                    <article key={log.id} className={css.logItem} onClick={() => setLogExpandido(expandido ? null : log.id)} role="button" tabIndex={0} onKeyDown={(evento) => { if (evento.key === "Enter" || evento.key === " ") { evento.preventDefault(); setLogExpandido(expandido ? null : log.id); } }}>
-                                        <div className={css.logTopo}>
-                                            <strong>{rotuloAcaoLog(log.acao)}: {rotuloTabela}</strong>
-                                            <small>{formatarDataLog(log.criado_em)}</small>
-                                        </div>
-                                        <span>{log.nome || `Usuario ${log.id_usuario || "nao identificado"}`} - {log.email || "e-mail nao armazenado"}{perfilUsuario ? ` - ${perfilUsuario}` : ""}</span>
-                                        <small>{log.metodo} {log.rota}</small>
-                                        <p>{log.resumo || log.detalhes}</p>
-                                        <small>Registro {log.id_registro || "indisponivel"} - {expandido ? "Clique para recolher" : "Clique para ver detalhes"}</small>
+                                    <article key={log.id} className={css.logItem}>
+                                        <button className={css.logResumo} type="button" aria-expanded={expandido} onClick={() => setLogExpandido(expandido ? null : log.id)}>
+                                            <div className={css.logTopo}>
+                                                <strong>{fraseLog(log)}</strong>
+                                                <small>{formatarDataLog(log.criado_em)}</small>
+                                            </div>
+                                            {camposAlteradosLegiveis(log) && <p>{camposAlteradosLegiveis(log)}</p>}
+                                            <small>{expandido ? "Recolher" : "Ver mais sobre esta atividade"}</small>
+                                        </button>
                                         {expandido && <div className={css.logDetalhes}>
-                                            {log.contexto?.usuario_afetado && <p>Usuario cadastrado: {log.contexto.usuario_afetado.nome} - {log.contexto.usuario_afetado.email} - tipo {log.contexto.usuario_afetado.tipo}</p>}
-                                            {log.contexto?.curso && <p>Curso: {log.contexto.curso}</p>}
-                                            {log.contexto?.professor && <p>Professor: {log.contexto.professor.nome} - {log.contexto.professor.email}</p>}
-                                            {log.contexto?.aula && <p>Aula: {log.contexto.aula}</p>}
-                                            <strong>Campos alterados</strong><pre>{log.campos_alterados || "Nao informado"}</pre>
-                                            <strong>Valores anteriores</strong><pre>{formatarJson(log.valores_antes)}</pre>
-                                            <strong>Valores atuais</strong><pre>{formatarJson(log.valores_depois)}</pre>
+                                            <p>A atividade foi registrada em {formatarDataLog(log.criado_em)}.</p>
+                                            <p>Quem realizou foi {log.nome || "uma pessoa não identificada"}{perfilUsuario ? `, com perfil de ${perfilUsuario.toLowerCase()}` : ""}{log.email ? `, usando a conta ${log.email}` : ""}.</p>
+                                            {log.contexto?.usuario_afetado && <p>A conta envolvida pertence a {log.contexto.usuario_afetado.nome}.</p>}
+                                            {log.contexto?.curso && <p>O curso envolvido foi “{log.contexto.curso}”.</p>}
+                                            {log.contexto?.professor && <p>O professor responsável pelo curso é {log.contexto.professor.nome}.</p>}
+                                            {log.contexto?.aula && <p>A aula envolvida foi “{log.contexto.aula}”.</p>}
+                                            {log.contexto?.modulo && <p>O módulo envolvido foi “{log.contexto.modulo}”.</p>}
+                                            {log.contexto?.material && <p>O material envolvido foi “{log.contexto.material}”.</p>}
+                                            {log.contexto?.prova && <p>A prova envolvida foi “{log.contexto.prova}”.</p>}
+                                            {log.acao === "UPDATE" && <p>{camposAlteradosLegiveis(log) || "O conteúdo alterado não foi armazenado neste histórico."}</p>}
                                         </div>}
                                     </article>
                                 );

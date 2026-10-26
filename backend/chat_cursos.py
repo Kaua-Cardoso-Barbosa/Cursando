@@ -13,8 +13,8 @@ from banco import get_db
 from professor import de_blob_texto, para_blob_texto
 
 
-from sprint_schema import garantir_sprint_schema
-from sprint_comum import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _professor_responsavel, proximo_id, resposta
+from estrutura_banco import garantir_estrutura_banco
+from utilitarios_backend import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _professor_responsavel, proximo_id, resposta
 
 
 
@@ -22,7 +22,7 @@ from sprint_comum import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_
 @app.route("/chat/conversas", methods=["GET"])
 @jwt_required()
 def chat_conversas():
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = int(get_jwt_identity())
     con = get_db()
@@ -114,7 +114,7 @@ def chat_conversas():
 @app.route("/chat/cursos/<int:id_curso>/mensagens", methods=["GET", "POST"])
 @jwt_required()
 def chat_mensagens(id_curso):
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = int(get_jwt_identity())
     con = get_db()

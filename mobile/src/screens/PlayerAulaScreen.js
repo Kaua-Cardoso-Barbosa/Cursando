@@ -55,7 +55,9 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
 
     const diferenca = Math.abs(atual.posicaoMillis / 1000 - ultimaPosicaoEnviadaRef.current);
     // Sprint item 7: renova o relógio ao pausar, mesmo quando o ponto de reprodução não mudou.
-    if ((!forcar && diferenca < 10) || (diferenca < 0.5 && !registrarMesmoPonto)) return filaSalvamentosRef.current;
+    // Sprint item 4: grava durante aulas curtas também; cinco segundos vistos
+    // precisam existir no banco mesmo sem uma pausa manual.
+    if ((!forcar && diferenca < 1) || (diferenca < 0.5 && !registrarMesmoPonto)) return filaSalvamentosRef.current;
     return enfileirarProgresso(atual.idAula, atual.posicaoMillis, registrarMesmoPonto);
   }
 
@@ -95,7 +97,7 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
     const posicaoAtual = Number(status.positionMillis || 0);
     const duracao = Number(status.durationMillis || 0);
 
-    if (retomarEm > posicaoAtual + 1000 && (!duracao || retomarEm < duracao) && videoRef.current) {
+    if (retomarEm > posicaoAtual + 250 && (!duracao || retomarEm < duracao) && videoRef.current) {
       atual.carregado = false;
       videoRef.current.setPositionAsync(retomarEm)
         .then((resultado) => {
@@ -168,7 +170,7 @@ export default function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFini
               useNativeControls
               resizeMode={ResizeMode.CONTAIN}
               positionMillis={Math.max(0, Number(aula.progresso_segundos || 0) * 1000)}
-              progressUpdateIntervalMillis={5000}
+              progressUpdateIntervalMillis={1000}
               onLoad={carregarVideo}
               onPlaybackStatusUpdate={atualizarReproducao}
             />

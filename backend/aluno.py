@@ -318,7 +318,9 @@ def listar_cursos_aluno():
 
 
 
-# Entrega uma aula publicada somente quando o aluno tem matrícula ativa no curso.
+# Sprint item 4: entrega uma aula publicada ao aluno matriculado com a posição
+# salva em segundos. O site e o app usam esse valor para abrir o player no ponto
+# em que a reprodução parou. A consulta também traz as próximas aulas.
 @app.route("/aluno/aulas/<int:id_aula>", methods=["GET"])
 @jwt_required()
 def detalhe_aula_aluno(id_aula):
@@ -326,6 +328,8 @@ def detalhe_aula_aluno(id_aula):
     if negado:
         return negado
 
+    from estrutura_banco import garantir_estrutura_banco
+    garantir_estrutura_banco()
     id_aluno = get_jwt_identity()
     con = get_db()
     cursor = con.cursor()
@@ -349,6 +353,9 @@ def detalhe_aula_aluno(id_aula):
             LEFT JOIN PROGRESSO_REPRODUCAO PR ON PR.ID_VIDEO = V.ID_VIDEO AND PR.ID_USUARIO = ?
             WHERE V.ID_VIDEO = ? AND M.ID_USUARIO = ? AND M.STATUS_MATRICULA = 1
               AND V.EXCLUIDO = 0 AND V.STATUS = 1 AND C.EXCLUIDO = 0 AND C.STATUS = 1
+              AND (V.ID_MODULO IS NULL OR EXISTS (
+                  SELECT 1 FROM MODULOS_CURSO MC WHERE MC.ID_MODULO = V.ID_MODULO AND MC.STATUS = 1
+              ))
             """,
             (id_aluno, id_aula, id_aluno),
         )

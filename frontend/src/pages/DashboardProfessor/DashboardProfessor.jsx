@@ -2,17 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     FaBookOpen,
+    FaArchive,
     FaCheckCircle,
     FaChartLine,
     FaClock,
+    FaEdit,
     FaEye,
     FaFilePdf,
     FaFolderOpen,
     FaGraduationCap,
     FaListAlt,
+    FaLock,
     FaMoneyBillWave,
     FaPlayCircle,
     FaPlus,
+    FaTrash,
     FaUserPlus,
     FaWallet,
     FaUsers
@@ -75,6 +79,8 @@ export default function DashboardProfessor({
     // Sprint item 22: aplica período e curso ao relatório restrito aos cursos do instrutor autenticado.
     const [filtrosRelatorio, setFiltrosRelatorio] = useState({ inicio: "", fim: "", id_curso: "" });
     const [valorSaque, setValorSaque] = useState("");
+    const [chavePix, setChavePix] = useState("");
+    const [saques, setSaques] = useState([]);
     const [cursoSelecionado, setCursoSelecionado] = useState(null);
     const [modal, setModal] = useState(null);
     const [confirmacao, setConfirmacao] = useState(null);
@@ -98,7 +104,13 @@ export default function DashboardProfessor({
         }
 
         if (!resposta.ok) {
-            throw new Error(dados?.mensagem?.descricao || "Erro ao conectar com a API.");
+            const descricao = dados?.mensagem?.descricao
+                || (resposta.status === 404
+                    ? "Esta parte do financeiro ainda não está disponível no servidor. Tente atualizar a página em instantes."
+                    : resposta.status >= 500
+                        ? "O financeiro está indisponível no momento. Tente novamente em instantes."
+                        : "Não foi possível carregar as informações financeiras.");
+            throw new Error(descricao);
         }
 
         return dados;
@@ -350,6 +362,21 @@ export default function DashboardProfessor({
         }
 
         carregarFinanceiro();
+        fetch(`${api}/professor/saques`, { credentials: "include", cache: "no-store" })
+            .then(async (resposta) => {
+                const dados = await lerResposta(resposta);
+                setSaques(Array.isArray(dados) ? dados : []);
+            })
+            .catch((erro) => avisar({ tipo: "erro", descricao: erro.message }));
+        const sincronizarFinanceiro = () => {
+            carregarFinanceiro();
+            fetch(`${api}/professor/saques`, { credentials: "include", cache: "no-store" })
+                .then((resposta) => lerResposta(resposta))
+                .then((dados) => setSaques(Array.isArray(dados) ? dados : []))
+                .catch((erro) => avisar({ tipo: "erro", descricao: erro.message }));
+        };
+        window.addEventListener("cursando:sincronizar", sincronizarFinanceiro);
+        return () => window.removeEventListener("cursando:sincronizar", sincronizarFinanceiro);
     }, [api, avisar, lerResposta, visao]);
 
     useEffect(() => {
@@ -619,6 +646,34 @@ export default function DashboardProfessor({
         }
     }
 
+    async function alterarStatusModulo(modulo, status) {
+        try {
+            const resposta = await fetch(`${api}/professor/cursos/${cursoSelecionado.id}/modulos/${modulo.id}/status`, {
+                method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status })
+            });
+            await lerResposta(resposta);
+            await carregarModulos(cursoSelecionado.id);
+            await carregarAulas(cursoSelecionado.id, filtroAulas, idModuloSelecionado);
+        } catch (erro) {
+            avisar({ tipo: "erro", descricao: erro.message });
+        }
+    }
+
+    async function executarExclusaoModulo(modulo) {
+        try {
+            const resposta = await fetch(`${api}/professor/cursos/${cursoSelecionado.id}/modulos/${modulo.id}`, {
+                method: "DELETE", credentials: "include"
+            });
+            await lerResposta(resposta);
+            await carregarModulos(cursoSelecionado.id);
+        } catch (erro) {
+            avisar({ tipo: "erro", descricao: erro.message });
+        } finally {
+            setConfirmacao(null);
+        }
+    }
+
     async function moverAulaParaModulo(aula) {
         const idModulo = Number(destinosModulo[aula.id]);
         if (!idModulo) return;
@@ -664,17 +719,20 @@ export default function DashboardProfessor({
         }
         setSolicitandoSaque(true);
         try {
-            // Sprint item 32: envia a solicitação ao backend para validação do saldo e encaminhamento à Arkhé.
+            // O admin faz o pagamento externamente e registra o resultado depois.
             const resposta = await fetch(`${api}/professor/saques`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ valor: Number(valorSaque) })
+                body: JSON.stringify({ valor: Number(valorSaque), chave_pix: chavePix.trim() })
             });
             await lerResposta(resposta);
             setValorSaque("");
+            setChavePix("");
             const resumo = await fetch(`${api}/financeiro/resumo`, { credentials: "include" });
             setFinanceiro(await lerResposta(resumo));
+            const lista = await fetch(`${api}/professor/saques`, { credentials: "include", cache: "no-store" });
+            setSaques(await lerResposta(lista));
         } catch (erro) {
             console.error("Erro ao solicitar saque:", erro);
             avisar({ tipo: "erro", descricao: erro.message });
@@ -707,8 +765,8 @@ export default function DashboardProfessor({
     const opcoesGraficoInstrutor = useMemo(() => ({
         legend: { position: "bottom", textStyle: { color: "#4c5b53" } },
         colors: ["#168a55", "#f0a43c"],
-        chartArea: { left: 55, top: 12, width: "86%", height: "76%" },
-        height: 300,
+        chartArea: { left: 60, top: 28, width: "78%", height: "64%" },
+        height: 340,
         vAxis: { minValue: 0, format: "0", textStyle: { color: "#4c5b53" } },
         hAxis: { textStyle: { color: "#4c5b53" } },
         backgroundColor: "transparent"
@@ -726,7 +784,8 @@ export default function DashboardProfessor({
     const valorSaqueNumero = Number(valorSaque);
     const saqueValido = Number.isFinite(valorSaqueNumero)
         && valorSaqueNumero > 0
-        && valorSaqueNumero <= Number(financeiro?.disponivel_saque || 0);
+        && valorSaqueNumero <= Number(financeiro?.disponivel_saque || 0)
+        && chavePix.trim().length >= 5;
     const tituloCursos = useMemo(() => {
         if (filtroCursos === "arquivados") return "Cursos Arquivados";
         if (filtroCursos === "privados") return "Cursos Privados";
@@ -771,7 +830,7 @@ export default function DashboardProfessor({
                                 </div>
                             </section>
 
-                            <section className={css.secaoPainel}>
+                            <section className={`${css.secaoPainel} ${css.resultadosMes}`}>
                                 {/* Sprint item 9: mostra visitas, inscrições convertidas e conversão acumuladas no mês vigente. */}
                                 <div className={css.cabecalhoBloco}>
                                     <div>
@@ -929,16 +988,26 @@ export default function DashboardProfessor({
                                     {!carregando && modulos.length === 0 && <EstadoVazioProfessor texto="Este curso ainda não tem módulos. Crie o primeiro para organizar as aulas." />}
                                     <div className={css.gradeModulos}>
                                         {modulos.map((modulo) => (
-                                            <article className={css.cardModuloProfessor} key={modulo.id}>
-                                                <img src={modulo.imagem ? resolverUrlMidia(api, modulo.imagem) : PLACEHOLDER_CURSO} alt="" />
-                                                <div className={css.infoModuloProfessor}>
-                                                    <h3>{modulo.titulo}</h3>
-                                                    <p>{modulo.descricao || "Sem descrição"}</p>
-                                                    <small>{modulo.total_aulas || 0} aulas</small>
-                                                    <div className={css.acoesModuloProfessor}>
-                                                        <button className={css.botaoPrimario} onClick={() => abrirModulo(modulo)}>Entrar no módulo</button>
-                                                        <button className={css.botaoSecundario} onClick={() => setModal({ tipo: "modulo", item: modulo })}>Editar</button>
+                                            <article className={css.cardCurso} key={modulo.id}>
+                                                {/* Sprint item 6: a área principal abre o módulo; ações de gestão
+                                                    ficam fora dela para que seus cliques não abram as aulas. */}
+                                                <button type="button" className={css.areaCardClicavel} onClick={() => abrirModulo(modulo)} aria-label={`Abrir módulo ${modulo.titulo}`}>
+                                                    <img src={modulo.imagem ? resolverUrlMidia(api, modulo.imagem) : PLACEHOLDER_CURSO} alt="" className={css.imagemCurso} />
+                                                    <div className={css.infoCurso}>
+                                                        <div>
+                                                            <h3>{modulo.titulo}</h3>
+                                                            <p>{modulo.descricao || "Sem descrição"}</p>
+                                                            <span className={css.infoInscritos}><FaBookOpen /> {modulo.total_aulas || 0} {modulo.total_aulas === 1 ? "aula" : "aulas"}</span>
+                                                        </div>
+                                                        <span className={css.statusBadge}>{modulo.status_nome}</span>
                                                     </div>
+                                                </button>
+                                                <div className={css.acoesCard}>
+                                                    <button type="button" title="Editar módulo" aria-label={`Editar módulo ${modulo.titulo}`} onClick={() => setModal({ tipo: "modulo", item: modulo })}><FaEdit /></button>
+                                                    {modulo.status !== 1 && <button type="button" title="Publicar módulo" aria-label={`Publicar módulo ${modulo.titulo}`} onClick={() => alterarStatusModulo(modulo, 1)}><FaEye /></button>}
+                                                    {modulo.status !== 0 && <button type="button" title="Privar módulo" aria-label={`Privar módulo ${modulo.titulo}`} onClick={() => alterarStatusModulo(modulo, 0)}><FaLock /></button>}
+                                                    {modulo.status !== 2 && <button type="button" title="Arquivar módulo" aria-label={`Arquivar módulo ${modulo.titulo}`} onClick={() => alterarStatusModulo(modulo, 2)}><FaArchive /></button>}
+                                                    <button type="button" className={css.botaoExcluir} disabled={modulo.total_aulas > 0} title={modulo.total_aulas > 0 ? "Exclua ou mova as aulas antes de excluir o módulo" : "Excluir módulo"} aria-label={`Excluir módulo ${modulo.titulo}`} onClick={() => setConfirmacao({ tipo: "modulo", item: modulo })}><FaTrash /></button>
                                                 </div>
                                             </article>
                                         ))}
@@ -1061,7 +1130,7 @@ export default function DashboardProfessor({
                                 <div>
                                     <span className={css.etiquetaPagina}>PAGAMENTOS</span>
                                     <h2>Financeiro</h2>
-                                    <p>Consulte seus valores e solicite um saque do saldo disponível.</p>
+                                    <p>Consulte seus valores e solicite o pagamento ao administrador.</p>
                                 </div>
                             </header>
                             {/* Sprint itens 12, 30, 31 e 32: cards financeiros e solicitacao de saque do instrutor. */}
@@ -1076,9 +1145,10 @@ export default function DashboardProfessor({
                                     <CardMetricaProfessor titulo="Ganhos estimados" detalhe={`${Number(financeiro?.percentual_pool || 0).toFixed(2).replace(".", ",")}% do pool`} valor={formatarMoeda(financeiro?.recebido_estimado)} icone={<FaChartLine />} />
                                     {/* Sprint item 15: apresenta ao instrutor o saldo bruto restante que pode solicitar para saque. */}
                                     <div className={css.cardSaldoDisponivel}>
-                                        <CardMetricaProfessor titulo="Disponível para saque" detalhe="Saldo após solicitações" valor={formatarMoeda(financeiro?.disponivel_saque)} icone={<FaWallet />} />
+                                        <CardMetricaProfessor titulo="Disponível para solicitar" detalhe="Após pagamentos e pedidos pendentes" valor={formatarMoeda(financeiro?.disponivel_saque)} icone={<FaWallet />} />
                                     </div>
-                                    <CardMetricaProfessor titulo="Já sacado" detalhe="Solicitações registradas" valor={formatarMoeda(financeiro?.ja_sacado)} icone={<FaMoneyBillWave />} />
+                                    <CardMetricaProfessor titulo="Pagamentos confirmados" detalhe="Registrados pelo administrador" valor={formatarMoeda(financeiro?.ja_sacado)} icone={<FaMoneyBillWave />} />
+                                    <CardMetricaProfessor titulo="Aguardando análise" detalhe="Pedidos enviados ao administrador" valor={formatarMoeda(financeiro?.em_analise)} icone={<FaClock />} />
                                     <CardMetricaProfessor titulo="Alunos ativos" detalhe="Matrículas nos seus cursos" valor={formatarNumero(financeiro?.alunos_ativos)} icone={<FaUsers />} />
                                 </div>
                                 {/* Sprint item 30: exibe a estimativa por aula concluída com base no fundo de receita compartilhado. */}
@@ -1093,15 +1163,15 @@ export default function DashboardProfessor({
                                 <div className={css.introducaoSaque}>
                                     <span className={css.iconeSaque}><FaWallet /></span>
                                     <span className={css.etiquetaPagina}>SALDO DISPONÍVEL</span>
-                                    <h3>Solicitar saque</h3>
-                                    <p>Informe quanto deseja transferir. O valor não pode ultrapassar seu saldo disponível.</p>
+                                    <h3>Solicitar pagamento</h3>
+                                    <p>Informe o valor e sua chave Pix. O administrador fará o pagamento fora do Cursando e registrará o resultado aqui.</p>
                                     <div className={css.valorDisponivelSaque}>
-                                        <span>Disponível para saque</span>
+                                        <span>Disponível para solicitar</span>
                                         <strong>{formatarMoeda(financeiro?.disponivel_saque)}</strong>
                                     </div>
                                 </div>
                                 <form className={`${css.formularioPerfil} ${css.formularioSaque}`} onSubmit={(evento) => { evento.preventDefault(); solicitarSaque(); }}>
-                                    <label htmlFor="valor-saque">Valor do saque</label>
+                                    <label htmlFor="valor-saque">Valor solicitado</label>
                                     <div className={css.campoValorSaque}>
                                         <span>R$</span>
                                         <input
@@ -1115,11 +1185,29 @@ export default function DashboardProfessor({
                                             placeholder="0,00"
                                         />
                                     </div>
-                                    <p className={css.textoApoio}>Você poderá solicitar até {formatarMoeda(financeiro?.disponivel_saque)}.</p>
+                                    <label htmlFor="chave-pix-saque">Chave Pix para receber</label>
+                                    <input id="chave-pix-saque" type="text" value={chavePix} onChange={(evento) => setChavePix(evento.target.value)} minLength={5} maxLength={140} autoComplete="off" required placeholder="CPF, e-mail, telefone ou chave aleatória" />
+                                    <p className={css.textoApoio}>O pedido fica em análise até o administrador confirmar ou recusar.</p>
                                     <button className={css.botaoPrimario} type="submit" disabled={solicitandoSaque || !saqueValido}>
-                                        {solicitandoSaque ? "Enviando solicitação..." : "Solicitar saque"}
+                                        {solicitandoSaque ? "Enviando solicitação..." : "Enviar solicitação"}
                                     </button>
                                 </form>
+                            </section>
+
+                            <section className={css.painelTabelaFinanceiro}>
+                                <div className={css.cabecalhoBloco}><div><h3>Minhas solicitações</h3><p>Acompanhe o resultado registrado pelo administrador.</p></div></div>
+                                <div className={css.containerTabelaFinanceira}><table className={css.tabelaFinanceira}>
+                                    <thead><tr><th>Data</th><th>Valor</th><th>Situação</th><th>Detalhe</th></tr></thead>
+                                    <tbody>
+                                        {saques.map((saque) => <tr key={saque.id}>
+                                            <td>{saque.criado_em ? new Date(saque.criado_em).toLocaleDateString("pt-BR") : "—"}</td>
+                                            <td>{formatarMoeda(saque.valor)}</td>
+                                            <td>{saque.status_nome}</td>
+                                            <td>{saque.status === 1 ? `Referência: ${saque.comprovante}` : saque.status === 2 ? saque.motivo_recusa : "Aguardando pagamento e confirmação"}</td>
+                                        </tr>)}
+                                        {!saques.length && <tr><td colSpan="4">Nenhuma solicitação enviada.</td></tr>}
+                                    </tbody>
+                                </table></div>
                             </section>
 
                             <section className={css.painelTabelaFinanceiro}>
@@ -1289,17 +1377,23 @@ export default function DashboardProfessor({
                 titulo={
                     confirmacao?.tipo === "curso"
                         ? "Realmente deseja apagar esse curso?"
-                        : "Realmente deseja apagar essa aula?"
+                        : confirmacao?.tipo === "modulo"
+                            ? "Realmente deseja excluir este módulo?"
+                            : "Realmente deseja apagar essa aula?"
                 }
                 descricao={
                     confirmacao?.tipo === "curso"
                         ? "As aulas desse curso também serão removidas da dashboard."
-                        : "O vídeo dessa aula será removido da dashboard."
+                        : confirmacao?.tipo === "modulo"
+                            ? "Esta ação só é permitida quando o módulo não tem aulas cadastradas."
+                            : "O vídeo dessa aula será removido da dashboard."
                 }
                 textoConfirmar={
                     confirmacao?.tipo === "curso"
                         ? "Sim, excluir curso"
-                        : "Sim, excluir aula"
+                        : confirmacao?.tipo === "modulo"
+                            ? "Sim, excluir módulo"
+                            : "Sim, excluir aula"
                 }
                 aoCancelar={() => setConfirmacao(null)}
                 aoConfirmar={() => {
@@ -1310,6 +1404,9 @@ export default function DashboardProfessor({
 
                     if (confirmacao?.tipo === "aula") {
                         executarExclusaoAula(confirmacao.item);
+                    }
+                    if (confirmacao?.tipo === "modulo") {
+                        executarExclusaoModulo(confirmacao.item);
                     }
                 }}
             />

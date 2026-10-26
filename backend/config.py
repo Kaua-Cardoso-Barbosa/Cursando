@@ -13,6 +13,7 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = int(os.getenv("PORT", "5000"))
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
 WAITRESS_THREADS = int(os.getenv("WAITRESS_THREADS", "4"))
 
 

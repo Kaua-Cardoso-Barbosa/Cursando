@@ -1,3 +1,11 @@
+"""Estrutura das tabelas usadas pelos itens da sprint.
+
+Cada função pequena verifica se tabela ou coluna já existe antes de criar.
+`garantir_estrutura_banco` reúne essas etapas e usa um lock para impedir que
+duas requisições tentem criar a mesma estrutura ao mesmo tempo. As rotas
+chamam essa função antes de usar as tabelas.
+"""
+
 from threading import Lock
 
 from auditoria import garantir_gatilhos_auditoria
@@ -49,7 +57,7 @@ def _garantir_coluna(cursor, tabela, coluna, ddl):
 
 
 
-def _garantir_sprint_schema():
+def _garantir_estrutura_banco():
     global _schema_pronto
 
     if _schema_pronto:
@@ -70,6 +78,7 @@ def _garantir_sprint_schema():
                 DESCRICAO BLOB SUB_TYPE TEXT,
                 IMAGEM_URL VARCHAR(500),
                 ORDEM INTEGER DEFAULT 0,
+                STATUS INTEGER DEFAULT 1 NOT NULL,
                 CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 ATUALIZADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -142,6 +151,10 @@ def _garantir_sprint_schema():
                 RESPOSTAS BLOB SUB_TYPE TEXT,
                 STATUS INTEGER DEFAULT 0,
                 FEEDBACK BLOB SUB_TYPE TEXT,
+                NOTA INTEGER,
+                ACERTOS INTEGER,
+                TOTAL_QUESTOES INTEGER,
+                CORRECOES_DISSERTATIVAS BLOB SUB_TYPE TEXT,
                 CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CORRIGIDO_EM TIMESTAMP
             )
@@ -212,6 +225,11 @@ def _garantir_sprint_schema():
                 ID_USUARIO INTEGER NOT NULL,
                 VALOR NUMERIC(15,2) NOT NULL,
                 STATUS INTEGER DEFAULT 0,
+                CHAVE_PIX VARCHAR(140),
+                COMPROVANTE VARCHAR(500),
+                MOTIVO_RECUSA VARCHAR(500),
+                ID_ADMIN INTEGER,
+                ANALISADO_EM TIMESTAMP,
                 CRIADO_EM TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """,
@@ -300,7 +318,8 @@ def _garantir_sprint_schema():
                 VALUES (1, 50)
                 """
             )
-        # Sprint itens 1, 2, 3, 4 e 5: campos financeiros para faturas, custos, ticket medio e saques via Arkhe.
+        # Sprint itens 1, 33 e 34: valor, vencimento e pagamento permitem
+        # distinguir mensalidade paga, mensalidade vencida e fatura aberta.
         _garantir_coluna(cursor, "ASSINATURAS", "VALOR", "VALOR NUMERIC(15,2)")
         _garantir_coluna(cursor, "ASSINATURAS", "DATA_VENCIMENTO", "DATA_VENCIMENTO TIMESTAMP")
         _garantir_coluna(cursor, "ASSINATURAS", "DATA_PAGAMENTO", "DATA_PAGAMENTO TIMESTAMP")
@@ -308,6 +327,11 @@ def _garantir_sprint_schema():
         # Sprint item 32: persiste a referência da Arkhé e a resposta para rastrear cada saque solicitado.
         _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "ID_SAQUE_ARKHE", "ID_SAQUE_ARKHE VARCHAR(120)")
         _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "RESPOSTA_ARKHE", "RESPOSTA_ARKHE BLOB SUB_TYPE TEXT")
+        _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "CHAVE_PIX", "CHAVE_PIX VARCHAR(140)")
+        _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "COMPROVANTE", "COMPROVANTE VARCHAR(500)")
+        _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "MOTIVO_RECUSA", "MOTIVO_RECUSA VARCHAR(500)")
+        _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "ID_ADMIN", "ID_ADMIN INTEGER")
+        _garantir_coluna(cursor, "SAQUES_INSTRUTOR", "ANALISADO_EM", "ANALISADO_EM TIMESTAMP")
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "CATEGORIA", "CATEGORIA VARCHAR(80)")
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_USUARIO", "ID_USUARIO INTEGER")
         _garantir_coluna(cursor, "CUSTOS_PLATAFORMA", "ID_CATEGORIA", "ID_CATEGORIA INTEGER")
@@ -340,9 +364,12 @@ def _garantir_sprint_schema():
             )
         cursor.execute("UPDATE CUSTOS_PLATAFORMA SET TIPO_CUSTO = 'UNICO' WHERE TIPO_CUSTO IS NULL")
         # Sprint item 6: associa cada videoaula ao modulo do curso.
+        _garantir_coluna(cursor, "MODULOS_CURSO", "STATUS", "STATUS INTEGER DEFAULT 1")
+        # O Firebird só permite usar a coluna recém-criada depois de confirmar o DDL.
+        con.commit()
+        cursor.execute("UPDATE MODULOS_CURSO SET STATUS = 1 WHERE STATUS IS NULL")
         _garantir_coluna(cursor, "VIDEOS", "ID_MODULO", "ID_MODULO INTEGER")
         # Sprint item 20: guarda quando o instrutor corrigiu a prova para aplicar o intervalo de nova tentativa.
-        _garantir_coluna(cursor, "RESPOSTAS_PROVA", "CORRIGIDO_EM", "CORRIGIDO_EM TIMESTAMP")
         # Sprint item 19: garante a foto de perfil usada para identificar os participantes do chat.
         _garantir_coluna(cursor, "USUARIOS", "IMAGEM_PERFIL", "IMAGEM_PERFIL VARCHAR(500)")
         # Sprint item 21: guarda o nome original de arquivos privados dos complementos do curso.
@@ -376,11 +403,11 @@ def _garantir_sprint_schema():
         cursor.close()
         con.close()
 
-def garantir_sprint_schema():
+def garantir_estrutura_banco():
     # As rotas financeiras podem pedir o schema em paralelo na primeira visita.
     # Serializa a criação/migração para evitar DDL concorrente no Firebird.
     with _schema_lock:
-        return _garantir_sprint_schema()
+        return _garantir_estrutura_banco()
 
 
-__all__ = ['_existe_relacao', '_criar_tabela', '_existe_coluna', '_garantir_coluna', 'garantir_sprint_schema']
+__all__ = ['_existe_relacao', '_criar_tabela', '_existe_coluna', '_garantir_coluna', 'garantir_estrutura_banco']

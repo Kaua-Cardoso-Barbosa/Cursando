@@ -13,6 +13,7 @@ import ConfirmAlert from "./components/ConfirmAlert/ConfirmAlert.jsx";
 import {useCallback, useEffect, useState} from "react";
 import RotaRestrita from "./components/RotaRestrita/RotaRestrita.jsx";
 import VerificarEmail from "./pages/VerificarEmail/VerificarEmail.jsx";
+import VerificarCertificado from "./pages/VerificarCertificado/VerificarCertificado.jsx";
 
 export default function App() {
     return (
@@ -141,6 +142,10 @@ function AppConteudo() {
             titulo = "Aula - Cursando";
         }
 
+        if (location.pathname.startsWith("/certificados/")) {
+            titulo = "Verificar certificado - Cursando";
+        }
+
         document.title = titulo || "Cursando";
     }, [location.pathname]);
 
@@ -161,6 +166,8 @@ function AppConteudo() {
                 <Route path="*" element={<Pagina404/>}/>
                 <Route path="/cadastro" element={<Cadastro api={api} setMensagem={setMensagem}/>}/>
                 <Route path="/verificar-email" element={<VerificarEmail api={api} atualizarSessao={atualizarSessao}/>}/>
+                <Route path="/certificados/:codigo/verificar" element={<VerificarCertificado api={api}/>}/>
+                <Route path="/certificados/verificar" element={<VerificarCertificado api={api}/>}/>
 
                 {/* Sprint item 34: links antigos de assinatura abrem a seção dentro da Dashboard Aluno. */}
                 <Route path="/assinatura" element={<Navigate to="/DashboardAluno/assinatura" replace />}/>

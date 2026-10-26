@@ -758,6 +758,21 @@
     gap: 12px;
 }
 
+/* Sprint item 21: destaca o acervo e deixa clara a ação de cada material. */
+.conteudoComplementos { padding: 0; overflow: hidden; border-radius: 18px; background: #f7faf8; }
+.cabecalhoComplementos { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 25px; background: linear-gradient(115deg, #e4f4e9, #f5fbf7); }
+.cabecalhoComplementos span, .tipoMaterial { color: #087044 !important; font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.cabecalhoComplementos h2 { margin: 6px 0; color: #173e2c; }
+.cabecalhoComplementos p { margin: 0; color: #607268; }
+.cabecalhoComplementos > strong { white-space: nowrap; padding: 9px 12px; border-radius: 999px; background: #fff; color: #087044; }
+.conteudoComplementos .listaMateriais { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); padding: 20px; }
+.conteudoComplementos .estadoVazio { margin: 20px; }
+.conteudoComplementos .cardMaterial { align-content: start; gap: 10px; min-height: 180px; border-color: #d8e8dd; border-radius: 14px; box-shadow: 0 8px 20px #153b2010; }
+.conteudoComplementos .cardMaterial strong { font-size: 1.12rem; }
+.conteudoComplementos .cardMaterial p { margin: 0; line-height: 1.5; }
+.conteudoComplementos .cardMaterial a, .conteudoComplementos .cardMaterial button { width: fit-content; align-self: end; margin-top: auto; padding: 9px 13px; border: 0; border-radius: 9px; background: #087044; color: #fff; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+@media (max-width: 600px) { .cabecalhoComplementos { align-items: start; flex-direction: column; } }
+
 /* Sprint item 6: permite ao aluno abrir um módulo e conferir suas aulas antes da inscrição. */
 .gradeModulosAluno {
     display: grid;
@@ -1461,6 +1476,7 @@
 
 .navegacaoCurso {
     gap: 8px;
+    flex-wrap: wrap;
     margin: 20px 0;
     padding: 5px;
     border: 1px solid #dfe9e3;
@@ -1497,6 +1513,146 @@
     color: #183d2c;
     font-size: 1.2rem;
     font-weight: 650;
+}
+
+.painelProva {
+    max-width: 900px;
+    padding: clamp(22px, 4vw, 38px);
+}
+
+.cabecalhoProva {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid #dfe9e3;
+}
+
+.rotuloProva {
+    color: #087044;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.cabecalhoProva h2 {
+    margin: 8px 0 !important;
+    font-size: clamp(1.5rem, 3vw, 2rem) !important;
+}
+
+.cabecalhoProva p {
+    margin: 0;
+    color: #607468;
+}
+
+.statusProva {
+    border-radius: 999px;
+    padding: 8px 13px;
+    background: #e7f5ed;
+    color: #075132;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.listaQuestoes {
+    display: grid;
+    gap: 20px;
+    padding-top: 24px;
+}
+
+.cartaoQuestao {
+    min-width: 0;
+    margin: 0;
+    padding: 20px;
+    border: 1px solid #dce9e1;
+    border-radius: 14px;
+    background: #f8fbf9;
+}
+
+.cartaoQuestao legend {
+    padding: 0 8px;
+    color: #087044;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.enunciadoQuestao {
+    margin: 0 0 18px;
+    color: #183d2c;
+    font-size: 1.05rem;
+    font-weight: 650;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.alternativasQuestao {
+    display: grid;
+    gap: 10px;
+}
+
+.alternativaQuestao {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 15px;
+    border: 1px solid #dce9e1;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.alternativaQuestao:has(input:checked) {
+    border-color: #087044;
+    background: #eaf6ef;
+}
+
+.alternativaQuestao input {
+    margin: 3px 0 0;
+    accent-color: #087044;
+    flex: 0 0 auto;
+}
+
+.respostaDissertativa {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    padding: 14px;
+    border: 1px solid #bfd3c5;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #183d2c;
+    font: inherit;
+    line-height: 1.5;
+}
+
+.respostaDissertativa:focus-visible,
+.alternativaQuestao:focus-within {
+    outline: 2px solid #087044;
+    outline-offset: 2px;
+}
+
+.rodapeProva {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    color: #607468;
+}
+
+.rodapeProva .botaoInscrever:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.avaliacaoAposProva {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid #dfe9e3;
 }
 
 .gradeModulosAluno {

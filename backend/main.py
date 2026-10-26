@@ -31,7 +31,7 @@ import gravacao_log
 import financeiro
 import pagamento_arkhe
 import relatorio
-from sprint_comum import exigir_tipo
+from utilitarios_backend import exigir_tipo
 from servicos.arkhe import ArkheError, consultar_conta
 
 print("\nROTAS REGISTRADAS ANTES DA ROTA ARKHÉ:")

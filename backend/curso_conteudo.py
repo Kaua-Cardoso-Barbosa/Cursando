@@ -1,3 +1,10 @@
+"""Conteúdo do professor: módulos, aulas, categorias e complementos.
+
+Itens 6, 21 e 28 da sprint. As rotas de alteração confirmam que o professor
+pertence ao curso. Os arquivos dos complementos são privados;
+alunos matriculados com assinatura ativa recebem o download pela API.
+"""
+
 import mimetypes
 import os
 from uuid import uuid4
@@ -11,8 +18,8 @@ from banco import get_db
 from professor import AULA_STATUS_FILTRO, CURSO_STATUS_FILTRO, STATUS_ARQUIVADO, STATUS_NOMES, STATUS_PRIVADO, STATUS_PUBLICADO, converter_video_dash, criar_slug, de_blob_texto, exigir_professor, para_blob_texto, resposta as resposta_professor, salvar_thumb_aula, salvar_upload
 
 
-from sprint_schema import garantir_sprint_schema
-from sprint_comum import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, exigir_tipo, normalizar_taxonomia, proximo_id, resposta
+from estrutura_banco import garantir_estrutura_banco
+from utilitarios_backend import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, exigir_tipo, normalizar_taxonomia, proximo_id, resposta
 
 
 
@@ -23,7 +30,7 @@ def modulos_professor(id_curso):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -44,6 +51,7 @@ def modulos_professor(id_curso):
             cursor.execute(
                 """
                 SELECT M.ID_MODULO, M.ID_CURSO, M.TITULO, M.DESCRICAO, M.IMAGEM_URL, M.ORDEM,
+                       M.STATUS,
                        (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_MODULO = M.ID_MODULO AND V.EXCLUIDO = 0)
                 FROM MODULOS_CURSO M
                 JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = M.ID_CURSO
@@ -60,7 +68,9 @@ def modulos_professor(id_curso):
                     "descricao": de_blob_texto(row[3]),
                     "imagem": row[4],
                     "ordem": row[5] or 0,
-                    "total_aulas": row[6] or 0,
+                    "status": row[6],
+                    "status_nome": STATUS_NOMES.get(row[6], "desconhecido"),
+                    "total_aulas": row[7] or 0,
                 }
                 for row in cursor.fetchall()
             ])
@@ -85,10 +95,10 @@ def modulos_professor(id_curso):
         # Sprint item 6: cadastra modulos para organizar aulas dentro do curso.
         cursor.execute(
             """
-            INSERT INTO MODULOS_CURSO (ID_MODULO, ID_CURSO, TITULO, DESCRICAO, IMAGEM_URL, ORDEM)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO MODULOS_CURSO (ID_MODULO, ID_CURSO, TITULO, DESCRICAO, IMAGEM_URL, ORDEM, STATUS)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (id_modulo, id_curso, titulo, para_blob_texto(descricao), imagem["url"] if imagem else None, ordem),
+            (id_modulo, id_curso, titulo, para_blob_texto(descricao), imagem["url"] if imagem else None, ordem, STATUS_PUBLICADO),
         )
         con.commit()
         return resposta("Modulo criado com sucesso.", 201, "sucesso", id_modulo=id_modulo)
@@ -108,7 +118,7 @@ def materiais_professor(id_curso):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
     caminho_arquivo = ""
@@ -196,7 +206,7 @@ def materiais_aluno(id_curso):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -255,7 +265,7 @@ def editar_modulo_professor(id_curso, id_modulo):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     dados = request.form if request.form else (request.get_json() or {})
     titulo = (dados.get("titulo") or "").strip()
     descricao = (dados.get("descricao") or "").strip()
@@ -301,6 +311,87 @@ def editar_modulo_professor(id_curso, id_modulo):
         con.close()
 
 
+@app.route("/professor/cursos/<int:id_curso>/modulos/<int:id_modulo>/status", methods=["PATCH"])
+@jwt_required()
+def alterar_status_modulo_professor(id_curso, id_modulo):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+    try:
+        status = int((request.get_json() or {}).get("status"))
+    except (TypeError, ValueError):
+        return resposta("Status do modulo invalido.", 400)
+    if status not in STATUS_NOMES:
+        return resposta("Status do modulo invalido.", 400)
+
+    garantir_estrutura_banco()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        if not _curso_do_professor(cursor, id_curso, int(get_jwt_identity())):
+            return resposta("Curso nao encontrado.", 404)
+        cursor.execute("SELECT STATUS FROM MODULOS_CURSO WHERE ID_MODULO = ? AND ID_CURSO = ?", (id_modulo, id_curso))
+        registro = cursor.fetchone()
+        if not registro:
+            return resposta("Modulo nao encontrado.", 404)
+        status_anterior = registro[0]
+        cursor.execute(
+            "UPDATE MODULOS_CURSO SET STATUS = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_MODULO = ? AND ID_CURSO = ?",
+            (status, id_modulo, id_curso),
+        )
+        if status != STATUS_PUBLICADO:
+            cursor.execute(
+                "UPDATE VIDEOS SET STATUS = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_MODULO = ? AND ID_CURSO = ? AND EXCLUIDO = 0",
+                (status, id_modulo, id_curso),
+            )
+        elif status_anterior == STATUS_ARQUIVADO:
+            # Aulas arquivadas junto do modulo voltam a ser privadas para revisao individual.
+            cursor.execute(
+                "UPDATE VIDEOS SET STATUS = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_MODULO = ? AND ID_CURSO = ? AND EXCLUIDO = 0 AND STATUS = ?",
+                (STATUS_PRIVADO, id_modulo, id_curso, STATUS_ARQUIVADO),
+            )
+        con.commit()
+        mensagem = ("Modulo publicado. Publique as aulas individualmente para disponibiliza-las aos alunos."
+                    if status == STATUS_PUBLICADO else f"Modulo definido como {STATUS_NOMES[status]}.")
+        return resposta(mensagem, 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao alterar status do modulo: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/professor/cursos/<int:id_curso>/modulos/<int:id_modulo>", methods=["DELETE"])
+@jwt_required()
+def excluir_modulo_professor(id_curso, id_modulo):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+    garantir_estrutura_banco()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        if not _curso_do_professor(cursor, id_curso, int(get_jwt_identity())):
+            return resposta("Curso nao encontrado.", 404)
+        cursor.execute("SELECT 1 FROM MODULOS_CURSO WHERE ID_MODULO = ? AND ID_CURSO = ?", (id_modulo, id_curso))
+        if not cursor.fetchone():
+            return resposta("Modulo nao encontrado.", 404)
+        cursor.execute("SELECT COUNT(*) FROM VIDEOS WHERE ID_MODULO = ? AND ID_CURSO = ? AND EXCLUIDO = 0", (id_modulo, id_curso))
+        if cursor.fetchone()[0]:
+            return resposta("Exclua ou mova todas as aulas antes de excluir este modulo.", 409)
+        cursor.execute("UPDATE VIDEOS SET ID_MODULO = NULL WHERE ID_MODULO = ? AND ID_CURSO = ? AND EXCLUIDO <> 0", (id_modulo, id_curso))
+        cursor.execute("DELETE FROM MODULOS_CURSO WHERE ID_MODULO = ? AND ID_CURSO = ?", (id_modulo, id_curso))
+        con.commit()
+        return resposta("Modulo excluido com sucesso.", 200, "sucesso")
+    except Exception as erro:
+        con.rollback()
+        return resposta(f"Erro ao excluir modulo: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
 
 # Sprint item 21: permite ao instrutor remover apenas complementos do próprio curso e apaga uploads privados.
 @app.route("/professor/cursos/<int:id_curso>/materiais/<int:id_material>", methods=["DELETE"])
@@ -309,7 +400,7 @@ def excluir_material_professor(id_curso, id_material):
     negado = exigir_tipo(1)
     if negado:
         return negado
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
     try:
@@ -348,7 +439,7 @@ def baixar_material_aluno(id_curso, id_material):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
     try:
@@ -381,7 +472,7 @@ def taxonomias(tipo):
     if tipo not in {"categorias", "temas"}:
         return resposta("Tipo de taxonomia invalido.", 400)
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     tabela = "CATEGORIAS_CURSO" if tipo == "categorias" else "TEMAS_CURSO"
     coluna = "ID_CATEGORIA" if tipo == "categorias" else "ID_TEMA"
     con = get_db()
@@ -433,7 +524,7 @@ def taxonomia_curso_professor(id_curso):
     if negado:
         return negado
 
-    garantir_sprint_schema()
+    garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
 
@@ -510,8 +601,8 @@ def criar_aula_professor(id_curso):
         return negado
 
     # Sprint item 6: valida e grava a aula somente no módulo escolhido pelo instrutor.
-    from sprint_schema import garantir_sprint_schema
-    garantir_sprint_schema()
+    from estrutura_banco import garantir_estrutura_banco
+    garantir_estrutura_banco()
 
     titulo = (request.form.get("titulo") or "").strip()
     descricao = (request.form.get("descricao") or "").strip()
@@ -529,7 +620,7 @@ def criar_aula_professor(id_curso):
     try:
         cursor.execute(
             """
-            SELECT 1
+            SELECT M.STATUS
             FROM CURSOS C
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
             JOIN MODULOS_CURSO M ON M.ID_CURSO = C.ID_CURSO
@@ -538,7 +629,8 @@ def criar_aula_professor(id_curso):
             (id_curso, get_jwt_identity(), id_modulo),
         )
 
-        if not cursor.fetchone():
+        modulo = cursor.fetchone()
+        if not modulo:
             return resposta_professor("Curso não encontrado.", 404)
 
         cursor.execute("SELECT GEN_ID(GEN_VIDEOS_ID, 1) FROM RDB$DATABASE")
@@ -569,12 +661,16 @@ def criar_aula_professor(id_curso):
                 ID_VIDEO, ID_CURSO, ID_MODULO, ID_PUBLICO, TITULO, TITULO_SLUG, DESCRICAO,
                 POSICAO_PLAYLIST, DURACAO, DATA_UPLOAD, VIDEO_URL, STATUS, EXCLUIDO, ATUALIZADO_EM
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP, ?, 0, 0, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP, ?, ?, 0, CURRENT_TIMESTAMP)
             """,
-            (id_aula, id_curso, id_modulo, uuid4().hex, titulo, criar_slug(titulo), para_blob_texto(descricao), video_url),
+            (id_aula, id_curso, id_modulo, uuid4().hex, titulo, criar_slug(titulo), para_blob_texto(descricao), video_url,
+             STATUS_ARQUIVADO if modulo[0] == STATUS_ARQUIVADO else STATUS_PRIVADO),
         )
         con.commit()
-        return resposta_professor("Aula cadastrada como privada.", 201, "sucesso", id_aula=id_aula, thumb=thumb_url)
+        return resposta_professor(
+            "Aula cadastrada como arquivada." if modulo[0] == STATUS_ARQUIVADO else "Aula cadastrada como privada.",
+            201, "sucesso", id_aula=id_aula, thumb=thumb_url,
+        )
     except Exception as erro:
         con.rollback()
         return resposta_professor(f"Erro ao cadastrar aula: {erro}", 500)
@@ -590,8 +686,8 @@ def mover_aula_para_modulo(id_aula):
     if negado:
         return negado
 
-    from sprint_schema import garantir_sprint_schema
-    garantir_sprint_schema()
+    from estrutura_banco import garantir_estrutura_banco
+    garantir_estrutura_banco()
     try:
         id_modulo = int((request.get_json() or {}).get("id_modulo"))
     except (TypeError, ValueError):
@@ -616,13 +712,17 @@ def mover_aula_para_modulo(id_aula):
             return resposta_professor("Aula nao encontrada.", 404)
 
         cursor.execute(
-            "SELECT 1 FROM MODULOS_CURSO WHERE ID_MODULO = ? AND ID_CURSO = ?",
+            "SELECT STATUS FROM MODULOS_CURSO WHERE ID_MODULO = ? AND ID_CURSO = ?",
             (id_modulo, curso[0]),
         )
-        if not cursor.fetchone():
+        modulo = cursor.fetchone()
+        if not modulo:
             return resposta_professor("Modulo nao pertence a este curso.", 400)
 
-        cursor.execute("UPDATE VIDEOS SET ID_MODULO = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_VIDEO = ?", (id_modulo, id_aula))
+        if modulo[0] == STATUS_PUBLICADO:
+            cursor.execute("UPDATE VIDEOS SET ID_MODULO = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_VIDEO = ?", (id_modulo, id_aula))
+        else:
+            cursor.execute("UPDATE VIDEOS SET ID_MODULO = ?, STATUS = ?, ATUALIZADO_EM = CURRENT_TIMESTAMP WHERE ID_VIDEO = ?", (id_modulo, modulo[0], id_aula))
         con.commit()
         # Sprint item 6: permite incluir aulas antigas em um dos módulos criados pelo instrutor.
         return resposta_professor("Aula movida para o modulo.", 200, "sucesso")

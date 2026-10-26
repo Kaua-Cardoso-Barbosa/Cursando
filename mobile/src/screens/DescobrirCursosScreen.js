@@ -10,8 +10,6 @@ const fallbackImage = "https://images.unsplash.com/photo-1497633762265-9d179a990
 export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
   const { mostrarAlerta } = useFeedback();
   const [cursos, setCursos] = useState([]);
-  // Sprint item 29: guarda sugestões com base nas categorias e nos temas dos cursos inscritos.
-  const [cursosRecomendados, setCursosRecomendados] = useState([]);
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState("recentes");
   const [apenasNovos, setApenasNovos] = useState(false);
@@ -29,20 +27,13 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
       const params = new URLSearchParams();
       if (termo.trim()) params.set("busca", termo.trim());
       params.set("ordem", ordem);
+      if (ordem === "recomendados") params.set("recomendados", "1");
       if (apenasNovos) params.set("apenas_novos", "1");
       if (categoria) params.set("categoria", categoria);
       if (tema) params.set("tema", tema);
       if (avaliacaoMinima) params.set("avaliacao_min", avaliacaoMinima);
       const dados = await apiRequest(`/aluno/descobrir?${params.toString()}`, {}, token);
       setCursos(Array.isArray(dados) ? dados : []);
-      try {
-        // Sprint item 29: busca sugestões ordenadas conforme as matrículas ativas do aluno.
-        const recomendacoes = await apiRequest("/aluno/descobrir?recomendados=1&ordem=recomendados", {}, token);
-        setCursosRecomendados(Array.isArray(recomendacoes) ? recomendacoes : []);
-      } catch (recommendationError) {
-        console.warn("Erro ao carregar recomendações:", recommendationError.message);
-        setCursosRecomendados([]);
-      }
     } catch (error) {
       mostrarAlerta("Erro", error.message, "erro");
       setCursos([]);
@@ -52,7 +43,7 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
   }
 
   useEffect(() => {
-    carregar("");
+    carregar();
   }, [ordem, apenasNovos, categoria, tema, avaliacaoMinima, token]);
 
   // Sprint item 28: carrega as categorias e os temas usados nos filtros de descoberta do app.
@@ -76,31 +67,12 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
     >
       <View style={styles.header}>
         <Text style={globalStyles.title}>Descobrir cursos</Text>
-        <Text style={globalStyles.eyebrow}>Encontre novos cursos publicos</Text>
+        <Text style={globalStyles.eyebrow}>Pesquise o catálogo e escolha um curso para conhecer seus módulos e aulas.</Text>
         <View style={globalStyles.divider} />
       </View>
 
-      <View style={styles.recommendations}>
-        {/* Sprint item 29: exibe cursos relacionados às categorias e aos temas dos cursos inscritos. */}
-        <Text style={styles.recommendationsTitle}>Recomendados para você</Text>
-        <Text style={styles.recommendationsDescription}>Sugestões baseadas nas categorias e nos temas dos cursos em que você está inscrito.</Text>
-        {cursosRecomendados.length > 0 ? (
-          <View style={styles.list}>
-            {cursosRecomendados.slice(0, 6).map((curso) => (
-              <Pressable key={`recomendado-${curso.id}`} style={[globalStyles.card, styles.card]} onPress={() => onOpen?.(curso)}>
-                <Image source={{ uri: curso.imagem ? resolverUrlMidia(curso.imagem) : fallbackImage }} style={styles.image} />
-                <View style={styles.info}>
-                  <Text style={styles.title} numberOfLines={1}>{curso.titulo}</Text>
-                  <Text style={styles.description} numberOfLines={2}>{curso.descricao}</Text>
-                  <Text style={styles.meta}>{curso.professor || "Professor(a)"}</Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        ) : <Text style={styles.recommendationsEmpty}>Quando houver cursos relacionados às suas inscrições, eles aparecerão aqui.</Text>}
-      </View>
-
       <View style={styles.filters}>
+        <Text style={styles.filtersTitle}>Filtrar cursos</Text>
         <View style={styles.searchBox}>
           <AppIcon name="search-outline" size={18} color={colors.darkGreen} />
           <TextInput
@@ -113,17 +85,19 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
             returnKeyType="search"
           />
         </View>
-        <View style={styles.filterRow}>
+        <Text style={styles.filterLabel}>Ordenar por</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           <Pressable style={[styles.filterButton, ordem === "recentes" && styles.filterActive]} onPress={() => setOrdem("recentes")}>
             <Text style={[styles.filterText, ordem === "recentes" && styles.filterTextActive]}>Recentes</Text>
           </Pressable>
           <Pressable style={[styles.filterButton, ordem === "populares" && styles.filterActive]} onPress={() => setOrdem("populares")}>
             <Text style={[styles.filterText, ordem === "populares" && styles.filterTextActive]}>Populares</Text>
           </Pressable>
-          <Pressable style={[styles.filterButton, apenasNovos && styles.filterActive]} onPress={() => setApenasNovos(!apenasNovos)}>
-            <Text style={[styles.filterText, apenasNovos && styles.filterTextActive]}>Nao inscritos</Text>
+          <Pressable style={[styles.filterButton, ordem === "recomendados" && styles.filterActive]} onPress={() => setOrdem("recomendados")}>
+            <Text style={[styles.filterText, ordem === "recomendados" && styles.filterTextActive]}>Recomendados</Text>
           </Pressable>
-        </View>
+        </ScrollView>
+        <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: apenasNovos }} style={[styles.filterButton, styles.newFilter, apenasNovos && styles.filterActive]} onPress={() => setApenasNovos(!apenasNovos)}><Text style={[styles.filterText, apenasNovos && styles.filterTextActive]}>{apenasNovos ? "✓ " : "□ "}Somente não inscritos</Text></Pressable>
         {/* Sprint item 28: permite filtrar cursos por categoria, tema e avaliação no Android. */}
         <Text style={styles.filterLabel}>Categoria</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
@@ -144,11 +118,11 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
           </Pressable>)}
         </ScrollView>
         <Text style={styles.filterLabel}>Avaliação mínima</Text>
-        <View style={styles.filterRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           {["", "1", "2", "3", "4", "5"].map((nota) => <Pressable key={nota || "todas"} style={[styles.filterButton, avaliacaoMinima === nota && styles.filterActive]} onPress={() => setAvaliacaoMinima(nota)}>
             <Text style={[styles.filterText, avaliacaoMinima === nota && styles.filterTextActive]}>{nota ? `${nota} ★` : "Todas"}</Text>
           </Pressable>)}
-        </View>
+        </ScrollView>
       </View>
 
       <View style={styles.list}>
@@ -165,19 +139,17 @@ export default function DescobrirCursosScreen({ token, carregando, onOpen }) {
             </Pressable>
           );
         })}
-        {!loading && cursos.length === 0 ? <Text style={globalStyles.message}>Nenhum curso publico encontrado.</Text> : null}
+        {!loading && cursos.length === 0 ? <Text style={globalStyles.message}>{ordem === "recomendados" ? "Ainda não há cursos relacionados às suas inscrições. Escolha outra ordenação." : "Nenhum curso público encontrado."}</Text> : null}
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { marginBottom: 22 },
-  recommendations: { gap: 10, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.softGray },
-  recommendationsTitle: { color: colors.darkGreen, fontSize: 20, fontWeight: "800" },
-  recommendationsDescription: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
-  recommendationsEmpty: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
-  filters: { gap: 12, marginBottom: 18 },
+  header: { marginBottom: 18 },
+  filters: { gap: 10, marginBottom: 18, padding: 14, backgroundColor: colors.softGray, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
+  filtersTitle: { color: colors.darkGreen, fontSize: 18, fontWeight: "800" },
+  newFilter: { alignSelf: "flex-start" },
   searchBox: {
     minHeight: 48,
     borderWidth: 1.4,
@@ -190,7 +162,7 @@ const styles = StyleSheet.create({
     gap: 8
   },
   searchInput: { flex: 1, color: colors.black, fontSize: 16 },
-  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  filterRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingRight: 8 },
   filterLabel: { color: colors.darkGreen, fontSize: 13, fontWeight: "700", marginTop: 2 },
   filterButton: {
     minHeight: 38,
