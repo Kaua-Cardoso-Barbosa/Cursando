@@ -15,7 +15,7 @@ export default function Alerts({
     const fecharAlerta = useCallback(() => {
         setSaindo(true);
 
-                                     
+
         setTimeout(() => {
             setVisivel(false);
 

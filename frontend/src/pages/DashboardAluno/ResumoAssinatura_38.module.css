@@ -1,5 +1,6 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
-                                                                                                                    
+
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .resumo */
 .resumo {
     display: flex;
     justify-content: space-between;
@@ -13,6 +14,7 @@
     background: #f3faf6;
 }
 
+/* Fim item 38 */
 .rotulo {
     color: #006338;
     font-size: 0.85rem;
@@ -27,11 +29,14 @@
     font-size: 1.4rem;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .resumo p */
 .resumo p {
     max-width: 620px;
     line-height: 1.5;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .datas */
 .datas {
     display: grid;
     gap: 8px;
@@ -39,6 +44,8 @@
     color: #295642;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 760px) */
 @media (max-width: 760px) {
     .resumo { flex-direction: column; align-items: stretch; }
     .datas { flex: auto; }

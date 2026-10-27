@@ -1,4 +1,4 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
 :global(*) {
     margin: 0;
     padding: 0;
@@ -6,6 +6,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .painelAdmin */
 .painelAdmin {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
@@ -14,6 +15,8 @@
     background-color: #ffffff;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .conteudoPrincipal */
 .conteudoPrincipal {
     grid-column: 2;
     grid-row: 1;
@@ -24,11 +27,15 @@
     min-width: 0;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .areaConteudo */
 .areaConteudo {
     padding: 32px 48px;
     width: 100%;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoUsuario */
 .cabecalhoUsuario {
     display: flex;
     justify-content: space-between;
@@ -36,6 +43,7 @@
     margin-bottom: 32px;
 }
 
+/* Fim item 38 */
 .dadosUsuario {
     display: inline-block;
     border-bottom: 3px solid #139a58;
@@ -57,12 +65,14 @@
     margin-top: 2px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .acoesUsuario */
 .acoesUsuario {
     display: flex;
     align-items: center;
     gap: 16px;
 }
 
+/* Fim item 38 */
 .botaoSair {
     background-color: #e52e18;
     color: #ffffff;
@@ -74,6 +84,7 @@
     cursor: pointer;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .fotoPerfil */
 .fotoPerfil {
     width: 48px;
     height: 48px;
@@ -86,11 +97,15 @@
     color: #222222;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .secaoLista */
 .secaoLista {
     margin-bottom: 28px;
     width: 100%;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .topoSecao */
 .topoSecao {
     display: flex;
     justify-content: space-between;
@@ -98,18 +113,22 @@
     margin-bottom: 8px;
 }
 
+/* Fim item 38 */
 .topoSecao h2 {
     font-size: 1.25rem;
     font-weight: 400;
     color: #1a1a1a;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .tituloComAdd */
 .tituloComAdd {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .btnIconeAdicionar */
 .btnIconeAdicionar {
     background: none;
     border: none;
@@ -124,6 +143,7 @@
     transition: transform 0.15s ease, color 0.15s ease;
 }
 
+/* Fim item 38 */
 .btnIconeAdicionar:hover {
     color: #006338;
     transform: scale(1.2);
@@ -133,6 +153,7 @@
     transform: scale(0.9);
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .campoBusca */
 .campoBusca {
     display: flex;
     align-items: center;
@@ -143,12 +164,14 @@
     background-color: #ffffff;
 }
 
+/* Fim item 38 */
 .iconeBusca {
     font-size: 0.85rem;
     margin-right: 8px;
     color: #666666;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .campoBusca input */
 .campoBusca input {
     border: none;
     outline: none;
@@ -157,6 +180,7 @@
     color: #333333;
 }
 
+/* Fim item 38 */
 .campoBusca input::placeholder {
     color: #999999;
 }
@@ -179,6 +203,7 @@
     border-radius: 4px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .linhaUsuario */
 .linhaUsuario {
     display: flex;
     justify-content: space-between;
@@ -188,10 +213,12 @@
     border-bottom: 1.5px solid #006338;
 }
 
+/* Fim item 38 */
 .linhaUsuario:last-child {
     border-bottom: none;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .dadosLinhaUsuario */
 .dadosLinhaUsuario {
     min-width: 0;
     display: flex;
@@ -199,6 +226,7 @@
     gap: 3px;
 }
 
+/* Fim item 38 */
 .nomeUsuario {
     font-size: 1.05rem;
     color: #222222;
@@ -211,11 +239,13 @@
     overflow-wrap: anywhere;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .grupoBotoes */
 .grupoBotoes {
     display: flex;
     gap: 8px;
 }
 
+/* Fim item 38 */
 .grupoBotoes button {
     border: none;
     color: #ffffff;
@@ -253,6 +283,7 @@
     text-align: right;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .overlayModal */
 .overlayModal {
     position: fixed;
     inset: 0;
@@ -264,6 +295,8 @@
     padding: 24px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .modalEdicao */
 .modalEdicao {
     position: relative;
     width: min(540px, 100%);
@@ -275,6 +308,7 @@
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
+/* Fim item 38 */
 .modalEdicao h2 {
     color: #111111;
     font-size: 1.7rem;
@@ -294,6 +328,7 @@
     line-height: 1;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .botoesModal */
 .botoesModal {
     display: flex;
     justify-content: center;
@@ -301,6 +336,7 @@
     margin-top: 18px;
 }
 
+/* Fim item 38 */
 .avisoSenha {
     color: #777777;
     font-size: 0.9rem;
@@ -323,6 +359,7 @@
     margin-bottom: 16px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .rodapePagina */
 .rodapePagina {
     grid-column: 1 / -1;
     grid-row: 2;
@@ -334,12 +371,15 @@
     margin-top: auto;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .colunaRodape */
 .colunaRodape {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
+/* Fim item 38 */
 .colunaRodape h4 {
     font-size: 1.05rem;
     font-weight: 700;
@@ -357,6 +397,7 @@
     text-decoration: underline;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .listaApps */
 .listaApps {
     list-style: none;
     display: flex;
@@ -364,6 +405,8 @@
     gap: 6px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .listaApps li */
 .listaApps li {
     font-size: 0.85rem;
     color: #e0e0e0;
@@ -372,6 +415,8 @@
     gap: 8px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 860px) */
 @media (max-width: 860px) {
     .painelAdmin {
         grid-template-columns: minmax(0, 1fr);
@@ -422,7 +467,8 @@
     }
 }
 
-                                                                                                                                                                    
+/* Fim item 38 */
+
 .painelAdmin {
     background: #f5f8f6;
 }
@@ -452,6 +498,7 @@
     color: #607468;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoPagina */
 .cabecalhoPagina {
     display: grid;
     gap: 7px;
@@ -462,6 +509,7 @@
     background: linear-gradient(115deg, #f0faf4 0%, #ffffff 78%);
 }
 
+/* Fim item 38 */
 .cabecalhoPagina h2 {
     color: #123c2a;
     font-size: clamp(1.75rem, 3vw, 2.3rem);
@@ -470,6 +518,7 @@
     letter-spacing: -0.035em;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoPagina p */
 .cabecalhoPagina p {
     max-width: 700px;
     color: #53675c;
@@ -477,6 +526,7 @@
     line-height: 1.55;
 }
 
+/* Fim item 38 */
 .etiquetaPagina {
     color: #087044;
     font-size: 0.72rem;
@@ -599,13 +649,15 @@
     font-weight: 650;
 }
 
-                                                                                                                          
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .modalFinanceiroAluno */
 .modalFinanceiroAluno {
     width: min(1020px, 100%);
     padding: clamp(18px, 3vw, 30px);
     background: #f8fbf9;
 }
 
+/* Fim item 38 */
 .cabecalhoPerfilAluno {
     padding: 20px 24px;
     border: 1px solid #dcebe2;
@@ -632,6 +684,7 @@
     overflow-wrap: anywhere;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .estadosPerfilAluno */
 .estadosPerfilAluno {
     display: flex;
     flex-wrap: wrap;
@@ -639,6 +692,7 @@
     margin: 17px 0;
 }
 
+/* Fim item 38 */
 .estadoRegular,
 .estadoAtencao {
     border-radius: 999px;
@@ -657,12 +711,15 @@
     color: #83510a;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .dadosContaAluno */
 .dadosContaAluno {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .dadosContaAluno div */
 .dadosContaAluno div {
     display: grid;
     gap: 5px;
@@ -673,6 +730,7 @@
     background: #fbfdfb;
 }
 
+/* Fim item 38 */
 .dadosContaAluno dt {
     color: #607468;
     font-size: 0.8rem;
@@ -685,6 +743,7 @@
     overflow-wrap: anywhere;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .metricasPerfilAluno */
 .metricasPerfilAluno {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -692,6 +751,8 @@
     margin-top: 18px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .metricasPerfilAluno article */
 .metricasPerfilAluno article {
     display: grid;
     align-content: space-between;
@@ -705,6 +766,8 @@
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .topoMetricaAluno */
 .topoMetricaAluno {
     display: flex;
     align-items: flex-start;
@@ -712,12 +775,15 @@
     gap: 7px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .topoMetricaAluno svg */
 .topoMetricaAluno svg {
     flex: 0 0 auto;
     color: #0a8750;
     font-size: 1.15rem;
 }
 
+/* Fim item 38 */
 .metricasPerfilAluno span,
 .linhaPerfilAluno small {
     color: #607468;
@@ -739,6 +805,7 @@
     background: #ffffff;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .secaoPerfilAluno h3 */
 .secaoPerfilAluno h3 {
     display: flex;
     align-items: center;
@@ -748,10 +815,12 @@
     font-size: 1.05rem;
 }
 
+/* Fim item 38 */
 .secaoPerfilAluno h3 svg {
     color: #0a8750;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .linhaPerfilAluno */
 .linhaPerfilAluno {
     display: flex;
     justify-content: space-between;
@@ -760,20 +829,24 @@
     border-bottom: 1px solid #e8efea;
 }
 
+/* Fim item 38 */
 .linhaPerfilAluno:last-child {
     border-bottom: 0;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .linhaPerfilAluno span */
 .linhaPerfilAluno span {
     display: grid;
     gap: 3px;
 }
 
+/* Fim item 38 */
 .linhaPerfilAluno strong {
     white-space: nowrap;
     color: #176343;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 900px) */
 @media (max-width: 900px) {
     .metricasPerfilAluno {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -784,6 +857,8 @@
     }
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 600px) */
 @media (max-width: 600px) {
     .modalFinanceiroAluno {
         padding: 16px;
@@ -809,10 +884,12 @@
     }
 }
 
+/* Fim item 38 */
 .rodapePagina {
     background: #075132;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 860px) */
 @media (max-width: 860px) {
     .areaConteudo {
         padding: 22px 18px 30px;

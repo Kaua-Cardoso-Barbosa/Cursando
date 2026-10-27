@@ -7,18 +7,17 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app import app
 from banco_37 import get_db
-from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
-from professor_6 import de_blob_texto, para_blob_texto
-from config_15_37 import FRONTEND_URL
-from utilitarios_backend_5_9_20_28_34 import _bloqueio_assinatura_aluno, _data_certificado, _pdf_certificado, exigir_tipo, proximo_id, resposta
+from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
+from professor_7 import de_blob_texto, para_blob_texto
+from config_2_3_15_37 import FRONTEND_URL
+from utilitarios_backend_5_9_12_15_20_24_28_34 import _bloqueio_assinatura_aluno, _data_certificado, _pdf_certificado, exigir_tipo, proximo_id, resposta
 
 
-# Sprint item 5 - Gerar certificado ao concluir o curso
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
 @app.route("/aluno/cursos/<int:id_curso>/certificado", methods=["GET"])
 @jwt_required()
 def certificado_aluno(id_curso):
     
+    # Sprint item 5 - Gerar certificado ao concluir o curso - Valida a conclusão e prepara a emissão do certificado
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -26,8 +25,10 @@ def certificado_aluno(id_curso):
     garantir_estrutura_banco()
     con = get_db()
     cursor = con.cursor()
+    # Fim item 5
 
     try:
+        # Sprint item 5 - Gerar certificado ao concluir o curso - Valida a conclusão e prepara a emissão do certificado
         bloqueio = _bloqueio_assinatura_aluno(cursor, int(get_jwt_identity()))
         if bloqueio:
             return bloqueio
@@ -62,8 +63,10 @@ def certificado_aluno(id_curso):
         
         if not total_aulas or aulas_concluidas != total_aulas:
             return resposta("Certificado liberado somente apos concluir todas as aulas do curso.", 403)
+        # Fim item 5
 
         
+        # Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Consulta os requisitos e os resultados da prova do curso
         cursor.execute(
             """
             SELECT FIRST 1 P.ID_PROVA, R.STATUS, R.FEEDBACK
@@ -86,7 +89,9 @@ def certificado_aluno(id_curso):
             feedback = de_blob_texto(prova[2])
             detalhe = f" Feedback: {feedback}" if feedback else ""
             return resposta(f"Certificado bloqueado: aluno reprovado na prova. Tente novamente apos 1 dia.{detalhe}", 403)
+        # Fim item 20
 
+        # Sprint item 5 - Gerar certificado ao concluir o curso - Prepara ou consulta os dados necessários ao certificado
         cursor.execute(
             """
             SELECT FIRST 1 CODIGO, CRIADO_EM
@@ -97,10 +102,12 @@ def certificado_aluno(id_curso):
             (id_curso, get_jwt_identity()),
         )
         certificado = cursor.fetchone()
+        # Fim item 5
         if not certificado:
             
             
             
+            # Sprint item 5 - Gerar certificado ao concluir o curso - Valida a conclusão e prepara a emissão do certificado
             codigo = f"CURSANDO-{secrets.token_hex(6).upper()}"
             cursor.execute(
                 """
@@ -121,7 +128,9 @@ def certificado_aluno(id_curso):
                 (id_curso, get_jwt_identity()),
             )
             certificado = cursor.fetchone()
+            # Fim item 5
 
+        # Sprint item 5 - Gerar certificado ao concluir o curso - Prepara ou consulta os dados necessários ao certificado
         codigo = certificado[0]
         emitido_em = certificado[1] or datetime.now()
         cursor.execute(
@@ -137,6 +146,7 @@ def certificado_aluno(id_curso):
         professor = (cursor.fetchone() or ("Instrutor(a) do curso",))[0]
         concluido_em = concluido_em or emitido_em
         url_verificacao = f"{FRONTEND_URL}/certificados/{codigo}/verificar"
+        # Fim item 5
 
         
         pdf = _pdf_certificado({
@@ -144,11 +154,14 @@ def certificado_aluno(id_curso):
             "curso": row[1],
             "professor": professor,
             "aulas_concluidas": total_aulas,
+            # Sprint item 5 - Gerar certificado ao concluir o curso - Prepara ou consulta os dados necessários ao certificado
             "data_conclusao": _data_certificado(concluido_em),
             "data_emissao": _data_certificado(emitido_em),
+            # Fim item 5
             "codigo": codigo,
             "url_verificacao": url_verificacao,
         })
+        # Sprint item 5 - Gerar certificado ao concluir o curso - Prepara ou consulta os dados necessários ao certificado
         return Response(
             pdf,
             mimetype="application/pdf",
@@ -157,18 +170,19 @@ def certificado_aluno(id_curso):
                 "Cache-Control": "private, no-store",
             },
         )
+        # Fim item 5
     except Exception as erro:
+        # Sprint item 5 - Gerar certificado ao concluir o curso - Valida a conclusão e prepara a emissão do certificado
         con.rollback()
         return resposta(f"Erro ao gerar certificado: {erro}", 500)
+        # Fim item 5
     finally:
         cursor.close()
         con.close()
-# Fim item 20
-# Fim item 5
 
 
 
-# Sprint item 5 - Gerar certificado ao concluir o curso
+# Sprint item 5 - Gerar certificado ao concluir o curso - Consulta a autenticidade do certificado pelo código público
 @app.route("/certificados/<string:codigo>/verificar", methods=["GET"])
 def verificar_certificado(codigo):
     

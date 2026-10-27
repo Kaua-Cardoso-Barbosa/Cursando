@@ -1,12 +1,12 @@
 import React from 'react';
-import CartaoPlano from '../CartaoPlano/CartaoPlano_34';
+import CartaoPlano from "../CartaoPlano/CartaoPlano";
 import css from '../../pages/Home/Home_38.module.css';
 
 const SecaoPlanos = () => {
     const beneficiosMensal = [
         'Acesso a dezenas de cursos.',
         'Certificados de conclusão (se houver).'
-    ];
+    ] ;
 
     return (
         <section className={css['secao-planos']}>

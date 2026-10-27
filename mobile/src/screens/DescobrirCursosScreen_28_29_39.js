@@ -1,27 +1,27 @@
 import { useEffect, useState } from "react";
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { apiRequest, resolverUrlMidia } from "../api/client_2_3_5_17_39";
+import { apiRequest, resolverUrlMidia } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
 const fallbackImage = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900";
 
-export default /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação */
-/* Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function DescobrirCursosScreen({ token, carregando, onOpen }) {
   const { mostrarAlerta } = useFeedback();
   const [cursos, setCursos] = useState([]);
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState("recentes");
   const [apenasNovos, setApenasNovos] = useState(false);
-                                                                                                                                                             
+
   const [categorias, setCategorias] = useState([]);
   const [temas, setTemas] = useState([]);
   const [categoria, setCategoria] = useState("");
   const [tema, setTema] = useState("");
+  /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
   const [avaliacaoMinima, setAvaliacaoMinima] = useState("");
+  /* Fim item 28 */
   const [loading, setLoading] = useState(false);
 
   async function carregar(termo = busca) {
@@ -30,11 +30,15 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
       const params = new URLSearchParams();
       if (termo.trim()) params.set("busca", termo.trim());
       params.set("ordem", ordem);
+      /* Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno - Apresenta a ordenação de cursos recomendados pela API */
       if (ordem === "recomendados") params.set("recomendados", "1");
+      /* Fim item 29 */
       if (apenasNovos) params.set("apenas_novos", "1");
       if (categoria) params.set("categoria", categoria);
       if (tema) params.set("tema", tema);
+      /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
       if (avaliacaoMinima) params.set("avaliacao_min", avaliacaoMinima);
+      /* Fim item 28 */
       const dados = await apiRequest(`/aluno/descobrir?${params.toString()}`, {}, token);
       setCursos(Array.isArray(dados) ? dados : []);
     } catch (error) {
@@ -45,11 +49,14 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
     }
   }
 
+  /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
   useEffect(() => {
     carregar();
   }, [ordem, apenasNovos, categoria, tema, avaliacaoMinima, token]);
+  /* Fim item 28 */
 
-                                                                                                                                                          
+
+  /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
   useEffect(() => {
     let ativo = true;
     Promise.all([
@@ -62,6 +69,7 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
     }).catch((error) => mostrarAlerta("Erro", error.message, "erro"));
     return () => { ativo = false; };
   }, [token]);
+  /* Fim item 28 */
 
   return (
     <ScrollView
@@ -89,6 +97,7 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
           />
         </View>
         <Text style={styles.filterLabel}>Ordenar por</Text>
+        {/* Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno - Apresenta a ordenação de cursos recomendados pela API */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           <Pressable style={[styles.filterButton, ordem === "recentes" && styles.filterActive]} onPress={() => setOrdem("recentes")}>
             <Text style={[styles.filterText, ordem === "recentes" && styles.filterTextActive]}>Recentes</Text>
@@ -100,6 +109,7 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
             <Text style={[styles.filterText, ordem === "recomendados" && styles.filterTextActive]}>Recomendados</Text>
           </Pressable>
         </ScrollView>
+        {/* Fim item 29 */}
         <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: apenasNovos }} style={[styles.filterButton, styles.newFilter, apenasNovos && styles.filterActive]} onPress={() => setApenasNovos(!apenasNovos)}><Text style={[styles.filterText, apenasNovos && styles.filterTextActive]}>{apenasNovos ? "✓ " : "□ "}Somente não inscritos</Text></Pressable>
                                                                                                                                                               
         <Text style={styles.filterLabel}>Categoria</Text>
@@ -121,11 +131,13 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
           </Pressable>)}
         </ScrollView>
         <Text style={styles.filterLabel}>Avaliação mínima</Text>
+        {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           {["", "1", "2", "3", "4", "5"].map((nota) => <Pressable key={nota || "todas"} style={[styles.filterButton, avaliacaoMinima === nota && styles.filterActive]} onPress={() => setAvaliacaoMinima(nota)}>
             <Text style={[styles.filterText, avaliacaoMinima === nota && styles.filterTextActive]}>{nota ? `${nota} ★` : "Todas"}</Text>
           </Pressable>)}
         </ScrollView>
+        {/* Fim item 28 */}
       </View>
 
       <View style={styles.list}>
@@ -142,15 +154,13 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
             </Pressable>
           );
         })}
-        {!loading && cursos.length === 0 ? <Text style={globalStyles.message}>{ordem === "recomendados" ? "Ainda não há cursos relacionados às suas inscrições. Escolha outra ordenação." : "Nenhum curso público encontrado."}</Text> : null}
+        {!loading && cursos.length === 0 ? /* Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno - Apresenta a ordenação de cursos recomendados pela API */ <Text style={globalStyles.message}>{ordem === "recomendados" ? "Ainda não há cursos relacionados às suas inscrições. Escolha outra ordenação." : "Nenhum curso público encontrado."}</Text> /* Fim item 29 */ : null}
       </View>
     </ScrollView>
   );
 }
-/* Fim item 39 */
-/* Fim item 29 */
-/* Fim item 28 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   header: { marginBottom: 18 },
   filters: { gap: 10, marginBottom: 18, padding: 14, backgroundColor: colors.softGray, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
@@ -190,3 +200,4 @@ const styles = StyleSheet.create({
   description: { color: colors.textMuted, fontSize: 14, lineHeight: 19 },
   meta: { color: colors.darkGreen, fontSize: 13, fontWeight: "700", marginTop: 4 }
 });
+/* Fim item 39 */

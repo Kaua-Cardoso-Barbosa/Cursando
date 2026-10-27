@@ -10,13 +10,12 @@ import {
   Text,
   View
 } from "react-native";
-import { apiRequest } from "../api/client_2_3_5_17_39";
+import { apiRequest } from "../api/client_3_17";
 import BrandLogo from "../components/BrandLogo_39";
 import Field from "../components/Field_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
-export default /* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function CadastroScreen({ onBack, onRegistered }) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -27,7 +26,7 @@ function CadastroScreen({ onBack, onRegistered }) {
   const [sucesso, setSucesso] = useState("");
   const [carregando, setCarregando] = useState(false);
 
-  /* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
+/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Valida o formulário e envia o cadastro de aluno */
 async function cadastrar() {
     if (carregando) return;
 
@@ -70,7 +69,7 @@ async function cadastrar() {
     setCarregando(true);
 
     try {
-                                                                                                                                         
+
       const dadosCadastro = await apiRequest("/cadastrar", {
         method: "POST",
         body: JSON.stringify({
@@ -101,6 +100,7 @@ async function cadastrar() {
           <BrandLogo />
           <Text style={styles.title}>Cadastro</Text>
 
+          {/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Valida e envia os dados para o cadastro e a confirmação do e-mail */}
           <View style={styles.card}>
             <Field
               label="Nome:"
@@ -151,14 +151,14 @@ async function cadastrar() {
               <Text style={styles.backText}>Ja tenho cadastro</Text>
             </Pressable>
           </View>
+          {/* Fim item 1 */}
         </ScrollView>
       </KeyboardAvoidingView>
     </ImageBackground>
   );
 }
-/* Fim item 39 */
-/* Fim item 1 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   bg: {
     flex: 1,
@@ -213,11 +213,11 @@ const styles = StyleSheet.create({
     opacity: 0.72
   }
 });
+/* Fim item 39 */
 
 const nomesInvalidos = new Set(["teste", "test", "nome", "asdf", "abc"]);
 
-/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Valida o nome informado no cadastro */
 function validarNome(valor) {
   const nomeNormalizado = (valor || "").trim().normalize("NFC");
   const partes = nomeNormalizado.split(/\s+/);
@@ -238,27 +238,21 @@ function validarNome(valor) {
     && padraoNome.test(nomeNormalizado)
     && new Set(letras.map((letra) => letra.toLocaleLowerCase())).size > 1;
 }
-/* Fim item 39 */
 /* Fim item 1 */
 
-/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Valida o formato do e-mail informado no cadastro */
 function validarEmail(valor) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor || "");
 }
-/* Fim item 39 */
 /* Fim item 1 */
 
-/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Confere os requisitos da senha do cadastro */
 function validarSenha(valor) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(valor || "");
 }
-/* Fim item 39 */
 /* Fim item 1 */
 
-/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Confere os dígitos verificadores do CPF informado */
 function validarCpf(valor) {
   if (!/^\d{11}$/.test(valor) || /^([0-9])\1+$/.test(valor)) return false;
   const calcularDigito = (base, pesos) => {
@@ -269,5 +263,4 @@ function validarCpf(valor) {
   const segundo = calcularDigito(`${valor.slice(0, 9)}${primeiro}`, [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
   return valor.endsWith(`${primeiro}${segundo}`);
 }
-/* Fim item 39 */
 /* Fim item 1 */

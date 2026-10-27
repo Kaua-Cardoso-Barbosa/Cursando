@@ -1,33 +1,56 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .area */
 .area { display: grid; gap: 22px; }
-.cabecalho { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 20px 22px; border: 1px solid #cde2d3; border-radius: 18px; background: linear-gradient(115deg, #e7f5eb, #f8fcf9); }
-.cabecalho > strong { white-space: nowrap; padding: 9px 12px; border-radius: 999px; background: #fff; color: #087044; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalho */
+
+/* Fim item 38 */.cabecalho { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 20px 22px; border: 1px solid #cde2d3; border-radius: 18px; background: linear-gradient(115deg, #e7f5eb, #f8fcf9); }
+
+/* Fim item 38 */.cabecalho > strong { white-space: nowrap; padding: 9px 12px; border-radius: 999px; background: #fff; color: #087044; }
 .etiqueta { display: block; margin-bottom: 6px; color: #087044; font-size: .75rem; font-weight: 800; letter-spacing: .1em; }
 .introFormulario { grid-column: 1 / -1; }
 .introFormulario h3, .lista h3 { margin: 0 0 5px; color: #173e2c; }
 .introFormulario p { margin: 0; color: #607268; }
 .area header h2 { margin: 0 0 5px; color: #173e2c; }
 .area header p { margin: 0; color: #607268; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formulario */
 .formulario { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 18px; border: 1px solid #dfe9e3; border-radius: 15px; background: #fff; }
-.formulario label { display: grid; gap: 6px; color: #173e2c; font-weight: 700; }
-.formulario input, .formulario select, .formulario textarea { width: 100%; min-height: 42px; border: 1px solid #cbd9d0; border-radius: 8px; padding: 9px 11px; color: #18241d; font: inherit; }
-.formulario input[type="file"] { cursor: pointer; background: #f9fbfa; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formulario label */
+
+/* Fim item 38 */.formulario label { display: grid; gap: 6px; color: #173e2c; font-weight: 700; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formulario input, .formulario select, .formulario textarea */
+
+/* Fim item 38 */.formulario input, .formulario select, .formulario textarea { width: 100%; min-height: 42px; border: 1px solid #cbd9d0; border-radius: 8px; padding: 9px 11px; color: #18241d; font: inherit; }
+
+/* Fim item 38 */.formulario input[type="file"] { cursor: pointer; background: #f9fbfa; }
 .formulario input[type="file"]::file-selector-button { margin-right: 12px; border: 0; border-radius: 7px; padding: 9px 13px; background: #087044; color: #ffffff; font: inherit; font-weight: 700; cursor: pointer; transition: background .2s ease; }
 .formulario input[type="file"]:hover::file-selector-button { background: #065b38; }
 .formulario textarea { min-height: 76px; resize: vertical; }
 .formulario label:nth-of-type(3), .formulario label:nth-of-type(4), .formulario label:nth-of-type(5), .selecionado { grid-column: 1 / -1; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formulario button */
 .formulario button { grid-column: 1 / -1; justify-self: start; display: inline-flex; gap: 8px; align-items: center; border: 0; border-radius: 9px; padding: 11px 16px; background: #087044; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
-.formulario button:disabled { opacity: .6; cursor: wait; }
+
+/* Fim item 38 */.formulario button:disabled { opacity: .6; cursor: wait; }
 .selecionado { margin: -8px 0 0; color: #087044; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .lista */
 .lista { display: grid; gap: 10px; }
-.item { display: flex; align-items: flex-start; gap: 15px; padding: 18px; border: 1px solid #d7e7db; border-radius: 16px; background: #fff; box-shadow: 0 8px 20px #153b2010; }
-.icone { display: grid; place-items: center; width: 42px; height: 42px; flex: none; border-radius: 11px; background: #e5f4e9; color: #087044; font-size: 1.2rem; }
-.detalhe .tipo { color: #087044; text-transform: uppercase; font-size: .74rem; font-weight: 800; letter-spacing: .06em; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .item */
+
+/* Fim item 38 */.item { display: flex; align-items: flex-start; gap: 15px; padding: 18px; border: 1px solid #d7e7db; border-radius: 16px; background: #fff; box-shadow: 0 8px 20px #153b2010; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .icone */
+
+/* Fim item 38 */.icone { display: grid; place-items: center; width: 42px; height: 42px; flex: none; border-radius: 11px; background: #e5f4e9; color: #087044; font-size: 1.2rem; }
+
+/* Fim item 38 */.detalhe .tipo { color: #087044; text-transform: uppercase; font-size: .74rem; font-weight: 800; letter-spacing: .06em; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .detalhe */
 .detalhe { display: grid; gap: 5px; min-width: 0; flex: 1; color: #173e2c; }
-.detalhe span { color: #607268; font-size: .9rem; }
+
+/* Fim item 38 */.detalhe span { color: #607268; font-size: .9rem; }
 .detalhe p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .detalhe a */
 .detalhe a { display: inline-flex; align-items: center; gap: 7px; color: #087044; font-weight: 700; width: fit-content; }
-.excluir { border: 0; background: transparent; color: #b32323; cursor: pointer; padding: 7px; }
+
+/* Fim item 38 */.excluir { border: 0; background: transparent; color: #b32323; cursor: pointer; padding: 7px; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 650px) */
 @media (max-width: 650px) { .cabecalho { align-items: start; flex-direction: column; } .formulario { grid-template-columns: 1fr; padding: 14px; } .formulario label, .formulario label:nth-of-type(3), .formulario label:nth-of-type(4), .formulario label:nth-of-type(5) { grid-column: 1; } }
 
 /* Fim item 38 */

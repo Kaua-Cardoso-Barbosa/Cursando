@@ -8,7 +8,7 @@ class ArkheError(Exception):
     pass
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
+# Sprint item 2 - Integrar pagamentos pelo ARKHE - Prepara e valida a comunicação com a API de pagamentos
 def _config(nome):
     valor = current_app.config.get(nome)
 
@@ -16,36 +16,28 @@ def _config(nome):
         raise ArkheError(f"Configuracao {nome} da Arkhe nao definida")
 
     return str(valor).strip()
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def _headers():
     
     return {
         "X-Client-ID": _config("ARKHE_CLIENT_ID"),
         "X-Client-Secret": _config("ARKHE_CLIENT_SECRET"),
     }
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def _url(caminho):
     return f'{_config("ARKHE_BASE_URL").rstrip("/")}{caminho}'
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def _requisitar_arkhe(metodo, caminho, **opcoes):
     
     try:
         return requests.request(metodo, _url(caminho), timeout=10, **opcoes)
     except requests.RequestException as erro:
         raise ArkheError("Não foi possível comunicar com a Arkhé.") from erro
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def _json_resposta(resposta):
     try:
         return resposta.json()
@@ -53,10 +45,8 @@ def _json_resposta(resposta):
         raise ArkheError(
             f"Resposta inválida da Arkhé (HTTP {resposta.status_code})."
         ) from erro
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def _mensagem_erro(dados, padrao):
     if isinstance(dados, dict):
         mensagem = (
@@ -73,10 +63,8 @@ def _mensagem_erro(dados, padrao):
             return str(mensagem)
 
     return padrao
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def _primeiro_valor(dados, *chaves):
     if not isinstance(dados, dict):
         return None
@@ -86,10 +74,8 @@ def _primeiro_valor(dados, *chaves):
             return dados.get(chave)
 
     return None
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def _normalizar_cobranca(dados, exigir_codigo_pix=True):
     
     
@@ -142,10 +128,8 @@ def _normalizar_cobranca(dados, exigir_codigo_pix=True):
         "status": status,
         "tipo_cobranca": tipo_cobranca or "pix",
     }
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def criar_cobranca_pix(valor):
     
     
@@ -177,10 +161,8 @@ def criar_cobranca_pix(valor):
         raise ArkheError(_mensagem_erro(dados, "Erro ao criar cobranca Pix"))
 
     return _normalizar_cobranca(dados)
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=True):
     
     
@@ -197,10 +179,8 @@ def consultar_cobranca_pix(id_cobranca, exigir_codigo_pix=True):
 
     
     return _normalizar_cobranca(dados, exigir_codigo_pix=exigir_codigo_pix)
-# Fim item 2
 
 
-# Sprint item 2 - Integrar pagamentos pelo ARKHE
 def consultar_conta():
     resposta = _requisitar_arkhe(
         "GET",

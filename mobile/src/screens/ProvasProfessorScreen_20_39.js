@@ -1,29 +1,35 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { apiRequest } from "../api/client_2_3_5_17_39";
+import { apiRequest } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
+/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os campos de uma nova questão da prova */
 const questaoVazia = () => ({ enunciado: "", tipo: "objetiva", alternativas: "", resposta_esperada: "" });
+/* Fim item 20 */
 
-                                                                                                                                                             
-                                                                               
-                                                                      
-export default /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+
+
+
+export default
 function ProvasProfessorScreen({ curso, cursos = [], token, onBack }) {
   const { mostrarAlerta, confirmar } = useFeedback();
   const [idCurso, setIdCurso] = useState(String(curso?.id || cursos[0]?.id || ""));
   const cursoAtual = cursos.find((item) => String(item.id) === idCurso) || curso;
+  /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os dados e o estado da avaliação */
   const [prova, setProva] = useState(null);
+  /* Fim item 20 */
   const [titulo, setTitulo] = useState("");
+  /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os dados e o estado da avaliação */
   const [questoes, setQuestoes] = useState([questaoVazia()]);
   const [respostas, setRespostas] = useState([]);
   const [feedbacks, setFeedbacks] = useState({});
+  /* Fim item 20 */
   const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
+  /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
   const carregar = useCallback(async () => {
     if (!idCurso) return;
     setCarregando(true);
@@ -46,13 +52,17 @@ function ProvasProfessorScreen({ curso, cursos = [], token, onBack }) {
       setCarregando(false);
     }
   }, [idCurso, mostrarAlerta, token]);
+  /* Fim item 20 */
 
   useEffect(() => { carregar(); }, [carregar]);
 
+  /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Atualiza os campos da questão em edição */
   function alterarQuestao(index, campo, valor) {
     setQuestoes((atuais) => atuais.map((item, i) => i === index ? { ...item, [campo]: valor } : item));
   }
+  /* Fim item 20 */
 
+  /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Valida e grava as questões e os critérios da prova */
   async function salvarProva() {
     if (questoes.some((item) => item.tipo === "objetiva" && (() => {
       const opcoes = item.alternativas.split("\n").map((opcao) => opcao.trim()).filter(Boolean);
@@ -78,7 +88,9 @@ function ProvasProfessorScreen({ curso, cursos = [], token, onBack }) {
       setSalvando(false);
     }
   }
+  /* Fim item 20 */
 
+  /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Publica a prova cadastrada para os alunos do curso */
   async function publicarProva() {
     if (!prova?.id) return;
     try {
@@ -89,7 +101,9 @@ function ProvasProfessorScreen({ curso, cursos = [], token, onBack }) {
       mostrarAlerta("Provas", error.message, "erro");
     }
   }
+  /* Fim item 20 */
 
+  /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Confirma e solicita a exclusão da prova e suas respostas */
   async function excluirProva() {
     const confirmado = await confirmar({
       titulo: "Excluir prova",
@@ -106,7 +120,9 @@ function ProvasProfessorScreen({ curso, cursos = [], token, onBack }) {
       mostrarAlerta("Provas", error.message, "erro");
     }
   }
+  /* Fim item 20 */
 
+  /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Envia a nota e o feedback da questão dissertativa */
   async function corrigirQuestao(item, questao, correta) {
     try {
       const dados = await apiRequest(`/professor/provas/respostas/${item.id}/questoes/${questao.id}`, {
@@ -118,45 +134,66 @@ function ProvasProfessorScreen({ curso, cursos = [], token, onBack }) {
       mostrarAlerta("Provas", error.message, "erro");
     }
   }
+  /* Fim item 20 */
 
   return (
     <ScrollView contentContainerStyle={globalStyles.page}>
       <Pressable style={styles.back} onPress={onBack}><AppIcon name="arrow-back" size={18} color={colors.darkGreen} /><Text style={styles.backText}>Voltar aos cursos</Text></Pressable>
       <Text style={globalStyles.title}>Provas dos cursos</Text>
+      {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
       <Text style={globalStyles.eyebrow}>Objetivas corrigidas automaticamente · dissertativas corrigidas por questão · aprovação com {prova?.nota_minima ?? 70} pontos.</Text>
+      {/* Fim item 20 */}
+      {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
       <View style={globalStyles.divider} />
+      {/* Fim item 20 */}
+      {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
       <View style={styles.coursePicker}>
         <Text style={styles.label}>Curso</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.courseOptions}>
           {cursos.map((item) => <Pressable key={item.id} onPress={() => setIdCurso(String(item.id))} style={[styles.courseOption, String(item.id) === idCurso && styles.selectedCourse]}><Text style={[styles.courseOptionText, String(item.id) === idCurso && styles.selectedCourseText]}>{item.titulo}</Text></Pressable>)}
         </ScrollView>
       </View>
+      {/* Fim item 20 */}
       {!cursoAtual ? <Text style={globalStyles.message}>Nenhum curso disponível.</Text> : <>
         {carregando ? <ActivityIndicator color={colors.green} /> : null}
         <View style={[globalStyles.card, styles.card]}>
+          {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
           <Text style={styles.sectionTitle}>{prova?.publicada ? "Editar prova publicada" : "Cadastro da prova"}</Text>
+          {/* Fim item 20 */}
           {prova?.publicada ? <Text style={styles.courseLabel}>Salvar mudanças remove as respostas da versão anterior.</Text> : null}
           <Text style={styles.label}>Título</Text>
           <TextInput value={titulo} onChangeText={setTitulo} style={globalStyles.input} />
           {questoes.map((questao, index) => <View style={styles.question} key={questao.id || index}>
             <Text style={styles.questionTitle}>Questão {index + 1}</Text>
+            {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
             <TextInput value={questao.enunciado} onChangeText={(value) => alterarQuestao(index, "enunciado", value)} placeholder="Enunciado" multiline style={[globalStyles.input, styles.multiline]} />
+            {/* Fim item 20 */}
+            {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
             <View style={styles.types}>
               {[["objetiva", "Objetiva"], ["dissertativa", "Dissertativa"]].map(([value, label]) => <Pressable key={value} onPress={() => alterarQuestao(index, "tipo", value)} style={[styles.type, questao.tipo === value && styles.typeActive]}><Text style={questao.tipo === value && styles.typeActiveText}>{label}</Text></Pressable>)}
             </View>
+            {/* Fim item 20 */}
             {questao.tipo === "objetiva" ? <>
               <TextInput value={questao.alternativas} onChangeText={(value) => {
+                /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
                 alterarQuestao(index, "alternativas", value);
+                /* Fim item 20 */
+                /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
                 if (!value.split("\n").map((opcao) => opcao.trim()).includes(questao.resposta_esperada)) alterarQuestao(index, "resposta_esperada", "");
+                /* Fim item 20 */
               }} placeholder="Alternativas, uma por linha" multiline style={[globalStyles.input, styles.multiline]} />
               <Text style={styles.label}>Toque na alternativa correta</Text>
-              {questao.alternativas.split("\n").map((opcao) => opcao.trim()).filter(Boolean).map((opcao, opcaoIndice) => <Pressable key={`${opcaoIndice}-${opcao}`} onPress={() => alterarQuestao(index, "resposta_esperada", opcao)} style={[styles.correctOption, questao.resposta_esperada === opcao && styles.correctOptionSelected]}><Text style={questao.resposta_esperada === opcao && styles.selectedCourseText}>{questao.resposta_esperada === opcao ? "✓ " : "○ "}{opcao}</Text></Pressable>)}
+              {questao.alternativas.split("\n").map((opcao) => opcao.trim()).filter(Boolean).map((opcao, opcaoIndice) => /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <Pressable key={`${opcaoIndice}-${opcao}`} onPress={() => alterarQuestao(index, "resposta_esperada", opcao)} style={[styles.correctOption, questao.resposta_esperada === opcao && styles.correctOptionSelected]}><Text style={questao.resposta_esperada === opcao && styles.selectedCourseText}>{questao.resposta_esperada === opcao ? "✓ " : "○ "}{opcao}</Text></Pressable> /* Fim item 20 */)}
             </> : null}
             {questoes.length > 1 ? <Pressable onPress={() => setQuestoes((atual) => atual.filter((_, i) => i !== index))}><Text style={styles.remove}>Remover questão</Text></Pressable> : null}
           </View>)}
           <>
+            {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
             <Pressable style={globalStyles.secondaryButton} onPress={() => setQuestoes((atual) => [...atual, questaoVazia()])}><Text style={globalStyles.secondaryText}>Adicionar questão</Text></Pressable>
+            {/* Fim item 20 */}
+            {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
             <Pressable style={globalStyles.primaryButton} onPress={salvarProva} disabled={salvando}><Text style={globalStyles.buttonText}>{salvando ? "Salvando..." : prova?.publicada ? "Salvar alterações" : "Salvar rascunho"}</Text></Pressable>
+            {/* Fim item 20 */}
             {prova && !prova.publicada ? <Pressable style={globalStyles.primaryButton} onPress={publicarProva}><Text style={globalStyles.buttonText}>Publicar prova</Text></Pressable> : null}
             {prova ? <Pressable style={styles.deleteButton} onPress={excluirProva}><Text style={globalStyles.buttonText}>Excluir prova</Text></Pressable> : null}
           </>
@@ -165,34 +202,41 @@ function ProvasProfessorScreen({ curso, cursos = [], token, onBack }) {
           <Text style={styles.sectionTitle}>Respostas aguardando correção</Text>
           {respostas.filter((item) => item.status === 0).length === 0 ? <Text style={globalStyles.message}>Nenhuma resposta pendente neste curso.</Text> : null}
           {respostas.filter((item) => item.status === 0).map((item) => {
+            /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os dados e o estado da avaliação */
             const respostasAluno = item.respostas && typeof item.respostas === "object" ? item.respostas : {};
+            /* Fim item 20 */
             return <View style={styles.submission} key={item.id}>
               <Text style={styles.questionTitle}>{item.aluno}</Text><Text style={styles.courseLabel}>{item.curso} · {item.criado_em ? new Date(item.criado_em).toLocaleString("pt-BR") : ""}</Text>
               {Object.entries(respostasAluno).map(([idQuestao, valor], index) => {
+                /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
                 const pergunta = item.questoes?.find((questao) => String(questao.id) === idQuestao);
                 const corrigida = item.correcoes_dissertativas?.[idQuestao];
-                return <View key={idQuestao} style={styles.answerBlock}><Text style={styles.answer}>{pergunta?.enunciado || `Questão ${index + 1}`}: {String(valor)}</Text>
+                /* Fim item 20 */
+                return /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <View key={idQuestao} style={styles.answerBlock}><Text style={styles.answer}>{pergunta?.enunciado || `Questão ${index + 1}`}: {String(valor)}</Text>
                   {pergunta?.tipo === "objetiva" ? <Text style={styles.courseLabel}>{String(valor) === pergunta.resposta_esperada ? "Resposta correta" : `Incorreta · Correta: ${pergunta.resposta_esperada}`}</Text> : null}
                   {pergunta?.tipo === "dissertativa" ? <><Text style={styles.courseLabel}>{corrigida === undefined ? "Aguardando correção" : corrigida ? "Correta" : "Incorreta"}</Text><View style={styles.actions}><Pressable style={styles.approve} onPress={() => corrigirQuestao(item, pergunta, true)}><Text style={styles.actionText}>Correta</Text></Pressable><Pressable style={styles.reject} onPress={() => corrigirQuestao(item, pergunta, false)}><Text style={styles.actionText}>Incorreta</Text></Pressable></View></> : null}
-                </View>;
+                </View> /* Fim item 20 */;
               })}
+              {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
               <Text style={styles.courseLabel}>{item.nota ?? 0} pontos · {item.acertos ?? 0} de {item.total_questoes || item.questoes?.length || 0} acertos até agora</Text>
+              {/* Fim item 20 */}
               <TextInput value={feedbacks[item.id] || ""} onChangeText={(value) => setFeedbacks((atual) => ({ ...atual, [item.id]: value }))} placeholder="Feedback (opcional)" multiline style={[globalStyles.input, styles.multiline]} />
             </View>;
           })}
         </View>
+        {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
         <View style={[globalStyles.card, styles.card]}>
           <Text style={styles.sectionTitle}>Resultados corrigidos</Text>
           {respostas.filter((item) => item.status !== 0).length === 0 ? <Text style={globalStyles.message}>Nenhuma prova corrigida neste curso.</Text> : null}
           {respostas.filter((item) => item.status !== 0).map((item) => <View key={item.id} style={styles.submission}><Text style={styles.questionTitle}>{item.aluno}</Text><Text style={styles.courseLabel}>{item.prova} · {item.status === 1 ? "Aprovado" : "Reprovado"}</Text><Text style={styles.answer}>{item.nota ?? 0} pontos · {item.acertos ?? 0} de {item.total_questoes || item.questoes?.length || 0} acertos</Text></View>)}
         </View>
+        {/* Fim item 20 */}
       </>}
     </ScrollView>
   );
 }
-/* Fim item 39 */
-/* Fim item 20 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   back: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 }, backText: { color: colors.darkGreen, fontWeight: "700" },
   coursePicker: { marginVertical: 14, gap: 8 }, label: { color: colors.darkGreen, fontWeight: "700" }, courseOptions: { gap: 8 },
@@ -207,3 +251,4 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: 10 }, approve: { flex: 1, alignItems: "center", padding: 12, backgroundColor: colors.darkGreen, borderRadius: 8 }, reject: { flex: 1, alignItems: "center", padding: 12, backgroundColor: colors.red, borderRadius: 8 }, actionText: { color: colors.white, fontWeight: "800" },
   deleteButton: { alignItems: "center", padding: 12, backgroundColor: colors.red, borderRadius: 8 }
 });
+/* Fim item 39 */

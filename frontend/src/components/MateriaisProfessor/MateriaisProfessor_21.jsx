@@ -4,10 +4,10 @@ import css from "./MateriaisProfessor_38.module.css";
 
 const tipos = ["link", "pdf", "livro", "apostila", "codigo", "arquivo", "outro"];
 
-                                                                                                                                                                   
-                                                                      
-                                                                         
-export default /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos */
+
+
+
+export default
 function MateriaisProfessor({ api, idCurso, avisar }) {
     const [materiais, setMateriais] = useState([]);
     const [titulo, setTitulo] = useState("");
@@ -24,6 +24,7 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
         return data;
     }, []);
 
+    /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */
     const carregar = useCallback(async () => {
         if (!idCurso) return;
         setCarregando(true);
@@ -36,9 +37,11 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
             setCarregando(false);
         }
     }, [api, avisar, idCurso, ler]);
+    /* Fim item 21 */
 
     useEffect(() => { carregar(); }, [carregar]);
 
+    /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Valida os dados e publica o material complementar do curso */
     async function cadastrar(event) {
         event.preventDefault();
         const formElement = event.currentTarget;
@@ -61,10 +64,13 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
             setSalvando(false);
         }
     }
+    /* Fim item 21 */
 
     async function excluir(item) {
         try {
+            /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */
             await fetch(`${api}/professor/cursos/${idCurso}/materiais/${item.id}`, { method: "DELETE", credentials: "include" }).then(ler);
+            /* Fim item 21 */
             await carregar();
         } catch (error) {
             avisar?.({ tipo: "erro", descricao: error.message });
@@ -73,7 +79,10 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
 
     return (
         <div className={css.area}>
-            <header className={css.cabecalho}><div><span className={css.etiqueta}>MATERIAIS DE APOIO</span><h2>Complementos do curso</h2><p>Reúna leituras, arquivos e links que ajudam os alunos a praticar o conteúdo.</p></div><strong>{materiais.length} {materiais.length === 1 ? "material" : "materiais"}</strong></header>
+            <header className={css.cabecalho}>{/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */}
+            <div><span className={css.etiqueta}>MATERIAIS DE APOIO</span><h2>Complementos do curso</h2><p>Reúna leituras, arquivos e links que ajudam os alunos a praticar o conteúdo.</p></div>
+            {/* Fim item 21 */}<strong>{materiais.length} {materiais.length === 1 ? "material" : "materiais"}</strong></header>
+            {/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */}
             <form className={css.formulario} onSubmit={cadastrar}>
                 <div className={css.introFormulario}><h3>Adicionar material</h3><p>Escolha um arquivo ou informe um link. O aluno encontrará o material na aba Complementos do curso.</p></div>
                 <label>Título<input value={titulo} onChange={(event) => setTitulo(event.target.value)} required maxLength={150} /></label>
@@ -84,6 +93,8 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
                 {arquivo && <p className={css.selecionado}>Arquivo selecionado: {arquivo.name}</p>}
                 <button type="submit" disabled={salvando}><FaPlus /> {salvando ? "Salvando..." : "Adicionar complemento"}</button>
             </form>
+            {/* Fim item 21 */}
+            {/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */}
             <div className={css.lista}>
                 <h3>Materiais publicados</h3>
                 {carregando && <p>Carregando complementos...</p>}
@@ -93,7 +104,7 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
                     <button type="button" className={css.excluir} onClick={() => excluir(item)} aria-label={`Remover ${item.titulo}`}><FaTrash /></button>
                 </article>)}
             </div>
+            {/* Fim item 21 */}
         </div>
     );
 }
-/* Fim item 21 */

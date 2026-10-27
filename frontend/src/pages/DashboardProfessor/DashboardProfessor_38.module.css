@@ -1,4 +1,4 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
 :global(*) {
     margin: 0;
     padding: 0;
@@ -6,6 +6,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .painelProfessor */
 .painelProfessor {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
@@ -15,6 +16,8 @@
     color: #101010;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .conteudoPrincipal */
 .conteudoPrincipal {
     grid-column: 2;
     grid-row: 1;
@@ -23,12 +26,16 @@
     min-width: 0;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .areaConteudo */
 .areaConteudo {
     flex: 1;
     padding: 30px 42px 42px;
     width: 100%;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoUsuario */
 .cabecalhoUsuario {
     display: flex;
     justify-content: space-between;
@@ -37,12 +44,15 @@
     margin-bottom: 28px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .dadosUsuario */
 .dadosUsuario {
     border-bottom: 4px solid #06a663;
     min-width: min(430px, 100%);
     padding-bottom: 6px;
 }
 
+/* Fim item 38 */
 .dadosUsuario h1 {
     color: #111111;
     font-size: 2.1rem;
@@ -60,12 +70,15 @@
     margin-top: 2px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .acoesUsuario */
 .acoesUsuario {
     display: flex;
     align-items: center;
     gap: 16px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .fotoPerfil */
 .fotoPerfil {
     width: 54px;
     height: 54px;
@@ -77,6 +90,8 @@
     font-size: 1.65rem;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gridMetricas */
 .gridMetricas {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -84,6 +99,8 @@
     margin: 0 0 40px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cardMetrica */
 .cardMetrica {
     background: #ffffff;
     border: 1px solid #dfe9e3;
@@ -95,6 +112,8 @@
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.055);
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .metricaTopo */
 .metricaTopo {
     width: 100%;
     display: flex;
@@ -103,6 +122,7 @@
     margin-bottom: 8px;
 }
 
+/* Fim item 38 */
 .metricaTopo h2 {
     color: #244338;
     font-size: 1rem;
@@ -111,6 +131,7 @@
     margin: 0;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .iconeBadge */
 .iconeBadge {
     width: 42px;
     height: 42px;
@@ -124,6 +145,7 @@
     flex: 0 0 auto;
 }
 
+/* Fim item 38 */
 .metricaVariacao {
     color: #507363;
     font-size: 0.82rem;
@@ -139,12 +161,15 @@
     font-weight: 650;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .secaoAcessos, .secaoCursos, .secaoPerfil */
 .secaoAcessos,
 .secaoCursos,
 .secaoPerfil {
     width: 100%;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .topoSecao, .barraTitulo */
 .topoSecao,
 .barraTitulo {
     display: flex;
@@ -154,6 +179,7 @@
     margin-bottom: 26px;
 }
 
+/* Fim item 38 */
 .topoSecao h2,
 .barraTitulo h2 {
     color: #111111;
@@ -169,6 +195,7 @@
     font-size: 0.98rem;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .botaoPrimario, .botaoSecundario, .filtros button, .linkVoltar */
 .botaoPrimario,
 .botaoSecundario,
 .filtros button,
@@ -188,6 +215,7 @@
     padding: 9px 18px;
 }
 
+/* Fim item 38 */
 .botaoPrimario {
     background: #06a663;
     color: #ffffff;
@@ -217,6 +245,7 @@
     border-radius: 4px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .filtros */
 .filtros {
     margin-left: auto;
     display: flex;
@@ -225,6 +254,7 @@
     flex-wrap: wrap;
 }
 
+/* Fim item 38 */
 .filtros span {
     font-size: 1.05rem;
 }
@@ -235,6 +265,7 @@
     color: #ffffff;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .carrosselCursos */
 .carrosselCursos {
     display: flex;
     gap: 28px;
@@ -242,6 +273,8 @@
     padding: 0 0 18px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gridCursos, .gridAulas */
 .gridCursos,
 .gridAulas {
     display: grid;
@@ -249,13 +282,16 @@
     gap: 38px 24px;
 }
 
-                                                                                                                                 
+/* Fim item 38 */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gradeModulos */
 .gradeModulos {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
 }
 
+/* Fim item 38 */
 .aulasSemModulo h3 {
     margin: 0;
     font-size: 1.2rem;
@@ -268,11 +304,13 @@
     overflow-wrap: anywhere;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .resumoModuloProfessor */
 .resumoModuloProfessor {
     display: grid;
     gap: 8px;
 }
 
+/* Fim item 38 */
 .aulasSemModulo {
     margin-top: 34px;
 }
@@ -281,12 +319,15 @@
     margin-bottom: 16px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .aulaSemModuloItem */
 .aulaSemModuloItem {
     min-width: 0;
     display: grid;
     gap: 9px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .moverAulaModulo */
 .moverAulaModulo {
     display: flex;
     flex-wrap: wrap;
@@ -294,6 +335,8 @@
     gap: 8px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .moverAulaModulo select */
 .moverAulaModulo select {
     min-height: 38px;
     flex: 1 1 170px;
@@ -304,6 +347,7 @@
     color: #111111;
 }
 
+/* Fim item 38 */
 .moverAulaModulo button {
     min-height: 38px;
     padding: 7px 12px;
@@ -318,10 +362,13 @@
     min-width: 0;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .carrosselCursos .cardCurso */
 .carrosselCursos .cardCurso {
     flex: 0 0 360px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .areaCardClicavel */
 .areaCardClicavel {
     width: 100%;
     border: none;
@@ -332,6 +379,8 @@
     display: block;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .imagemCurso */
 .imagemCurso {
     width: 100%;
     aspect-ratio: 16 / 9;
@@ -340,6 +389,8 @@
     background: #d9d9d9;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .infoCurso, .infoAula */
 .infoCurso,
 .infoAula {
     display: flex;
@@ -349,6 +400,7 @@
     padding: 10px 12px 12px;
 }
 
+/* Fim item 38 */
 .infoCurso h3,
 .infoAula h3 {
     color: #111111;
@@ -370,6 +422,7 @@
     overflow-wrap: anywhere;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .infoInscritos, .inscritosCurso */
 .infoInscritos,
 .inscritosCurso {
     display: inline-flex;
@@ -381,6 +434,8 @@
     font-weight: 600;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .resumoCursoAlunos */
 .resumoCursoAlunos {
     display: flex;
     align-items: center;
@@ -388,6 +443,8 @@
     min-width: 0;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .imagemResumoCurso */
 .imagemResumoCurso {
     width: 144px;
     aspect-ratio: 16 / 9;
@@ -397,6 +454,7 @@
     background: #d9d9d9;
 }
 
+/* Fim item 38 */
 .statusBadge {
     border: 1px solid #06a663;
     border-radius: 100px;
@@ -408,6 +466,7 @@
     text-transform: capitalize;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .acoesCard */
 .acoesCard {
     display: flex;
     justify-content: flex-end;
@@ -417,11 +476,15 @@
     flex-wrap: wrap;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .infoAula .acoesCard */
 .infoAula .acoesCard {
     padding: 0;
     flex: 0 0 auto;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .acoesCard button */
 .acoesCard button {
     width: 30px;
     height: 30px;
@@ -435,6 +498,7 @@
     justify-content: center;
 }
 
+/* Fim item 38 */
 .acoesCard .botaoExcluir {
     color: #e21d0b;
 }
@@ -448,6 +512,7 @@
     min-height: 220px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .listaAlunosCurso */
 .listaAlunosCurso {
     width: min(860px, 100%);
     border: 1.5px solid #111111;
@@ -456,6 +521,8 @@
     background: #ffffff;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoListaAlunos, .linhaAlunoCurso */
 .cabecalhoListaAlunos,
 .linhaAlunoCurso {
     display: grid;
@@ -464,6 +531,7 @@
     padding: 14px 18px;
 }
 
+/* Fim item 38 */
 .cabecalhoListaAlunos {
     background: #06a663;
     color: #ffffff;
@@ -479,6 +547,7 @@
     overflow-wrap: anywhere;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .videoPreview */
 .videoPreview {
     aspect-ratio: 16 / 9;
     background: #ececec;
@@ -491,6 +560,8 @@
     overflow: hidden;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .videoPreview img, .imagemAula */
 .videoPreview img,
 .imagemAula {
     width: 100%;
@@ -500,6 +571,8 @@
     background: #d9d9d9;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .videoPreview video */
 .videoPreview video {
     width: 100%;
     height: 100%;
@@ -507,6 +580,8 @@
     object-fit: cover;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .estadoVazio */
 .estadoVazio {
     min-height: 128px;
     border: 1.5px dashed #9d9d9d;
@@ -521,11 +596,13 @@
     font-size: 1.1rem;
 }
 
+/* Fim item 38 */
 .estadoVazio svg {
     color: #02693e;
     font-size: 1.5rem;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .overlayModal */
 .overlayModal {
     position: fixed;
     inset: 0;
@@ -538,6 +615,8 @@
     overflow-y: auto;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formularioModal */
 .formularioModal {
     width: min(620px, calc(100vw - 64px));
     max-height: min(90vh, 680px);
@@ -549,6 +628,7 @@
     overflow-y: auto;
 }
 
+/* Fim item 38 */
 .formularioModal h1 {
     margin: 0 0 14px;
     color: #000000;
@@ -557,12 +637,15 @@
     text-align: center;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .modalFormulario */
 .modalFormulario {
     display: flex;
     flex-direction: column;
     gap: 7px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .modalFormulario label */
 .modalFormulario label {
     color: #7a7a7a;
     font-size: 1rem;
@@ -572,6 +655,7 @@
     gap: 8px;
 }
 
+/* Fim item 38 */
 .modalFormulario input,
 .modalFormulario textarea {
     min-height: 36px;
@@ -588,6 +672,7 @@
     min-height: 70px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .uploadBox */
 .uploadBox {
     min-height: 120px;
     border: 2px dashed #06a663;
@@ -604,6 +689,7 @@
     font-weight: 600;
 }
 
+/* Fim item 38 */
 .uploadBox svg {
     color: #111111;
     font-size: 2.6rem;
@@ -613,6 +699,7 @@
     display: none;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .acoesModal */
 .acoesModal {
     display: flex;
     align-items: center;
@@ -621,6 +708,7 @@
     margin-top: 10px;
 }
 
+/* Fim item 38 */
 .avisoModal {
     color: #111111;
     font-size: 0.85rem;
@@ -628,6 +716,7 @@
     margin: 0;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formularioPerfil */
 .formularioPerfil {
     width: min(680px, 100%);
     border: 1.5px solid #111111;
@@ -639,6 +728,8 @@
     gap: 14px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formularioPerfil label */
 .formularioPerfil label {
     color: #111111;
     font-weight: 600;
@@ -647,6 +738,7 @@
     gap: 7px;
 }
 
+/* Fim item 38 */
 .formularioPerfil input,
 .formularioPerfil select {
     min-height: 40px;
@@ -664,6 +756,7 @@
     margin: 0;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .filtrosRelatorio */
 .filtrosRelatorio {
     width: 100%;
     display: grid;
@@ -671,16 +764,20 @@
     align-items: end;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .tabelaResponsiva */
 .tabelaResponsiva {
     width: 100%;
     overflow-x: auto;
 }
 
+/* Fim item 38 */
 .formularioPerfil .botaoPrimario {
     align-self: flex-start;
     margin-top: 6px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .rodapePagina */
 .rodapePagina {
     grid-column: 1 / -1;
     grid-row: 2;
@@ -692,12 +789,15 @@
     gap: 28px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .colunaRodape */
 .colunaRodape {
     display: flex;
     flex-direction: column;
     gap: 5px;
 }
 
+/* Fim item 38 */
 .colunaRodape h4 {
     color: #ffffff;
     font-size: 1.25rem;
@@ -713,6 +813,7 @@
     line-height: 1.35;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .listaApps */
 .listaApps {
     list-style: none;
     padding: 0;
@@ -722,12 +823,16 @@
     gap: 7px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .listaApps li */
 .listaApps li {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 1180px) */
 @media (max-width: 1180px) {
     .gridMetricas,
     .gridCursos,
@@ -740,6 +845,8 @@
     }
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 860px) */
 @media (max-width: 860px) {
     .painelProfessor {
         grid-template-columns: minmax(0, 1fr);
@@ -831,7 +938,9 @@
     }
 }
 
-                                                                                                                                                                       
+/* Fim item 38 */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoInicio, .cabecalhoPagina */
 .cabecalhoInicio,
 .cabecalhoPagina {
     display: flex;
@@ -845,6 +954,7 @@
     background: linear-gradient(115deg, #f0faf4 0%, #ffffff 78%);
 }
 
+/* Fim item 38 */
 .cabecalhoInicio h2,
 .cabecalhoPagina h2 {
     margin: 5px 0 8px;
@@ -855,6 +965,7 @@
     letter-spacing: -0.035em;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoInicio p, .cabecalhoPagina p */
 .cabecalhoInicio p,
 .cabecalhoPagina p {
     margin: 0;
@@ -864,6 +975,8 @@
     line-height: 1.55;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoInicio .botaoPrimario, .cabecalhoPagina .botaoPrimario, .cabecalhoPagina .botaoSecundario */
 .cabecalhoInicio .botaoPrimario,
 .cabecalhoPagina .botaoPrimario,
 .cabecalhoPagina .botaoSecundario {
@@ -874,6 +987,7 @@
     font-weight: 650;
 }
 
+/* Fim item 38 */
 .etiquetaPagina {
     display: inline-block;
     color: #087044;
@@ -887,14 +1001,16 @@
     margin-bottom: 34px;
 }
 
-                                                                                                                                                    
-                                                                        
-                                                   
+
+
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .resultadosMes */
 .resultadosMes {
     display: grid;
     gap: 24px;
 }
 
+/* Fim item 38 */
 .resultadosMes .cabecalhoBloco,
 .resultadosMes > section,
 .resultadosMes > p {
@@ -909,6 +1025,7 @@
     margin-bottom: 18px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoBloco */
 .cabecalhoBloco {
     display: flex;
     align-items: flex-end;
@@ -917,6 +1034,7 @@
     margin-bottom: 17px;
 }
 
+/* Fim item 38 */
 .cabecalhoBloco h3 {
     margin: 0 0 5px;
     color: #183d2c;
@@ -932,6 +1050,7 @@
     line-height: 1.5;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gridMetricasInicio, .gridMetricasFinanceiro, .gridMetricasRelatorio, .gridMetricasSecundarias */
 .gridMetricasInicio,
 .gridMetricasFinanceiro,
 .gridMetricasRelatorio,
@@ -940,27 +1059,36 @@
     gap: 16px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gridMetricasInicio */
 .gridMetricasInicio {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gridMetricasFinanceiro */
 .gridMetricasFinanceiro {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gridMetricasSecundarias */
 .gridMetricasSecundarias {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Fim item 38 */
 .gridMetricasFinanceiro .metricaNumero {
     font-size: clamp(1.12rem, 1.55vw, 1.65rem);
     white-space: nowrap;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gridMetricasRelatorio */
 .gridMetricasRelatorio {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Fim item 38 */
 .secaoPainel .topoSecao {
     align-items: center;
     justify-content: space-between;
@@ -985,6 +1113,7 @@
     padding-bottom: 18px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .paginaFinanceiro, .paginaRelatorios */
 .paginaFinanceiro,
 .paginaRelatorios {
     display: flex;
@@ -992,12 +1121,15 @@
     gap: 8px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cardSaldoDisponivel > :global(article) */
 .cardSaldoDisponivel > :global(article) {
     height: 100%;
     border-color: #087044;
     background: #087044;
 }
 
+/* Fim item 38 */
 .cardSaldoDisponivel > :global(article) h2,
 .cardSaldoDisponivel > :global(article) strong,
 .cardSaldoDisponivel > :global(article) span {
@@ -1009,6 +1141,7 @@
     color: #ffffff;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .painelSolicitarSaque */
 .painelSolicitarSaque {
     display: grid;
     grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
@@ -1020,6 +1153,8 @@
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.05);
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .introducaoSaque */
 .introducaoSaque {
     display: flex;
     flex-direction: column;
@@ -1028,6 +1163,8 @@
     background: #eff8f2;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .iconeSaque */
 .iconeSaque {
     display: grid;
     width: 46px;
@@ -1040,6 +1177,7 @@
     font-size: 1.25rem;
 }
 
+/* Fim item 38 */
 .introducaoSaque h3 {
     margin: 6px 0 8px;
     color: #173e2c;
@@ -1047,6 +1185,7 @@
     line-height: 1.2;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .introducaoSaque > p */
 .introducaoSaque > p {
     max-width: 430px;
     margin: 0;
@@ -1054,6 +1193,8 @@
     line-height: 1.55;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .valorDisponivelSaque */
 .valorDisponivelSaque {
     display: grid;
     gap: 5px;
@@ -1061,6 +1202,7 @@
     padding-top: 28px;
 }
 
+/* Fim item 38 */
 .valorDisponivelSaque span {
     color: #507363;
     font-size: 0.82rem;
@@ -1073,6 +1215,7 @@
     line-height: 1.2;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formularioSaque */
 .formularioSaque {
     width: 100%;
     justify-content: center;
@@ -1081,6 +1224,7 @@
     padding: clamp(24px, 3vw, 38px);
 }
 
+/* Fim item 38 */
 .formularioSaque > label {
     font-size: 0.92rem;
     font-weight: 650;
@@ -1093,6 +1237,7 @@
     background: #fff;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .campoValorSaque */
 .campoValorSaque {
     display: flex;
     min-height: 54px;
@@ -1104,6 +1249,7 @@
     background: #ffffff;
 }
 
+/* Fim item 38 */
 .campoValorSaque:focus-within {
     border-color: #06a663;
     box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
@@ -1114,6 +1260,7 @@
     font-weight: 650;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .campoValorSaque input, .formularioPerfil .campoValorSaque input */
 .campoValorSaque input,
 .formularioPerfil .campoValorSaque input {
     width: 100%;
@@ -1127,6 +1274,7 @@
     font-size: 1.12rem;
 }
 
+/* Fim item 38 */
 .formularioSaque .textoApoio {
     margin: -5px 0 0;
     color: #66776d;
@@ -1152,6 +1300,7 @@
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .containerTabelaFinanceira, .containerTabelaRelatorio */
 .containerTabelaFinanceira,
 .containerTabelaRelatorio {
     width: 100%;
@@ -1160,6 +1309,8 @@
     border-radius: 12px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .tabelaFinanceira, .tabelaRelatorio */
 .tabelaFinanceira,
 .tabelaRelatorio {
     width: 100%;
@@ -1168,14 +1319,19 @@
     text-align: left;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .tabelaFinanceira */
 .tabelaFinanceira {
     min-width: 540px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .tabelaRelatorio */
 .tabelaRelatorio {
     min-width: 840px;
 }
 
+/* Fim item 38 */
 .tabelaFinanceira th,
 .tabelaRelatorio th {
     padding: 14px 16px;
@@ -1215,6 +1371,7 @@
     margin-bottom: 20px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .filtrosRelatorio */
 .filtrosRelatorio {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
@@ -1222,6 +1379,8 @@
     gap: 14px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .filtrosRelatorio label */
 .filtrosRelatorio label {
     display: grid;
     gap: 7px;
@@ -1230,6 +1389,8 @@
     font-weight: 650;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .filtrosRelatorio input, .filtrosRelatorio select */
 .filtrosRelatorio input,
 .filtrosRelatorio select {
     width: 100%;
@@ -1242,6 +1403,7 @@
     font: inherit;
 }
 
+/* Fim item 38 */
 .filtrosRelatorio input:focus,
 .filtrosRelatorio select:focus {
     border-color: #06a663;
@@ -1259,6 +1421,7 @@
     white-space: nowrap;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 1180px) */
 @media (max-width: 1180px) {
     .gridMetricasInicio,
     .gridMetricasFinanceiro,
@@ -1268,6 +1431,8 @@
     }
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 860px) */
 @media (max-width: 860px) {
     .cabecalhoInicio,
     .cabecalhoPagina {
@@ -1303,6 +1468,8 @@
     }
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 560px) */
 @media (max-width: 560px) {
     .resultadosMes {
         gap: 18px;
@@ -1337,7 +1504,8 @@
     }
 }
 
-                                                                                                                                                                     
+/* Fim item 38 */
+
 .painelProfessor {
     background: #f5f8f6;
 }
@@ -1386,6 +1554,7 @@
     letter-spacing: -0.025em;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .barraTitulo .subtituloSecao */
 .barraTitulo .subtituloSecao {
     max-width: 610px;
     margin-top: 6px;
@@ -1393,6 +1562,7 @@
     line-height: 1.5;
 }
 
+/* Fim item 38 */
 .secaoCursos > .barraTitulo + .gridCursos,
 .secaoCursos > .barraTitulo + .estadoVazio {
     margin-top: 18px;
@@ -1460,12 +1630,14 @@
     background: #087044;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .gridCursos, .gridAulas */
 .gridCursos,
 .gridAulas {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
 }
 
+/* Fim item 38 */
 .cardCurso,
 .cardAula {
     border: 1px solid #dfe9e3;
@@ -1527,6 +1699,7 @@
     font-weight: 650;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .listaAlunosCurso */
 .listaAlunosCurso {
     width: 100%;
     border: 1px solid #dfe9e3;
@@ -1534,12 +1707,16 @@
     box-shadow: 0 8px 22px rgba(15, 63, 40, 0.045);
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoListaAlunos, .linhaAlunoCurso */
 .cabecalhoListaAlunos,
 .linhaAlunoCurso {
     grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1.2fr) auto;
     padding: 15px 20px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .acaoChatAluno */
 .acaoChatAluno {
     display: inline-flex;
     align-items: center;
@@ -1557,6 +1734,7 @@
     cursor: pointer;
 }
 
+/* Fim item 38 */
 .acaoChatAluno:hover {
     background: #065b38;
 }
@@ -1566,6 +1744,7 @@
     outline-offset: 3px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 650px) */
 @media (max-width: 650px) {
     .cabecalhoListaAlunos {
         display: none;
@@ -1577,6 +1756,7 @@
     }
 }
 
+/* Fim item 38 */
 .cabecalhoListaAlunos {
     background: #eff8f2;
     color: #24533d;
@@ -1615,6 +1795,7 @@
     box-shadow: 0 0 0 3px rgba(6, 166, 99, 0.12);
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 860px) */
 @media (max-width: 860px) {
     .areaConteudo {
         padding: 22px 18px 30px;
@@ -1641,12 +1822,16 @@
         gap: 6px;
     }
 }
-                                                                                                                                                        
+
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .taxonomiasCurso */
 .taxonomiasCurso {
     display: grid;
     gap: 12px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .taxonomiasCurso label */
 .taxonomiasCurso label {
     display: grid;
     gap: 6px;
@@ -1654,6 +1839,8 @@
     font-weight: 600;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .taxonomiasCurso select */
 .taxonomiasCurso select {
     min-height: 42px;
     width: 100%;
@@ -1665,9 +1852,8 @@
     font: inherit;
 }
 
+/* Fim item 38 */
 .taxonomiasCurso select:focus-visible {
     outline: 3px solid rgba(6, 166, 99, 0.2);
     border-color: #06a663;
 }
-
-/* Fim item 38 */

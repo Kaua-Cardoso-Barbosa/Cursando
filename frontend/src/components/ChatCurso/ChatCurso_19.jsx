@@ -2,25 +2,31 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FaPaperPlane, FaUserCircle } from "react-icons/fa";
 import css from "./ChatCurso_38.module.css";
 
-export default /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web */
+export default
 function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null }) {
+    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
     const [conversas, setConversas] = useState([]);
+    /* Fim item 19 */
     const [selecionada, setSelecionada] = useState(conversaInicial);
+    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
     const [mensagens, setMensagens] = useState([]);
+    /* Fim item 19 */
     const [texto, setTexto] = useState("");
     const [carregando, setCarregando] = useState(false);
     const [enviando, setEnviando] = useState(false);
     const mensagensRef = useRef(null);
     const textoRef = useRef(null);
     const enviandoRef = useRef(false);
-                                                                                                                                                        
-                                                               
+
+
+    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
     const conversasVisiveis = selecionada && !conversas.some((conversa) =>
         Number(conversa.id_curso) === Number(selecionada.id_curso) &&
         Number(conversa.id_aluno) === Number(selecionada.id_aluno)
     ) ? [selecionada, ...conversas] : conversas;
+    /* Fim item 19 */
 
-                                                                                                                                                                   
+
     function urlImagem(caminho) {
         if (!caminho) return "";
         if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) return caminho;
@@ -40,6 +46,7 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
         return dados;
     }, [setMensagem]);
 
+    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
     const carregarConversas = useCallback(async ({ silencioso = false } = {}) => {
         if (!silencioso) setCarregando(true);
         try {
@@ -71,18 +78,22 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
         const dados = await lerResposta(resposta);
         setMensagens(Array.isArray(dados) ? dados : []);
     }, [api, lerResposta, perfil]);
+    /* Fim item 19 */
 
     useEffect(() => {
         carregarConversas();
     }, [carregarConversas]);
 
+    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
     useEffect(() => {
         carregarMensagens(selecionada).catch((erro) => {
             console.error("Erro ao carregar mensagens:", erro);
             setMensagem?.({ tipo: "erro", descricao: erro.message });
         });
     }, [carregarMensagens, selecionada, setMensagem]);
+    /* Fim item 19 */
 
+    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
     useEffect(() => {
         const intervalo = window.setInterval(() => {
             carregarConversas({ silencioso: true });
@@ -95,6 +106,7 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
 
         return () => window.clearInterval(intervalo);
     }, [carregarConversas, carregarMensagens, selecionada]);
+    /* Fim item 19 */
 
     useEffect(() => {
         if (!mensagensRef.current) return;
@@ -107,6 +119,7 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
         textoRef.current.style.height = `${textoRef.current.scrollHeight}px`;
     }, [texto]);
 
+    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Envia a mensagem e recarrega a conversa selecionada */
     async function enviarMensagem() {
         const textoMensagem = texto.trim();
         if (!selecionada || !textoMensagem || enviandoRef.current) return;
@@ -135,18 +148,21 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
             setEnviando(false);
         }
     }
+    /* Fim item 19 */
 
+    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Envia a mensagem ao pressionar Enter sem Shift */
     function aoTeclarMensagem(evento) {
         if (evento.key !== "Enter" || evento.shiftKey) return;
         evento.preventDefault();
         enviarMensagem();
     }
+    /* Fim item 19 */
 
     return (
         <section className={css.chat}>
             <div className={css.layout}>
                 <aside className={css.listaConversas}>
-                    {carregando && <p className={css.estado}>Carregando conversas...</p>}
+                    {carregando && /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */ <p className={css.estado}>Carregando conversas...</p> /* Fim item 19 */}
                     {!carregando && conversasVisiveis.length === 0 && <p className={css.estado}>{perfil === "professor" ? "Nenhuma conversa ainda. Abra os alunos de um curso para iniciar." : "Nenhuma conversa disponível."}</p>}
                     {conversasVisiveis.map((conversa) => {
                         const ativo = selecionada?.id_curso === conversa.id_curso && selecionada?.id_aluno === conversa.id_aluno;
@@ -173,6 +189,7 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
                 </aside>
 
                 <div className={css.painelMensagens}>
+                    {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
                     <div className={css.cabecalhoConversa}>
                         <div className={css.identidadeConversa}>
                             {selecionada?.imagem_perfil
@@ -182,7 +199,9 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
                         </div>
                         {selecionada && <small>{selecionada.curso}</small>}
                     </div>
+                    {/* Fim item 19 */}
 
+                    {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
                     <div className={css.mensagens} ref={mensagensRef}>
                         {!selecionada && <p className={css.estado}>Escolha uma conversa para começar.</p>}
                         {selecionada && mensagens.length === 0 && <p className={css.estado}>Nenhuma mensagem enviada ainda.</p>}
@@ -202,7 +221,9 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
                             </article>
                         ))}
                     </div>
+                    {/* Fim item 19 */}
 
+                    {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
                     <div className={css.compositor}>
                         <textarea
                             ref={textoRef}
@@ -216,9 +237,9 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
                             <FaPaperPlane />
                         </button>
                     </div>
+                    {/* Fim item 19 */}
                 </div>
             </div>
         </section>
     );
 }
-/* Fim item 19 */

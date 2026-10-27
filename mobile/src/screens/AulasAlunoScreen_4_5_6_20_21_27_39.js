@@ -1,0 +1,476 @@
+import { useState } from "react";
+import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { resolverUrlMidia } from "../api/client_3_17";
+import AppIcon from "../components/AppIcon_39";
+import { colors, globalStyles } from "../styles_39";
+
+const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
+const fallbackCourseImage = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900";
+
+/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Formata a posição salva para exibir o ponto de retomada */
+function formatarPosicaoAula(segundos) {
+  const total = Math.max(0, Math.floor(Number(segundos) || 0));
+  const horas = Math.floor(total / 3600);
+  const minutos = Math.floor((total % 3600) / 60);
+  const restante = total % 60;
+  return horas > 0
+    ? `${horas}:${String(minutos).padStart(2, "0")}:${String(restante).padStart(2, "0")}`
+    : `${minutos}:${String(restante).padStart(2, "0")}`;
+}
+/* Fim item 4 */
+
+export default
+function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onOpenMaterial, onEnroll, onOpenExam, onDownloadCertificate, onReview }) {
+
+  const curso = detalhe?.curso;
+  const aulas = detalhe?.aulas || [];
+
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
+  const modulos = detalhe?.modulos || [];
+  const aulasSemModulo = aulas.filter((aula) => !aula.id_modulo);
+  /* Fim item 6 */
+  const materiais = detalhe?.materiais || [];
+  const prova = detalhe?.prova;
+  const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
+  /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */
+  const [baixandoCertificado, setBaixandoCertificado] = useState(false);
+  /* Fim item 5 */
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
+  const [moduloAberto, setModuloAberto] = useState(null);
+  /* Fim item 6 */
+  const [abaCurso, setAbaCurso] = useState("modulos");
+
+  /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita o PDF e inicia o download do certificado */
+  async function baixarCertificado() {
+    setBaixandoCertificado(true);
+    try {
+      await onDownloadCertificate?.();
+    } finally {
+      setBaixandoCertificado(false);
+    }
+  }
+  /* Fim item 5 */
+
+  return (
+    <ScrollView
+      contentContainerStyle={globalStyles.page}
+      refreshControl={<RefreshControl refreshing={carregando} onRefresh={onRefresh} />}
+    >
+      <Pressable style={styles.back} onPress={onBack}>
+        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
+        <Text style={styles.backText}>Voltar</Text>
+      </Pressable>
+
+      <View style={styles.courseHero}>
+        <Image
+          source={{ uri: curso?.imagem ? resolverUrlMidia(curso.imagem) : fallbackCourseImage }}
+          style={styles.courseImage}
+        />
+        <View style={styles.courseInfo}>
+          <Text style={styles.courseKicker}>{modulos.length ? "Modulos do curso" : "Video-aulas"}</Text>
+          <Text style={styles.courseTitle}>{curso?.titulo || "Curso"}</Text>
+          {curso?.professor ? <Text style={styles.courseDescription}>Professor(a): {curso.professor}</Text> : null}
+          {curso?.descricao ? <Text style={styles.courseDescription}>{curso.descricao}</Text> : null}
+          {curso && !curso.matriculado ? (
+            <Pressable style={styles.enrollButton} onPress={() => onEnroll?.(curso)} disabled={carregando}>
+              <Text style={styles.enrollText}>{carregando ? "Inscrevendo..." : "Inscrever-se"}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+
+      {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+        {[["modulos", "Módulos"], ["complementos", "Complementos"], ...(curso?.matriculado && prova?.prova ? [["prova", "Prova final"]] : [])].map(([chave, rotulo]) => <Pressable key={chave} onPress={() => setAbaCurso(chave)} style={[styles.tab, abaCurso === chave && styles.tabActive]}><Text style={[styles.tabText, abaCurso === chave && styles.tabTextActive]}>{rotulo}</Text></Pressable>)}
+      </ScrollView>
+      {/* Fim item 20 */}
+
+      {abaCurso === "modulos" && <View style={styles.list}>
+        {modulos.map((modulo) => (
+          <View key={modulo.id} style={[globalStyles.card, styles.moduleCard]}>
+            {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
+            <Pressable style={styles.moduleHeader} onPress={() => setModuloAberto(Number(moduloAberto) === Number(modulo.id) ? null : Number(modulo.id))}>
+              {modulo.imagem ? <Image source={{ uri: resolverUrlMidia(modulo.imagem) }} style={styles.moduleImage} /> : null}
+              <View style={styles.moduleInfo}>
+                <Text style={styles.lessonTitle}>{modulo.titulo}</Text>
+                <Text style={styles.description}>{modulo.descricao || `${modulo.total_aulas || modulo.aulas?.length || 0} aulas`}</Text>
+              </View>
+              <AppIcon name={Number(moduloAberto) === Number(modulo.id) ? "chevron-up" : "chevron-down"} size={20} color={colors.darkGreen} />
+            </Pressable>
+            {/* Fim item 6 */}
+            {Number(moduloAberto) === Number(modulo.id) ? (
+              <View style={styles.moduleLessons}>
+                {(modulo.aulas || []).map((aula) => (
+                  <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
+                    <View style={styles.preview}>
+                      <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
+                      <View style={styles.playBadge}><AppIcon name="play" size={42} color={colors.black} style={styles.play} /></View>
+                      {aula.assistida ? <AppIcon name="checkmark-circle" size={30} color={colors.green} style={styles.check} /> : null}
+                    </View>
+                    {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
+                    <View style={styles.info}>
+                      <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
+                      <Text style={styles.description} numberOfLines={2}>{aula.descricao}</Text>
+                      {Number(aula.progresso_segundos) > 0 ? <Text style={styles.resumeLabel}>Continuar de {formatarPosicaoAula(aula.progresso_segundos)}</Text> : null}
+                    </View>
+                    {/* Fim item 4 */}
+                  </Pressable>
+                ))}
+                {!modulo.aulas?.length ? <Text style={globalStyles.message}>Nenhuma aula publicada neste módulo.</Text> : null}
+              </View>
+            ) : null}
+          </View>
+        ))}
+        {(modulos.length === 0 ? aulas : aulasSemModulo).map((aula) => (
+          <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
+            <View style={styles.preview}>
+              <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
+              <View style={styles.playBadge}><AppIcon name="play" size={42} color={colors.black} style={styles.play} /></View>
+              {aula.assistida ? <AppIcon name="checkmark-circle" size={30} color={colors.green} style={styles.check} /> : null}
+            </View>
+            {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
+            <View style={styles.info}>
+              <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
+              <Text style={styles.description} numberOfLines={2}>{aula.descricao}</Text>
+              {Number(aula.progresso_segundos) > 0 ? <Text style={styles.resumeLabel}>Continuar de {formatarPosicaoAula(aula.progresso_segundos)}</Text> : null}
+            </View>
+            {/* Fim item 4 */}
+          </Pressable>
+        ))}
+        {!carregando && aulas.length === 0 && modulos.length === 0 ? <Text style={globalStyles.message}>Nenhuma aula publicada neste curso.</Text> : null}
+      </View>}
+
+      {abaCurso === "complementos" && <View style={styles.materials}>
+        <Text style={styles.sectionTitle}>Complementos</Text>
+        {materiais.map((material) => (
+          /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */ <View key={material.id} style={[globalStyles.card, styles.materialCard]}>
+            <Text style={styles.materialTitle}>{material.titulo}</Text>
+            <Text style={styles.materialType}>{material.tipo}</Text>
+            <Text style={styles.description}>{material.descricao}</Text>
+            {material.bloqueado ? (
+              <Text style={styles.locked}>Prévia: disponível após inscrição. Links e arquivos ficam bloqueados.</Text>
+            ) : material.arquivo_url ? (
+              <Pressable onPress={() => onOpenMaterial?.(material)}><Text style={styles.openLink}>Baixar {material.nome_arquivo || "arquivo"}</Text></Pressable>
+            ) : material.url ? (
+              <Pressable onPress={() => Linking.openURL(material.url)}>
+                <Text style={styles.openLink}>Abrir material</Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.locked}>Material indisponível.</Text>
+            )}
+          </View> /* Fim item 21 */
+        ))}
+        {!carregando && materiais.length === 0 ? <Text style={globalStyles.message}>Nenhum complemento disponivel.</Text> : null}
+      </View>}
+
+      {abaCurso === "prova" && Number(curso?.progresso || 0) >= 100 && prova?.prova ? (
+        <View style={styles.materials}>
+          <Text style={styles.sectionTitle}>Prova final</Text>
+          {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
+          <Text style={styles.description}>{prova.questoes?.length || 0} questões · Nota de 0 a 100</Text>
+          {/* Fim item 20 */}
+          {prova.envio ? /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <Text style={styles.locked}>{prova.envio.status === 1 ? "Aprovado" : prova.envio.status === 2 ? "Reprovado" : "Aguardando correção"}{prova.envio.nota != null ? ` · ${prova.envio.nota} pontos · ${prova.envio.acertos} de ${prova.envio.total_questoes || prova.questoes?.length || 0} acertos` : ""}</Text> /* Fim item 20 */ : null}
+          {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
+          <Pressable style={globalStyles.primaryButton} onPress={onOpenExam}><Text style={globalStyles.buttonText}>{prova.envio ? "Ver prova e resultado" : "Fazer prova"}</Text></Pressable>
+          {/* Fim item 20 */}
+                                                                                                                                                                        
+          {prova.envio?.status === 1 ? (
+            <>
+                                                                                                                                                
+              {/* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */}
+              <Pressable style={globalStyles.primaryButton} onPress={baixarCertificado} disabled={baixandoCertificado}>
+                <Text style={globalStyles.buttonText}>{baixandoCertificado ? "Preparando certificado..." : "Baixar certificado PDF"}</Text>
+              </Pressable>
+              {/* Fim item 5 */}
+              <View style={[globalStyles.card, styles.materialCard]}>
+                                                                                                                                                                                                 
+                {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
+                <Text style={styles.materialTitle}>Avaliar curso</Text>
+                {/* Fim item 27 */}
+                <View style={styles.ratingOptions} accessibilityRole="radiogroup" accessibilityLabel="Nota de 0 a 5 estrelas">
+                  {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === 0 }} accessibilityLabel="0 estrelas" onPress={() => setAvaliacao({ ...avaliacao, nota: 0 })} style={[styles.ratingChoice, avaliacao.nota === 0 && styles.ratingZeroSelected]}>
+                    <Text style={[styles.ratingZero, avaliacao.nota === 0 && styles.ratingSelectedText]}>0</Text>
+                  </Pressable>
+                  {/* Fim item 27 */}
+                  {[1, 2, 3, 4, 5].map((nota) => (
+                    /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */ <Pressable key={nota} accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === nota }} accessibilityLabel={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} onPress={() => setAvaliacao({ ...avaliacao, nota })} style={styles.ratingChoice}>
+                      <Text style={[styles.ratingStar, nota <= avaliacao.nota && styles.ratingStarSelected]}>★</Text>
+                    </Pressable> /* Fim item 27 */
+                  ))}
+                  {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
+                  <Text style={styles.ratingCount}>{avaliacao.nota} de 5</Text>
+                  {/* Fim item 27 */}
+                </View>
+                {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
+                <TextInput
+                  value={avaliacao.comentario}
+                  onChangeText={(comentario) => setAvaliacao({ ...avaliacao, comentario })}
+                  placeholder="Escreva sua avaliacao (opcional)"
+                  style={globalStyles.input}
+                  multiline
+                  textAlignVertical="top"
+                />
+                {/* Fim item 27 */}
+                {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
+                <Pressable style={globalStyles.primaryButton} onPress={() => onReview?.({ nota: Number(avaliacao.nota), comentario: avaliacao.comentario })}>
+                  <Text style={globalStyles.buttonText}>Enviar avaliacao</Text>
+                </Pressable>
+                {/* Fim item 27 */}
+              </View>
+            </>
+          ) : null}
+        </View>
+      ) : null}
+
+                                                                                                                                                                  
+      <View style={styles.reviewsSection}>
+        <Text style={styles.sectionTitle}>Comentários</Text>
+        {detalhe?.avaliacoes?.length ? detalhe.avaliacoes.map((avaliacao) => {
+          /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */
+          const nota = Math.min(5, Math.max(0, Number(avaliacao.nota) || 0));
+          /* Fim item 27 */
+          return (
+            <View key={avaliacao.id} style={[globalStyles.card, styles.reviewCard]}>
+              <View style={styles.reviewHeader}>
+                {avaliacao.imagem_perfil ? (
+                  <Image source={{ uri: resolverUrlMidia(avaliacao.imagem_perfil) }} style={styles.reviewAvatar} />
+                ) : (
+                  <View style={styles.reviewAvatarFallback}><AppIcon name="person-outline" size={22} color={colors.darkGreen} /></View>
+                )}
+                <View style={styles.reviewAuthor}>
+                  <Text style={styles.reviewName}>{avaliacao.nome || "Aluno"}</Text>
+                  <Text accessibilityLabel={`${nota} de 5 estrelas`}>
+                    <Text style={styles.reviewStars}>{"★".repeat(nota)}</Text>
+                    <Text style={styles.reviewEmptyStars}>{"☆".repeat(5 - nota)}</Text>
+                    <Text style={styles.reviewScore}> {nota}/5</Text>
+                  </Text>
+                </View>
+              </View>
+              {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
+              <Text style={styles.reviewComment}>{avaliacao.comentario || "Sem comentário escrito."}</Text>
+              {/* Fim item 27 */}
+            </View>
+          );
+        }) : <Text style={globalStyles.message}>Este curso ainda não recebeu comentários.</Text>}
+      </View>
+    </ScrollView>
+  );
+}
+
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
+const styles = StyleSheet.create({
+  tabs: { gap: 8, marginBottom: 18, paddingRight: 12 },
+  tab: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.softGray },
+  tabActive: { backgroundColor: colors.darkGreen },
+  tabText: { color: colors.darkGreen, fontWeight: "700" }, tabTextActive: { color: colors.white },
+  header: {
+    marginBottom: 26
+  },
+  courseHero: {
+    borderWidth: 1.4,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.white,
+    overflow: "hidden",
+    marginBottom: 24
+  },
+  courseImage: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    backgroundColor: "#dddddd"
+  },
+  courseInfo: {
+    padding: 16,
+    gap: 7
+  },
+  courseKicker: {
+    color: colors.darkGreen,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase"
+  },
+  courseTitle: {
+    color: colors.black,
+    fontSize: 25,
+    lineHeight: 30,
+    fontWeight: "700"
+  },
+  courseDescription: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 21
+  },
+  enrollButton: {
+    minHeight: 46,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    paddingHorizontal: 18
+  },
+  enrollText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  list: {
+    gap: 22
+  },
+  moduleCard: {
+    overflow: "hidden",
+    padding: 0
+  },
+  moduleHeader: {
+    minHeight: 76,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12
+  },
+  moduleImage: {
+    width: 72,
+    height: 58,
+    borderRadius: 6,
+    backgroundColor: "#dddddd"
+  },
+  moduleInfo: {
+    flex: 1
+  },
+  moduleLessons: {
+    gap: 14,
+    padding: 12,
+    paddingTop: 0
+  },
+  card: {
+    shadowColor: colors.black,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2
+  },
+  preview: {
+    aspectRatio: 16 / 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#dddddd"
+  },
+  image: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%"
+  },
+  playBadge: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  play: {
+    opacity: 0.94
+  },
+  check: {
+    position: "absolute",
+    top: 7,
+    right: 10
+  },
+  info: {
+    minHeight: 72,
+    paddingHorizontal: 14,
+    paddingVertical: 10
+  },
+  lessonTitle: {
+    color: colors.black,
+    fontSize: 21,
+    lineHeight: 25
+  },
+  description: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 18,
+    marginTop: 2
+  },
+  resumeLabel: {
+    color: colors.darkGreen,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 6
+  },
+  back: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.darkGreen,
+    borderRadius: 4,
+    backgroundColor: "transparent",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    marginBottom: 16
+  },
+  backText: {
+    color: colors.darkGreen,
+    fontSize: 16
+  },
+  materials: {
+    gap: 12,
+    marginTop: 26
+  },
+
+  reviewsSection: { gap: 12, marginTop: 28 },
+  reviewCard: { padding: 14, gap: 10 },
+  reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  reviewAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.softGray },
+  reviewAvatarFallback: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.softGray, alignItems: "center", justifyContent: "center" },
+  reviewAuthor: { flex: 1, gap: 2 },
+  reviewName: { color: colors.black, fontSize: 15, fontWeight: "800" },
+  reviewStars: { color: "#e5a400", fontSize: 17 },
+  reviewEmptyStars: { color: colors.border, fontSize: 17 },
+  reviewScore: { color: colors.textMuted, fontSize: 12 },
+  reviewComment: { color: colors.black, fontSize: 14, lineHeight: 20 },
+  sectionTitle: {
+    color: colors.black,
+    fontSize: 24,
+    lineHeight: 30
+  },
+  materialCard: {
+    padding: 14
+  },
+
+  ratingOptions: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 5 },
+  ratingChoice: { minWidth: 36, minHeight: 36, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border, borderRadius: 7, backgroundColor: colors.white },
+  ratingZeroSelected: { borderColor: colors.darkGreen, backgroundColor: colors.darkGreen },
+  ratingZero: { color: colors.darkGreen, fontSize: 14, fontWeight: "800" },
+  ratingSelectedText: { color: colors.white },
+  ratingStar: { color: colors.textMuted, fontSize: 24 },
+  ratingStarSelected: { color: "#e5a400" },
+  ratingCount: { color: colors.textMuted, fontSize: 13, marginLeft: 5 },
+  materialTitle: {
+    color: colors.black,
+    fontSize: 18,
+    fontWeight: "700"
+  },
+  materialType: {
+    color: colors.darkGreen,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 3
+  },
+  locked: {
+    color: colors.textMuted,
+    fontSize: 14,
+    marginTop: 8
+  },
+  openLink: {
+    color: colors.darkGreen,
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 8,
+    textDecorationLine: "underline"
+  }
+});
+/* Fim item 39 */

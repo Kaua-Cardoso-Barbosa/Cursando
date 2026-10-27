@@ -1,7 +1,7 @@
 import { Image, StyleSheet, Text, View } from "react-native";
-import { colors } from "../styles";
+import { colors } from "../styles_39";
 
-export default /* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function BrandLogo({ compact = false }) {
   return (
     <View style={[styles.logo, compact && styles.logoCompact]}>
@@ -15,8 +15,8 @@ function BrandLogo({ compact = false }) {
     </View>
   );
 }
-/* Fim item 39 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   logo: {
     alignItems: "center",
@@ -45,3 +45,4 @@ const styles = StyleSheet.create({
     fontSize: 26
   }
 });
+/* Fim item 39 */

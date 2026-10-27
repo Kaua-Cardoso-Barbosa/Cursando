@@ -1,4 +1,5 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .page */
 .page {
   min-height: calc(100svh - 84px);
   display: grid;
@@ -8,10 +9,12 @@
   text-align: center;
 }
 
+/* Fim item 38 */
 .page h1 {
   margin: 0;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .link */
 .link {
   display: inline-flex;
   justify-content: center;

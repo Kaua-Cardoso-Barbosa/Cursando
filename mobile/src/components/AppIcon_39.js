@@ -38,9 +38,10 @@ const icons = {
   "warning": "exclamation-triangle"
 };
 
-export default /* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function AppIcon({ name, ...props }) {
   const icon = icons[name] || name;
+  /* Sprint item 39 - Desenvolver todas as telas do aplicativo - Compõe a apresentação do componente e conecta as ações da tela */
   return <FontAwesome5 name={icon} solid {...props} />;
+  /* Fim item 39 */
 }
-/* Fim item 39 */

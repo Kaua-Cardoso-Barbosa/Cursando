@@ -9,15 +9,13 @@ from app import app
 from banco_37 import get_db
 
 
-from professor_6 import AULA_STATUS_FILTRO, CURSO_STATUS_FILTRO, STATUS_ARQUIVADO, STATUS_NOMES, STATUS_PRIVADO, STATUS_PUBLICADO, banco_nao_preparado, criar_mensagem, curso_para_dict, exigir_professor, resposta as resposta_professor
-from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
-from utilitarios_backend_5_9_20_28_34 import _pdf_simples, exigir_tipo, resposta
+from professor_7 import AULA_STATUS_FILTRO, CURSO_STATUS_FILTRO, STATUS_ARQUIVADO, STATUS_NOMES, STATUS_PRIVADO, STATUS_PUBLICADO, banco_nao_preparado, criar_mensagem, curso_para_dict, exigir_professor, resposta as resposta_professor
+from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
+from utilitarios_backend_5_9_12_15_20_24_28_34 import _pdf_simples, exigir_tipo, resposta
 
 
 
-# Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas
-# Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso
-# Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas
+# Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso - Valida as datas inicial e final dos filtros do relatório
 def _filtros_periodo(prefixo=""):
     inicio = request.args.get("inicio")
     fim = request.args.get("fim")
@@ -34,16 +32,11 @@ def _filtros_periodo(prefixo=""):
         params.append(fim)
 
     return filtros, params
-# Fim item 23
 # Fim item 22
-# Fim item 7
 
 
 
 
-# Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas
-# Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso
-# Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas
 @app.route("/relatorios/professor", methods=["GET"])
 @jwt_required()
 def relatorio_professor():
@@ -52,18 +45,22 @@ def relatorio_professor():
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = int(get_jwt_identity())
     id_curso = request.args.get("id_curso")
+    # Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso - Prepara os filtros de período, curso e instrutor do relatório
     id_instrutor = request.args.get("id_instrutor")
+    # Fim item 22
     formato = request.args.get("formato")
 
+    # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
     if tipo not in {0, 1}:
         return resposta("Relatorios disponiveis apenas para administradores e instrutores.", 403)
+    # Fim item 23
 
     con = get_db()
     cursor = con.cursor()
 
     try:
         
-        from aluno_4_34 import garantir_tabela_progresso
+        from aluno_4_6_34 import garantir_tabela_progresso
         garantir_tabela_progresso(con)
 
         params = []
@@ -71,23 +68,28 @@ def relatorio_professor():
 
         
         
+        # Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso - Prepara os filtros de período, curso e instrutor do relatório
         if tipo == 1:
             where.append("PC.ID_USUARIO = ?")
             params.append(id_usuario)
         elif id_instrutor:
             where.append("PC.ID_USUARIO = ?")
             params.append(int(id_instrutor))
+        # Fim item 22
 
         if id_curso:
             where.append("C.ID_CURSO = ?")
             params.append(int(id_curso))
 
+        # Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso - Prepara os filtros de período, curso e instrutor do relatório
         periodo_filtros, periodo_params = _filtros_periodo("C.")
         
         
         where.extend(periodo_filtros)
+        # Fim item 22
         params.extend(periodo_params)
 
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
         cursor.execute(
             f"""
             SELECT
@@ -146,17 +148,22 @@ def relatorio_professor():
             """,
             tuple(params),
         )
+        # Fim item 7
         cursos = [
             {
                 "id_curso": row[0],
                 "curso": row[1],
                 "instrutor": row[2],
+                # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
                 "alunos": int(row[3] or 0),
                 "modulos": int(row[8] or 0),
+                # Fim item 23
                 "aulas": int(row[4] or 0),
                 "aulas_assistidas": int(row[5] or 0),
+                # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
                 "conclusoes": int(row[7] or 0),
                 "horas_assistidas": round(float(row[9] or 0) / 3600, 2),
+                # Fim item 7
                 "avaliacao_media": round(float(row[6] or 0), 2),
             }
             for row in cursor.fetchall()
@@ -164,9 +171,7 @@ def relatorio_professor():
 
         
         mensal = {}
-        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas
-        # Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso
-        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
         def linha_mensal(ano, mes):
             
             
@@ -174,10 +179,9 @@ def relatorio_professor():
             if chave not in mensal:
                 mensal[chave] = {"mes": chave, "alunos": 0, "cursos": 0, "modulos": 0, "horas_assistidas": 0.0}
             return mensal[chave]
-        # Fim item 23
-        # Fim item 22
         # Fim item 7
 
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
         cursor.execute(
             f"""
             SELECT EXTRACT(YEAR FROM E.MES_REFERENCIA), EXTRACT(MONTH FROM E.MES_REFERENCIA), COUNT(DISTINCT E.ID_USUARIO)
@@ -191,6 +195,7 @@ def relatorio_professor():
         )
         for ano, mes, quantidade in cursor.fetchall():
             linha_mensal(ano, mes)["alunos"] = int(quantidade or 0)
+        # Fim item 23
 
         cursor.execute(
             f"""
@@ -205,6 +210,7 @@ def relatorio_professor():
         for ano, mes, quantidade in cursor.fetchall():
             linha_mensal(ano, mes)["cursos"] = int(quantidade or 0)
 
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
         cursor.execute(
             f"""
             SELECT EXTRACT(YEAR FROM MC.CRIADO_EM), EXTRACT(MONTH FROM MC.CRIADO_EM), COUNT(DISTINCT MC.ID_MODULO)
@@ -218,7 +224,9 @@ def relatorio_professor():
         )
         for ano, mes, quantidade in cursor.fetchall():
             linha_mensal(ano, mes)["modulos"] = int(quantidade or 0)
+        # Fim item 23
 
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
         cursor.execute(
             f"""
             SELECT EXTRACT(YEAR FROM TM.MES_REFERENCIA), EXTRACT(MONTH FROM TM.MES_REFERENCIA),
@@ -234,9 +242,11 @@ def relatorio_professor():
         )
         for ano, mes, segundos in cursor.fetchall():
             linha_mensal(ano, mes)["horas_assistidas"] = round(float(segundos or 0) / 3600, 2)
+        # Fim item 7
         mensal = [mensal[chave] for chave in sorted(mensal)]
 
         
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Acumula o tempo efetivamente assistido para as métricas do instrutor
         cursor.execute(
             f"""
             SELECT COALESCE(SUM(TA.SEGUNDOS_ASSISTIDOS), 0) - COALESCE((
@@ -255,23 +265,31 @@ def relatorio_professor():
             """,
             tuple(params + params),
         )
+        # Fim item 7
         segundos_sem_competencia = max(float((cursor.fetchone() or (0,))[0] or 0), 0)
         
         
 
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
         total_alunos = sum(item["alunos"] for item in cursos)
+        # Fim item 23
         total_aulas_assistidas = sum(item["aulas_assistidas"] for item in cursos)
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
         total_horas = sum(item["horas_assistidas"] for item in cursos)
         total_conclusoes = sum(item["conclusoes"] for item in cursos)
         total_modulos_concluidos = sum(item["modulos"] for item in cursos)
+        # Fim item 7
 
         payload = {
+            # Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso - Prepara os filtros de período, curso e instrutor do relatório
             "filtros": {
                 "inicio": request.args.get("inicio"),
                 "fim": request.args.get("fim"),
                 "id_instrutor": id_instrutor,
                 "id_curso": id_curso,
             },
+            # Fim item 22
+            # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
             "resumo": {
                 "alunos": total_alunos,
                 "cursos": len(cursos),
@@ -280,12 +298,16 @@ def relatorio_professor():
                 "aulas_assistidas": total_aulas_assistidas,
                 "horas_assistidas": round(total_horas, 2),
             },
+            # Fim item 7
             "cursos": cursos,
             "mensal": mensal,
+            # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
             "horas_sem_competencia": round(segundos_sem_competencia / 3600, 2),
+            # Fim item 23
         }
 
         if formato == "pdf":
+            # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
             linhas = [
                 f"Alunos: {payload['resumo']['alunos']}",
                 f"Cursos: {payload['resumo']['cursos']}",
@@ -302,35 +324,35 @@ def relatorio_professor():
                     f"Cursos concluídos: {curso['conclusoes']} | Módulos concluídos: {curso['modulos']} | "
                     f"Horas: {curso['horas_assistidas']}"
                 )
+            # Fim item 7
             linhas.extend(["", "Detalhamento mensal:"])
+            # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
             for item in mensal:
                 linhas.append(
                     f"{item['mes']} | Alunos inscritos: {item['alunos']} | Cursos: {item['cursos']} | "
                     f"Modulos: {item['modulos']} | Horas assistidas: {item['horas_assistidas']}"
                 )
+            # Fim item 7
 
+            # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
             return Response(
                 _pdf_simples("Relatorio do Professor", linhas),
                 mimetype="application/pdf",
                 headers={"Content-Disposition": "attachment; filename=relatorio-professor.pdf"},
             )
+            # Fim item 23
 
         return jsonify(payload)
     except Exception as erro:
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
         return resposta(f"Erro ao gerar relatorio: {erro}", 500)
+        # Fim item 23
     finally:
         cursor.close()
         con.close()
-# Fim item 23
-# Fim item 22
-# Fim item 7
 
 
 
-# Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas
-# Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão
-# Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso
-# Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas
 @app.route("/professor/analiticos-mensais", methods=["GET"])
 @jwt_required()
 def analiticos_mensais_professor():
@@ -340,7 +362,9 @@ def analiticos_mensais_professor():
         return negado
 
     garantir_estrutura_banco()
+    # Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso - Prepara os filtros de período, curso e instrutor do relatório
     id_instrutor = int(get_jwt_identity())
+    # Fim item 22
     hoje = datetime.now().date()
     inicio_mes = hoje.replace(day=1)
     inicio_proximo_mes = (inicio_mes.replace(day=28) + timedelta(days=4)).replace(day=1)
@@ -350,6 +374,7 @@ def analiticos_mensais_professor():
 
     try:
         
+        # Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão - Registra ou contabiliza os acessos e as compras dos cursos
         cursor.execute(
             """
             SELECT
@@ -368,7 +393,9 @@ def analiticos_mensais_professor():
             """,
             (inicio_mes, inicio_mes, id_instrutor),
         )
+        # Fim item 9
         cursos = []
+        # Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão - Registra ou contabiliza os acessos e as compras dos cursos
         for row in cursor.fetchall():
             acessos = int(row[2] or 0)
             inscricoes = int(row[3] or 0)
@@ -382,7 +409,9 @@ def analiticos_mensais_professor():
             })
 
         total_acessos = sum(curso["acessos"] for curso in cursos)
+        # Fim item 9
         total_inscricoes = sum(curso["inscricoes_mes"] for curso in cursos)
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
         cursor.execute(
             """
             SELECT COUNT(DISTINCT M.ID_USUARIO)
@@ -394,14 +423,21 @@ def analiticos_mensais_professor():
             (id_instrutor,),
         )
         total_alunos_inscritos = int((cursor.fetchone() or (0,))[0] or 0)
+        # Fim item 23
         return jsonify({
             "mes": inicio_mes.strftime("%Y-%m"),
             "inicio": inicio_mes.isoformat(),
             "fim": fim_mes.isoformat(),
+            # Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão - Registra ou contabiliza os acessos e as compras dos cursos
             "total_acessos": total_acessos,
+            # Fim item 9
             "inscricoes_mes": total_inscricoes,
+            # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
             "alunos_inscritos": total_alunos_inscritos,
+            # Fim item 23
+            # Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão - Registra ou contabiliza os acessos e as compras dos cursos
             "conversao_percentual": round((total_inscricoes / total_acessos) * 100, 2) if total_acessos else 0,
+            # Fim item 9
             "cursos": cursos,
         })
     except Exception as erro:
@@ -409,15 +445,8 @@ def analiticos_mensais_professor():
     finally:
         cursor.close()
         con.close()
-# Fim item 23
-# Fim item 22
-# Fim item 9
-# Fim item 7
 
 
-# Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas
-# Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso
-# Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas
 @app.route("/professor/dashboard", methods=["GET"])
 @jwt_required()
 def professor_dashboard():
@@ -428,8 +457,8 @@ def professor_dashboard():
 
     id_professor = get_jwt_identity()
     
-    from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
-    from aluno_4_34 import garantir_tabela_progresso
+    from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
+    from aluno_4_6_34 import garantir_tabela_progresso
 
     garantir_estrutura_banco()
     con = get_db()
@@ -466,6 +495,7 @@ def professor_dashboard():
         )
         aulas = cursor.fetchone() or (0, 0)
 
+        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
         cursor.execute(
             """
             SELECT COUNT(DISTINCT M.ID_USUARIO)
@@ -477,6 +507,7 @@ def professor_dashboard():
             (id_professor,),
         )
         total_alunos = (cursor.fetchone() or (0,))[0] or 0
+        # Fim item 23
 
         
         cursor.execute(
@@ -505,6 +536,7 @@ def professor_dashboard():
         cursos_concluidos = (cursor.fetchone() or (0,))[0] or 0
 
         
+        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
         cursor.execute(
             """
             SELECT COUNT(DISTINCT CAST(M.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(MC.ID_MODULO AS VARCHAR(20)))
@@ -544,6 +576,7 @@ def professor_dashboard():
             (id_professor,),
         )
         horas_assistidas = round(float((cursor.fetchone() or (0,))[0] or 0) / 3600, 2)
+        # Fim item 7
 
         cursor.execute(
             """
@@ -574,10 +607,14 @@ def professor_dashboard():
                     "cursos_arquivados": cursos[3] or 0,
                     "aulas_total": aulas[0] or 0,
                     "aulas_publicadas": aulas[1] or 0,
+                    # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
                     "total_alunos": total_alunos,
+                    # Fim item 23
                     "cursos_concluidos": cursos_concluidos,
+                    # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
                     "modulos_concluidos": modulos_concluidos,
                     "horas_assistidas": horas_assistidas,
+                    # Fim item 7
                 },
                 "recentes": recentes,
             }
@@ -593,10 +630,14 @@ def professor_dashboard():
                         "cursos_arquivados": 0,
                         "aulas_total": 0,
                         "aulas_publicadas": 0,
+                        # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
                         "total_alunos": 0,
+                        # Fim item 23
                         "cursos_concluidos": 0,
+                        # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
                         "modulos_concluidos": 0,
                         "horas_assistidas": 0,
+                        # Fim item 7
                     },
                     "recentes": [],
                     "mensagem": criar_mensagem("Banco ainda não preparado para a dashboard do professor.", "erro"),
@@ -606,6 +647,3 @@ def professor_dashboard():
     finally:
         cursor.close()
         con.close()
-# Fim item 23
-# Fim item 22
-# Fim item 7

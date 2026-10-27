@@ -1,5 +1,6 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
-                                                                                                                                                            
+
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .graficoGoogle */
 .graficoGoogle {
     width: 100%;
     min-width: 0;
@@ -11,12 +12,14 @@
     margin-bottom: 24px;
 }
 
+/* Fim item 38 */
 .graficoGoogle h3 {
     margin: 0 0 12px;
     color: #1a1a1a;
     font-size: 1.1rem;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .graficoGoogle p */
 .graficoGoogle p {
     min-height: 280px;
     display: grid;
@@ -24,11 +27,15 @@
     color: #6a7770;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .graficoGoogleCanvas */
 .graficoGoogleCanvas {
     width: 100%;
     min-height: 300px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 560px) */
 @media (max-width: 560px) {
     .graficoGoogle {
         padding: 18px 12px;

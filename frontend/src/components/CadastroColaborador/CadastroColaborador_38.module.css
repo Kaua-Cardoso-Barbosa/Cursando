@@ -1,4 +1,5 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .overlay */
 .overlay {
     position: fixed;
     inset: 0;
@@ -12,6 +13,7 @@
     z-index: 9999;
 }
 
+/* Fim item 38 */
 .popup {
     position: relative;
 
@@ -58,6 +60,7 @@
     opacity: 0.6;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .botoes */
 .botoes {
     display: flex;
     justify-content: center;
@@ -65,4 +68,5 @@
 
     margin-top: 25px;
 }
+
 /* Fim item 38 */

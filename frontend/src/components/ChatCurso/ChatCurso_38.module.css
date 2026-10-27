@@ -1,9 +1,12 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .chat */
 .chat {
     --altura-chat: clamp(520px, calc(100vh - 180px), 660px);
     width: 100%;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .layout */
 .layout {
     display: grid;
     grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
@@ -11,6 +14,7 @@
     align-items: stretch;
 }
 
+/* Fim item 38 */
 .listaConversas,
 .painelMensagens {
     border: 1.5px solid #666666;
@@ -25,6 +29,7 @@
     overflow-y: auto;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .itemConversa */
 .itemConversa {
     width: 100%;
     border: none;
@@ -40,18 +45,21 @@
     text-align: left;
 }
 
+/* Fim item 38 */
 .itemConversa:hover,
 .itemAtivo {
     background: #e8f7ef;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .avatar */
 .avatar {
     color: #02693e;
     display: inline-flex;
     font-size: 1.6rem;
 }
 
-                                                                                                                                                                                   
+/* Fim item 38 */
+
 .avatar img,
 .identidadeMensagem img,
 .fotoCabecalho {
@@ -61,6 +69,7 @@
     object-fit: cover;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .identidadeConversa, .identidadeMensagem */
 .identidadeConversa,
 .identidadeMensagem {
     display: flex;
@@ -68,6 +77,7 @@
     gap: 8px;
 }
 
+/* Fim item 38 */
 .identidadeMensagem {
     margin-bottom: 4px;
 }
@@ -84,12 +94,14 @@
     color: #087044;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .resumoConversa */
 .resumoConversa {
     display: grid;
     gap: 3px;
     min-width: 0;
 }
 
+/* Fim item 38 */
 .resumoConversa strong,
 .resumoConversa small {
     overflow: hidden;
@@ -108,6 +120,7 @@
     font-size: 0.86rem;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .badge */
 .badge {
     min-width: 24px;
     height: 24px;
@@ -121,11 +134,15 @@
     font-weight: 700;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .painelMensagens */
 .painelMensagens {
     display: grid;
     grid-template-rows: auto 1fr auto;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalhoConversa */
 .cabecalhoConversa {
     border-bottom: 1px solid #dddddd;
     display: grid;
@@ -133,11 +150,13 @@
     padding: 14px 18px;
 }
 
+/* Fim item 38 */
 .cabecalhoConversa strong {
     color: #111111;
     font-size: 1rem;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .mensagens */
 .mensagens {
     background: #fafafa;
     display: flex;
@@ -148,6 +167,8 @@
     padding: 18px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .balao */
 .balao {
     align-self: flex-start;
     max-width: min(72%, 680px);
@@ -158,6 +179,7 @@
     padding: 10px 12px;
 }
 
+/* Fim item 38 */
 .meuBalao {
     align-self: flex-end;
     border-color: #139a58;
@@ -183,6 +205,7 @@
     font-size: 0.78rem;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .compositor */
 .compositor {
     border-top: 1px solid #dddddd;
     display: grid;
@@ -191,6 +214,7 @@
     padding: 14px;
 }
 
+/* Fim item 38 */
 .compositor textarea {
     min-height: 46px;
     max-height: 138px;
@@ -225,19 +249,23 @@
     padding: 16px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 900px) */
 @media (max-width: 900px) {
     .layout {
         grid-template-columns: 1fr;
     }
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 560px) */
 @media (max-width: 560px) {
     .balao {
         max-width: 92%;
     }
 }
 
-                                                                                                                                               
+/* Fim item 38 */
+
 .chat {
     --altura-chat: clamp(500px, calc(100vh - 220px), 680px);
 }
@@ -336,6 +364,7 @@
     transform: translateY(-1px);
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 900px) */
 @media (max-width: 900px) {
     .chat {
         --altura-chat: min(62vh, 580px);
@@ -350,6 +379,8 @@
     }
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 560px) */
 @media (max-width: 560px) {
     .chat {
         --altura-chat: 56vh;

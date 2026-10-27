@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Input from "../Input/Input.jsx";
 import Button from "../Button/Button.jsx";
 import css from "./PerfilUsuario_38.module.css";
-import validarNome from "../../utils/validarNome";
+import validarNome from "../../utils/validarNome_1";
 
 function resolverUrlMidia(api, caminho) {
     if (!caminho) return "";
@@ -58,7 +58,8 @@ export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) 
         return dados;
     }, [avisar]);
 
-    const carregarPerfil = useCallback(/* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web */
+    /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
+    const carregarPerfil = useCallback(
 async () => {
         try {
             const resposta = await fetch(`${api}/perfil`, {
@@ -66,7 +67,7 @@ async () => {
             });
             const dados = await lerResposta(resposta);
 
-                                                                                                                                                                 
+
             if (alteradoLocalmenteRef.current) return;
 
             setPerfil({
@@ -86,21 +87,24 @@ async () => {
             setCarregando(false);
         }
     }
-/* Fim item 3 */, [api, avisar, lerResposta]);
+, [api, avisar, lerResposta]);
+    /* Fim item 3 */
 
     useEffect(() => {
         carregarPerfil();
     }, [carregarPerfil]);
 
     useEffect(() => {
-        /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web */
+/* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza o perfil ao retomar sem sobrescrever a edição local */
 function sincronizarPerfil() {
-                                                                                                                                                              
+
             if (!document.hidden && !alteradoLocalmente && !salvando) carregarPerfil();
         }
 /* Fim item 3 */
 
+        /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
         window.addEventListener("cursando:sincronizar", sincronizarPerfil);
+        /* Fim item 3 */
         return () => window.removeEventListener("cursando:sincronizar", sincronizarPerfil);
     }, [alteradoLocalmente, carregarPerfil, salvando]);
 
@@ -117,15 +121,14 @@ function sincronizarPerfil() {
         }
     }
 
-    /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web */
 function atualizarCampoPerfil(campo, valor) {
-                                                                                                                                                           
+
         setPerfil((atual) => ({ ...atual, [campo]: valor }));
         alteradoLocalmenteRef.current = true;
         setAlteradoLocalmente(true);
     }
-/* Fim item 3 */
 
+    /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Envia as alterações de perfil e atualiza os dados locais */
     async function salvarPerfil(evento) {
         evento.preventDefault();
         setSalvando(true);
@@ -183,6 +186,7 @@ function atualizarCampoPerfil(campo, valor) {
             setSalvando(false);
         }
     }
+    /* Fim item 3 */
 
     return (
         <section className={css.perfil}>

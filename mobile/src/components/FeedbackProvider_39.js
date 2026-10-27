@@ -1,11 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Platform, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
 import AppIcon from "./AppIcon_39";
-import { colors } from "../styles";
+import { colors } from "../styles_39";
 
 const FeedbackContext = createContext(null);
 
-export /* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export
 function useFeedback() {
   const feedback = useContext(FeedbackContext);
   if (!feedback) {
@@ -13,9 +13,8 @@ function useFeedback() {
   }
   return feedback;
 }
-/* Fim item 39 */
 
-export default /* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function FeedbackProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [confirmacao, setConfirmacao] = useState(null);
@@ -110,8 +109,8 @@ function FeedbackProvider({ children }) {
     </FeedbackContext.Provider>
   );
 }
-/* Fim item 39 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   container: { flex: 1 },
   toastLayer: {
@@ -176,3 +175,4 @@ const styles = StyleSheet.create({
   cancelText: { color: colors.black, fontSize: 16, fontWeight: "600" },
   confirmText: { color: colors.white, fontSize: 16, fontWeight: "600" }
 });
+/* Fim item 39 */

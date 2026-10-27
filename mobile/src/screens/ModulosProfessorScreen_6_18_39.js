@@ -1,30 +1,33 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { apiRequest, resolverUrlMidia } from "../api/client_2_3_5_17_39";
+import { apiRequest, resolverUrlMidia } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import Field from "../components/Field_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
-export default /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos */
-/* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function ModulosProfessorScreen({ curso, token, onBack }) {
   const { mostrarAlerta } = useFeedback();
-                                                                                                                                                  
+
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
   const [modulos, setModulos] = useState([]);
   const [modulo, setModulo] = useState(null);
+  /* Fim item 6 */
   const [aulas, setAulas] = useState([]);
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
   const [tituloModulo, setTituloModulo] = useState("");
   const [descricaoModulo, setDescricaoModulo] = useState("");
   const [imagemModulo, setImagemModulo] = useState(null);
+  /* Fim item 6 */
   const [tituloAula, setTituloAula] = useState("");
   const [descricaoAula, setDescricaoAula] = useState("");
   const [videoAula, setVideoAula] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Consulta os módulos cadastrados no curso */
   async function carregarModulos() {
     setCarregando(true);
     try {
@@ -36,7 +39,9 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
       setCarregando(false);
     }
   }
+  /* Fim item 6 */
 
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Consulta as aulas vinculadas ao módulo selecionado */
   async function carregarAulas(idModulo) {
     setCarregando(true);
     try {
@@ -49,11 +54,13 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
       setCarregando(false);
     }
   }
+  /* Fim item 6 */
 
   useEffect(() => {
     carregarModulos();
   }, [curso.id]);
 
+  /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Abre a galeria nativa para selecionar uma imagem */
   async function escolherImagem() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -61,8 +68,10 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
     });
     if (!result.canceled) setImagemModulo(result.assets[0]);
   }
+  /* Fim item 18 */
 
-                                                                                                                                                    
+
+  /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Solicita acesso à câmera e captura a capa do módulo */
   async function tirarFotoModulo() {
     const permissao = await ImagePicker.requestCameraPermissionsAsync();
     if (!permissao.granted) {
@@ -76,7 +85,9 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
     });
     if (!result.canceled) setImagemModulo(result.assets[0]);
   }
+  /* Fim item 18 */
 
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Valida e publica os dados do novo módulo */
   async function criarModulo() {
     if (!tituloModulo.trim()) {
       mostrarAlerta("Módulo", "Informe o nome do módulo.", "erro");
@@ -110,7 +121,9 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
       setSalvando(false);
     }
   }
+  /* Fim item 6 */
 
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Seleciona o módulo e carrega suas aulas */
   async function abrirModulo(item) {
     setModulo(item);
     setTituloAula("");
@@ -118,7 +131,9 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
     setVideoAula(null);
     await carregarAulas(item.id);
   }
+  /* Fim item 6 */
 
+  /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Abre a galeria nativa para selecionar o vídeo da aula */
   async function escolherVideo() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
@@ -126,7 +141,9 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
     });
     if (!result.canceled) setVideoAula(result.assets[0]);
   }
+  /* Fim item 18 */
 
+  /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Envia o vídeo e os dados da aula vinculada ao módulo */
   async function criarAula() {
     if (!tituloAula.trim() || !descricaoAula.trim() || !videoAula?.uri) {
       mostrarAlerta("Aula", "Preencha título, descrição e selecione o vídeo.", "erro");
@@ -155,38 +172,50 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
       setSalvando(false);
     }
   }
+  /* Fim item 6 */
 
   return (
     <ScrollView
       contentContainerStyle={globalStyles.page}
-      refreshControl={<RefreshControl refreshing={carregando} onRefresh={modulo ? () => carregarAulas(modulo.id) : carregarModulos} />}
+      refreshControl={/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */ <RefreshControl refreshing={carregando} onRefresh={modulo ? () => carregarAulas(modulo.id) : carregarModulos} /> /* Fim item 6 */}
     >
       <Pressable style={styles.back} onPress={modulo ? () => setModulo(null) : onBack}>
         <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
         <Text style={styles.backText}>{modulo ? "Voltar aos módulos" : "Voltar aos cursos"}</Text>
       </Pressable>
+      {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
       <Text style={globalStyles.title}>{modulo?.titulo || `Módulos de ${curso.titulo}`}</Text>
+      {/* Fim item 6 */}
       <View style={globalStyles.divider} />
 
       {!modulo ? (
         <>
           <View style={[globalStyles.card, styles.formCard]}>
             <Text style={styles.sectionTitle}>Criar módulo</Text>
+            {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
             <Field label="Nome do módulo" value={tituloModulo} onChangeText={setTituloModulo} />
+            {/* Fim item 6 */}
             <Field label="Descrição" value={descricaoModulo} onChangeText={setDescricaoModulo} multiline />
+            {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
             <Pressable style={styles.imagePicker} onPress={escolherImagem}>
               {imagemModulo?.uri ? <Image source={{ uri: imagemModulo.uri }} style={styles.moduleImage} /> : null}
               <AppIcon name="image-outline" size={20} color={colors.darkGreen} />
               <Text style={styles.actionText}>{imagemModulo?.fileName || "Selecionar imagem do módulo"}</Text>
             </Pressable>
+            {/* Fim item 6 */}
+            {/* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Aciona os recursos nativos e trata as permissões do dispositivo */}
             <Pressable style={styles.cameraButton} onPress={tirarFotoModulo}>
               <AppIcon name="camera-outline" size={20} color={colors.darkGreen} />
               <Text style={styles.actionText}>Tirar foto do módulo</Text>
             </Pressable>
+            {/* Fim item 18 */}
+            {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
             <Pressable style={globalStyles.primaryButton} onPress={criarModulo} disabled={salvando}>
               <Text style={globalStyles.buttonText}>{salvando ? "Salvando..." : "Criar módulo"}</Text>
             </Pressable>
+            {/* Fim item 6 */}
           </View>
+          {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
           <View style={styles.list}>
             {modulos.map((item) => (
               <Pressable key={item.id} style={[globalStyles.card, styles.moduleCard]} onPress={() => abrirModulo(item)}>
@@ -200,6 +229,7 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
             ))}
             {!carregando && modulos.length === 0 ? <Text style={globalStyles.message}>Este curso ainda não tem módulos.</Text> : null}
           </View>
+          {/* Fim item 6 */}
         </>
       ) : (
         <>
@@ -233,10 +263,8 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
     </ScrollView>
   );
 }
-/* Fim item 39 */
-/* Fim item 18 */
-/* Fim item 6 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   back: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
   backText: { color: colors.darkGreen, fontSize: 15, fontWeight: "700" },
@@ -253,3 +281,4 @@ const styles = StyleSheet.create({
   actionText: { color: colors.darkGreen, fontWeight: "700" },
   lessonCard: { flexDirection: "row", alignItems: "center", padding: 12 }
 });
+/* Fim item 39 */

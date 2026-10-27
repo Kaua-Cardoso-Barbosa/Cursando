@@ -2,9 +2,9 @@ import AppIcon from "../components/AppIcon_39";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
 import Field from "../components/Field_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
-export default /* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function EditarPerfilScreen({ perfil, onCancel, onSave, salvando }) {
   const [nome, setNome] = useState(perfil?.nome || "");
   const [email, setEmail] = useState(perfil?.email || "");
@@ -46,8 +46,8 @@ function EditarPerfilScreen({ perfil, onCancel, onSave, salvando }) {
     </ScrollView>
   );
 }
-/* Fim item 39 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   page: {
     paddingTop: 28
@@ -80,3 +80,4 @@ const styles = StyleSheet.create({
     marginTop: 22
   }
 });
+/* Fim item 39 */

@@ -1,4 +1,5 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cardAula */
 .cardAula {
     display: flex;
     flex-direction: column;
@@ -10,12 +11,16 @@
     min-width: 350px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .containerImagem */
 .containerImagem {
     width: 100%;
     aspect-ratio: 16 / 9;
     background-color: #333333;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .imagemAula */
 .imagemAula {
     width: 100%;
     height: 100%;
@@ -23,12 +28,15 @@
     display: block;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .placeholderImagem */
 .placeholderImagem {
     width: 100%;
     height: 100%;
     background-color: #cccccc;
 }
 
+/* Fim item 38 */
 .infoAula {
     margin: 10px;
 }
@@ -43,7 +51,7 @@
     font-size: 16px;
 }
 
-                                                                                                                                                     
+
 .cardAula {
     border: 1px solid #dfe9e3;
     border-radius: 17px;
@@ -78,5 +86,3 @@
     font-size: 0.9rem;
     line-height: 1.5;
 }
-
-/* Fim item 38 */

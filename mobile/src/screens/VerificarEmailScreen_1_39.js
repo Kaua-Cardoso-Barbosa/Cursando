@@ -10,12 +10,12 @@ import {
   Text,
   View
 } from "react-native";
-import { apiRequest } from "../api/client_2_3_5_17_39";
+import { apiRequest } from "../api/client_3_17";
 import BrandLogo from "../components/BrandLogo_39";
 import Field from "../components/Field_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
-export default /* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function VerificarEmailScreen({ email, codigoEnviado, onVerified }) {
   const emailNormalizado = (email || "").trim().toLowerCase().replace(/\.+$/, "");
   const [emailAtual, setEmailAtual] = useState(emailNormalizado);
@@ -29,12 +29,12 @@ function VerificarEmailScreen({ email, codigoEnviado, onVerified }) {
     : "");
   const [carregando, setCarregando] = useState(false);
 
-  /* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
+/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Envia o código para confirmar o e-mail do cadastro */
 async function verificar() {
     setCarregando(true);
     setErro("");
     try {
-                                                                                                                                                       
+
       const dados = await apiRequest("/verificar_email_cadastro", {
         method: "POST",
         body: JSON.stringify({ email: emailAtual, codigo: codigo.trim() })
@@ -49,12 +49,12 @@ async function verificar() {
   }
 /* Fim item 1 */
 
-  /* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
+/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Solicita um novo código de confirmação do e-mail */
 async function reenviar() {
     setErro("");
     setMensagem("");
     try {
-                                                                                                                                         
+
       const dados = await apiRequest("/reenviar_codigo_cadastro", {
         method: "POST",
         body: JSON.stringify({ email: emailAtual })
@@ -66,14 +66,14 @@ async function reenviar() {
   }
 /* Fim item 1 */
 
-  /* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo */
+/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Atualiza o e-mail pendente e solicita nova confirmação */
 async function corrigirEmail() {
     setErro("");
     setMensagem("");
     try {
       const dados = await apiRequest("/corrigir_email_cadastro", {
         method: "POST",
-                                                                                                                                                    
+
         body: JSON.stringify({ email_atual: emailAtual, novo_email: novoEmail.trim().toLowerCase().replace(/\.+$/, ""), senha })
       });
       setEmailAtual(dados.email);
@@ -128,8 +128,8 @@ async function corrigirEmail() {
     </ImageBackground>
   );
 }
-/* Fim item 39 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: colors.green },
   keyboard: { flex: 1 },
@@ -141,3 +141,4 @@ const styles = StyleSheet.create({
   resendButton: { alignItems: "center", padding: 16 },
   resendText: { color: colors.darkGreen, fontSize: 15, textDecorationLine: "underline" }
 });
+/* Fim item 39 */

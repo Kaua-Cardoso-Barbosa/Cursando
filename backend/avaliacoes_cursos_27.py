@@ -4,14 +4,14 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app import app
 from banco_37 import get_db
-from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
-from professor_6 import de_blob_texto, para_blob_texto
-from utilitarios_backend_5_9_20_28_34 import _bloqueio_assinatura_aluno, exigir_tipo, proximo_id, resposta
+from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
+from professor_7 import de_blob_texto, para_blob_texto
+from utilitarios_backend_5_9_12_15_20_24_28_34 import _bloqueio_assinatura_aluno, exigir_tipo, proximo_id, resposta
 
 
 
 
-# Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão
+# Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Valida a conclusão e grava a nota e o comentário do aluno
 @app.route("/aluno/cursos/<int:id_curso>/avaliacoes", methods=["POST"])
 @jwt_required()
 def avaliar_curso(id_curso):

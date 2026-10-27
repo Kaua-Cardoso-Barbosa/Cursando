@@ -8,26 +8,24 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app import app
 from banco_37 import get_db
-from professor_6 import de_blob_texto, para_blob_texto
+from professor_7 import de_blob_texto, para_blob_texto
 
 
-from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
-from utilitarios_backend_5_9_20_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _decodificar_alternativas, _decodificar_respostas_prova, exigir_tipo, proximo_id, resposta
+from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
+from utilitarios_backend_5_9_12_15_20_24_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _decodificar_alternativas, _decodificar_respostas_prova, exigir_tipo, proximo_id, resposta
 
 NOTA_MINIMA_APROVACAO = 70
 
 
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
+# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Remove questões, respostas e vínculos da prova
 def _apagar_conteudo_prova(cursor, id_prova, apagar_cabecalho=False):
     
     cursor.execute("DELETE FROM RESPOSTAS_PROVA WHERE ID_PROVA = ?", (id_prova,))
     cursor.execute("DELETE FROM QUESTOES_PROVA WHERE ID_PROVA = ?", (id_prova,))
     if apagar_cabecalho:
         cursor.execute("DELETE FROM PROVAS_CURSO WHERE ID_PROVA = ?", (id_prova,))
-# Fim item 20
 
 
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
 def _pontuar_prova(cursor, id_prova, respostas, correcoes=None):
     
     correcoes = correcoes or {}
@@ -52,7 +50,6 @@ def _pontuar_prova(cursor, id_prova, respostas, correcoes=None):
     nota = round(100 * acertos / total) if total else 0
     status = 0 if pendentes else (1 if nota >= NOTA_MINIMA_APROVACAO else 2)
     return {"nota": nota, "acertos": acertos, "total_questoes": total, "status": status, "pendentes": pendentes}
-# Fim item 20
 
 
 
@@ -60,7 +57,6 @@ def _pontuar_prova(cursor, id_prova, respostas, correcoes=None):
 
 
 
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
 @app.route("/professor/cursos/<int:id_curso>/prova", methods=["GET", "POST", "DELETE"])
 @jwt_required()
 def prova_professor(id_curso):
@@ -215,9 +211,7 @@ def prova_professor(id_curso):
     finally:
         cursor.close()
         con.close()
-# Fim item 20
 
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
 @app.route("/professor/provas/<int:id_prova>/publicar", methods=["PATCH"])
 @jwt_required()
 def publicar_prova(id_prova):
@@ -260,12 +254,10 @@ def publicar_prova(id_prova):
     finally:
         cursor.close()
         con.close()
-# Fim item 20
 
 
 
 
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
 @app.route("/aluno/cursos/<int:id_curso>/prova", methods=["GET", "POST"])
 @jwt_required()
 def prova_aluno(id_curso):
@@ -444,12 +436,10 @@ def prova_aluno(id_curso):
     finally:
         cursor.close()
         con.close()
-# Fim item 20
 
 
 
 
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
 @app.route("/professor/provas/respostas", methods=["GET"])
 @jwt_required()
 def respostas_prova_professor():
@@ -520,11 +510,9 @@ def respostas_prova_professor():
     finally:
         cursor.close()
         con.close()
-# Fim item 20
 
 
 
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
 @app.route("/professor/provas/respostas/<int:id_resposta>/questoes/<int:id_questao>", methods=["PATCH"])
 @jwt_required()
 def corrigir_questao_dissertativa(id_resposta, id_questao):

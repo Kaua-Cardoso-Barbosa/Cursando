@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { FaCertificate, FaCheckCircle, FaExclamationCircle, FaSearch } from "react-icons/fa";
 import css from "./VerificarCertificado_38.module.css";
 
-export default /* Sprint item 5 - Gerar certificado ao concluir o curso */
+export default
 function VerificarCertificado({ api }) {
     const { codigo } = useParams();
     const navigate = useNavigate();
@@ -12,6 +12,7 @@ function VerificarCertificado({ api }) {
     const [erro, setErro] = useState("");
     const [carregando, setCarregando] = useState(false);
 
+    /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */
     useEffect(() => {
         setConsulta(codigo || "");
         if (!codigo) return;
@@ -38,11 +39,14 @@ function VerificarCertificado({ api }) {
             });
         return () => controle.abort();
     }, [api, codigo]);
+    /* Fim item 5 */
 
     function consultar(evento) {
         evento.preventDefault();
         const valor = consulta.trim().toUpperCase();
+        /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */
         if (valor) navigate(`/certificados/${encodeURIComponent(valor)}/verificar`);
+        /* Fim item 5 */
     }
 
     const dataEmissao = resultado?.emitido_em
@@ -51,6 +55,7 @@ function VerificarCertificado({ api }) {
 
     return (
         <main className={css.pagina}>
+            {/* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */}
             <section className={css.painel} aria-labelledby="titulo-verificacao">
                 <div className={css.icone}><FaCertificate /></div>
                 <p className={css.sobretitulo}>Autenticidade de certificados</p>
@@ -79,7 +84,7 @@ function VerificarCertificado({ api }) {
                 </div>
                 <Link className={css.voltar} to="/">Voltar para a página inicial</Link>
             </section>
+            {/* Fim item 5 */}
         </main>
     );
 }
-/* Fim item 5 */

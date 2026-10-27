@@ -12,18 +12,18 @@ from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
 from app import app
 from banco_37 import get_db
-from professor_6 import de_blob_texto, para_blob_texto
+from professor_7 import de_blob_texto, para_blob_texto
 
 
-from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
-from utilitarios_backend_5_9_20_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _professor_responsavel, proximo_id, resposta
-
-
-
+from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
+from utilitarios_backend_5_9_12_15_20_24_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _professor_responsavel, proximo_id, resposta
 
 
 
-# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+
+
+
+# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Lista as conversas permitidas para o aluno ou instrutor
 @app.route("/chat/conversas", methods=["GET"])
 @jwt_required()
 def chat_conversas():
@@ -117,12 +117,10 @@ def chat_conversas():
     finally:
         cursor.close()
         con.close()
-# Fim item 19
 
 
 
 
-# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
 @app.route("/chat/cursos/<int:id_curso>/mensagens", methods=["GET", "POST"])
 @jwt_required()
 def chat_mensagens(id_curso):
@@ -234,8 +232,7 @@ def chat_mensagens(id_curso):
 
 
 
-# Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado
-# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+# Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado - Inicia o envio de avisos sobre a publicação do curso
 def notificar_alunos_novo_curso(destinatarios, titulo_curso):
     
     if not destinatarios:
@@ -259,13 +256,11 @@ def notificar_alunos_novo_curso(destinatarios, titulo_curso):
         daemon=True,
     )
     thread.start()
-# Fim item 19
 # Fim item 11
 
 
 
-# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
+# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Agenda a notificação do resultado e do feedback da prova
 def notificar_reprovacao_prova(destinatario, titulo_curso, feedback=""):
     if not destinatario:
         return
@@ -285,11 +280,8 @@ def notificar_reprovacao_prova(destinatario, titulo_curso, feedback=""):
         daemon=True,
     )
     thread.start()
-# Fim item 20
-# Fim item 19
 
 
-# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
 def _enviar_aviso_reprovacao(destinatario, titulo_curso, feedback, config):
     try:
         if config["SMTP_USE_SSL"]:
@@ -315,10 +307,10 @@ def _enviar_aviso_reprovacao(destinatario, titulo_curso, feedback, config):
             servidor.quit()
     except Exception:
         print("Erro ao enviar aviso de reprovacao; confira as configuracoes SMTP.")
-# Fim item 19
+# Fim item 20
 
 
-# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
+# Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado - Monta o e-mail de novo curso e envia aos destinatários
 def _enviar_avisos(destinatarios, titulo_curso, config):
     try:
         if config["SMTP_USE_SSL"]:
@@ -352,11 +344,9 @@ def _enviar_avisos(destinatarios, titulo_curso, config):
     except Exception:
         
         print("Erro ao enviar aviso de novo curso; confira as configurações SMTP.")
-# Fim item 19
+# Fim item 11
 
 
-# Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web
 def _escapar_html(valor):
     return (str(valor).replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"))
-# Fim item 19

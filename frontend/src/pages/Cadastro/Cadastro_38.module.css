@@ -1,4 +1,5 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cadastro */
 .cadastro {
     width: 100%;
     min-height: 130vh;
@@ -17,8 +18,9 @@
     );
 }
 
+/* Fim item 38 */
 
-            
+
 
 .cadastro h1 {
     margin-top: 10px;
@@ -29,7 +31,7 @@
 }
 
 
-                
+
 
 .formulario {
     width: 540px;
@@ -40,20 +42,24 @@
 }
 
 
-                             
 
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .linha */
 .linha {
     width: 100%;
     display: flex;
     gap: 30px;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .linha .campo */
 .linha .campo {
     width: 50%;
 }
 
+/* Fim item 38 */
 
-           
+
 
 .botao {
     display: block;
@@ -73,7 +79,7 @@
 }
 
 
-           
+
 
 .login {
     margin-top: 22px;
@@ -93,8 +99,9 @@
 }
 
 
-                    
 
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 600px) */
 @media (max-width: 600px) {
 
     .cadastro {
@@ -120,7 +127,9 @@
     }
 }
 
+/* Fim item 38 */
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 400px) */
 @media (max-width: 400px) {
 
     .linha {
@@ -132,4 +141,5 @@
         width: 100%;
     }
 }
+
 /* Fim item 38 */

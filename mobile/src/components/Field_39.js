@@ -1,7 +1,7 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
-import { globalStyles } from "../styles";
+import { globalStyles } from "../styles_39";
 
-export default /* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function Field({
   label,
   value,
@@ -33,8 +33,8 @@ function Field({
     </View>
   );
 }
-/* Fim item 39 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   disabled: {
     color: "#333333",
@@ -45,3 +45,4 @@ const styles = StyleSheet.create({
     textAlignVertical: "top"
   }
 });
+/* Fim item 39 */

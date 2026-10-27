@@ -1,4 +1,5 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .shakaVideoContainer */
 .shakaVideoContainer {
     position: relative;
     width: 100%;
@@ -7,6 +8,8 @@
     overflow: hidden;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .shakaVideo */
 .shakaVideo {
     width: 100%;
     height: 100%;
@@ -16,7 +19,8 @@
     -webkit-touch-callout: none;
 }
 
-                                                                                                                                                              
+/* Fim item 38 */
+
 .marcaDagua {
     position: absolute;
     z-index: 2;
@@ -37,5 +41,3 @@
     user-select: none;
     -webkit-user-select: none;
 }
-
-/* Fim item 38 */

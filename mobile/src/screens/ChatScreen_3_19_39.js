@@ -14,30 +14,35 @@ import {
   TextInput,
   View
 } from "react-native";
-import { apiRequest, resolverUrlMidia } from "../api/client_2_3_5_17_39";
+import { apiRequest, resolverUrlMidia } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
-export default /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, carregando, onRefresh }) {
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
   const [conversas, setConversas] = useState([]);
+  /* Fim item 19 */
   const [selecionada, setSelecionada] = useState(conversaInicial);
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
   const [mensagens, setMensagens] = useState([]);
+  /* Fim item 19 */
   const [texto, setTexto] = useState("");
   const [loading, setLoading] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [tecladoAberto, setTecladoAberto] = useState(false);
   const enviandoRef = useRef(false);
   const aluno = Number(tipoUsuario) === 2;
-                                                                                                                                                  
-                                                                                
+
+
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
   const conversasVisiveis = selecionada && !conversas.some((conversa) =>
     Number(conversa.id_curso) === Number(selecionada.id_curso) &&
     Number(conversa.id_aluno) === Number(selecionada.id_aluno)
   ) ? [selecionada, ...conversas] : conversas;
+  /* Fim item 19 */
 
-                                                                                                                                                                             
+
   function Avatar({ imagem, tamanho = 38 }) {
     return imagem
       ? <Image source={{ uri: resolverUrlMidia(imagem) }} style={{ width: tamanho, height: tamanho, borderRadius: tamanho / 2 }} />
@@ -55,6 +60,7 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
     };
   }, []);
 
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Consulta as conversas disponíveis para o usuário */
   async function carregarConversas({ silencioso = false } = {}) {
     if (!silencioso) setLoading(true);
     try {
@@ -72,7 +78,9 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
       if (!silencioso) setLoading(false);
     }
   }
+  /* Fim item 19 */
 
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Consulta as mensagens da conversa selecionada */
   async function carregarMensagens(conversa) {
     if (!conversa) return;
 
@@ -80,7 +88,9 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
     const dados = await apiRequest(`/chat/cursos/${conversa.id_curso}/mensagens${query}`, {}, token);
     setMensagens(Array.isArray(dados) ? dados : []);
   }
+  /* Fim item 19 */
 
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Envia a mensagem e recarrega a conversa selecionada */
   async function enviarMensagem() {
     const textoMensagem = texto.trim();
     if (!selecionada || !textoMensagem || enviandoRef.current) return;
@@ -103,12 +113,14 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
       setEnviando(false);
     }
   }
+  /* Fim item 19 */
 
   useEffect(() => {
     carregarConversas();
   }, [token, tipoUsuario, cursos]);
 
-                                                                                                                                                                     
+
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
   useEffect(() => {
     const intervalo = setInterval(() => {
       if (AppState.currentState !== "active") return;
@@ -117,27 +129,33 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
     }, 5000);
     return () => clearInterval(intervalo);
   }, [token, tipoUsuario, cursos, selecionada]);
+  /* Fim item 19 */
 
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
   useEffect(() => {
     carregarMensagens(selecionada).catch(() => setMensagens([]));
   }, [selecionada]);
+  /* Fim item 19 */
 
+  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
   useEffect(() => {
-    const inscricao = AppState.addEventListener("change", /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web */
+    const inscricao = AppState.addEventListener("change",
 (estado) => {
       if (estado !== "active") return;
 
-                                                                                                                                                                   
+
       carregarConversas();
       if (selecionada) {
         carregarMensagens(selecionada).catch(() => setMensagens([]));
       }
     }
-/* Fim item 3 */);
+);
 
     return () => inscricao.remove();
   }, [token, tipoUsuario, cursos, selecionada]);
+  /* Fim item 19 */
 
+  /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza as conversas e mensagens ao sincronizar o aplicativo */
   async function atualizarChat() {
     await onRefresh?.();
     await carregarConversas();
@@ -145,6 +163,7 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
       await carregarMensagens(selecionada).catch(() => setMensagens([]));
     }
   }
+  /* Fim item 3 */
 
   return (
     <KeyboardAvoidingView
@@ -157,12 +176,15 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={carregando || loading} onRefresh={atualizarChat} />}
       >
+        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
         <View style={styles.header}>
           <Text style={globalStyles.title}>Chat</Text>
           <Text style={globalStyles.eyebrow}>{aluno ? "Tire duvidas com o instrutor" : "Converse com os alunos dos seus cursos"}</Text>
           <View style={globalStyles.divider} />
         </View>
+        {/* Fim item 19 */}
 
+        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
         <View style={styles.conversations}>
           {loading ? <ActivityIndicator color={colors.green} /> : null}
           {!loading && conversasVisiveis.length === 0 ? <Text style={globalStyles.message}>{aluno ? "Nenhuma conversa disponivel." : "Nenhuma conversa ainda. Abra os alunos de um curso para iniciar."}</Text> : null}
@@ -184,7 +206,9 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
             );
           })}
         </View>
+        {/* Fim item 19 */}
 
+        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
         <View style={[styles.messages, tecladoAberto && styles.keyboardMessages]}>
           {selecionada ? (
             <View style={styles.chatIdentity}>
@@ -207,7 +231,9 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
             </View>
           ))}
         </View>
+        {/* Fim item 19 */}
 
+        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
         <View style={styles.composer}>
           <TextInput
             value={texto}
@@ -221,13 +247,13 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
             <AppIcon name="send-outline" size={20} color={colors.white} />
           </Pressable>
         </View>
+        {/* Fim item 19 */}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-/* Fim item 39 */
-/* Fim item 19 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   keyboardArea: { flex: 1 },
   scroll: { flex: 1 },
@@ -344,3 +370,4 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   }
 });
+/* Fim item 39 */

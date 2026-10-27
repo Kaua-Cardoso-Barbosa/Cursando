@@ -10,15 +10,15 @@ from werkzeug.utils import secure_filename
 
 from app import app
 from banco_37 import get_db
-from professor_6 import AULA_STATUS_FILTRO, CURSO_STATUS_FILTRO, STATUS_ARQUIVADO, STATUS_NOMES, STATUS_PRIVADO, STATUS_PUBLICADO, converter_video_dash, criar_slug, de_blob_texto, exigir_professor, para_blob_texto, resposta as resposta_professor, salvar_thumb_aula, salvar_upload
+from professor_7 import AULA_STATUS_FILTRO, CURSO_STATUS_FILTRO, STATUS_ARQUIVADO, STATUS_NOMES, STATUS_PRIVADO, STATUS_PUBLICADO, converter_video_dash, criar_slug, de_blob_texto, exigir_professor, para_blob_texto, resposta as resposta_professor, salvar_thumb_aula, salvar_upload
 
 
-from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
-from utilitarios_backend_5_9_20_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, exigir_tipo, normalizar_taxonomia, proximo_id, resposta
+from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
+from utilitarios_backend_5_9_12_15_20_24_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, exigir_tipo, normalizar_taxonomia, proximo_id, resposta
 
 
 
-# Sprint item 6 - Permitir que o instrutor divida o curso em módulos
+# Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Lista ou cria os módulos do curso do instrutor
 @app.route("/professor/cursos/<int:id_curso>/modulos", methods=["GET", "POST"])
 @jwt_required()
 def modulos_professor(id_curso):
@@ -113,7 +113,7 @@ def modulos_professor(id_curso):
 
 
 
-# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos
+# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Lista ou publica os materiais e arquivos complementares
 @app.route("/professor/cursos/<int:id_curso>/materiais", methods=["GET", "POST"])
 @jwt_required()
 def materiais_professor(id_curso):
@@ -205,12 +205,10 @@ def materiais_professor(id_curso):
     finally:
         cursor.close()
         con.close()
-# Fim item 21
 
 
 
 
-# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos
 @app.route("/aluno/cursos/<int:id_curso>/materiais", methods=["GET"])
 @jwt_required()
 def materiais_aluno(id_curso):
@@ -274,7 +272,7 @@ def materiais_aluno(id_curso):
 
 
 
-# Sprint item 6 - Permitir que o instrutor divida o curso em módulos
+# Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Atualiza os dados e a ordenação do módulo
 @app.route("/professor/cursos/<int:id_curso>/modulos/<int:id_modulo>", methods=["PUT"])
 @jwt_required()
 def editar_modulo_professor(id_curso, id_modulo):
@@ -326,10 +324,8 @@ def editar_modulo_professor(id_curso, id_modulo):
     finally:
         cursor.close()
         con.close()
-# Fim item 6
 
 
-# Sprint item 6 - Permitir que o instrutor divida o curso em módulos
 @app.route("/professor/cursos/<int:id_curso>/modulos/<int:id_modulo>/status", methods=["PATCH"])
 @jwt_required()
 def alterar_status_modulo_professor(id_curso, id_modulo):
@@ -379,10 +375,8 @@ def alterar_status_modulo_professor(id_curso, id_modulo):
     finally:
         cursor.close()
         con.close()
-# Fim item 6
 
 
-# Sprint item 6 - Permitir que o instrutor divida o curso em módulos
 @app.route("/professor/cursos/<int:id_curso>/modulos/<int:id_modulo>", methods=["DELETE"])
 @jwt_required()
 def excluir_modulo_professor(id_curso, id_modulo):
@@ -416,7 +410,7 @@ def excluir_modulo_professor(id_curso, id_modulo):
 
 
 
-# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos
+# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Exclui o material complementar do curso
 @app.route("/professor/cursos/<int:id_curso>/materiais/<int:id_material>", methods=["DELETE"])
 @jwt_required()
 def excluir_material_professor(id_curso, id_material):
@@ -451,12 +445,10 @@ def excluir_material_professor(id_curso, id_material):
     finally:
         cursor.close()
         con.close()
-# Fim item 21
 
 
 
 
-# Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos
 @app.route("/aluno/cursos/<int:id_curso>/materiais/<int:id_material>/arquivo", methods=["GET"])
 @jwt_required()
 def baixar_material_aluno(id_curso, id_material):
@@ -493,7 +485,7 @@ def baixar_material_aluno(id_curso, id_material):
 # Fim item 21
 
 
-# Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação
+# Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Consulta ou cadastra as categorias e os temas usados nos filtros
 @app.route("/taxonomias/<string:tipo>", methods=["GET", "POST"])
 @jwt_required()
 def taxonomias(tipo):
@@ -547,11 +539,9 @@ def taxonomias(tipo):
     finally:
         cursor.close()
         con.close()
-# Fim item 28
 
 
 
-# Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação
 @app.route("/professor/cursos/<int:id_curso>/taxonomia", methods=["GET", "PUT"])
 @jwt_required()
 def taxonomia_curso_professor(id_curso):
@@ -632,7 +622,6 @@ def taxonomia_curso_professor(id_curso):
 
 
 
-# Sprint item 6 - Permitir que o instrutor divida o curso em módulos
 @app.route("/professor/cursos/<int:id_curso>/aulas", methods=["POST"])
 @jwt_required()
 def criar_aula_professor(id_curso):
@@ -642,23 +631,28 @@ def criar_aula_professor(id_curso):
         return negado
 
     
-    from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
+    from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
     garantir_estrutura_banco()
 
     titulo = (request.form.get("titulo") or "").strip()
     descricao = (request.form.get("descricao") or "").strip()
+    # Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e os vínculos das aulas do curso
     id_modulo = request.form.get("id_modulo", type=int)
+    # Fim item 6
 
     if not titulo or not descricao:
         return resposta_professor("Título e descrição são obrigatórios.", 400)
 
+    # Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e os vínculos das aulas do curso
     if not id_modulo:
         return resposta_professor("Selecione um modulo para esta aula.", 400)
+    # Fim item 6
 
     con = get_db()
     cursor = con.cursor()
 
     try:
+        # Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e os vínculos das aulas do curso
         cursor.execute(
             """
             SELECT M.STATUS
@@ -673,6 +667,7 @@ def criar_aula_professor(id_curso):
         modulo = cursor.fetchone()
         if not modulo:
             return resposta_professor("Curso não encontrado.", 404)
+        # Fim item 6
 
         cursor.execute("SELECT GEN_ID(GEN_VIDEOS_ID, 1) FROM RDB$DATABASE")
         id_aula = cursor.fetchone()[0]
@@ -696,6 +691,7 @@ def criar_aula_professor(id_curso):
         except ValueError as erro:
             return resposta_professor(str(erro), 400)
 
+        # Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e os vínculos das aulas do curso
         cursor.execute(
             """
             INSERT INTO VIDEOS (
@@ -707,21 +703,23 @@ def criar_aula_professor(id_curso):
             (id_aula, id_curso, id_modulo, uuid4().hex, titulo, criar_slug(titulo), para_blob_texto(descricao), video_url,
              STATUS_ARQUIVADO if modulo[0] == STATUS_ARQUIVADO else STATUS_PRIVADO),
         )
+        # Fim item 6
         con.commit()
+        # Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e os vínculos das aulas do curso
         return resposta_professor(
             "Aula cadastrada como arquivada." if modulo[0] == STATUS_ARQUIVADO else "Aula cadastrada como privada.",
             201, "sucesso", id_aula=id_aula, thumb=thumb_url,
         )
+        # Fim item 6
     except Exception as erro:
         con.rollback()
         return resposta_professor(f"Erro ao cadastrar aula: {erro}", 500)
     finally:
         cursor.close()
         con.close()
-# Fim item 6
 
 
-# Sprint item 6 - Permitir que o instrutor divida o curso em módulos
+# Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Transfere a aula para o módulo selecionado
 @app.route("/professor/aulas/<int:id_aula>/modulo", methods=["PATCH"])
 @jwt_required()
 def mover_aula_para_modulo(id_aula):
@@ -729,7 +727,7 @@ def mover_aula_para_modulo(id_aula):
     if negado:
         return negado
 
-    from estrutura_banco_6_9_19_20_21_32_36 import garantir_estrutura_banco
+    from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
     garantir_estrutura_banco()
     try:
         id_modulo = int((request.get_json() or {}).get("id_modulo"))
@@ -779,8 +777,6 @@ def mover_aula_para_modulo(id_aula):
 
 
 
-# Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado
-# Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso
 @app.route("/professor/cursos/<int:id_curso>/status", methods=["PATCH"])
 @jwt_required()
 def alterar_status_curso(id_curso):
@@ -817,6 +813,7 @@ def alterar_status_curso(id_curso):
 
         if status == STATUS_PUBLICADO:
             
+            # Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Consulta os requisitos e os resultados da prova do curso
             try:
                 cursor.execute(
                     """
@@ -830,10 +827,14 @@ def alterar_status_curso(id_curso):
                     return resposta_professor("Cadastre e publique uma prova antes de publicar o curso.", 400)
             except Exception:
                 return resposta_professor("Cadastre e publique uma prova antes de publicar o curso.", 400)
+            # Fim item 20
 
         
+        # Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado - Seleciona os alunos do instrutor e prepara o aviso de novo curso
         destinatarios = []
+        # Fim item 11
         if status == STATUS_PUBLICADO and status_anterior != STATUS_PUBLICADO:
+            # Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado - Seleciona os alunos do instrutor e prepara o aviso de novo curso
             cursor.execute(
                 """
                 SELECT DISTINCT U.EMAIL
@@ -850,6 +851,7 @@ def alterar_status_curso(id_curso):
                 (get_jwt_identity(),),
             )
             destinatarios = [row[0] for row in cursor.fetchall()]
+            # Fim item 11
 
         cursor.execute(
             """
@@ -864,10 +866,12 @@ def alterar_status_curso(id_curso):
             (status, id_curso, get_jwt_identity()),
         )
         con.commit()
+        # Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado - Seleciona os alunos do instrutor e prepara o aviso de novo curso
         if status == STATUS_PUBLICADO and status_anterior != STATUS_PUBLICADO:
             
             from chat_cursos_11_19_20 import notificar_alunos_novo_curso
             notificar_alunos_novo_curso(destinatarios, titulo_curso)
+        # Fim item 11
         return resposta_professor(f"Curso definido como {STATUS_NOMES[status]}.", 200, "sucesso")
     except Exception as erro:
         con.rollback()
@@ -875,5 +879,3 @@ def alterar_status_curso(id_curso):
     finally:
         cursor.close()
         con.close()
-# Fim item 20
-# Fim item 11

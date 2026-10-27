@@ -1,4 +1,5 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .pagina */
 .pagina {
     min-height: 100vh;
     display: grid;
@@ -7,10 +8,12 @@
     background: linear-gradient(135deg, #20b879, #3ac98f, #20b879);
 }
 
+/* Fim item 38 */
 .pagina * {
     box-sizing: border-box;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cartao */
 .cartao {
     display: grid;
     grid-template-columns: minmax(285px, .82fr) minmax(0, 1.18fr);
@@ -22,6 +25,8 @@
     box-shadow: var(--shadow);
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .painelInfo */
 .painelInfo {
     position: relative;
     isolation: isolate;
@@ -34,6 +39,7 @@
     background: #02693e;
 }
 
+/* Fim item 38 */
 .painelInfo::after {
     position: absolute;
     z-index: -1;
@@ -47,6 +53,7 @@
     content: "";
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .marca */
 .marca {
     display: flex;
     align-items: center;
@@ -56,6 +63,8 @@
     letter-spacing: 0;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .marcaIcone */
 .marcaIcone {
     width: 36px;
     height: 36px;
@@ -66,6 +75,8 @@
     object-fit: contain;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .iconeEnvelope */
 .iconeEnvelope {
     display: grid;
     width: 62px;
@@ -78,6 +89,7 @@
     color: #e2f8eb;
 }
 
+/* Fim item 38 */
 .iconeEnvelope svg {
     width: 36px;
     height: 36px;
@@ -91,6 +103,7 @@
     letter-spacing: .12em;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .painelInfo h2 */
 .painelInfo h2 {
     max-width: 290px;
     margin: 0 0 12px;
@@ -101,6 +114,8 @@
     line-height: 1.14;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .textoPainel */
 .textoPainel {
     max-width: 310px;
     margin: 0;
@@ -109,6 +124,8 @@
     line-height: 1.6;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .passos */
 .passos {
     display: grid;
     gap: 20px;
@@ -118,6 +135,8 @@
     list-style: none;
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .passos li */
 .passos li {
     display: grid;
     grid-template-columns: 34px minmax(0, 1fr);
@@ -126,11 +145,14 @@
     color: rgba(255, 255, 255, .58);
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .passos li > span:last-child */
 .passos li > span:last-child {
     display: grid;
     gap: 2px;
 }
 
+/* Fim item 38 */
 .passos strong {
     color: inherit;
     font-size: 14px;
@@ -142,6 +164,7 @@
     font-size: 12px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .numero */
 .numero {
     display: grid;
     width: 32px;
@@ -154,6 +177,7 @@
     font-weight: 700;
 }
 
+/* Fim item 38 */
 .passos .concluido,
 .passos .ativo {
     color: #fff;
@@ -176,6 +200,7 @@
     padding: 40px 36px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cabecalho */
 .cabecalho {
     display: flex;
     flex-wrap: wrap;
@@ -184,6 +209,7 @@
     gap: 12px;
 }
 
+/* Fim item 38 */
 .etapa {
     color: #087044;
     font-size: 11px;
@@ -191,6 +217,7 @@
     letter-spacing: .1em;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .selo */
 .selo {
     display: inline-flex;
     align-items: center;
@@ -204,6 +231,7 @@
     font-weight: 700;
 }
 
+/* Fim item 38 */
 .selo span {
     color: #0a9d5c;
     font-size: 8px;
@@ -231,6 +259,7 @@
     font-weight: 700;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formulario, .corrigir */
 .formulario,
 .corrigir {
     display: grid;
@@ -238,6 +267,7 @@
     margin-top: 26px;
 }
 
+/* Fim item 38 */
 .conteudo label {
     color: #000;
     font-size: 13px;
@@ -250,6 +280,7 @@
     font-size: 12px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .campo, .codigo */
 .campo,
 .codigo {
     width: 100%;
@@ -261,6 +292,7 @@
     transition: border-color .18s ease, box-shadow .18s ease;
 }
 
+/* Fim item 38 */
 .campo {
     padding: 0 14px;
     font: inherit;
@@ -289,6 +321,7 @@
     color: #bdc9c1;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .botaoPrincipal, .acoesCorrecao button */
 .botaoPrincipal,
 .acoesCorrecao button {
     display: flex;
@@ -308,6 +341,7 @@
     transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
+/* Fim item 38 */
 .botaoPrincipal {
     justify-content: space-between;
     margin-top: 5px;
@@ -356,6 +390,7 @@
     color: #034d2d;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .reenvio */
 .reenvio {
     display: flex;
     flex-wrap: wrap;
@@ -367,6 +402,7 @@
     font-size: 13px;
 }
 
+/* Fim item 38 */
 .reenvio button {
     padding: 3px;
     border: 0;
@@ -430,6 +466,7 @@
     font-size: 12px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .acoesCorrecao */
 .acoesCorrecao {
     display: grid;
     grid-template-columns: .7fr 1.3fr;
@@ -437,6 +474,7 @@
     margin-top: 6px;
 }
 
+/* Fim item 38 */
 .acoesCorrecao button {
     min-height: 46px;
     padding: 0 12px;
@@ -462,6 +500,7 @@
     outline-offset: 3px;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 760px) */
 @media (max-width: 760px) {
     .pagina {
         min-height: calc(100svh - 64px);
@@ -542,6 +581,8 @@
     }
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 390px) */
 @media (max-width: 390px) {
     .conteudo {
         padding: 26px 19px 22px;
@@ -568,6 +609,8 @@
     }
 }
 
+/* Fim item 38 */
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (prefers-reduced-motion: reduce) */
 @media (prefers-reduced-motion: reduce) {
     .campo,
     .codigo,

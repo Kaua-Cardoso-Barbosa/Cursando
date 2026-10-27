@@ -2,30 +2,33 @@ import AppIcon from "../components/AppIcon_39";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Alert, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { apiRequest, resolverUrlMidia } from "../api/client_2_3_5_17_39";
+import { apiRequest, resolverUrlMidia } from "../api/client_3_17";
 import BrandLogo from "../components/BrandLogo_39";
 import Field from "../components/Field_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
-export default /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações */
-/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
   const [titulo, setTitulo] = useState(curso?.titulo || "");
   const [descricao, setDescricao] = useState(curso?.descricao || "");
   const [imagem, setImagem] = useState(null);
-                                                                                                                                                                 
+
   const [categorias, setCategorias] = useState([]);
   const [temas, setTemas] = useState([]);
+  /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
   const [carregandoTaxonomias, setCarregandoTaxonomias] = useState(true);
+  /* Fim item 28 */
   const [idCategoria, setIdCategoria] = useState("");
   const [idTema, setIdTema] = useState("");
+  /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
   const [novaCategoria, setNovaCategoria] = useState(false);
   const [novoTema, setNovoTema] = useState(false);
+  /* Fim item 28 */
   const [nomeNovaCategoria, setNomeNovaCategoria] = useState("");
   const [nomeNovoTema, setNomeNovoTema] = useState("");
   const preview = imagem?.uri || resolverUrlMidia(curso?.imagem);
 
+  /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
   useEffect(() => {
     let ativo = true;
     Promise.all([
@@ -43,7 +46,9 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
     });
     return () => { ativo = false; };
   }, [curso.id, token]);
+  /* Fim item 28 */
 
+  /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Abre a galeria nativa para selecionar uma imagem */
   async function escolherImagem() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -54,8 +59,10 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
       setImagem(result.assets[0]);
     }
   }
+  /* Fim item 18 */
 
-                                                                                                                                                                
+
+  /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Solicita acesso à câmera e captura a imagem de capa */
   async function tirarFoto() {
     const permissao = await ImagePicker.requestCameraPermissionsAsync();
     if (!permissao.granted) {
@@ -69,6 +76,7 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
     });
     if (!result.canceled) setImagem(result.assets[0]);
   }
+  /* Fim item 18 */
 
   return (
     <ImageBackground source={require("../../assets/bg.png")} resizeMode="cover" style={styles.bg}>
@@ -87,9 +95,11 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
               <AppIcon name="cloud-upload-outline" size={42} color={colors.white} />
             </View>
           </Pressable>
+          {/* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Aciona os recursos nativos e trata as permissões do dispositivo */}
           <Pressable style={styles.cameraButton} onPress={tirarFoto}>
             <Text style={styles.cameraButtonText}>Tirar foto da capa</Text>
           </Pressable>
+          {/* Fim item 18 */}
 
           <Field label="Titulo:" value={titulo} onChangeText={setTitulo} />
           <Field label="Descricao:" value={descricao} onChangeText={setDescricao} multiline />
@@ -97,20 +107,29 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
                                                                                                                                                                     
           <Text style={styles.taxonomyLabel}>Categoria do curso</Text>
           <View style={styles.taxonomyOptions}>
+            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
             <Pressable style={[styles.taxonomyOption, !idCategoria && !novaCategoria && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(""); setNovaCategoria(false); }}><Text style={[styles.taxonomyOptionText, !idCategoria && !novaCategoria && styles.taxonomyOptionTextActive]}>Nenhuma</Text></Pressable>
+            {/* Fim item 28 */}
             {categorias.map((item) => <Pressable key={item.id} style={[styles.taxonomyOption, idCategoria === String(item.id) && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(String(item.id)); setNovaCategoria(false); }}><Text style={[styles.taxonomyOptionText, idCategoria === String(item.id) && styles.taxonomyOptionTextActive]}>{item.nome}</Text></Pressable>)}
+            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
             <Pressable style={[styles.taxonomyOption, novaCategoria && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(""); setNovaCategoria(true); }}><Text style={[styles.taxonomyOptionText, novaCategoria && styles.taxonomyOptionTextActive]}>Criar nova</Text></Pressable>
+            {/* Fim item 28 */}
           </View>
           {novaCategoria && <TextInput style={styles.taxonomyInput} value={nomeNovaCategoria} onChangeText={setNomeNovaCategoria} placeholder="Nome da nova categoria" />}
 
           <Text style={styles.taxonomyLabel}>Tema do curso</Text>
           <View style={styles.taxonomyOptions}>
+            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
             <Pressable style={[styles.taxonomyOption, !idTema && !novoTema && styles.taxonomyOptionActive]} onPress={() => { setIdTema(""); setNovoTema(false); }}><Text style={[styles.taxonomyOptionText, !idTema && !novoTema && styles.taxonomyOptionTextActive]}>Nenhum</Text></Pressable>
+            {/* Fim item 28 */}
             {temas.map((item) => <Pressable key={item.id} style={[styles.taxonomyOption, idTema === String(item.id) && styles.taxonomyOptionActive]} onPress={() => { setIdTema(String(item.id)); setNovoTema(false); }}><Text style={[styles.taxonomyOptionText, idTema === String(item.id) && styles.taxonomyOptionTextActive]}>{item.nome}</Text></Pressable>)}
+            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
             <Pressable style={[styles.taxonomyOption, novoTema && styles.taxonomyOptionActive]} onPress={() => { setIdTema(""); setNovoTema(true); }}><Text style={[styles.taxonomyOptionText, novoTema && styles.taxonomyOptionTextActive]}>Criar novo</Text></Pressable>
+            {/* Fim item 28 */}
           </View>
           {novoTema && <TextInput style={styles.taxonomyInput} value={nomeNovoTema} onChangeText={setNomeNovoTema} placeholder="Nome do novo tema" />}
 
+          {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
           <View style={styles.buttons}>
             <Pressable style={globalStyles.secondaryButton} onPress={onCancel}>
               <Text style={globalStyles.secondaryText}>Cancelar</Text>
@@ -123,15 +142,14 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
               <Text style={globalStyles.buttonText}>{carregandoTaxonomias ? "Carregando..." : salvando ? "Salvando..." : "Salvar"}</Text>
             </Pressable>
           </View>
+          {/* Fim item 28 */}
         </View>
       </ScrollView>
     </ImageBackground>
   );
 }
-/* Fim item 39 */
-/* Fim item 28 */
-/* Fim item 18 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   bg: {
     flex: 1,
@@ -215,3 +233,4 @@ const styles = StyleSheet.create({
     gap: 12
   }
 });
+/* Fim item 39 */

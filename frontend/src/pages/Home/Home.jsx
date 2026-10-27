@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Hero from '../../components/Hero/Hero';
 import SecaoCursos from '../../components/SecaoCursos/SecaoCursos';
 import SecaoSobre from '../../components/SecaoSobre/SecaoSobre';
-import SecaoPlanos from '../../components/SecaoPlanos/SecaoPlanos';
+import SecaoPlanos from "../../components/SecaoPlanos/SecaoPlanos";
 import Rodape from '../../components/Rodape/Rodape';
 import css from './Home_38.module.css';
 

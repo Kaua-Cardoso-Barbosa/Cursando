@@ -10,9 +10,10 @@ from flask import current_app, g, has_request_context, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity
 
 from app import app
-from log_banco_24_37 import garantir_log_schema
+from log_banco_37 import garantir_log_schema
 
 
+# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Define as tabelas cujas alterações serão auditadas
 TABELAS_AUDITADAS = {
     "USUARIOS",
     "CURSOS",
@@ -37,6 +38,7 @@ TABELAS_AUDITADAS = {
     "CURSO_TAXONOMIA",
     "PROGRESSO_AULAS",
 }
+# Fim item 37
 
 
 
@@ -84,8 +86,7 @@ _gatilhos_prontos = False
 _gatilhos_instalados = set()
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
+# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema - Preenche a identificação da requisição usada pelos registros e gatilhos
 def definir_contexto_auditoria(con):
     
     valores = {
@@ -145,12 +146,8 @@ def definir_contexto_auditoria(con):
         cursor.fetchone()
     finally:
         cursor.close()
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def definir_ator_auditoria(con, id_usuario, tipo_usuario):
     
     cursor = con.cursor()
@@ -167,12 +164,10 @@ def definir_ator_auditoria(con, id_usuario, tipo_usuario):
         cursor.fetchone()
     finally:
         cursor.close()
-# Fim item 37
 # Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
+# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Prepara os gatilhos antes de executar alterações nas tabelas
 def preparar_auditoria_antes_de_modificar():
     
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
@@ -193,15 +188,11 @@ def preparar_auditoria_antes_de_modificar():
         }), 503
 
     return None
-# Fim item 37
-# Fim item 24
 
 
 app.before_request(preparar_auditoria_antes_de_modificar)
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def garantir_gatilhos_auditoria(tabelas=None, force=False):
     
     global _gatilhos_prontos
@@ -278,12 +269,8 @@ def garantir_gatilhos_auditoria(tabelas=None, force=False):
         finally:
             cursor.close()
             con.close()
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _tabela_existe(cursor, tabela):
     cursor.execute(
         """
@@ -296,12 +283,8 @@ def _tabela_existe(cursor, tabela):
         (tabela,),
     )
     return cursor.fetchone() is not None
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _campos_tabela(cursor, tabela):
     cursor.execute(
         """
@@ -335,12 +318,8 @@ def _campos_tabela(cursor, tabela):
             "subtipo": int(subtipo or 0),
         })
     return campos
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _chaves_primarias(cursor, tabela):
     cursor.execute(
         """
@@ -354,24 +333,15 @@ def _chaves_primarias(cursor, tabela):
         (tabela,),
     )
     return [str(row[0]).upper() for row in cursor.fetchall()]
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _identificador(nome):
     return '"' + nome.replace('"', '""') + '"'
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _literal(valor):
     return "'" + valor.replace("'", "''") + "'"
 # Fim item 37
-# Fim item 24
 
 
 
@@ -415,28 +385,19 @@ END
 """
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
+# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Converte os valores dos campos para o registro de alterações
 def _valor_texto(alias, campo):
     coluna = f"{alias}.{_identificador(campo['nome'])}"
     if campo["tipo"] in {14, 37}:
         return f"SUBSTRING({coluna} FROM 1 FOR 1000)"
     return f"CAST({coluna} AS VARCHAR(100))"
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _json_campo(alias, campo):
     chave = _literal('"' + campo['nome'] + '":')
     return f"{chave} || AUDIT_JSON({_valor_texto(alias, campo)})"
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _snapshot_json(alias, campos):
     
     partes = [_json_campo(alias, campo) for campo in campos]
@@ -447,24 +408,16 @@ def _snapshot_json(alias, campos):
         + "\n    || ',' ||\n".join(textwrap.indent(parte, "    ") for parte in partes)
         + "\n    || '}'"
     )
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _expressao_chave(alias, chaves):
     partes = [
         f"COALESCE(CAST({alias}.{_identificador(chave)} AS VARCHAR(80)), '')"
         for chave in chaves
     ]
     return " || ':' || ".join(partes)
-# Fim item 37
-# Fim item 24
 
 
-# Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema
-# Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado
 def _ddl_gatilho(tabela, campos, chaves):
     
     por_nome = {campo["nome"]: campo for campo in campos}
@@ -684,5 +637,4 @@ BEGIN
 END
 """
 # Fim item 37
-# Fim item 24
 

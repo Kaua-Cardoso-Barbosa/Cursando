@@ -1,4 +1,4 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
 :root {
   --branco: #fff;
   --preto: #000;
@@ -26,10 +26,12 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  @media (max-width: 1024px) {
+  /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 1024px) */
+@media (max-width: 1024px) {
     font-size: 16px;
   }
-}
+
+/* Fim item 38 */}
 
 body {
   margin: 0;
@@ -55,20 +57,24 @@ h1 {
   font-size: 56px;
   letter-spacing: -1.68px;
   margin: 32px 0;
-  @media (max-width: 1024px) {
+  /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 1024px) */
+@media (max-width: 1024px) {
     font-size: 36px;
     margin: 20px 0;
   }
-}
+
+/* Fim item 38 */}
 h2 {
   font-size: 24px;
   line-height: 118%;
   letter-spacing: -0.24px;
   margin: 0 0 8px;
-  @media (max-width: 1024px) {
+  /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 1024px) */
+@media (max-width: 1024px) {
     font-size: 20px;
   }
-}
+
+/* Fim item 38 */}
 p {
   margin: 0;
 }
@@ -78,6 +84,7 @@ a:hover, a {
   text-decoration: none;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de code, .counter */
 code,
 .counter {
   font-family: var(--mono);
@@ -86,11 +93,10 @@ code,
   color: var(--text-h);
 }
 
+/* Fim item 38 */
 code {
   font-size: 15px;
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
 }
-
-/* Fim item 38 */

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { apiRequest } from "../api/client_2_3_5_17_39";
+import { apiRequest } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
-export default /* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function AlunosCursoScreen({ curso, token, onBack, onOpenChat }) {
   const { mostrarAlerta } = useFeedback();
   const [alunos, setAlunos] = useState([]);
@@ -69,8 +69,8 @@ function AlunosCursoScreen({ curso, token, onBack, onOpenChat }) {
     </ScrollView>
   );
 }
-/* Fim item 39 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   back: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: colors.darkGreen, borderRadius: 4, paddingHorizontal: 9, paddingVertical: 5, marginBottom: 16 },
   backText: { color: colors.darkGreen, fontSize: 16 },
@@ -84,3 +84,4 @@ const styles = StyleSheet.create({
   chatButton: { minHeight: 38, paddingHorizontal: 12, borderRadius: 9, backgroundColor: colors.darkGreen, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   chatButtonText: { color: colors.white, fontWeight: "700" }
 });
+/* Fim item 39 */

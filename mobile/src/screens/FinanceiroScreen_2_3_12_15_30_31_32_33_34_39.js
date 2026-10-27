@@ -1,74 +1,64 @@
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useRef, useState } from "react";
 import { AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client_2_3_5_17_39";
+import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
-import HistoricoFaturasAluno from "../components/HistoricoFaturasAluno_2_33_34_39";
+import HistoricoFaturasAluno from "../components/HistoricoFaturasAluno_33_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
-import { colors, globalStyles } from "../styles";
+import { colors, globalStyles } from "../styles_39";
 
-/* Sprint item 12 - Exibir valores recebidos, disponíveis para saque e já sacados pelo instrutor */
-/* Sprint item 15 - Exibir saldo disponível em caixa, assinatura de R$ 500 e desconto das comissões no saldo administrativo */
-/* Sprint item 30 - Criar gestão financeira do instrutor */
-/* Sprint item 31 - Exibir cursos que mais geraram receita para o instrutor */
-/* Sprint item 32 - Permitir solicitação de saque para a conta ARKHE */
-/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno */
-/* Sprint item 34 - Exibir faturas em aberto */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
 function moeda(valor) {
   return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
 }
-/* Fim item 39 */
-/* Fim item 34 */
-/* Fim item 33 */
-/* Fim item 32 */
-/* Fim item 31 */
-/* Fim item 30 */
-/* Fim item 15 */
-/* Fim item 12 */
 
-                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+
+
 const cards = [
-  ["Ganhos estimados", "Sua parte do pool de receita", "recebido_estimado", "cash-outline", "money"],
-  ["Disponível para saque", "Saldo bruto", "disponivel_saque", "wallet-outline", "money"],
-  ["Já sacado", "Solicitações registradas", "ja_sacado", "card-outline", "money"],
+  /* Sprint item 12 - Exibir valores recebidos, disponíveis para saque e já sacados pelo instrutor - Prepara o indicador de ganhos estimados para apresentação */ ["Ganhos estimados", "Sua parte do pool de receita", "recebido_estimado", "cash-outline", "money"] /* Fim item 12 */,
+  /* Sprint item 15 - Exibir saldo disponível em caixa, assinatura de R$ 500 e desconto das comissões no saldo administrativo - Prepara o indicador de disponível para saque para apresentação */ ["Disponível para saque", "Saldo bruto", "disponivel_saque", "wallet-outline", "money"] /* Fim item 15 */,
+  /* Sprint item 12 - Exibir valores recebidos, disponíveis para saque e já sacados pelo instrutor - Prepara o indicador de já sacado para apresentação */ ["Já sacado", "Solicitações registradas", "ja_sacado", "card-outline", "money"] /* Fim item 12 */,
   ["Alunos ativos", "Matrículas nos seus cursos", "alunos_ativos", "people-outline", "number"]
 ];
 
-export default /* Sprint item 12 - Exibir valores recebidos, disponíveis para saque e já sacados pelo instrutor */
-/* Sprint item 15 - Exibir saldo disponível em caixa, assinatura de R$ 500 e desconto das comissões no saldo administrativo */
-/* Sprint item 30 - Criar gestão financeira do instrutor */
-/* Sprint item 31 - Exibir cursos que mais geraram receita para o instrutor */
-/* Sprint item 32 - Permitir solicitação de saque para a conta ARKHE */
-/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno */
-/* Sprint item 34 - Exibir faturas em aberto */
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo */
+export default
 function FinanceiroScreen({ financeiro, carregando, onRefresh, token, tipoUsuario }) {
   const { mostrarAlerta } = useFeedback();
+  /* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Mantém as faturas e o histórico financeiro do aluno */
   const [faturas, setFaturas] = useState([]);
+  /* Fim item 33 */
   const [atualizandoFaturas, setAtualizandoFaturas] = useState(false);
   const [pagamento, setPagamento] = useState(null);
   const [verificando, setVerificando] = useState(false);
+  /* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */
   const [pixCopiado, setPixCopiado] = useState(false);
+  /* Fim item 2 */
+  /* Sprint item 32 - Permitir solicitação de saque para a conta ARKHE - Envia ou acompanha solicitações de saque e sua análise manual */
   const [valorSaque, setValorSaque] = useState("");
+  /* Fim item 32 */
   const [solicitandoSaque, setSolicitandoSaque] = useState(false);
   const onRefreshRef = useRef(onRefresh);
   onRefreshRef.current = onRefresh;
   const aluno = Number(tipoUsuario) === 2;
+  /* Sprint item 12 - Exibir valores recebidos, disponíveis para saque e já sacados pelo instrutor - Apresenta os valores recebidos, já sacados e disponíveis */
   const disponivelSaque = Number(financeiro?.disponivel_saque || 0);
+  /* Fim item 12 */
+  /* Sprint item 32 - Permitir solicitação de saque para a conta ARKHE - Envia ou acompanha solicitações de saque e sua análise manual */
   const valorSaqueNumero = Number(valorSaque);
   const saqueValido = Number.isFinite(valorSaqueNumero) && valorSaqueNumero > 0 && valorSaqueNumero <= disponivelSaque;
+  /* Fim item 32 */
+  /* Sprint item 34 - Exibir faturas em aberto - Seleciona as faturas ainda pendentes de pagamento */
   const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
+  /* Fim item 34 */
   const cardsAtivos = aluno
     ? [
-      ["Total gasto", "Mensalidades pagas", "total_gasto", "cash-outline", "money"],
-      ["Em aberto", "Faturas pendentes", "total_aberto", "wallet-outline", "money"],
-      ["Faturas pagas", "Histórico de mensalidades", "faturas", "receipt-outline", "number"],
-      ["Faturas abertas", "Bloqueiam cursos", "faturas_abertas", "alert-circle-outline", "number"]
+      /* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Prepara o indicador de total gasto para apresentação */ ["Total gasto", "Mensalidades pagas", "total_gasto", "cash-outline", "money"] /* Fim item 33 */,
+      /* Sprint item 34 - Exibir faturas em aberto - Prepara o indicador de em aberto para apresentação */ ["Em aberto", "Faturas pendentes", "total_aberto", "wallet-outline", "money"] /* Fim item 34 */,
+      /* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Prepara o indicador de faturas pagas para apresentação */ ["Faturas pagas", "Histórico de mensalidades", "faturas", "receipt-outline", "number"] /* Fim item 33 */,
+      /* Sprint item 34 - Exibir faturas em aberto - Prepara o indicador de faturas abertas para apresentação */ ["Faturas abertas", "Bloqueiam cursos", "faturas_abertas", "alert-circle-outline", "number"] /* Fim item 34 */
     ]
     : cards;
 
+  /* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Consulta as faturas e atualiza os totais gastos e pendentes */
   async function carregarFaturas() {
     if (!aluno || !token) return;
     setAtualizandoFaturas(true);
@@ -81,38 +71,36 @@ function FinanceiroScreen({ financeiro, carregando, onRefresh, token, tipoUsuari
       setAtualizandoFaturas(false);
     }
   }
+  /* Fim item 33 */
 
+  /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
   useEffect(() => {
     carregarFaturas();
-    const inscricao = AppState.addEventListener("change", /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web */
-/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno */
+    const inscricao = AppState.addEventListener("change",
 (estado) => {
       if (estado === "active") {
-                                                                                                                                                        
+
         carregarFaturas();
-                                                                                                                                                  
+
         if (aluno) onRefreshRef.current?.();
       }
     }
-/* Fim item 33 */
-/* Fim item 3 */);
+);
 
     return () => inscricao.remove();
   }, [aluno, token]);
+  /* Fim item 3 */
 
-  /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web */
 async function atualizarFinanceiro() {
-                                                                                                                                                    
+
     await Promise.all([onRefresh?.(), carregarFaturas()]);
   }
-/* Fim item 3 */
 
-  /* Sprint item 2 - Integrar pagamentos pelo ARKHE */
-/* Sprint item 34 - Exibir faturas em aberto */
+/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Cria a cobrança da próxima mensalidade e apresenta o Pix */
 async function pagarProxima(idAssinatura = null) {
     try {
-                                                                                                                          
-                                                                                                                     
+
+
       const dados = await apiRequest("/financeiro/faturas", {
         method: "POST",
         body: JSON.stringify({ meses: 1, ...(idAssinatura ? { id_assinatura: idAssinatura } : {}) })
@@ -128,12 +116,11 @@ async function pagarProxima(idAssinatura = null) {
       mostrarAlerta("Erro", error.message, "erro");
     }
   }
-/* Fim item 34 */
 /* Fim item 2 */
 
-  /* Sprint item 34 - Exibir faturas em aberto */
+/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Confirma a fatura na API e atualiza os dados financeiros */
 async function confirmarPagamento(idAssinatura) {
-                                                                                                                       
+
     await apiRequest(`/financeiro/faturas/${idAssinatura}/verificar`, {
       method: "POST"
     }, token, PAYMENT_REQUEST_TIMEOUT_MS);
@@ -141,14 +128,14 @@ async function confirmarPagamento(idAssinatura) {
     await carregarFaturas();
     await onRefresh?.();
   }
-/* Fim item 34 */
+/* Fim item 2 */
 
-  /* Sprint item 34 - Exibir faturas em aberto */
+/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Consulta a situação do pagamento Pix e atualiza o acesso */
 async function verificarPagamento() {
     if (!pagamento?.id_assinatura) return;
     try {
       setVerificando(true);
-                                                                                                                  
+
       await confirmarPagamento(pagamento.id_assinatura);
     } catch (error) {
       mostrarAlerta("Pagamento", error.message, "erro");
@@ -156,16 +143,18 @@ async function verificarPagamento() {
       setVerificando(false);
     }
   }
-/* Fim item 34 */
+/* Fim item 2 */
 
+  /* Sprint item 2 - Integrar pagamentos pelo ARKHE - Copia o código Pix da fatura para a área de transferência */
   async function copiarPix() {
     if (!pagamento?.codigo_pagamento) return;
     await Clipboard.setStringAsync(pagamento.codigo_pagamento);
     setPixCopiado(true);
     setTimeout(() => setPixCopiado(false), 2500);
   }
+  /* Fim item 2 */
 
-  /* Sprint item 32 - Permitir solicitação de saque para a conta ARKHE */
+/* Sprint item 32 - Permitir solicitação de saque para a conta ARKHE - Valida o valor disponível e envia o pedido de saque */
 async function solicitarSaque() {
     if (solicitandoSaque) return;
     if (!saqueValido) {
@@ -175,7 +164,7 @@ async function solicitarSaque() {
 
     setSolicitandoSaque(true);
     try {
-                                                                                                                                                            
+
       await apiRequest("/professor/saques", {
         method: "POST",
         body: JSON.stringify({ valor: valorSaqueNumero })
@@ -194,7 +183,7 @@ async function solicitarSaque() {
   return (
     <ScrollView
       contentContainerStyle={globalStyles.page}
-      refreshControl={<RefreshControl refreshing={carregando || atualizandoFaturas} onRefresh={atualizarFinanceiro} />}
+      refreshControl={/* Sprint item 30 - Criar gestão financeira do instrutor - Carrega e apresenta o resumo financeiro do instrutor */ <RefreshControl refreshing={carregando || atualizandoFaturas} onRefresh={atualizarFinanceiro} /> /* Fim item 30 */}
     >
       <View style={styles.header}>
         <Text style={globalStyles.title}>Financeiro</Text>
@@ -239,11 +228,13 @@ async function solicitarSaque() {
           <View style={styles.invoiceBlock}>
             <Text style={styles.sectionTitle}>Pagamento de novas mensalidades</Text>
             <Text style={styles.invoiceText}>Gere uma nova cobrança sem interromper a mensalidade atual.</Text>
+            {/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */}
             <Pressable style={styles.payButton} onPress={() => pagarProxima()}>
               <Text style={styles.payButtonText}>Pagar nova mensalidade</Text>
             </Pressable>
+            {/* Fim item 2 */}
             {pagamento?.codigo_pagamento && (
-              <View style={styles.invoiceCard}>
+              /* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */ <View style={styles.invoiceCard}>
                 <Text style={styles.invoiceTitle}>PIX gerado</Text>
                 <Text style={styles.invoiceText}>{pagamento.codigo_pagamento}</Text>
                 <Pressable style={styles.confirmButton} onPress={copiarPix}>
@@ -252,11 +243,11 @@ async function solicitarSaque() {
                 <Pressable style={styles.confirmButton} onPress={verificarPagamento} disabled={verificando}>
                   <Text style={styles.payButtonText}>{verificando ? "Verificando..." : "Já paguei"}</Text>
                 </Pressable>
-              </View>
+              </View> /* Fim item 2 */
             )}
-            {faturasAbertas.map(/* Sprint item 34 - Exibir faturas em aberto */
+            {faturasAbertas.map(
 (fatura) => (
-              <View key={fatura.id} style={styles.invoiceCard}>
+              /* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */ <View key={fatura.id} style={styles.invoiceCard}>
                 <Text style={styles.invoiceTitle}>Mensalidade #{fatura.numero || fatura.id} - {fatura.status_label}</Text>
                 <Text style={styles.invoiceText}>{moeda(fatura.valor)}</Text>
                 {fatura.data_vencimento && (
@@ -268,21 +259,24 @@ async function solicitarSaque() {
                 <Pressable style={styles.confirmButton} onPress={() => pagarProxima(fatura.id)}>
                   <Text style={styles.payButtonText}>Pagar esta fatura</Text>
                 </Pressable>
-              </View>
+              </View> /* Fim item 2 */
             )
-/* Fim item 34 */)}
+)}
             {faturasAbertas.length === 0 && <Text style={styles.invoiceText}>Nenhuma mensalidade em aberto.</Text>}
           </View>
 
+          {/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Consulta e apresenta o total gasto e o histórico de faturas pagas */}
           <View style={styles.invoiceBlock}>
                                                                                                                                                   
             <HistoricoFaturasAluno faturas={faturas} />
           </View>
+          {/* Fim item 33 */}
         </View>
       )}
 
       {!aluno && (
         <View style={styles.invoiceSection}>
+          {/* Sprint item 32 - Permitir solicitação de saque para a conta ARKHE - Envia ou acompanha solicitações de saque e sua análise manual */}
           <View style={styles.invoiceBlock}>
             <Text style={styles.sectionTitle}>Solicitar saque</Text>
             <Text style={styles.invoiceText}>Disponível para saque: {moeda(disponivelSaque)}</Text>
@@ -298,7 +292,9 @@ async function solicitarSaque() {
               <Text style={styles.payButtonText}>{solicitandoSaque ? "Enviando..." : "Solicitar saque"}</Text>
             </Pressable>
           </View>
+          {/* Fim item 32 */}
 
+          {/* Sprint item 31 - Exibir cursos que mais geraram receita para o instrutor - Apresenta os cursos ordenados pela receita estimada */}
           <View style={styles.invoiceBlock}>
                                                                                                                                                                     
             <Text style={styles.sectionTitle}>Cursos que mais geraram receita</Text>
@@ -314,20 +310,14 @@ async function solicitarSaque() {
               <Text style={styles.invoiceText}>Ainda nao ha receita estimada para exibir.</Text>
             )}
           </View>
+          {/* Fim item 31 */}
         </View>
       )}
     </ScrollView>
   );
 }
-/* Fim item 39 */
-/* Fim item 34 */
-/* Fim item 33 */
-/* Fim item 32 */
-/* Fim item 31 */
-/* Fim item 30 */
-/* Fim item 15 */
-/* Fim item 12 */
 
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   header: {
     marginBottom: 28
@@ -444,3 +434,4 @@ const styles = StyleSheet.create({
     opacity: 0.55
   }
 });
+/* Fim item 39 */

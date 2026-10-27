@@ -1,0 +1,353 @@
+import AppIcon from "../components/AppIcon_39";
+import HistoricoFaturasAluno from "../components/HistoricoFaturasAluno_33_39";
+import * as Clipboard from "expo-clipboard";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  AppState,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from "react-native";
+import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client_3_17";
+import { colors, globalStyles } from "../styles_39";
+
+export default
+function AssinaturaScreen({ token, onLogout, onAssinaturaAtiva }) {
+  const [pagamento, setPagamento] = useState(null);
+  const [carregando, setCarregando] = useState(false);
+  const [verificando, setVerificando] = useState(false);
+  /* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */
+  const [codigoCopiado, setCodigoCopiado] = useState(false);
+  /* Fim item 2 */
+  const [erro, setErro] = useState("");
+  /* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Mantém as faturas e o histórico financeiro do aluno */
+  const [historico, setHistorico] = useState(null);
+  /* Fim item 33 */
+  const [erroHistorico, setErroHistorico] = useState("");
+
+
+  /* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Consulta e apresenta o total gasto e o histórico de faturas pagas */
+  const carregarHistorico = useCallback(async () => {
+    try {
+      const dados = await apiRequest("/financeiro/faturas", {}, token);
+      setHistorico(dados);
+      setErroHistorico("");
+    } catch (error) {
+      setErroHistorico(error.message || "Não foi possível carregar o histórico de mensalidades.");
+    }
+  }, [token]);
+  /* Fim item 33 */
+
+  /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
+  useEffect(() => {
+    carregarHistorico();
+    const inscricao = AppState.addEventListener("change", (estado) => {
+      if (estado === "active") carregarHistorico();
+    });
+    return () => inscricao.remove();
+  }, [carregarHistorico]);
+  /* Fim item 3 */
+
+
+/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita a cobrança Pix da assinatura */
+async function iniciarPagamento() {
+    setCarregando(true);
+    setErro("");
+
+    try {
+      const dados = await apiRequest("/assinaturas/pix", {
+        method: "POST",
+        body: JSON.stringify({})
+      }, token, PAYMENT_REQUEST_TIMEOUT_MS, false);
+
+
+      if (typeof dados?.codigo_pagamento !== "string" || !dados.codigo_pagamento.trim()) {
+        throw new Error("O servidor não retornou o código Pix. Tente novamente em instantes.");
+      }
+
+      setPagamento(dados);
+    } catch (error) {
+      setErro(formatarErroPagamento(error, "Não foi possível iniciar o pagamento."));
+    } finally {
+      setCarregando(false);
+    }
+  }
+/* Fim item 2 */
+
+
+  /* Sprint item 2 - Integrar pagamentos pelo ARKHE - Consulta a situação do pagamento Pix e atualiza o acesso */
+  async function verificarPagamento() {
+    setVerificando(true);
+    setErro("");
+
+    try {
+      const dados = await apiRequest("/assinaturas/verificar", {}, token, PAYMENT_REQUEST_TIMEOUT_MS);
+      if (dados?.assinatura === true) {
+        await onAssinaturaAtiva();
+      } else {
+        setErro("O pagamento ainda não foi confirmado.");
+      }
+    } catch (error) {
+      setErro(formatarErroPagamento(error, "Não foi possível verificar o pagamento."));
+    } finally {
+      setVerificando(false);
+    }
+  }
+  /* Fim item 2 */
+
+  /* Sprint item 2 - Integrar pagamentos pelo ARKHE - Copia o código Pix da cobrança para a área de transferência */
+  async function copiarCodigo() {
+    if (!pagamento?.codigo_pagamento) return;
+
+    await Clipboard.setStringAsync(pagamento.codigo_pagamento);
+    setCodigoCopiado(true);
+    setTimeout(() => setCodigoCopiado(false), 2500);
+  }
+  /* Fim item 2 */
+
+  const valor = Number(pagamento?.valor);
+
+  return (
+    <ScrollView contentContainerStyle={styles.page}>
+      <View style={styles.header}>
+        <View style={styles.iconBadge}>
+          <AppIcon name="sparkles-outline" size={24} color={colors.darkGreen} />
+        </View>
+        <Text style={styles.eyebrow}>Cursando</Text>
+        <Text style={globalStyles.title}>Sua próxima etapa começa aqui.</Text>
+        <Text style={styles.description}>
+          Ative sua assinatura mensal para acessar os cursos e começar sua jornada.
+        </Text>
+      </View>
+
+      <View style={styles.plan}>
+        <Text style={styles.planLabel}>PLANO DISPONÍVEL</Text>
+        <Text style={styles.planTitle}>Assinatura mensal</Text>
+        <View style={styles.benefit}>
+          <AppIcon name="checkmark-circle-outline" size={18} color={colors.green} />
+          <Text style={styles.benefitText}>Acesso aos cursos para alunos</Text>
+        </View>
+        <View style={styles.benefit}>
+          <AppIcon name="checkmark-circle-outline" size={18} color={colors.green} />
+          <Text style={styles.benefitText}>30 dias de acesso após a confirmação</Text>
+        </View>
+
+        {!pagamento ? (
+          <>{/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */}
+          <Pressable
+                      style={[globalStyles.primaryButton, styles.actionButton]}
+                      onPress={iniciarPagamento}
+                      disabled={carregando}
+                  >
+                      {carregando ? (
+                          <ActivityIndicator color={colors.white} />
+                      ) : (
+                          <Text style={globalStyles.buttonText}>Gerar pagamento PIX</Text>
+                      )}
+                  </Pressable>{/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */}
+
+          {/* Fim item 2 */}<Pressable
+                      style={[globalStyles.secondaryButton, styles.actionButton]}
+                      onPress={verificarPagamento}
+                      disabled={verificando}
+                  >
+                          {verificando ? (
+                              <ActivityIndicator color={colors.black} />
+                          ) : (
+                              <Text style={globalStyles.secondaryText}>Já tenho assinatura</Text>
+                          )}
+                      </Pressable>
+                  {/* Fim item 2 */}</>
+        ) : (
+          <View style={styles.payment}>
+            {Number.isFinite(valor) && (
+              <Text style={styles.price}>R$ {valor.toFixed(2).replace(".", ",")} / mês</Text>
+            )}
+            <Text style={styles.instructions}>
+              Copie o código PIX, pague no aplicativo do seu banco e confira o status.
+            </Text>
+            {/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */}
+            <ScrollView horizontal style={styles.codeBox}>
+              <Text selectable style={styles.code}>{pagamento.codigo_pagamento}</Text>
+            </ScrollView>
+            {/* Fim item 2 */}
+            {/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */}
+            <Pressable style={[globalStyles.secondaryButton, styles.actionButton]} onPress={copiarCodigo}>
+              <Text style={globalStyles.secondaryText}>
+                {codigoCopiado ? "Código copiado" : "Copiar código PIX"}
+              </Text>
+            </Pressable>
+            {/* Fim item 2 */}
+            {/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */}
+            <Pressable
+              style={[globalStyles.primaryButton, styles.actionButton]}
+              onPress={verificarPagamento}
+              disabled={verificando}
+            >
+              {verificando ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={globalStyles.buttonText}>Já paguei</Text>
+              )}
+            </Pressable>
+            {/* Fim item 2 */}
+          </View>
+        )}
+
+        {erro ? <Text accessibilityRole="alert" style={globalStyles.error}>{erro}</Text> : null}
+      </View>
+
+      {/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Consulta e apresenta o total gasto e o histórico de faturas pagas */}
+      <View style={styles.historico}>
+                                                                                                                                                       
+        {historico && (
+          <HistoricoFaturasAluno
+            faturas={historico.faturas || []}
+            totalGasto={historico.total_gasto}
+            mostrarTotal
+          />
+        )}
+        {erroHistorico && <Text style={globalStyles.error}>{erroHistorico}</Text>}
+        {erroHistorico && (
+          <Pressable style={[globalStyles.secondaryButton, styles.actionButton]} onPress={carregarHistorico}>
+            <Text style={globalStyles.secondaryText}>Tentar novamente</Text>
+          </Pressable>
+        )}
+      </View>
+      {/* Fim item 33 */}
+
+      <Pressable style={styles.logout} onPress={onLogout}>
+        <Text style={styles.logoutText}>Sair da conta</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+
+function formatarErroPagamento(error, fallback) {
+  const mensagem = error?.message || fallback;
+  const detalhe = typeof error?.dados?.detalhes === "string"
+    ? error.dados.detalhes.trim().slice(0, 240)
+    : "";
+
+  if (!detalhe || detalhe === mensagem) return mensagem;
+  return `${mensagem}\n${detalhe}`;
+}
+
+/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
+const styles = StyleSheet.create({
+  page: {
+    flexGrow: 1,
+    paddingHorizontal: 22,
+    paddingTop: 38,
+    paddingBottom: 30,
+    backgroundColor: "#f3faf6"
+  },
+  header: {
+    marginBottom: 28
+  },
+  iconBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
+    backgroundColor: "#d9f3e5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18
+  },
+  eyebrow: {
+    color: colors.darkGreen,
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 8
+  },
+  description: {
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 23,
+    marginTop: 12
+  },
+  plan: {
+    padding: 22,
+    borderWidth: 1,
+    borderColor: "#c6dfd0",
+    borderRadius: 8,
+    backgroundColor: colors.white
+  },
+  historico: {
+    marginTop: 20,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: "#c6dfd0",
+    borderRadius: 8,
+    backgroundColor: colors.white
+  },
+  planLabel: {
+    color: colors.darkGreen,
+    fontSize: 12,
+    fontWeight: "800",
+    marginBottom: 8
+  },
+  planTitle: {
+    color: colors.ink,
+    fontSize: 23,
+    fontWeight: "700",
+    marginBottom: 18
+  },
+  benefit: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    marginBottom: 12
+  },
+  benefitText: {
+    flex: 1,
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 21
+  },
+  actionButton: {
+    width: "100%",
+    marginTop: 16
+  },
+  payment: {
+    marginTop: 12
+  },
+  price: {
+    color: colors.darkGreen,
+    fontSize: 23,
+    fontWeight: "700",
+    marginBottom: 10
+  },
+  instructions: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12
+  },
+  codeBox: {
+    maxHeight: 94,
+    padding: 12,
+    borderRadius: 7,
+    backgroundColor: "#f1f5f2"
+  },
+  code: {
+    color: colors.ink,
+    fontSize: 13,
+    lineHeight: 20
+  },
+  logout: {
+    alignSelf: "center",
+    padding: 16,
+    marginTop: 12
+  },
+  logoutText: {
+    color: colors.textMuted,
+    fontSize: 15,
+    textDecorationLine: "underline"
+  }
+});
+/* Fim item 39 */

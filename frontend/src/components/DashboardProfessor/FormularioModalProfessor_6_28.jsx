@@ -4,6 +4,7 @@ import Input from "../Input/Input.jsx";
 import Button from "../Button/Button.jsx";
 import css from "../../pages/DashboardProfessor/DashboardProfessor_38.module.css";
 
+/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
 const cursoVazio = {
     titulo: "",
     descricao: "",
@@ -14,6 +15,7 @@ const cursoVazio = {
     nova_categoria: "",
     novo_tema: ""
 };
+/* Fim item 28 */
 
 const aulaVazia = {
     titulo: "",
@@ -22,15 +24,16 @@ const aulaVazia = {
     thumb: null
 };
 
+/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
 const moduloVazio = {
     titulo: "",
     descricao: "",
     arquivo: null,
     thumb: null
 };
+/* Fim item 6 */
 
-export default /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos */
-/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação */
+export default
 function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalvar }) {
     const editando = Boolean(item);
     const [form, setForm] = useState({
@@ -46,6 +49,7 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
         if (tipo !== "curso") return undefined;
         let ativo = true;
 
+        /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Consulta as categorias e os temas disponíveis para o curso */
         async function carregarTaxonomias() {
             try {
                 const respostas = await Promise.all([
@@ -69,8 +73,11 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
                 console.error("Erro ao carregar taxonomias do curso:", erro);
             }
         }
+        /* Fim item 28 */
 
+        /* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */
         carregarTaxonomias();
+        /* Fim item 28 */
         return () => { ativo = false; };
     }, [api, item?.id, tipo]);
 
@@ -79,7 +86,7 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
         onSalvar(form);
     }
 
-                                                                                                                        
+
     const titulo = `${editando ? "Editar" : "Adicionar"} ${tipo === "curso" ? "Curso" : tipo === "modulo" ? "Módulo" : "Aula"}`;
     const arquivoLabel = tipo === "aula" ? "Enviar vídeo" : tipo === "modulo" ? "Enviar imagem do módulo" : "Enviar imagem";
     const thumbLabel = "Enviar thumb";
@@ -117,6 +124,7 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
                     {tipo === "curso" && (
                         <div className={css.taxonomiasCurso}>
                                                                                                                                                                                                 
+                            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
                             <label>
                                 Categoria
                                 <select value={form.id_categoria} onChange={(e) => setForm({ ...form, id_categoria: e.target.value, nova_categoria: "" })}>
@@ -125,8 +133,10 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
                                     <option value="__nova__">Criar nova categoria...</option>
                                 </select>
                             </label>
+                            {/* Fim item 28 */}
                             {form.id_categoria === "__nova__" && <Input tipoInp="text" label="Nova categoria:" htmlFor="nova-categoria-curso" placeholder="Digite o nome da categoria" value={form.nova_categoria} funcao={(e) => setForm({ ...form, nova_categoria: e.target.value })} />}
 
+                            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
                             <label>
                                 Tema
                                 <select value={form.id_tema} onChange={(e) => setForm({ ...form, id_tema: e.target.value, novo_tema: "" })}>
@@ -135,6 +145,7 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
                                     <option value="__novo__">Criar novo tema...</option>
                                 </select>
                             </label>
+                            {/* Fim item 28 */}
                             {form.id_tema === "__novo__" && <Input tipoInp="text" label="Novo tema:" htmlFor="novo-tema-curso" placeholder="Digite o nome do tema" value={form.novo_tema} funcao={(e) => setForm({ ...form, novo_tema: e.target.value })} />}
                         </div>
                     )}
@@ -177,5 +188,3 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
         </main>
     );
 }
-/* Fim item 28 */
-/* Fim item 6 */

@@ -1,21 +1,41 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .pagina */
 .pagina { display: grid; gap: 20px; color: #173e2c; }
-.pagina > header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-.pagina > header span { color: #087044; font-size: .78rem; font-weight: 800; letter-spacing: .1em; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .pagina > header */
+
+/* Fim item 38 */.pagina > header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+
+/* Fim item 38 */.pagina > header span { color: #087044; font-size: .78rem; font-weight: 800; letter-spacing: .1em; }
 .pagina h2 { margin: 5px 0; }
 .pagina > header p { margin: 0; color: #607268; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .pagina select, .pagina input, .pagina textarea */
 .pagina select, .pagina input, .pagina textarea { width: 100%; border: 1px solid #cbd9d0; border-radius: 9px; padding: 10px 12px; font: inherit; }
-.cartao { display: grid; gap: 14px; border: 1px solid #dfe9e3; border-radius: 16px; background: white; padding: 20px; box-shadow: 0 8px 22px #0f3f280c; }
-.cartao h3, .cartao h4 { margin: 0; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cartao */
+
+/* Fim item 38 */.cartao { display: grid; gap: 14px; border: 1px solid #dfe9e3; border-radius: 16px; background: white; padding: 20px; box-shadow: 0 8px 22px #0f3f280c; }
+
+/* Fim item 38 */.cartao h3, .cartao h4 { margin: 0; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cartao label */
 .cartao label { display: grid; gap: 6px; font-weight: 700; }
-.cartao textarea { min-height: 72px; resize: vertical; }
+
+/* Fim item 38 */.cartao textarea { min-height: 72px; resize: vertical; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .questao, .resposta */
 .questao, .resposta { display: grid; gap: 12px; padding: 16px; border: 1px solid #e1eae4; border-radius: 12px; background: #f8fbf9; }
-.alternativas { display: grid; gap: 14px; min-width: 0; }
-.alternativa { display: grid; gap: 8px; min-width: 0; padding: 14px; border: 1px solid #dfe9e3; border-radius: 10px; background: white; }
-.alternativa .gabarito { display: flex; align-items: center; gap: 8px; color: #087044; }
-.alternativa .gabarito input { width: auto; margin: 0; accent-color: #087044; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .alternativas */
+
+/* Fim item 38 */.alternativas { display: grid; gap: 14px; min-width: 0; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .alternativa */
+
+/* Fim item 38 */.alternativa { display: grid; gap: 8px; min-width: 0; padding: 14px; border: 1px solid #dfe9e3; border-radius: 10px; background: white; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .alternativa .gabarito */
+
+/* Fim item 38 */.alternativa .gabarito { display: flex; align-items: center; gap: 8px; color: #087044; }
+
+/* Fim item 38 */.alternativa .gabarito input { width: auto; margin: 0; accent-color: #087044; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .questaoTopo, .acoes */
 .questaoTopo, .acoes { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.acoes button, .questaoTopo button { border: 0; border-radius: 9px; padding: 10px 14px; background: #087044; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* Fim item 38 */.acoes button, .questaoTopo button { border: 0; border-radius: 9px; padding: 10px 14px; background: #087044; color: white; font: inherit; font-weight: 700; cursor: pointer; }
 .questaoTopo button { background: #f3e6e6; color: #922; }
 .acoes button:disabled { opacity: .55; cursor: wait; }
 .publicada { color: #087044; font-weight: 700; }
@@ -23,6 +43,7 @@
 .acoes .botaoExcluir { background: #a83232; }
 .vazio { color: #607268; }
 .resposta p { margin: 0; overflow-wrap: anywhere; }
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 640px) */
 @media (max-width: 640px) { .pagina > header { align-items: stretch; flex-direction: column; } .cartao { padding: 14px; } }
 
 /* Fim item 38 */

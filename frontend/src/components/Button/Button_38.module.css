@@ -1,8 +1,9 @@
-/* Sprint item 38 - Tornar todas as telas do sistema web responsivas */
+
 .carregando{
     cursor: not-allowed !important;
 }
 
+/* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .botao */
 .botao {
     display: flex;
     border: none;
@@ -14,6 +15,7 @@
     border-radius: 15px;
 }
 
+/* Fim item 38 */
 .pequeno {
     width: 100px;
     height: 30px;
@@ -90,4 +92,3 @@
 .inlineBlock {
     display: inline-block;
 }
-/* Fim item 38 */
