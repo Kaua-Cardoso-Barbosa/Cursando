@@ -1318,6 +1318,7 @@ async function baixarCertificado(curso) {
                                         <PlayerVideo
                                             videoAula={videoAula}
                                             videoUrl={videoAula.video ? resolverUrlMidia(api, videoAula.video) : undefined}
+                                            mobileUrl={`${api}/aluno/aulas/${videoAula.id}/mobile.mp4`}
                                             posterUrl={
                                                 videoAula.thumb
                                                     ? resolverUrlMidia(api, videoAula.thumb)

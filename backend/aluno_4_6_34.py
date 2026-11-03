@@ -3,7 +3,7 @@
 import fdb
 import math
 from datetime import datetime
-from flask import current_app, jsonify, request
+from flask import current_app, jsonify, request, send_file
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
 from app import app
@@ -17,6 +17,7 @@ from professor_7 import (
     de_blob_texto,
     STATUS_NOMES,
 )
+from servicos.video_mobile import arquivo_mobile
 
 
 def resposta(descricao, status=200, tipo="erro", **extra):
@@ -327,6 +328,57 @@ def listar_cursos_aluno():
         return jsonify([curso_publico_para_dict(row) for row in cursor.fetchall()])
     except Exception as erro:
         return resposta(f"Erro ao listar seus cursos: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
+@app.route("/aluno/aulas/<int:id_aula>/mobile.mp4", methods=["GET", "HEAD"])
+@jwt_required()
+def video_mobile_aluno(id_aula):
+    negado = exigir_aluno()
+    if negado:
+        return negado
+
+    id_aluno = get_jwt_identity()
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        bloqueio = exigir_assinatura_ativa(cursor, id_aluno)
+        if bloqueio:
+            return bloqueio
+
+        cursor.execute(
+            """
+            SELECT V.VIDEO_URL
+            FROM VIDEOS V
+            JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
+            JOIN MATRICULAS M ON M.ID_CURSO = C.ID_CURSO
+            WHERE V.ID_VIDEO = ? AND M.ID_USUARIO = ? AND M.STATUS_MATRICULA = 1
+              AND V.EXCLUIDO = 0 AND V.STATUS = 1 AND C.EXCLUIDO = 0 AND C.STATUS = 1
+              AND (V.ID_MODULO IS NULL OR EXISTS (
+                  SELECT 1 FROM MODULOS_CURSO MC WHERE MC.ID_MODULO = V.ID_MODULO AND MC.STATUS = 1
+              ))
+            """,
+            (id_aula, id_aluno),
+        )
+        aula = cursor.fetchone()
+        if not aula:
+            return resposta("Aula não encontrada para seus cursos.", 404)
+
+        try:
+            caminho = arquivo_mobile(current_app.root_path, id_aula, aula[0])
+        except FileNotFoundError:
+            return resposta("O vídeo desta aula não foi encontrado.", 404)
+        except Exception:
+            current_app.logger.exception("Falha ao preparar MP4 da aula %s", id_aula)
+            return resposta("Não foi possível preparar este vídeo para reprodução móvel.", 500)
+
+        if caminho is None:
+            return "", 202, {"Retry-After": "2", "Cache-Control": "no-store"}
+        if request.method == "HEAD":
+            return "", 200, {"Content-Type": "video/mp4", "Cache-Control": "no-store"}
+        return send_file(caminho, mimetype="video/mp4", conditional=True, max_age=0)
     finally:
         cursor.close()
         con.close()

@@ -23,6 +23,7 @@ __pycache__/
 # Arquivos de upload temporários (mantém a pasta, mas ignora o conteúdo)
 uploads/*
 !uploads/.gitkeep
+/private_uploads/mobile/
 
 # Logs e arquivos do sistema
 *.log

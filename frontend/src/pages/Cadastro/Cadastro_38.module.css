@@ -2,13 +2,15 @@
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .cadastro */
 .cadastro {
     width: 100%;
-    min-height: 130vh;
+    min-height: calc(100svh - 58px);
 
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
 
-    padding-top: 50px;
+    padding: 28px 16px;
+    box-sizing: border-box;
 
     background: linear-gradient(
             135deg,
@@ -105,9 +107,8 @@
 @media (max-width: 600px) {
 
     .cadastro {
-        padding-top: 50px;
-        padding-left: 15px;
-        padding-right: 15px;
+        min-height: calc(100svh - 62px);
+        padding: 24px 15px;
     }
 
     .cadastro h1 {

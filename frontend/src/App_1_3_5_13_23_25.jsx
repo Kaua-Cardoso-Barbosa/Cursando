@@ -184,6 +184,7 @@ function sincronizarAoRetomar() {
             />
             <Routes>
                 <Route path="/" element={<Home/>}/>
+                <Route path="/home" element={<Navigate to="/" replace />}/>
                 {/* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Conecta a navegação ao componente responsável por este item */}
                 <Route path="/login" element={<Login api={api} setMensagem={setMensagem} atualizarSessao={atualizarSessao}/>}/>
                 {/* Fim item 3 */}
