@@ -19,6 +19,7 @@ from utilitarios_backend_5_9_12_15_20_24_28_34 import _aluno_matriculado, _bloqu
 
 
 # Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Lista ou cria os módulos do curso do instrutor
+# Módulos organizam as aulas do curso; a prévia da estrutura não libera o vídeo privado.
 @app.route("/professor/cursos/<int:id_curso>/modulos", methods=["GET", "POST"])
 @jwt_required()
 def modulos_professor(id_curso):
@@ -114,6 +115,7 @@ def modulos_professor(id_curso):
 
 
 # Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Lista ou publica os materiais e arquivos complementares
+# Materiais podem ser links ou arquivos e exigem acesso autorizado para consulta privada.
 @app.route("/professor/cursos/<int:id_curso>/materiais", methods=["GET", "POST"])
 @jwt_required()
 def materiais_professor(id_curso):

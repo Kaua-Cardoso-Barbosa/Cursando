@@ -18,6 +18,7 @@ import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario_3.jsx";
 import GoogleChart from "../../components/GoogleChart/GoogleChart_8.jsx";
 
 /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Define os rótulos usados na consulta administrativa de logs */
+/* Nomes legíveis das tabelas mostradas no histórico administrativo. */
 const ROTULOS_TABELAS_LOG = {
     USUARIOS: "conta de usuário",
     CURSOS: "curso",
@@ -43,6 +44,7 @@ const ROTULOS_TABELAS_LOG = {
     CURSO_TAXONOMIA: "classificação do curso"
 };
 
+/* Nomes legíveis dos campos incluídos nos snapshots da auditoria. */
 const ROTULOS_CAMPOS_LOG = {
     NOME: "nome",
     TITULO: "título",
@@ -85,7 +87,13 @@ const ROTULOS_CAMPOS_LOG = {
 };
 /* Fim item 25 */
 
+const formatarMoeda = (valor) => new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+}).format(Number(valor || 0));
+
 /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Converte o snapshot para apresentar os detalhes do log */
+/* Um snapshot ausente ou inválido vira objeto vazio para manter o relatório utilizável. */
 function lerSnapshotLog(valor) {
     if (!valor) return {};
     try { return JSON.parse(valor); }
@@ -100,6 +108,7 @@ function rotuloCampoLog(campo) {
 /* Fim item 25 */
 
 /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Formata o valor de um campo no relatório de logs */
+/* Formata status, valores, datas e identificadores conforme o campo e a tabela. */
 function formatarValorCampoLog(campo, valor, tabela) {
     if (valor === null || valor === undefined || valor === "") return "não informado";
     if (campo.startsWith("ID_")) return `#${valor}`;
@@ -143,6 +152,7 @@ function objetoLog(log) {
 /* Fim item 25 */
 
 /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Compara os valores anteriores e posteriores da alteração */
+/* Compara estados anterior e posterior e indica valores que não foram registrados. */
 function alteracoesLog(log) {
     const antes = lerSnapshotLog(log.valores_antes);
     const depois = lerSnapshotLog(log.valores_depois);
@@ -202,6 +212,7 @@ function DashboardAdm({
     const [logsGravacao, setLogsGravacao] = useState([]);
 
     /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe a consulta dos logs ao administrador e aplica os filtros */
+    /* Os filtros acompanham a busca inicial e as páginas seguintes. */
     const [filtrosLogs, setFiltrosLogs] = useState({ busca: "", tipo: "0", evento: "", acao: "", inicio: "", fim: "" });
     const [logExpandido, setLogExpandido] = useState(null);
     /* Fim item 25 */
@@ -510,6 +521,7 @@ function DashboardAdm({
         if (!exibindoLogs) return;
 
         /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Consulta os logs aplicando filtros por período, ação e usuário */
+        /* Monta a consulta e reinicia a lista quando os filtros mudam. */
         async function carregarLogs() {
             try {
                 const params = new URLSearchParams();
@@ -520,6 +532,7 @@ function DashboardAdm({
                 const dadosGravacao = await respostaGravacao.json().catch(() => ({}));
                 if (!respostaGravacao.ok) throw new Error(dadosGravacao?.mensagem?.descricao || "Erro ao carregar logs.");
                 const registros = Array.isArray(dadosGravacao) ? dadosGravacao : [];
+                /* O registro extra informa se a próxima página está disponível. */
                 setLogsGravacao(registros.slice(0, 100));
                 setTemMaisLogs(registros.length > 100);
             } catch (erro) {
@@ -536,6 +549,7 @@ function DashboardAdm({
 
 
     /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Carrega a próxima página preservando os filtros dos logs */
+    /* Mantém os filtros e avança pelo número de registros já exibidos. */
     async function carregarMaisLogs() {
         setCarregandoMaisLogs(true);
         try {
@@ -700,14 +714,21 @@ function DashboardAdm({
                             {/* Sprint item 16 - Exibir indicadores da saúde financeira da empresa - Apresenta os indicadores de receita e margem financeira */}
                             <div className={css.cardMetrica}>
                                 <div className={css.metricaTopo}>
-                                    <h2>Saude financeira</h2>
+                                    <h2>Saúde financeira</h2>
                                     <div className={css.iconeBadge}><FaFolder /></div>
                                 </div>
                                 <span className={css.metricaVariacao}>Margem histórica estimada após pool e custos</span>
                                 <div className={css.metricaNumero}>{Number(financeiro?.margem_caixa_percentual || 0).toFixed(2).replace(".", ",")}%</div>
                                 <p className={css.textoFinanceiro}>
-                                    {financeiro?.faturas_pagas || 0} mensalidades pagas, ticket base de R$ {Number(financeiro?.receita_media_assinatura || 0).toFixed(2).replace(".", ",")}.
+                                    (Receita − reserva dos instrutores − custos) ÷ receita × 100
                                 </p>
+                                {Number(financeiro?.total_arrecadado || 0) > 0 ? (
+                                    <p className={css.textoFinanceiro}>
+                                        ({formatarMoeda(financeiro?.total_arrecadado)} − {formatarMoeda(financeiro?.total_repassado_estimado)} − {formatarMoeda(financeiro?.custos)}) ÷ {formatarMoeda(financeiro?.total_arrecadado)} × 100
+                                    </p>
+                                ) : (
+                                    <p className={css.textoFinanceiro}>Sem receita, a margem é exibida como 0%.</p>
+                                )}
                             </div>
                             {/* Fim item 16 */}
                             <div className={css.cardMetrica}>
@@ -927,6 +948,7 @@ function DashboardAdm({
                             <h2>Histórico de atividades</h2>
                             {/* Fim item 25 */}
                                                                                                                                                                                                                  
+                            {/* As abas limitam os registros pelo perfil do ator. */}
                             <div className={css.abasLogs}>
                                 {[["0", "Administradores"], ["1", "Professores"], ["2", "Alunos"]].map(([tipo, label]) => (
                                     <button key={tipo} className={filtrosLogs.tipo === tipo ? css.abaAtiva : css.abaLog} onClick={() => { /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe a consulta dos logs ao administrador e aplica os filtros */
@@ -934,6 +956,7 @@ function DashboardAdm({
                                     /* Fim item 25 */ setLogExpandido(null); }} type="button">{label}</button>
                                 ))}
                             </div>
+                            {/* Busca, evento e intervalo de datas refinam a auditoria. */}
                             <div className={css.filtrosLogs}>
                                 {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe a consulta dos logs ao administrador e aplica os filtros */}
                                 <input placeholder="Buscar por nome ou e-mail" value={filtrosLogs.busca} onChange={(e) => setFiltrosLogs({ ...filtrosLogs, busca: e.target.value })} />
@@ -955,6 +978,7 @@ function DashboardAdm({
                             </div>
                                                                                                                                                                                                                                    
                             {logsGravacao.length === 0 && <p>Nenhuma atividade registrada.</p>}
+                            {/* Cada registro pode expandir para mostrar campos, contexto e dados técnicos. */}
                             {logsGravacao.map((log) => {
                                 /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe a consulta dos logs ao administrador e aplica os filtros */
                                 const expandido = logExpandido === log.id;
@@ -1011,6 +1035,7 @@ function DashboardAdm({
                                                     <p className={css.avisoLog}>Alguns valores foram omitidos pelo trigger por conter dados sensíveis ou conteúdo extenso.</p>
                                                 )}
                                             </div>
+                                            {/* Metadados de origem e requisição ficam disponíveis sob demanda. */}
                                             <details className={css.detalhesTecnicos}>
                                                 <summary>Dados técnicos do registro</summary>
                                                 <dl className={css.logInformacoes}>

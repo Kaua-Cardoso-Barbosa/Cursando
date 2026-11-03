@@ -1,5 +1,6 @@
 
 
+# Valida identificadores da requisição e nomes de campos do banco.
 import re
 import textwrap
 from threading import RLock
@@ -14,6 +15,8 @@ from log_banco_37 import garantir_log_schema
 
 
 # Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Define as tabelas cujas alterações serão auditadas
+# Os gatilhos gravam alterações em um banco Firebird separado usando a mesma transação.
+# Relação de tabelas cujas alterações recebem gatilhos de auditoria.
 TABELAS_AUDITADAS = {
     "USUARIOS",
     "CURSOS",
@@ -45,6 +48,7 @@ TABELAS_AUDITADAS = {
 
 
 
+# Seleciona campos incluídos nos snapshots; campos sensíveis ficam de fora.
 VALORES_AUDITAVEIS = {
     
     "USUARIOS": {"NOME", "TIPO_USUARIO", "SITUACAO", "TENTATIVAS", "EMAIL_VERIFICADO"},
@@ -76,19 +80,24 @@ VALORES_AUDITAVEIS = {
 
 
 
+# Algumas tabelas geram log somente em inserções e exclusões.
 _OPERACOES_LIMITADAS = {
     "MENSAGENS_CHAT": "AFTER INSERT OR DELETE",
     "PROGRESSO_AULAS": "AFTER INSERT OR DELETE",
 }
 
+# Evita a instalação simultânea de gatilhos no mesmo processo.
 _lock_instalacao = RLock()
 _gatilhos_prontos = False
 _gatilhos_instalados = set()
 
 
 # Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema - Preenche a identificação da requisição usada pelos registros e gatilhos
+# O contexto da conexão identifica quem executou a alteração registrada pelos gatilhos.
 def definir_contexto_auditoria(con):
+    # Preenche o contexto da sessão Firebird usado pelos gatilhos.
     
+    # Inicializa o contexto também para operações sem requisição HTTP.
     valores = {
         "AUDIT_USER_ID": None,
         "AUDIT_USER_TYPE": None,
@@ -102,6 +111,7 @@ def definir_contexto_auditoria(con):
         "AUDIT_LOG_PASSWORD": current_app.config.get("AUDIT_LOG_PASSWORD"),
     }
 
+    # Acrescenta ator, rota, método, IP e agente quando existe requisição.
     if has_request_context():
         
         
@@ -115,10 +125,12 @@ def definir_contexto_auditoria(con):
         request_id = (request.headers.get("X-Request-ID") or "").strip()
         
         
+        # Valida X-Request-ID ou gera outro identificador para a requisição.
         if not re.fullmatch(r"[A-Za-z0-9._:-]{1,80}", request_id):
             request_id = getattr(g, "audit_request_id", None) or uuid4().hex
         g.audit_request_id = request_id
 
+        # Limita os valores ao tamanho aceito pelas colunas de log.
         valores.update({
             "AUDIT_USER_ID": str(actor_id) if actor_id is not None else None,
             "AUDIT_USER_TYPE": str(claims.get("tipo")) if claims.get("tipo") is not None else None,
@@ -132,6 +144,7 @@ def definir_contexto_auditoria(con):
 
     chaves = tuple(valores)
     parametros = tuple(valores[chave] for chave in chaves)
+    # Monta chamadas parametrizadas de RDB$SET_CONTEXT para a conexão.
     definicoes = ", ".join(
         "RDB$SET_CONTEXT('USER_SESSION', ?, ?)" for _ in chaves
     )
@@ -149,6 +162,7 @@ def definir_contexto_auditoria(con):
 
 
 def definir_ator_auditoria(con, id_usuario, tipo_usuario):
+    # Atualiza usuário e tipo no contexto após a autenticação.
     
     cursor = con.cursor()
     try:
@@ -169,15 +183,19 @@ def definir_ator_auditoria(con, id_usuario, tipo_usuario):
 
 # Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Prepara os gatilhos antes de executar alterações nas tabelas
 def preparar_auditoria_antes_de_modificar():
+    # Prepara o banco de logs e os gatilhos antes de gravações.
     
+    # Requisições de leitura não precisam dessa preparação.
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return None
 
     try:
         
         
+        # Confere o banco de destino antes de instalar os gatilhos.
         garantir_log_schema()
         garantir_gatilhos_auditoria()
+    # Uma falha na auditoria impede a gravação sem registro correspondente.
     except Exception:
         current_app.logger.exception("NÃ£o foi possÃ­vel preparar a auditoria do banco.")
         return jsonify({
@@ -194,9 +212,11 @@ app.before_request(preparar_auditoria_antes_de_modificar)
 
 
 def garantir_gatilhos_auditoria(tabelas=None, force=False):
+    # Instala os gatilhos das tabelas solicitadas.
     
     global _gatilhos_prontos
 
+    # Normaliza nomes e descarta tabelas fora da lista auditada.
     solicitados = None if tabelas is None else {
         str(nome).upper() for nome in tabelas
     } & TABELAS_AUDITADAS
@@ -206,12 +226,14 @@ def garantir_gatilhos_auditoria(tabelas=None, force=False):
     if tabelas is None and _gatilhos_prontos:
         return
 
+    # Serializa a instalação e verifica novamente o cache de gatilhos.
     with _lock_instalacao:
         if not force and solicitados is not None and solicitados <= _gatilhos_instalados:
             return
         if tabelas is None and _gatilhos_prontos:
             return
 
+        # Sem filtro, considera todas as tabelas auditadas.
         nomes = solicitados or set(TABELAS_AUDITADAS)
         if not force:
             nomes -= _gatilhos_instalados
@@ -234,6 +256,7 @@ def garantir_gatilhos_auditoria(tabelas=None, force=False):
             )
             versao = str((cursor.fetchone() or ("",))[0] or "").strip()
             encontrado = re.search(r"(\d+)\.(\d+)", versao)
+            # AUDIT_JSON exige Firebird 3 ou posterior.
             if not encontrado or tuple(map(int, encontrado.groups())) < (3, 0):
                 raise RuntimeError(
                     "A funÃ§Ã£o AUDIT_JSON exige Firebird 3 ou posterior. "
@@ -242,11 +265,13 @@ def garantir_gatilhos_auditoria(tabelas=None, force=False):
 
             
             
+            # Cria ou atualiza a função SQL que produz JSON.
             cursor.execute(_DDL_FUNCAO_JSON)
 
             instalados = set()
             
             
+            # Lê os metadados de cada tabela antes de montar o gatilho.
             for tabela in sorted(nomes):
                 if not _tabela_existe(cursor, tabela):
                     continue
@@ -256,13 +281,16 @@ def garantir_gatilhos_auditoria(tabelas=None, force=False):
                     raise RuntimeError(
                         f"A tabela auditada {tabela} precisa de campos e chave primÃ¡ria."
                     )
+                # Instala o gatilho com campos e chave primária reais.
                 cursor.execute(_ddl_gatilho(tabela, campos, chaves))
                 instalados.add(tabela)
 
+            # Confirma a instalação e atualiza o cache em memória.
             con.commit()
             _gatilhos_instalados.update(instalados)
             if tabelas is None:
                 _gatilhos_prontos = True
+        # Desfaz mudanças parciais se alguma instalação falhar.
         except Exception:
             con.rollback()
             raise
@@ -272,6 +300,7 @@ def garantir_gatilhos_auditoria(tabelas=None, force=False):
 
 
 def _tabela_existe(cursor, tabela):
+    # Aceita somente tabela de usuário existente, excluindo views e tabelas internas.
     cursor.execute(
         """
         SELECT 1
@@ -286,6 +315,7 @@ def _tabela_existe(cursor, tabela):
 
 
 def _campos_tabela(cursor, tabela):
+    # Lê os campos físicos para os snapshots e a comparação de alterações.
     cursor.execute(
         """
         SELECT
@@ -306,6 +336,7 @@ def _campos_tabela(cursor, tabela):
         (tabela,),
     )
     campos = []
+    # Ignora campos calculados, matrizes e nomes inadequados.
     for nome, tipo, subtipo, calculado, dimensoes in cursor.fetchall():
         nome = str(nome).upper()
         if not re.fullmatch(r"[A-Z_][A-Z0-9_$]*", nome):
@@ -321,6 +352,7 @@ def _campos_tabela(cursor, tabela):
 
 
 def _chaves_primarias(cursor, tabela):
+    # Obtém a chave primária na ordem definida pelo índice.
     cursor.execute(
         """
         SELECT TRIM(S.RDB$FIELD_NAME)
@@ -336,10 +368,12 @@ def _chaves_primarias(cursor, tabela):
 
 
 def _identificador(nome):
+    # Escapa identificadores SQL usados na geração dinâmica.
     return '"' + nome.replace('"', '""') + '"'
 
 
 def _literal(valor):
+    # Escapa literais SQL usados na geração dinâmica.
     return "'" + valor.replace("'", "''") + "'"
 # Fim item 37
 
@@ -347,6 +381,7 @@ def _literal(valor):
 
 
 
+# A função SQL escapa caracteres especiais e transforma valores em JSON.
 _DDL_FUNCAO_JSON = """
 CREATE OR ALTER FUNCTION AUDIT_JSON (VALOR VARCHAR(1000))
 RETURNS BLOB SUB_TYPE TEXT
@@ -387,20 +422,25 @@ END
 
 # Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Converte os valores dos campos para o registro de alterações
 def _valor_texto(alias, campo):
+    # Converte o campo em texto para formar o JSON.
     coluna = f"{alias}.{_identificador(campo['nome'])}"
+    # Limita textos a mil caracteres antes da serialização.
     if campo["tipo"] in {14, 37}:
         return f"SUBSTRING({coluna} FROM 1 FOR 1000)"
     return f"CAST({coluna} AS VARCHAR(100))"
 
 
 def _json_campo(alias, campo):
+    # Monta uma expressão SQL com nome e valor de um campo.
     chave = _literal('"' + campo['nome'] + '":')
     return f"{chave} || AUDIT_JSON({_valor_texto(alias, campo)})"
 
 
 def _snapshot_json(alias, campos):
+    # Monta o objeto JSON dos campos permitidos.
     
     partes = [_json_campo(alias, campo) for campo in campos]
+    # Sem campos permitidos, não há snapshot a gravar.
     if not partes:
         return "NULL"
     return (
@@ -411,6 +451,7 @@ def _snapshot_json(alias, campos):
 
 
 def _expressao_chave(alias, chaves):
+    # Une os valores da chave primária no ID do registro auditado.
     partes = [
         f"COALESCE(CAST({alias}.{_identificador(chave)} AS VARCHAR(80)), '')"
         for chave in chaves
@@ -419,17 +460,21 @@ def _expressao_chave(alias, chaves):
 
 
 def _ddl_gatilho(tabela, campos, chaves):
+    # Gera o SQL do gatilho para INSERT, DELETE e, quando permitido, UPDATE.
     
     por_nome = {campo["nome"]: campo for campo in campos}
     chaves = [chave for chave in chaves if chave in por_nome]
+    # Sem chave primária auditável, o log não pode identificar o registro.
     if not chaves:
         raise RuntimeError(f"A tabela {tabela} nÃ£o possui chave primÃ¡ria auditÃ¡vel.")
 
+    # Seleciona apenas campos permitidos que não sejam BLOB.
     valores = [
         por_nome[nome]
         for nome in sorted(VALORES_AUDITAVEIS.get(tabela, set()))
         if nome in por_nome and por_nome[nome]["tipo"] != 261
     ]
+    # Respeita a lista de tabelas sem auditoria de UPDATE.
     tem_update = tabela not in _OPERACOES_LIMITADAS
     colunas_escalars = [campo for campo in campos if campo["tipo"] != 261] if tem_update else []
     novo = _expressao_chave("NEW", chaves)
@@ -440,6 +485,7 @@ def _ddl_gatilho(tabela, campos, chaves):
     snapshot_antigo = _snapshot_json("OLD", valores)
 
     linhas_alteracao = []
+    # Registra os campos escalares que mudaram na atualização.
     for campo in colunas_escalars:
         nome = campo["nome"]
         coluna_nova = f"NEW.{_identificador(nome)}"
@@ -451,6 +497,7 @@ def _ddl_gatilho(tabela, campos, chaves):
             "  ",
             f"  v_campos = v_campos || {_literal(nome + ', ')};",
         ])
+        # Inclui valores antigos e novos somente dos campos permitidos.
         if nome in {c["nome"] for c in valores}:
             linhas_alteracao.extend([
                 "  ",
@@ -471,6 +518,7 @@ def _ddl_gatilho(tabela, campos, chaves):
             )
         linhas_alteracao.append("END")
 
+    # Escapa o caminho do banco externo dentro do SQL gerado.
     log_path = str(current_app.config["DB_LOG_NAME"]).replace("'", "''")
     operations = _OPERACOES_LIMITADAS.get(tabela, "AFTER INSERT OR UPDATE OR DELETE")
     linhas_alteracao_sql = "\n".join(linhas_alteracao)
@@ -519,6 +567,7 @@ def _ddl_gatilho(tabela, campos, chaves):
     END"""
     
     
+    # Prepara o INSERT parametrizado em LOG_GRAVACAO.
     partes_sql_insert = (
         "INSERT INTO LOG_GRAVACAO ",
         "(ID_LOG, ID_USUARIO, TIPO_USUARIO, ACAO, TABELA_AFETADA, ID_REGISTRO, ",
@@ -528,6 +577,7 @@ def _ddl_gatilho(tabela, campos, chaves):
         "?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
     )
     sql_insert = " ||\n        ".join(_literal(parte) for parte in partes_sql_insert)
+    # Associa operação, ator, snapshots e dados da requisição ao INSERT.
     parametros_insert = f"""
         CAST(NULLIF(v_actor_id, '') AS INTEGER),
         CAST(NULLIF(v_actor_type, '') AS SMALLINT),
@@ -547,6 +597,7 @@ def _ddl_gatilho(tabela, campos, chaves):
         CURRENT_USER
     """
 
+    # O gatilho grava no banco externo usando a mesma transação.
     return f"""
 
 CREATE OR ALTER TRIGGER {nome_trigger}

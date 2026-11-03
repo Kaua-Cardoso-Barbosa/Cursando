@@ -103,6 +103,7 @@ function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen,
 }
 
 /* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
+/* Os estilos desta tela organizam a lista de cursos no aplicativo. */
 const styles = StyleSheet.create({
   header: {
     marginBottom: 26

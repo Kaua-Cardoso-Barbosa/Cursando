@@ -171,12 +171,15 @@ def normalizar_taxonomia(valor):
 
 
 # Sprint item 24 - Registrar as ações realizadas pelos usuários no sistema - Converte os detalhes da ação em um resumo para o registro de auditoria
+# Produz uma frase curta a partir dos detalhes JSON de uma ação registrada.
 def _resumo_detalhes_log(detalhes):
     try:
+        # Mantém o texto original quando detalhes não contêm JSON válido.
         dados = json.loads(detalhes)
     except (TypeError, ValueError):
         return detalhes
 
+    # Combina descrição, rota, método e status HTTP em um resumo legível.
     descricao = dados.get("descricao") or dados.get("acao") or ""
     requisicao = dados.get("requisicao") or {}
     status = requisicao.get("status_http")

@@ -97,6 +97,7 @@ def garantir_coluna_imagem_perfil(cursor, con):
 
     cursor.execute("ALTER TABLE USUARIOS ADD IMAGEM_PERFIL VARCHAR(500)")
     con.commit()
+    # Reinstala o gatilho de USUARIOS após mudar a estrutura dessa tabela.
     garantir_gatilhos_auditoria({"USUARIOS"}, force=True)
     return True
 

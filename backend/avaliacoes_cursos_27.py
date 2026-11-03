@@ -12,6 +12,7 @@ from utilitarios_backend_5_9_12_15_20_24_28_34 import _bloqueio_assinatura_aluno
 
 
 # Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Valida a conclusão e grava a nota e o comentário do aluno
+# A avaliação só é aceita após conclusão das aulas e aprovação na prova.
 @app.route("/aluno/cursos/<int:id_curso>/avaliacoes", methods=["POST"])
 @jwt_required()
 def avaliar_curso(id_curso):

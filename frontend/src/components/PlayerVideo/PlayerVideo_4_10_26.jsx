@@ -166,6 +166,7 @@ function salvarPosicao(forcar = false) {
         video.addEventListener("pause", quandoPausar);
         video.addEventListener("seeked", quandoBuscar);
         /* Sprint item 26 - Bloquear gravação de tela durante o curso - Protege a reprodução diante de gravação ou ocultação da tela detectável */
+        /* No navegador, a reação à gravação depende dos sinais de visibilidade e captura disponíveis. */
         document.addEventListener("visibilitychange", quandoOcultar);
         /* Fim item 26 */
         window.addEventListener("pagehide", quandoPausar);
@@ -217,6 +218,7 @@ async () => {
         };
 
         /* Sprint item 10 - Bloquear captura de tela durante o curso - Intercepta os atalhos de captura de tela reconhecidos pelo navegador */
+        /* A proteção web reage aos eventos de captura que o navegador consegue detectar. */
         const bloquearTeclas = (evento) => {
             const tecla = evento.key.toLowerCase();
             const atalhoCaptura = evento.key === "PrintScreen"

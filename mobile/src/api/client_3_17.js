@@ -18,6 +18,7 @@ let activeApiUrl = null;
 
 
 /* Sprint item 17 - Integrar o aplicativo com a API - Monta os endereços candidatos da API a partir da configuração do app */
+/* O cliente centraliza o endereço da API e as requisições autenticadas das telas móveis. */
 function getApiUrlCandidates() {
   const candidates = [];
 

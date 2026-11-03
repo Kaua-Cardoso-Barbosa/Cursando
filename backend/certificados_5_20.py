@@ -18,6 +18,7 @@ from utilitarios_backend_5_9_12_15_20_24_28_34 import _bloqueio_assinatura_aluno
 def certificado_aluno(id_curso):
     
     # Sprint item 5 - Gerar certificado ao concluir o curso - Valida a conclusão e prepara a emissão do certificado
+    # A emissão exige matrícula, todas as aulas concluídas e aprovação na prova publicada.
     negado = exigir_tipo(2)
     if negado:
         return negado
@@ -35,7 +36,7 @@ def certificado_aluno(id_curso):
 
         cursor.execute(
             """
-            SELECT U.NOME, C.TITULO, M.PROGRESSO
+            SELECT U.NOME, C.TITULO
             FROM MATRICULAS M
             JOIN USUARIOS U ON U.ID_USUARIO = M.ID_USUARIO
             JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
@@ -44,13 +45,13 @@ def certificado_aluno(id_curso):
             (id_curso, get_jwt_identity()),
         )
         row = cursor.fetchone()
-        if not row or int(row[2] or 0) < 100:
-            return resposta("Certificado liberado somente apos concluir o curso.", 403)
+        if not row:
+            return resposta("Certificado disponivel apenas para alunos matriculados no curso.", 403)
 
         
         cursor.execute(
             """
-            SELECT COUNT(V.ID_VIDEO), COUNT(PA.ID_VIDEO), MAX(PA.ASSISTIDO_EM)
+            SELECT COUNT(DISTINCT V.ID_VIDEO), COUNT(DISTINCT PA.ID_VIDEO), MAX(PA.ASSISTIDO_EM)
             FROM VIDEOS V
             LEFT JOIN PROGRESSO_AULAS PA
               ON PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = ?
@@ -58,6 +59,7 @@ def certificado_aluno(id_curso):
             """,
             (get_jwt_identity(), id_curso),
         )
+        # Os registros de aulas assistidas definem a conclusao; o percentual da matricula pode estar desatualizado.
         total_aulas, aulas_concluidas, concluido_em = cursor.fetchone() or (0, 0, None)
         
         

@@ -30,6 +30,7 @@ import LogsAdminScreen from "./src/screens/LogsAdminScreen_25_39";
 import VerificarEmailScreen from "./src/screens/VerificarEmailScreen_1_39";
 import { colors, globalStyles } from "./src/styles_39";
 
+/* O handler de notificações é configurado uma vez durante a vida do aplicativo. */
 let notificationHandlerConfigured = false;
 
 export default function App() {
@@ -144,19 +145,24 @@ async function carregarDados(authToken = token, authUser = usuario) {
 
   /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Verifica a biometria disponível e solicita autenticação nativa */
   async function confirmarBiometriaDisponivel() {
+    /* Primeiro verifica se o aparelho possui hardware biométrico. */
     const compativel = await LocalAuthentication.hasHardwareAsync();
+    /* Só tenta autenticar se alguma biometria já estiver cadastrada no sistema do aparelho. */
     const cadastrado = compativel ? await LocalAuthentication.isEnrolledAsync() : false;
 
+    /* Sem biometria disponível, a sessão salva segue pelo fluxo normal de validação da API. */
     if (!compativel || !cadastrado) {
       return true;
     }
 
+    /* Abre o prompt nativo para confirmar o acesso antes de restaurar a sessão. */
     const resultado = await LocalAuthentication.authenticateAsync({
       promptMessage: "Confirmar acesso ao Cursando",
       cancelLabel: "Cancelar",
       fallbackLabel: "Usar senha do aparelho"
     });
 
+    /* Cancelamento ou falha biométrica impedem a restauração automática da sessão. */
     return resultado.success === true;
   }
   /* Fim item 18 */
@@ -164,14 +170,18 @@ async function carregarDados(authToken = token, authUser = usuario) {
 
   /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Aciona vibração e agenda a notificação local da sessão */
   async function avisarSessaoAtiva() {
+    /* A vibração curta confirma localmente que a sessão foi iniciada. */
     Vibration.vibrate(60);
 
 
 
 
+    /* No Expo Go para Android, interrompe somente a notificação local; a vibração já ocorreu. */
     if (Platform.OS === "android" && Constants.expoGoConfig) return;
 
+    /* Carrega o módulo de notificações apenas nos ambientes em que será usado. */
     const Notifications = await import("expo-notifications");
+    /* Configura uma única vez como a notificação será exibida com o app aberto. */
     if (!notificationHandlerConfigured) {
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
@@ -184,11 +194,14 @@ async function carregarDados(authToken = token, authUser = usuario) {
       notificationHandlerConfigured = true;
     }
 
+    /* Solicita a permissão do sistema antes de agendar o aviso. */
     const permissao = await Notifications.requestPermissionsAsync();
+    /* Se o usuário negar a permissão, segue sem notificação. */
     if (permissao.status !== "granted") {
       return;
     }
 
+    /* Agenda um aviso local imediato de sessão iniciada; não envia push remoto. */
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Cursando",
@@ -240,14 +253,17 @@ async function validarAcesso(authToken, authUser) {
     async function iniciar() {
       const sessao = await carregarSessao();
       if (sessao.token) {
+        /* A biometria é exigida somente ao restaurar uma sessão previamente salva. */
         const autorizado = await confirmarBiometriaDisponivel();
         if (!autorizado) {
+          /* Uma confirmação recusada remove a sessão salva para exigir novo login. */
           await limparSessao();
           return;
         }
 
         setToken(sessao.token);
         setUsuario(sessao.usuario);
+        /* Falhas de permissão ou agendamento do aviso não bloqueiam a entrada. */
         avisarSessaoAtiva().catch(() => {});
         validarAcesso(sessao.token, sessao.usuario);
       }
@@ -650,6 +666,7 @@ async (novoToken, novoUsuario) => {
           setUsuario(novoUsuario);
           setAssinaturaAtiva(null);
           /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Aciona os recursos nativos e trata as permissões do dispositivo */
+          /* No login novo, vibração e aviso local ocorrem após receber o token. */
           avisarSessaoAtiva().catch(() => {});
           /* Fim item 18 */
           /* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */

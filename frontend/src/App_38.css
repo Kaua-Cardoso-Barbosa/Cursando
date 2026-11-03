@@ -63,6 +63,7 @@
 }
 
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de #center */
+/* As regras responsivas ajustam dimensões e disposição dos elementos em telas menores. */
 #center {
   display: flex;
   flex-direction: column;

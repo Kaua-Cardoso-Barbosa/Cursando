@@ -249,6 +249,7 @@ function sincronizarAoRetomar() {
 
                                                                                                                                                                                                    
                 {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe a navegação aos logs ao perfil de administrador */}
+                {/* A rota de logs usa a mesma proteção de perfil do painel administrativo. */}
                 <Route path="/DashboardAdm/Logs" element={
                     <RotaRestrita api={api} tipoPermitido={0}>
                         <DashboardAdm api={api} sair={sair} setMensagem={setMensagem} onPerfilAtualizado={atualizarUsuario}/>

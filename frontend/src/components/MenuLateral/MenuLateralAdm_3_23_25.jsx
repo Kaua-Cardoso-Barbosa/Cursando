@@ -36,6 +36,7 @@ function MenuLateralAdm({ itemAtivo = "inicio" }) {
                     </Link>
                     {/* Fim item 23 */}
                     {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Disponibiliza a consulta administrativa das ações registradas */}
+                    {/* O link de auditoria aparece apenas no menu administrativo. */}
                     <Link
                         to="/DashboardAdm/Logs"
                         className={`${css.linkItem} ${itemAtivo === "logs" ? css.ativo : ""}`}

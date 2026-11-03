@@ -29,6 +29,8 @@ from aluno_4_6_34 import *
 import curso_conteudo_6_11_20_21_28 as curso_conteudo
 import chat_cursos_11_19_20 as chat_cursos
 import provas_cursos_20 as provas_cursos
+import certificados_5_20 as certificados
+# A importação registra as rotas administrativas de consulta aos logs.
 import gravacao_log_25 as gravacao_log
 import financeiro_12_13_14_15_16_30_31_32_33_34_35_36 as financeiro
 import pagamento_arkhe_2_32_33_34 as pagamento_arkhe

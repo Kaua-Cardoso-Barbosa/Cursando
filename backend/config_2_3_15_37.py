@@ -25,6 +25,7 @@ DB_NAME = os.path.join(
     os.getenv("DB_NAME", "BANCO.FDB")
 )
 # Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Configura o banco separado e a autenticação da auditoria
+# Caminho do banco Firebird separado que armazena os logs.
 DB_LOG_NAME = os.path.join(
     os.path.dirname(__file__),
     os.getenv("DB_LOG_NAME", "LOG_GRAVACAO.FDB")
@@ -33,6 +34,7 @@ DB_LOG_NAME = os.path.join(
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 # Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Configura o banco separado e a autenticação da auditoria
+# Usa credenciais próprias de auditoria quando fornecidas; caso contrário herda as do banco principal.
 AUDIT_LOG_USER = os.getenv("AUDIT_LOG_USER") or DB_USER
 AUDIT_LOG_PASSWORD = os.getenv("AUDIT_LOG_PASSWORD") or DB_PASSWORD
 # Fim item 37
@@ -46,6 +48,7 @@ SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "True").lower() == "true"
 
 JWT_SECRET_KEY = SECRET_KEY
 # Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Aceita a autenticação por cookies e headers usada pelo site e aplicativo
+# A sessão compartilhada permite que aplicativo e site consultem o mesmo estado salvo na API.
 JWT_TOKEN_LOCATION = os.getenv(
     "JWT_TOKEN_LOCATION",
     "cookies,headers"

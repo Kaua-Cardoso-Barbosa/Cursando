@@ -24,6 +24,7 @@ from utilitarios_backend_5_9_12_15_20_24_28_34 import _aluno_matriculado, _bloqu
 
 
 # Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Lista as conversas permitidas para o aluno ou instrutor
+# A API valida vínculo com o curso antes de consultar ou enviar mensagens.
 @app.route("/chat/conversas", methods=["GET"])
 @jwt_required()
 def chat_conversas():
@@ -233,6 +234,7 @@ def chat_mensagens(id_curso):
 
 
 # Sprint item 11 - Enviar e-mail aos alunos que já compraram cursos do instrutor quando um novo curso for cadastrado - Inicia o envio de avisos sobre a publicação do curso
+# A publicação de novo curso envia avisos aos alunos elegíveis sem desfazer o curso se o e-mail falhar.
 def notificar_alunos_novo_curso(destinatarios, titulo_curso):
     
     if not destinatarios:

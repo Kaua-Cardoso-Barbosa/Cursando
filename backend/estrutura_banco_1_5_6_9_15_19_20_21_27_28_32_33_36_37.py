@@ -408,7 +408,9 @@ def _garantir_estrutura_banco():
         # Fim item 21
         con.commit()
         # Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Prepara ou consulta a gravação das alterações no banco separado
+        # Prepara o banco separado antes de criar os gatilhos das tabelas do sistema.
         garantir_log_schema()
+        # Atualiza gatilhos após alterações na estrutura das tabelas auditadas.
         garantir_gatilhos_auditoria({
             "MODULOS_CURSO",
             "MATERIAIS_CURSO",

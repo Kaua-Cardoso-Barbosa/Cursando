@@ -777,6 +777,9 @@ async function baixarCertificado(curso) {
             if (!resposta.ok) await lerResposta(resposta);
 
             const arquivo = await resposta.blob();
+            if (!arquivo.size || !arquivo.type.includes("application/pdf")) {
+                throw new Error("O servidor não retornou um certificado PDF válido.");
+            }
             const urlTemporaria = URL.createObjectURL(arquivo);
             const link = document.createElement("a");
             link.href = urlTemporaria;
@@ -784,7 +787,7 @@ async function baixarCertificado(curso) {
             document.body.appendChild(link);
             link.click();
             link.remove();
-            window.setTimeout(() => URL.revokeObjectURL(urlTemporaria), 1000);
+            window.setTimeout(() => URL.revokeObjectURL(urlTemporaria), 30000);
         } catch (erro) {
             avisar({ tipo: "erro", descricao: erro.message || "Não foi possível baixar o certificado." });
         } finally {

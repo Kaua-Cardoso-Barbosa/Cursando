@@ -1,13 +1,16 @@
 
 
+# Usa o sistema de arquivos para criar o banco de logs quando necessário.
 import os
 
+# O driver Firebird abre o banco separado de auditoria.
 import fdb
 from flask import current_app
 
 
 # Sprint item 37 - Desenvolver rotina de gravação de log de todas as rotinas como gravar, editar e excluir em banco separado - Seleciona o caminho e a autenticação do banco separado de logs
 def _parametros_log():
+    # Reúne conexão, credenciais e codificação do banco de logs.
     return {
         "host": current_app.config["DB_HOST"],
         "database": current_app.config["DB_LOG_NAME"],
@@ -18,19 +21,24 @@ def _parametros_log():
 
 
 def get_log_db():
+    # Cria o arquivo de logs se necessário e devolve uma conexão Firebird.
     
     parametros = _parametros_log()
     caminho = parametros["database"]
 
+    # Na primeira execução, cria o diretório e o arquivo antes de conectar.
     if not os.path.exists(caminho):
         os.makedirs(os.path.dirname(caminho), exist_ok=True)
         fdb.create_database(**parametros)
 
+    # As consultas e gravações de log usam sempre esta conexão separada.
     return fdb.connect(**parametros)
 
 
 def garantir_log_schema():
+    # Prepara as tabelas e o gerador de IDs do banco de logs.
     
+    # Abre conexão própria para alterações na estrutura de auditoria.
     con = get_log_db()
     cursor = con.cursor()
 
@@ -40,9 +48,11 @@ def garantir_log_schema():
         cursor.execute(
             "SELECT 1 FROM RDB$RELATIONS WHERE RDB$RELATION_NAME = 'LOG_ACOES'"
         )
+        # Cria LOG_ACOES apenas quando ainda não existe.
         if not cursor.fetchone():
             
             
+            # Guarda ações da aplicação com usuário, rota, método e detalhes.
             cursor.execute(
                 """
                 CREATE TABLE LOG_ACOES (
@@ -69,6 +79,7 @@ def garantir_log_schema():
             """
         )
         if not cursor.fetchone():
+            # Guarda alterações em tabelas com valores anteriores, posteriores e contexto da requisição.
             cursor.execute(
                 """
                 CREATE TABLE LOG_GRAVACAO (
@@ -97,6 +108,7 @@ def garantir_log_schema():
             
             con.commit()
 
+        # Lista colunas acrescentadas a bancos de log criados em versões anteriores.
         colunas = {
             "TIPO_USUARIO": "TIPO_USUARIO SMALLINT",
             "ID_REGISTRO": "ID_REGISTRO VARCHAR(200)",
@@ -111,6 +123,7 @@ def garantir_log_schema():
             "ORIGEM": "ORIGEM VARCHAR(30)",
             "USUARIO_BANCO": "USUARIO_BANCO VARCHAR(63)",
         }
+        # Consulta metadados antes de adicionar cada coluna ausente.
         for nome, ddl in colunas.items():
             
             
@@ -139,11 +152,13 @@ def garantir_log_schema():
             con.commit()
 
         cursor.execute("SELECT COALESCE(MAX(ID_LOG), 0) FROM LOG_GRAVACAO")
+        # Obtém o maior ID gravado para sincronizar o gerador.
         maior_id = int((cursor.fetchone() or (0,))[0] or 0)
         
         
         cursor.execute("SELECT GEN_ID(GEN_LOG_GRAVACAO, 0) FROM RDB$DATABASE")
         id_atual = int((cursor.fetchone() or (0,))[0] or 0)
+        # Avança o gerador para evitar colisão com registros existentes.
         if maior_id > id_atual:
             cursor.execute(
                 "SELECT GEN_ID(GEN_LOG_GRAVACAO, CAST(? AS INTEGER)) FROM RDB$DATABASE",
@@ -155,9 +170,11 @@ def garantir_log_schema():
                     "O gerador GEN_LOG_GRAVACAO permaneceu abaixo do maior ID_LOG."
                 )
         con.commit()
+    # Desfaz a alteração de estrutura se ocorrer uma falha.
     except Exception:
         con.rollback()
         raise
+    # Fecha cursor e conexão em qualquer resultado.
     finally:
         cursor.close()
         con.close()

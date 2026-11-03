@@ -16,6 +16,7 @@ from utilitarios_backend_5_9_12_15_20_24_28_34 import _pdf_simples, exigir_tipo,
 
 
 # Sprint item 22 - Criar relatórios com filtros por período, instrutor e curso - Valida as datas inicial e final dos filtros do relatório
+# Os filtros de período, instrutor e curso restringem os dados antes da agregação.
 def _filtros_periodo(prefixo=""):
     inicio = request.args.get("inicio")
     fim = request.args.get("fim")
@@ -51,6 +52,7 @@ def relatorio_professor():
     formato = request.args.get("formato")
 
     # Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Consolida os dados de alunos, cursos e horas para o relatório
+    # O relatório reúne alunos, cursos, módulos e horas assistidas por competência.
     if tipo not in {0, 1}:
         return resposta("Relatorios disponiveis apenas para administradores e instrutores.", 403)
     # Fim item 23
@@ -90,6 +92,7 @@ def relatorio_professor():
         params.extend(periodo_params)
 
         # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
+        # As métricas usam matrículas, aulas concluídas e tempo assistido registrado.
         cursor.execute(
             f"""
             SELECT
@@ -375,6 +378,7 @@ def analiticos_mensais_professor():
     try:
         
         # Sprint item 9 - Exibir acessos aos cursos, compras realizadas e taxa de conversão - Registra ou contabiliza os acessos e as compras dos cursos
+        # A conversão relaciona visitas registradas e matrículas efetivadas no período.
         cursor.execute(
             """
             SELECT

@@ -1,10 +1,12 @@
 
 
+# Lê os snapshots gravados pelos gatilhos em formato JSON.
 import json
 
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required
 
+# As rotas usam autenticação e consultam dois bancos de dados.
 from app import app
 from banco_37 import get_db
 from log_banco_37 import get_log_db
@@ -17,15 +19,19 @@ from utilitarios_backend_5_9_12_15_20_24_28_34 import _resumo_detalhes_log, exig
 
 
 # Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe os registros ao administrador e aplica filtros por data e usuário
+# As consultas de logs exigem perfil administrador e aceitam filtros por usuário e data.
 @app.route("/admin/logs", methods=["GET"])
 @jwt_required()
 def logs_admin():
+    # Lista ações para administradores com filtros por texto, perfil, ação, usuário e data.
     
+    # A consulta exige perfil administrativo.
     negado = exigir_tipo(0)
     if negado:
         return negado
 
     garantir_estrutura_banco()
+    # Lê os filtros opcionais da URL.
     termo = (request.args.get("busca") or "").lower().strip()
     tipo = request.args.get("tipo")
     acao = (request.args.get("acao") or "").strip()
@@ -33,15 +39,18 @@ def logs_admin():
     inicio = request.args.get("inicio")
     fim = request.args.get("fim")
     
+    # Consulta LOG_ACOES no banco separado.
     con = get_log_db()
     cursor = con.cursor()
 
     try:
         filtros = []
         params = []
+        # Pesquisa texto em nome, e-mail, ação e detalhes.
         if termo:
             filtros.append("(LOWER(NOME) LIKE ? OR LOWER(EMAIL) LIKE ? OR LOWER(ACAO) LIKE ? OR LOWER(DETALHES) LIKE ?)")
             params.extend([f"%{termo}%", f"%{termo}%", f"%{termo}%", f"%{termo}%"])
+        # Aplica filtro de perfil quando informado.
         if tipo not in (None, ""):
             filtros.append("TIPO_USUARIO = ?")
             params.append(int(tipo))
@@ -51,12 +60,15 @@ def logs_admin():
         if id_usuario_filtro:
             filtros.append("ID_USUARIO = ?")
             params.append(int(id_usuario_filtro))
+        # Inclui registros desde a data inicial.
         if inicio:
             filtros.append("CAST(CRIADO_EM AS DATE) >= ?")
             params.append(inicio)
+        # Inclui registros até a data final.
         if fim:
             filtros.append("CAST(CRIADO_EM AS DATE) <= ?")
             params.append(fim)
+        # Combina filtros SQL mantendo os valores em parâmetros.
         where = f"WHERE {' AND '.join(filtros)}" if filtros else ""
         cursor.execute(
             f"""
@@ -67,6 +79,7 @@ def logs_admin():
             """,
             tuple(params),
         )
+        # Converte BLOBs e datas para a resposta da listagem.
         return jsonify([
             {
                 "id": row[0],
@@ -85,6 +98,7 @@ def logs_admin():
         ])
     except Exception as erro:
         return resposta(f"Erro ao listar logs: {erro}", 500)
+    # Libera os recursos do banco de logs.
     finally:
         cursor.close()
         con.close()
@@ -94,7 +108,9 @@ def logs_admin():
 @app.route("/admin/logs/<int:id_log>", methods=["GET"])
 @jwt_required()
 def detalhe_log_admin(id_log):
+    # Consulta uma ação específica pelo ID.
     
+    # Restringe o detalhe ao administrador.
     negado = exigir_tipo(0)
     if negado:
         return negado
@@ -112,10 +128,12 @@ def detalhe_log_admin(id_log):
             """,
             (id_log,),
         )
+        # Devolve 404 quando o registro não existe.
         row = cursor.fetchone()
         if not row:
             return resposta("Log nao encontrado.", 404)
 
+        # Inclui o texto completo e um resumo legível.
         return jsonify({
             "id": row[0],
             "id_usuario": row[1],
@@ -131,6 +149,7 @@ def detalhe_log_admin(id_log):
         })
     except Exception as erro:
         return resposta(f"Erro ao carregar log: {erro}", 500)
+    # Fecha cursor e conexão.
     finally:
         cursor.close()
         con.close()
@@ -138,7 +157,9 @@ def detalhe_log_admin(id_log):
 
 
 def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_depois):
+    # Acrescenta nomes do curso, aula, prova ou usuário ao log de alteração.
     
+    # Decodifica o JSON e tolera snapshots vazios ou inválidos.
     def ler_snapshot(valor):
         try:
             return json.loads(de_blob_texto(valor) or "{}")
@@ -147,11 +168,13 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
 
     depois = ler_snapshot(valores_depois)
     antes = ler_snapshot(valores_antes)
+    # Usa o estado anterior para exclusões e o posterior para demais ações.
     dados = depois or antes
     contexto = {}
     id_alvo = str(id_registro or "").split(":", 1)[0].strip()
     id_curso = dados.get("ID_CURSO")
 
+    # Busca o módulo afetado e identifica seu curso.
     if tabela == "MODULOS_CURSO" and id_alvo.isdigit():
         cursor.execute("SELECT TITULO, ID_CURSO FROM MODULOS_CURSO WHERE ID_MODULO = ?", (int(id_alvo),))
         registro = cursor.fetchone()
@@ -160,6 +183,7 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
             id_curso = registro[1]
         elif dados.get("TITULO"):
             contexto["modulo"] = dados["TITULO"]
+    # Busca o material ou recupera seu título do snapshot.
     elif tabela == "MATERIAIS_CURSO" and id_alvo.isdigit():
         cursor.execute("SELECT TITULO, ID_CURSO FROM MATERIAIS_CURSO WHERE ID_MATERIAL = ?", (int(id_alvo),))
         registro = cursor.fetchone()
@@ -168,6 +192,7 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
             id_curso = registro[1]
         elif dados.get("TITULO"):
             contexto["material"] = dados["TITULO"]
+    # Busca o título da prova afetada.
     elif tabela == "PROVAS_CURSO" and id_alvo.isdigit():
         cursor.execute("SELECT TITULO, ID_CURSO FROM PROVAS_CURSO WHERE ID_PROVA = ?", (int(id_alvo),))
         registro = cursor.fetchone()
@@ -176,6 +201,7 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
             id_curso = registro[1]
         elif dados.get("TITULO"):
             contexto["prova"] = dados["TITULO"]
+    # Relaciona questões e respostas à prova.
     elif tabela in {"RESPOSTAS_PROVA", "QUESTOES_PROVA"} and dados.get("ID_PROVA") is not None:
         cursor.execute("SELECT TITULO, ID_CURSO FROM PROVAS_CURSO WHERE ID_PROVA = ?", (int(dados["ID_PROVA"]),))
         prova = cursor.fetchone()
@@ -183,6 +209,7 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
             contexto["prova"] = prova[0]
             id_curso = prova[1]
 
+    # Relaciona progresso à aula assistida.
     if tabela == "PROGRESSO_AULAS" and dados.get("ID_VIDEO") is not None:
         cursor.execute("SELECT TITULO, ID_CURSO FROM VIDEOS WHERE ID_VIDEO = ?", (int(dados["ID_VIDEO"]),))
         aula = cursor.fetchone()
@@ -190,12 +217,14 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
             contexto["aula"] = aula[0]
             id_curso = aula[1]
 
+    # Acrescenta o usuário afetado.
     if tabela == "USUARIOS" and id_alvo.isdigit():
         cursor.execute("SELECT NOME, EMAIL, TIPO_USUARIO FROM USUARIOS WHERE ID_USUARIO = ?", (int(id_alvo),))
         usuario = cursor.fetchone()
         if usuario:
             contexto["usuario_afetado"] = {"nome": usuario[0], "email": usuario[1], "tipo": usuario[2]}
 
+    # Obtém o curso diretamente ou por uma aula.
     if tabela == "CURSOS" and id_alvo.isdigit():
         id_curso = int(id_alvo)
     elif tabela == "VIDEOS" and id_alvo.isdigit():
@@ -207,6 +236,7 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
         elif dados.get("TITULO"):
             contexto["aula"] = dados["TITULO"]
 
+    # Valida o ID antes de consultar os dados do curso.
     if id_curso is not None:
         try:
             id_curso = int(id_curso)
@@ -228,6 +258,7 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
             contexto["curso"] = curso[0]
             if curso[1]:
                 contexto["professor"] = {"nome": curso[1], "email": curso[2]}
+    # Devolve apenas informações encontradas no banco principal.
     return contexto
 
 
@@ -236,13 +267,16 @@ def _contexto_log_gravacao(cursor, tabela, id_registro, valores_antes, valores_d
 @app.route("/admin/logs-gravacao", methods=["GET"])
 @jwt_required()
 def logs_gravacao_admin():
+    # Lista alterações auditadas com filtros, paginação e contexto.
     
+    # A rota exige perfil administrador.
     negado = exigir_tipo(0)
     if negado:
         return negado
 
     garantir_estrutura_banco()
     termo = (request.args.get("busca") or "").lower().strip()
+    # Lê eventos do banco de logs e nomes do banco principal.
     log_con = get_log_db()
     cursor = log_con.cursor()
     contexto_con = get_db()
@@ -251,6 +285,7 @@ def logs_gravacao_admin():
     try:
         filtros = []
         params = []
+        # Busca texto no log e resolve usuários por nome ou e-mail.
         if termo:
             
             
@@ -261,10 +296,12 @@ def logs_gravacao_admin():
             ids_correspondentes = [int(row[0]) for row in contexto_cursor.fetchall()]
             busca_log = "(LOWER(LG.ACAO) LIKE ? OR LOWER(LG.TABELA_AFETADA) LIKE ? OR LOWER(LG.ID_REGISTRO) LIKE ? OR LOWER(LG.DETALHES) LIKE ?"
             params.extend([f"%{termo}%"] * 4)
+            # Inclui IDs dos usuários encontrados na busca.
             if ids_correspondentes:
                 busca_log += " OR LG.ID_USUARIO IN (" + ", ".join("?" for _ in ids_correspondentes) + ")"
                 params.extend(ids_correspondentes)
             filtros.append(busca_log + ")")
+        # Filtra pelo perfil do ator.
         tipo_usuario = request.args.get("tipo")
         if tipo_usuario not in (None, ""):
             filtros.append("LG.TIPO_USUARIO = ?")
@@ -273,6 +310,7 @@ def logs_gravacao_admin():
         if acao:
             filtros.append("LG.ACAO = ?")
             params.append(acao.upper())
+        # Traduz o evento da interface em tabela e operação.
         evento = (request.args.get("evento") or "").strip().lower()
         eventos = {
             "cadastro_professor": ("USUARIOS", "INSERT"),
@@ -299,6 +337,7 @@ def logs_gravacao_admin():
             "registrar_custo": ("CUSTOS_PLATAFORMA", "INSERT"),
             "alterar_configuracao": ("FINANCEIRO_CONFIG", "UPDATE"),
         }
+        # Aplica o filtro correspondente ao evento selecionado.
         if evento in eventos:
             
             
@@ -309,6 +348,7 @@ def logs_gravacao_admin():
                 tipo_alvo = "1" if evento == "cadastro_professor" else "2"
                 filtros.append("CAST(LG.VALORES_DEPOIS AS VARCHAR(8191)) CONTAINING ?")
                 params.append(f'"TIPO_USUARIO":"{tipo_alvo}"')
+        # Permite consultar somente um ator.
         id_usuario = request.args.get("id_usuario")
         if id_usuario:
             filtros.append("LG.ID_USUARIO = ?")
@@ -322,12 +362,15 @@ def logs_gravacao_admin():
             filtros.append("CAST(CRIADO_EM AS DATE) <= ?")
             params.append(fim)
 
+        # Combina filtros opcionais na consulta.
         where = f"WHERE {' AND '.join(filtros)}" if filtros else ""
         try:
+            # Limita a página a no máximo 100 registros.
             limite = min(max(int(request.args.get("limite", 100)), 1), 100)
         except (TypeError, ValueError):
             limite = 100
         try:
+            # Impede deslocamento negativo.
             offset = max(int(request.args.get("offset", 0)), 0)
         except (TypeError, ValueError):
             offset = 0
@@ -346,9 +389,11 @@ def logs_gravacao_admin():
         )
         
         
+        # Obtém também uma linha extra para detectar próxima página.
         rows = cursor.fetchall()
         
         
+        # Busca nomes de atores em lote no banco principal.
         ids_atores = sorted({int(row[1]) for row in rows if row[1] is not None})
         atores = {}
         if ids_atores:
@@ -358,6 +403,7 @@ def logs_gravacao_admin():
             )
             atores = {int(row[0]): {"nome": row[1], "email": row[2]} for row in contexto_cursor.fetchall()}
         logs = []
+        # Converte snapshots e metadados para JSON.
         for row in rows:
             ator = atores.get(int(row[1])) if row[1] is not None else None
             detalhes = de_blob_texto(row[11])
@@ -386,11 +432,13 @@ def logs_gravacao_admin():
                 "usuario_banco": row[16],
                 "criado_em": row[17].isoformat() if row[17] else None,
             }
+            # Acrescenta o contexto do registro afetado.
             log["contexto"] = _contexto_log_gravacao(contexto_cursor, row[4], row[5], row[9], row[10])
             logs.append(log)
         return jsonify(logs)
     except Exception as erro:
         return resposta(f"Erro ao listar log de gravacao: {erro}", 500)
+    # Fecha as duas conexões e os cursores.
     finally:
         cursor.close()
         log_con.close()

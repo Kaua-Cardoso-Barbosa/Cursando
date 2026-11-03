@@ -18,6 +18,7 @@ NOTA_MINIMA_APROVACAO = 70
 
 
 # Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Remove questões, respostas e vínculos da prova
+# Questões e respostas da prova são mantidas em conjunto para validar a conclusão do curso.
 def _apagar_conteudo_prova(cursor, id_prova, apagar_cabecalho=False):
     
     cursor.execute("DELETE FROM RESPOSTAS_PROVA WHERE ID_PROVA = ?", (id_prova,))

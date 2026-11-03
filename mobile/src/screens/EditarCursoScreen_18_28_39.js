@@ -49,6 +49,7 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
   /* Fim item 28 */
 
   /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Abre a galeria nativa para selecionar uma imagem */
+  /* Aqui a capa vem da galeria; a função seguinte permite capturá-la pela câmera. */
   async function escolherImagem() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,

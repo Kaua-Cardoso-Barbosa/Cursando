@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import css from "./GoogleChart_38.module.css";
 
 /* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor - Monta os gráficos e os indicadores do painel */
+/* O componente transforma os dados do painel em gráficos apresentados ao administrador ou instrutor. */
 let carregadorGoogleCharts;
 /* Fim item 8 */
 

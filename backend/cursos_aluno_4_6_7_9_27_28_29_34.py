@@ -33,6 +33,7 @@ def detalhe_curso_aluno(id_curso):
 
     try:
         # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta ou grava a posição e a conclusão das aulas
+        # A posição de reprodução é guardada por aluno e aula, separada do registro de conclusão.
         garantir_tabela_progresso(con)
         # Fim item 4
         cursor.execute(
@@ -243,6 +244,7 @@ def descobrir_cursos():
 
     id_aluno = get_jwt_identity()
     # Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, categoria, tema e avaliação
+    # A descoberta aceita busca por tema, categoria e nota mínima do curso.
     busca = (request.args.get("busca") or "").strip().lower()
     # Fim item 28
     categoria = (request.args.get("categoria") or "").strip().casefold()
@@ -279,6 +281,7 @@ def descobrir_cursos():
     # Fim item 28
 
     # Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno - Prioriza cursos conforme as categorias e os temas vinculados ao aluno
+    # A sugestão usa afinidade de categorias e temas dos cursos vinculados ao aluno.
     recomendacoes_ativas = request.args.get("recomendados") == "1"
     if recomendacoes_ativas:
         
@@ -498,6 +501,7 @@ def garantir_tabela_progresso(con):
                 cursor.execute(ddl)
         con.commit()
         # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta ou grava a posição e a conclusão das aulas
+        # Atualiza os gatilhos quando a estrutura das tabelas de cursos muda.
         garantir_gatilhos_auditoria({
             "PROGRESSO_AULAS",
             "CATEGORIAS_CURSO",

@@ -21,6 +21,7 @@ from utilitarios_backend_5_9_12_15_20_24_28_34 import calcular_saldo_saque, exig
 def financeiro_resumo():
     
     # Sprint item 13 - Criar gestão financeira do sistema - Identifica o perfil autenticado e abre a consulta do resumo financeiro
+    # A gestão reúne entradas de mensalidades, custos e saques em uma visão financeira.
     garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = get_jwt_identity()
@@ -30,15 +31,18 @@ def financeiro_resumo():
 
     try:
         # Sprint item 15 - Exibir saldo disponível em caixa, assinatura de R$ 500 e desconto das comissões no saldo administrativo - Lê o preço da assinatura e o percentual destinado aos instrutores
+        # O caixa administrativo desconta comissões e custos; o professor vê sua parcela para saque.
         valor_assinatura = valor_assinatura_config()
         percentual = percentual_instrutores(cursor)
         # Fim item 15
         # Sprint item 16 - Exibir indicadores da saúde financeira da empresa - Calcula os indicadores de receita e margem financeira
+        # Os indicadores mostram receita, despesas e margem para acompanhar a saúde financeira.
         cursor.execute("SELECT COUNT(*) FROM ASSINATURAS WHERE STATUS = 1")
         assinaturas_ativas = int((cursor.fetchone() or (0,))[0] or 0)
         # Fim item 16
         
         # Sprint item 14 - Exibir total arrecadado e total repassado aos instrutores - Consulta a arrecadação e os repasses efetivamente realizados
+        # Arrecadação e repasses são calculados separadamente para o resumo administrativo.
         cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM ASSINATURAS WHERE STATUS IN (1, 3)")
         total_arrecadado = float((cursor.fetchone() or (0,))[0] or 0)
         # Fim item 14
@@ -55,6 +59,7 @@ def financeiro_resumo():
             
             
             # Sprint item 30 - Criar gestão financeira do instrutor - Conta os alunos ativos vinculados aos cursos do instrutor
+            # A receita do instrutor é distribuída conforme aulas concluídas ou estimada por matrículas.
             cursor.execute(
                 """
                 SELECT COUNT(DISTINCT M.ID_USUARIO)
@@ -67,6 +72,7 @@ def financeiro_resumo():
             alunos = int((cursor.fetchone() or (0,))[0] or 0)
             # Fim item 30
             # Sprint item 12 - Exibir valores recebidos, disponíveis para saque e já sacados pelo instrutor - Calcula os valores recebidos, já sacados e disponíveis do instrutor
+            # O saldo do professor considera sua participação na receita e os saques já registrados.
             peso_instrutor, estimado, sacado, disponivel_saque = calcular_saldo_saque(
                 cursor,
                 id_usuario,
@@ -81,6 +87,7 @@ def financeiro_resumo():
             em_analise = float((cursor.fetchone() or (0,))[0] or 0)
             # Fim item 12
             # Sprint item 31 - Exibir cursos que mais geraram receita para o instrutor - Calcula e ordena a receita estimada dos cursos do instrutor
+            # Os cursos são ordenados pela receita estimada atribuída ao instrutor.
             cursor.execute(
                 """
                 SELECT COUNT(PA.ID_VIDEO)
@@ -169,12 +176,14 @@ def financeiro_resumo():
             
             
             # Sprint item 36 - Permitir cadastro e acompanhamento dos custos da plataforma - Consulta ou organiza os custos da plataforma
+            # Custos cadastrados entram no acompanhamento do caixa conforme a data de competência.
             cursor.execute("SELECT COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0) FROM CUSTOS_PLATAFORMA WHERE DATA_CUSTO <= CURRENT_DATE")
             custos = float((cursor.fetchone() or (0,))[0] or 0)
             # Fim item 36
             
             
             # Sprint item 35 - Calcular ticket médio por aluno - Calcula o total pago e o ticket médio por aluno
+            # O ticket médio divide a receita pelo número de alunos pagantes.
             cursor.execute("SELECT COUNT(*), COALESCE(CAST(SUM(VALOR) AS DOUBLE PRECISION), 0), COUNT(DISTINCT ID_USUARIO) FROM ASSINATURAS WHERE STATUS IN (1, 3)")
             faturas_pagas, total_pago, alunos_pagantes = cursor.fetchone() or (0, 0, 0)
             ticket_medio = (float(total_pago or 0) / int(alunos_pagantes or 0)) if int(alunos_pagantes or 0) else 0

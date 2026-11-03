@@ -124,6 +124,7 @@ def garantir_coluna_email_verificado(cursor, con):
 
 
 # Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Prepara o campo que registra a data de cadastro do usuário
+# A data de cadastro acompanha a conta criada e ajuda a identificar o aluno no histórico administrativo.
 def garantir_coluna_data_cadastro(cursor, con):
     
     cursor.execute("""
@@ -566,6 +567,7 @@ def login():
             # Fim item 3
 
         # Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Valida as credenciais e prepara a sessão compartilhada
+        # Atribui ao usuário autenticado as alterações posteriores nesta conexão.
         definir_ator_auditoria(con, id_usuario, tipo)
         cursor.execute("UPDATE USUARIOS SET TENTATIVAS = 0 WHERE ID_USUARIO = ?", (id_usuario,))
         con.commit()
