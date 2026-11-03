@@ -497,14 +497,19 @@ async function baixarCertificadoAluno() {
 
 /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia à API a avaliação do aluno sobre o curso */
 async function avaliarCursoAluno(dados) {
-    if (!detalheCursoAluno?.curso?.id) return;
+    if (!detalheCursoAluno?.curso?.id) return false;
 
-
-    await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/avaliacoes`, {
-      method: "POST",
-      body: JSON.stringify(dados)
-    }, token);
-    mostrarAlerta("Avaliação", "Avaliação enviada.", "sucesso");
+    try {
+      await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/avaliacoes`, {
+        method: "POST",
+        body: JSON.stringify(dados)
+      }, token);
+      mostrarAlerta("Avaliação", "Avaliação cadastrada com sucesso.", "sucesso");
+      return true;
+    } catch (error) {
+      mostrarAlerta("Avaliação", error.message || "Não foi possível cadastrar a avaliação.", "erro");
+      return false;
+    }
   }
 /* Fim item 27 */
 
@@ -845,6 +850,7 @@ async (novoToken, novoUsuario) => {
         {tab === "courses" && tipoUsuario === 2 && detalheCursoAluno && !detalheAulaAluno && (
           /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */ <AulasAlunoScreen
             detalhe={detalheCursoAluno}
+            token={token}
             carregando={loading}
             onRefresh={() => abrirCursoAluno(detalheCursoAluno.curso)}
             onBack={() => { setExamAlunoAberto(false); setDetalheCursoAluno(null); }}
@@ -875,6 +881,7 @@ async (novoToken, novoUsuario) => {
         {tab === "discover" && tipoUsuario === 2 && detalheCursoAluno && !detalheAulaAluno && (
           /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */ <AulasAlunoScreen
             detalhe={detalheCursoAluno}
+            token={token}
             carregando={loading}
             onRefresh={() => abrirCursoAluno(detalheCursoAluno.curso, "discover")}
             onBack={() => { setExamAlunoAberto(false); setDetalheCursoAluno(null); }}

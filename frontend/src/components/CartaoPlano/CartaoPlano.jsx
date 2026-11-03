@@ -27,7 +27,7 @@ const CartaoPlano =
                 <button
                     className={`${css.botao} ${css['botao-primario']} ${css['botao-largo']}`}
                     type="button"
-                    onClick={() => navigate('/DashboardAluno/assinatura')}
+                    onClick={() => navigate('/DashboardAluno/financeiro')}
                 >
                     Assinar Plano
                 </button>

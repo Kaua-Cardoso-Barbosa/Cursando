@@ -876,6 +876,7 @@
 .conteudoComplementos .cardMaterial strong { font-size: 1.12rem; }
 .conteudoComplementos .cardMaterial p { margin: 0; line-height: 1.5; }
 .conteudoComplementos .cardMaterial a, .conteudoComplementos .cardMaterial button { width: fit-content; align-self: end; margin-top: auto; padding: 9px 13px; border: 0; border-radius: 9px; background: #087044; color: #fff; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+.conteudoComplementos .imagemComplemento { display: block; width: 100%; max-height: 360px; object-fit: contain; border-radius: 9px; background: #f4f7f5; }
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 600px) */
 @media (max-width: 600px) { .cabecalhoComplementos { align-items: start; flex-direction: column; } }
 
@@ -1840,6 +1841,33 @@
     margin-top: 28px;
     padding-top: 24px;
     border-top: 1px solid #dfe9e3;
+}
+
+.botaoAvaliacao {
+    transition: background-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+
+.botaoAvaliacao:hover:not(:disabled) {
+    background: #075a37;
+    box-shadow: 0 5px 12px rgba(7, 90, 55, 0.2);
+}
+
+.botaoAvaliacao:active:not(:disabled) {
+    transform: scale(0.97);
+    background: #05492d;
+    box-shadow: none;
+}
+
+.botaoAvaliacao:disabled {
+    cursor: default;
+    opacity: 0.8;
+}
+
+.botaoAvaliacaoEnviada,
+.botaoAvaliacaoEnviada:disabled {
+    border-color: #075a37;
+    background: #075a37;
+    opacity: 1;
 }
 
 .gradeModulosAluno {

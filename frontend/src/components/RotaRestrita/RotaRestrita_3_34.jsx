@@ -119,7 +119,7 @@ async function sincronizarSessao() {
 
     /* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */
     if (exigirAssinatura && !assinaturaValida) {
-        return <Navigate to="/DashboardAluno/assinatura" replace />;
+        return <Navigate to="/DashboardAluno/financeiro" replace />;
     }
     /* Fim item 34 */
 

@@ -5,6 +5,8 @@ import { apiRequest } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import { colors, globalStyles } from "../styles_39";
 
+const tiposComplemento = ["link", "pdf", "livro", "apostila", "codigo", "arquivo", "imagem", "outro"];
+const extensoesImagem = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp"]);
 
 export default
 function MateriaisProfessorScreen({ curso, token, onBack }) {
@@ -28,8 +30,14 @@ function MateriaisProfessorScreen({ curso, token, onBack }) {
   useEffect(() => { carregar(); }, [carregar]);
 
   async function escolherArquivo() {
-    const resultado = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
-    if (!resultado.canceled) { setArquivo(resultado.assets[0]); setTipo("arquivo"); setUrl(""); }
+    const resultado = await DocumentPicker.getDocumentAsync({ type: tipo === "imagem" ? "image/*" : "*/*", copyToCacheDirectory: true, multiple: false });
+    if (!resultado.canceled) {
+      const selecionado = resultado.assets[0];
+      const extensao = (selecionado.name || "").split(".").pop().toLowerCase();
+      setArquivo(selecionado);
+      setTipo(extensoesImagem.has(extensao) ? "imagem" : tipo === "imagem" ? "imagem" : "arquivo");
+      setUrl("");
+    }
   }
 
   /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Valida os dados e publica o material complementar do curso */
@@ -62,12 +70,15 @@ function MateriaisProfessorScreen({ curso, token, onBack }) {
     {/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */}
     <View style={[globalStyles.card, styles.form]}>
       <TextInput style={styles.input} placeholder="Título" value={titulo} onChangeText={setTitulo} />
-      <TextInput style={styles.input} placeholder="Tipo (link, pdf, livro, apostila, código...)" value={tipo} onChangeText={setTipo} />
+      <Text style={styles.meta}>Tipo</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipos}>
+        {tiposComplemento.map((opcao) => <Pressable key={opcao} style={[styles.tipo, tipo === opcao && styles.tipoAtivo]} onPress={() => { setTipo(opcao); setArquivo(null); if (opcao === "imagem") setUrl(""); }}><Text style={[styles.tipoTexto, tipo === opcao && styles.tipoTextoAtivo]}>{opcao === "codigo" ? "Código" : opcao[0].toUpperCase() + opcao.slice(1)}</Text></Pressable>)}
+      </ScrollView>
       <TextInput style={[styles.input, styles.multiline]} placeholder="Descrição e instruções para os alunos" value={descricao} onChangeText={setDescricao} multiline />
-      <TextInput style={styles.input} placeholder="Link externo https://..." value={url} onChangeText={setUrl} editable={!arquivo} autoCapitalize="none" />
+      {tipo !== "imagem" ? <TextInput style={styles.input} placeholder="Link externo https://..." value={url} onChangeText={setUrl} editable={!arquivo} autoCapitalize="none" /> : null}
       <Pressable style={styles.secondary} onPress={escolherArquivo}><AppIcon name="attach-outline" size={18} color={colors.darkGreen} /><Text style={styles.secondaryText}>{arquivo?.name || "Escolher arquivo"}</Text></Pressable>
       {arquivo ? <Pressable onPress={() => setArquivo(null)}><Text style={styles.removeFile}>Remover arquivo escolhido</Text></Pressable> : null}
-      <Pressable style={styles.primary} onPress={cadastrar} disabled={!titulo.trim() || (!arquivo && !url.trim())}><Text style={styles.primaryText}>Adicionar complemento</Text></Pressable>
+      <Pressable style={styles.primary} onPress={cadastrar} disabled={!titulo.trim() || (tipo === "imagem" ? !arquivo : !arquivo && !url.trim())}><Text style={styles.primaryText}>Adicionar complemento</Text></Pressable>
       {erro ? <Text style={styles.error}>{erro}</Text> : null}
     </View>
     {/* Fim item 21 */}
@@ -82,6 +93,7 @@ function MateriaisProfessorScreen({ curso, token, onBack }) {
 const styles = StyleSheet.create({
   back: { marginBottom: 12 }, backText: { color: colors.darkGreen, fontWeight: "700" },
   form: { gap: 12, marginVertical: 20 }, input: { borderWidth: 1, borderColor: "#d5dfda", borderRadius: 10, padding: 12, backgroundColor: "white" }, multiline: { minHeight: 80, textAlignVertical: "top" },
+  tipos: { gap: 8, paddingVertical: 2 }, tipo: { borderWidth: 1, borderColor: colors.darkGreen, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }, tipoAtivo: { backgroundColor: colors.darkGreen }, tipoTexto: { color: colors.darkGreen }, tipoTextoAtivo: { color: "white" },
   secondary: { borderWidth: 1, borderColor: colors.darkGreen, borderRadius: 10, padding: 12, flexDirection: "row", gap: 8, alignItems: "center" }, secondaryText: { color: colors.darkGreen, fontWeight: "600" },
   removeFile: { color: colors.red }, primary: { backgroundColor: colors.darkGreen, padding: 14, borderRadius: 10, alignItems: "center" }, primaryText: { color: "white", fontWeight: "700" },
   heading: { fontSize: 20, fontWeight: "700", marginBottom: 12 }, item: { flexDirection: "row", gap: 12, alignItems: "center", marginBottom: 10 }, itemInfo: { flex: 1, gap: 5 }, itemTitle: { fontWeight: "700", fontSize: 16 }, meta: { color: colors.darkGreen }, error: { color: colors.red }

@@ -139,7 +139,7 @@ function sincronizarAoRetomar() {
             "/DashboardAluno/descobrir": "Descobrir Cursos - Cursando",
             "/DashboardAluno/perfil": "Meu Perfil - Cursando",
 
-            "/DashboardAluno/assinatura": "Assinatura - Cursando",
+            "/DashboardAluno/financeiro": "Assinatura e Financeiro - Cursando",
 
             "/DashboardProfessor": "Dashboard Professor - Cursando",
             "/DashboardAdm": "Dashboard Administrador - Cursando",
@@ -202,7 +202,8 @@ function sincronizarAoRetomar() {
                 {/* Fim item 5 */}
 
                                                                                                                                        
-                <Route path="/assinatura" element={<Navigate to="/DashboardAluno/assinatura" replace />}/>
+                <Route path="/assinatura" element={<Navigate to="/DashboardAluno/financeiro" replace />}/>
+                <Route path="/DashboardAluno/assinatura" element={<Navigate to="/DashboardAluno/financeiro" replace />}/>
 
                 <Route path="/DashboardAluno/*" element={
                     <RotaRestrita api={api} tipoPermitido={2}>

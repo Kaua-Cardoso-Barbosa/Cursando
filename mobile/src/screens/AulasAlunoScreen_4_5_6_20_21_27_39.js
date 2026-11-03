@@ -1,11 +1,53 @@
 import { useState } from "react";
 import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { resolverUrlMidia } from "../api/client_3_17";
+import * as FileSystem from "expo-file-system/legacy";
+import { getApiBaseUrl, resolverUrlMidia } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import { colors, globalStyles } from "../styles_39";
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
 const fallbackCourseImage = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900";
+
+function ImagemComplemento({ material, token }) {
+  const [visivel, setVisivel] = useState(false);
+  const [uri, setUri] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function alternarImagem() {
+    if (visivel) {
+      setVisivel(false);
+      return;
+    }
+    if (uri) {
+      setVisivel(true);
+      return;
+    }
+
+    setCarregando(true);
+    setErro("");
+    try {
+      const extensao = (material.nome_arquivo || "").split(".").pop().toLowerCase();
+      const destino = `${FileSystem.cacheDirectory}complemento-imagem-${material.id}.${extensao || "png"}`;
+      const download = await FileSystem.downloadAsync(`${getApiBaseUrl()}${material.arquivo_url}`, destino, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (download.status < 200 || download.status >= 300) throw new Error("Não foi possível abrir a imagem.");
+      setUri(download.uri);
+      setVisivel(true);
+    } catch (erroDownload) {
+      setErro(erroDownload.message);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  return <View>
+    <Pressable onPress={alternarImagem} disabled={carregando}><Text style={styles.openLink}>{carregando ? "Carregando imagem..." : visivel ? "Esconder imagem" : "Ver imagem"}</Text></Pressable>
+    {visivel && uri ? <Image source={{ uri }} style={styles.imagemComplemento} resizeMode="contain" accessibilityLabel={material.titulo} /> : null}
+    {erro ? <Text style={styles.erroImagem}>{erro}</Text> : null}
+  </View>;
+}
 
 /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Formata a posição salva para exibir o ponto de retomada */
 function formatarPosicaoAula(segundos) {
@@ -20,7 +62,7 @@ function formatarPosicaoAula(segundos) {
 /* Fim item 4 */
 
 export default
-function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson, onOpenMaterial, onEnroll, onOpenExam, onDownloadCertificate, onReview }) {
+function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpenLesson, onOpenMaterial, onEnroll, onOpenExam, onDownloadCertificate, onReview }) {
 
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
@@ -32,6 +74,8 @@ function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson
   const materiais = detalhe?.materiais || [];
   const prova = detalhe?.prova;
   const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
+  const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
+  const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
   /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */
   const [baixandoCertificado, setBaixandoCertificado] = useState(false);
   /* Fim item 5 */
@@ -50,6 +94,17 @@ function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson
     }
   }
   /* Fim item 5 */
+
+  async function enviarAvaliacao() {
+    if (enviandoAvaliacao || avaliacaoEnviada) return;
+    setEnviandoAvaliacao(true);
+    try {
+      const enviada = await onReview?.({ nota: Number(avaliacao.nota), comentario: avaliacao.comentario });
+      if (enviada) setAvaliacaoEnviada(true);
+    } finally {
+      setEnviandoAvaliacao(false);
+    }
+  }
 
   return (
     <ScrollView
@@ -150,7 +205,10 @@ function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson
             {material.bloqueado ? (
               <Text style={styles.locked}>Prévia: disponível após inscrição. Links e arquivos ficam bloqueados.</Text>
             ) : material.arquivo_url ? (
-              <Pressable onPress={() => onOpenMaterial?.(material)}><Text style={styles.openLink}>Baixar {material.nome_arquivo || "arquivo"}</Text></Pressable>
+              <View>
+                <Pressable onPress={() => onOpenMaterial?.(material)}><Text style={styles.openLink}>Baixar {material.nome_arquivo || "arquivo"}</Text></Pressable>
+                {material.tipo === "imagem" ? <ImagemComplemento material={material} token={token} /> : null}
+              </View>
             ) : material.url ? (
               <Pressable onPress={() => Linking.openURL(material.url)}>
                 <Text style={styles.openLink}>Abrir material</Text>
@@ -189,12 +247,12 @@ function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson
                 {/* Fim item 27 */}
                 <View style={styles.ratingOptions} accessibilityRole="radiogroup" accessibilityLabel="Nota de 0 a 5 estrelas">
                   {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
-                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === 0 }} accessibilityLabel="0 estrelas" onPress={() => setAvaliacao({ ...avaliacao, nota: 0 })} style={[styles.ratingChoice, avaliacao.nota === 0 && styles.ratingZeroSelected]}>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === 0 }} accessibilityLabel="0 estrelas" onPress={() => { setAvaliacao({ ...avaliacao, nota: 0 }); setAvaliacaoEnviada(false); }} disabled={enviandoAvaliacao} style={[styles.ratingChoice, avaliacao.nota === 0 && styles.ratingZeroSelected]}>
                     <Text style={[styles.ratingZero, avaliacao.nota === 0 && styles.ratingSelectedText]}>0</Text>
                   </Pressable>
                   {/* Fim item 27 */}
                   {[1, 2, 3, 4, 5].map((nota) => (
-                    /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */ <Pressable key={nota} accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === nota }} accessibilityLabel={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} onPress={() => setAvaliacao({ ...avaliacao, nota })} style={styles.ratingChoice}>
+                    /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */ <Pressable key={nota} accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === nota }} accessibilityLabel={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} onPress={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }} disabled={enviandoAvaliacao} style={styles.ratingChoice}>
                       <Text style={[styles.ratingStar, nota <= avaliacao.nota && styles.ratingStarSelected]}>★</Text>
                     </Pressable> /* Fim item 27 */
                   ))}
@@ -205,16 +263,23 @@ function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson
                 {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
                 <TextInput
                   value={avaliacao.comentario}
-                  onChangeText={(comentario) => setAvaliacao({ ...avaliacao, comentario })}
+                  onChangeText={(comentario) => { setAvaliacao({ ...avaliacao, comentario }); setAvaliacaoEnviada(false); }}
                   placeholder="Escreva sua avaliacao (opcional)"
                   style={globalStyles.input}
                   multiline
                   textAlignVertical="top"
+                  editable={!enviandoAvaliacao}
                 />
                 {/* Fim item 27 */}
                 {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
-                <Pressable style={globalStyles.primaryButton} onPress={() => onReview?.({ nota: Number(avaliacao.nota), comentario: avaliacao.comentario })}>
-                  <Text style={globalStyles.buttonText}>Enviar avaliacao</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: enviandoAvaliacao || avaliacaoEnviada, busy: enviandoAvaliacao }}
+                  style={({ pressed }) => [globalStyles.primaryButton, pressed && styles.botaoAvaliacaoPressionado, avaliacaoEnviada && styles.botaoAvaliacaoEnviada]}
+                  onPress={enviarAvaliacao}
+                  disabled={enviandoAvaliacao || avaliacaoEnviada}
+                >
+                  <Text style={globalStyles.buttonText}>{enviandoAvaliacao ? "Enviando avaliação..." : avaliacaoEnviada ? "✓ Avaliação salva" : "Enviar avaliação"}</Text>
                 </Pressable>
                 {/* Fim item 27 */}
               </View>
@@ -260,6 +325,8 @@ function AulasAlunoScreen({ detalhe, carregando, onRefresh, onBack, onOpenLesson
 
 /* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
+  botaoAvaliacaoPressionado: { backgroundColor: colors.deepGreen, transform: [{ scale: 0.97 }], elevation: 0 },
+  botaoAvaliacaoEnviada: { backgroundColor: colors.darkGreen, borderColor: colors.darkGreen },
   tabs: { gap: 8, marginBottom: 18, paddingRight: 12 },
   tab: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.softGray },
   tabActive: { backgroundColor: colors.darkGreen },
@@ -471,6 +538,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 8,
     textDecorationLine: "underline"
-  }
+  },
+  imagemComplemento: { width: "100%", height: 260, marginTop: 10, borderRadius: 8, backgroundColor: colors.softGray },
+  erroImagem: { color: colors.red, marginTop: 8 }
 });
 /* Fim item 39 */

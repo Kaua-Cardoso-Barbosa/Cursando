@@ -158,22 +158,46 @@ def materiais_professor(id_curso):
 
         dados = request.form if request.form else (request.get_json() or {})
         titulo = (dados.get("titulo") or "").strip()
-        tipo = (dados.get("tipo") or "link").strip().lower()
+        tipo = (dados.get("tipo") or "").strip().lower()
         url = (dados.get("url") or "").strip()
         descricao = (dados.get("descricao") or "").strip()
         arquivo = request.files.get("arquivo")
         nome_arquivo = ""
 
-        if not titulo or tipo not in {"link", "pdf", "livro", "apostila", "codigo", "arquivo", "outro"}:
-            return resposta("Informe um titulo e um tipo valido para o complemento.", 400)
+        if not titulo:
+            return resposta("Informe o título do complemento.", 400)
+        if len(titulo) > 150:
+            return resposta("O título do complemento deve ter no máximo 150 caracteres.", 400)
+        if tipo not in {"link", "pdf", "livro", "apostila", "codigo", "arquivo", "imagem", "outro"}:
+            return resposta("Selecione um tipo válido para o complemento.", 400)
+        if len(descricao) > 3000:
+            return resposta("A descrição deve ter no máximo 3000 caracteres.", 400)
+
+        extensoes_imagem = {"png", "jpg", "jpeg", "gif", "webp", "bmp"}
+        if tipo == "imagem" and not (arquivo and arquivo.filename):
+            return resposta("Envie um arquivo de imagem para este complemento.", 400)
 
         if arquivo and arquivo.filename:
             
             
             extensao = arquivo.filename.rsplit(".", 1)[-1].lower() if "." in arquivo.filename else ""
-            extensoes_permitidas = {"pdf", "epub", "mobi", "doc", "docx", "odt", "txt", "rtf", "zip", "rar", "7z", "py", "js", "java", "html", "css", "csv", "xlsx", "pptx"}
+            extensoes_permitidas = {"pdf", "epub", "mobi", "doc", "docx", "odt", "txt", "rtf", "zip", "rar", "7z", "py", "js", "java", "html", "css", "csv", "xlsx", "pptx"} | extensoes_imagem
             if extensao not in extensoes_permitidas:
                 return resposta("Tipo de arquivo nao permitido para complemento.", 400)
+            if tipo == "imagem" and extensao not in extensoes_imagem:
+                return resposta("O complemento do tipo imagem exige um arquivo PNG, JPG, JPEG, GIF, WEBP ou BMP.", 400)
+            if extensao in extensoes_imagem:
+                assinatura = arquivo.stream.read(12)
+                arquivo.stream.seek(0)
+                imagem_valida = (
+                    (extensao == "png" and assinatura.startswith(b"\x89PNG\r\n\x1a\n"))
+                    or (extensao in {"jpg", "jpeg"} and assinatura.startswith(b"\xff\xd8\xff"))
+                    or (extensao == "gif" and assinatura[:6] in {b"GIF87a", b"GIF89a"})
+                    or (extensao == "webp" and assinatura[:4] == b"RIFF" and assinatura[8:12] == b"WEBP")
+                    or (extensao == "bmp" and assinatura.startswith(b"BM"))
+                )
+                if not imagem_valida:
+                    return resposta("O arquivo enviado nao corresponde a uma imagem valida.", 400)
             nome_arquivo = secure_filename(arquivo.filename) or f"complemento.{extensao}"
             pasta = os.path.join(current_app.root_path, "private_uploads", "materiais")
             os.makedirs(pasta, exist_ok=True)

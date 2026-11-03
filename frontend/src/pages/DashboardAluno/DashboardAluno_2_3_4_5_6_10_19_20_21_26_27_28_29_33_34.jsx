@@ -54,6 +54,46 @@ function resolverUrlMidia(api, caminho) {
     return `${api}${caminho}`;
 }
 
+function ImagemComplemento({ api, material, avisar }) {
+    const [urlImagem, setUrlImagem] = useState("");
+    const [carregando, setCarregando] = useState(false);
+    const urlAtual = useRef("");
+
+    useEffect(() => () => {
+        if (urlAtual.current) URL.revokeObjectURL(urlAtual.current);
+    }, []);
+
+    async function alternarImagem() {
+        if (urlAtual.current) {
+            URL.revokeObjectURL(urlAtual.current);
+            urlAtual.current = "";
+            setUrlImagem("");
+            return;
+        }
+
+        setCarregando(true);
+        try {
+            const resposta = await fetch(`${api}${material.arquivo_url}`, { credentials: "include" });
+            if (!resposta.ok) {
+                const dados = await resposta.json().catch(() => ({}));
+                throw new Error(dados?.mensagem?.descricao || "Não foi possível abrir a imagem.");
+            }
+            const url = URL.createObjectURL(await resposta.blob());
+            urlAtual.current = url;
+            setUrlImagem(url);
+        } catch (erro) {
+            avisar({ tipo: "erro", descricao: erro.message });
+        } finally {
+            setCarregando(false);
+        }
+    }
+
+    return <>
+        <button type="button" onClick={alternarImagem} disabled={carregando}>{carregando ? "Carregando imagem..." : urlImagem ? "Esconder imagem" : "Ver imagem"}</button>
+        {urlImagem && <img className={css.imagemComplemento} src={urlImagem} alt={material.titulo} />}
+    </>;
+}
+
 function CabecalhoAluno({ usuario }) {
     return (
         <header className={css.cabecalhoUsuario}>
@@ -216,6 +256,8 @@ function DashboardAluno({
     const [respostasProva, setRespostasProva] = useState({});
     const [enviandoProva, setEnviandoProva] = useState(false);
     const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
+    const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
+    const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
     const [aulaAtual, setAulaAtual] = useState(null);
     /* Sprint item 26 - Bloquear gravação de tela durante o curso - Protege a reprodução diante de gravação ou ocultação da tela detectável */
     const [protecaoAtiva, setProtecaoAtiva] = useState(false);
@@ -239,7 +281,7 @@ function DashboardAluno({
         if (location.pathname.endsWith("/perfil")) return "perfil";
         if (location.pathname.endsWith("/financeiro")) return "financeiro";
 
-        if (location.pathname.endsWith("/assinatura")) return "assinatura";
+        if (location.pathname.endsWith("/assinatura")) return "financeiro";
         if (location.pathname.endsWith("/chat")) return "chat";
         if (location.pathname.includes("/descobrir")) return "descobrir";
         if (location.pathname.includes("/aulas/")) return "aula";
@@ -249,7 +291,7 @@ function DashboardAluno({
 , [location.pathname]);
     /* Fim item 3 */
 
-    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "assinatura" ? "assinatura" : visao === "chat" ? "chat" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
+    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
 
     const avisar = useCallback((mensagem) => {
         if (mensagem && setMensagem) setMensagem(mensagem);
@@ -508,7 +550,7 @@ async (idCurso) => {
 
     /* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Consulta e apresenta o total gasto e o histórico de faturas pagas */
     useEffect(() => {
-        if (visao === "financeiro" || visao === "assinatura") carregarFinanceiro();
+        if (visao === "financeiro") carregarFinanceiro();
     }, [carregarFinanceiro, visao]);
     /* Fim item 33 */
 
@@ -598,7 +640,7 @@ async function sincronizarVisaoAtiva() {
                     tarefas.push(carregarDescobrir());
                 }
 
-                if (visao === "financeiro" || visao === "assinatura") tarefas.push(carregarFinanceiro());
+                if (visao === "financeiro") tarefas.push(carregarFinanceiro());
 
 
                 await Promise.allSettled(tarefas);
@@ -823,19 +865,33 @@ async function baixarCertificado(curso) {
 
     /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia a nota e o comentário da avaliação do curso */
     async function enviarAvaliacaoCurso() {
-        const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/avaliacoes`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(avaliacao)
-        });
-        await lerResposta(resposta);
+        if (enviandoAvaliacao || avaliacaoEnviada) return;
+        setEnviandoAvaliacao(true);
+        try {
+            const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/avaliacoes`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(avaliacao)
+            });
+            await lerResposta(resposta);
+            setAvaliacaoEnviada(true);
+            avisar({ tipo: "sucesso", descricao: "Avaliação cadastrada com sucesso." });
+        } catch (erro) {
+            if (!erro.status) avisar({ tipo: "erro", descricao: erro.message || "Não foi possível cadastrar a avaliação." });
+        } finally {
+            setEnviandoAvaliacao(false);
+        }
     }
     /* Fim item 27 */
 
     const metricas = dashboard?.metricas || { inscritos: 0, finalizados: 0, iniciados: 0 };
     const recentes = dashboard?.recentes || [];
     const cursoDetalhe = detalheCurso?.curso;
+    useEffect(() => {
+        setAvaliacaoEnviada(false);
+        setAvaliacao({ nota: 5, comentario: "" });
+    }, [cursoDetalhe?.id]);
     const aulasDetalhe = detalheCurso?.aulas || [];
     /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
     const modulosDetalhe = detalheCurso?.modulos || [];
@@ -1101,7 +1157,10 @@ async function baixarCertificado(curso) {
                                                 {material.bloqueado ? (
                                                     <small>Disponível após inscrição no curso.</small>
                                                 ) : (
-                                                    material.arquivo_url ? <button type="button" onClick={() => baixarMaterial(material)}>Baixar {material.nome_arquivo || "arquivo"}</button> : material.url ? <a href={material.url} target="_blank" rel="noreferrer">Abrir material ↗</a> : <small>Material indisponível.</small>
+                                                    material.arquivo_url ? <>
+                                                        <button type="button" onClick={() => baixarMaterial(material)}>Baixar {material.nome_arquivo || "arquivo"}</button>
+                                                        {material.tipo === "imagem" && <ImagemComplemento api={api} material={material} avisar={avisar} />}
+                                                    </> : material.url ? <a href={material.url} target="_blank" rel="noreferrer">Abrir material ↗</a> : <small>Material indisponível.</small>
                                                 )}
                                             </article> /* Fim item 21 */
                                         ))}
@@ -1162,14 +1221,16 @@ async function baixarCertificado(curso) {
                                             <div className={css.avaliacaoAposProva}>
                                                 <h2>Avaliar curso</h2>
                                                 <div className={css.seletorEstrelas} role="radiogroup" aria-label="Nota de 0 a 5 estrelas">
-                                                    <button type="button" className={avaliacao.nota === 0 ? css.estrelasZeroAtivo : css.estrelasZero} aria-label="0 estrelas" aria-pressed={avaliacao.nota === 0} onClick={() => setAvaliacao({ ...avaliacao, nota: 0 })}>0</button>
+                                                    <button type="button" className={avaliacao.nota === 0 ? css.estrelasZeroAtivo : css.estrelasZero} aria-label="0 estrelas" aria-pressed={avaliacao.nota === 0} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota: 0 }); setAvaliacaoEnviada(false); }}>0</button>
                                                     {[1, 2, 3, 4, 5].map((nota) => (
-                                                        <button key={nota} type="button" className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} onClick={() => setAvaliacao({ ...avaliacao, nota })}>★</button>
+                                                        <button key={nota} type="button" className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }}>★</button>
                                                     ))}
                                                     <span>{avaliacao.nota} de 5</span>
                                                 </div>
-                                                <textarea className={css.textoAvaliacao} rows="4" value={avaliacao.comentario} onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })} placeholder="Escreva sua avaliação (opcional)" />
-                                                <button className={css.botaoInscrever} onClick={enviarAvaliacaoCurso}>Enviar avaliação</button>
+                                                <textarea className={css.textoAvaliacao} rows="4" value={avaliacao.comentario} onChange={(e) => { setAvaliacao({ ...avaliacao, comentario: e.target.value }); setAvaliacaoEnviada(false); }} placeholder="Escreva sua avaliação (opcional)" disabled={enviandoAvaliacao} />
+                                                <button type="button" className={`${css.botaoInscrever} ${css.botaoAvaliacao} ${avaliacaoEnviada ? css.botaoAvaliacaoEnviada : ""}`} onClick={enviarAvaliacaoCurso} disabled={enviandoAvaliacao || avaliacaoEnviada} aria-busy={enviandoAvaliacao}>
+                                                    {enviandoAvaliacao ? "Enviando avaliação..." : avaliacaoEnviada ? "✓ Avaliação salva" : "Enviar avaliação"}
+                                                </button>
                                             </div>
                                             {/* Fim item 27 */}
                                         </>
@@ -1292,25 +1353,25 @@ async function baixarCertificado(curso) {
                         </section>
                     )}
 
-                    {(visao === "financeiro" || visao === "assinatura") && (
+                    {visao === "financeiro" && (
                         <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
                                                                                                                                                                                               
                             {/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Consulta e apresenta o total gasto e o histórico de faturas pagas */}
                             <header className={css.cabecalhoPagina}>
-                                <span className={css.etiquetaPagina}>ASSINATURA</span>
-                                <h2>{visao === "assinatura" ? "Minha assinatura" : "Financeiro"}</h2>
+                                <span className={css.etiquetaPagina}>ASSINATURA E FINANCEIRO</span>
+                                <h2>Minha assinatura e financeiro</h2>
                                 <p>Acompanhe suas mensalidades, consulte cobranças pendentes e acesse o histórico.</p>
                             </header>
                             {/* Fim item 33 */}
-                            {visao === "assinatura" && (
-                                /* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */ <ResumoAssinatura
-                                    assinatura={dashboard?.assinatura}
-                                    acessoBloqueado={dashboard?.acesso_bloqueado}
-                                    faturasAbertas={faturasAbertas.length}
-                                    carregando={dashboard === null}
-                                    erro={dashboard?.erro_assinatura === true}
-                                /> /* Fim item 34 */
-                            )}
+                            {/* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */}
+                            <ResumoAssinatura
+                                assinatura={dashboard?.assinatura}
+                                acessoBloqueado={dashboard?.acesso_bloqueado}
+                                faturasAbertas={faturasAbertas.length}
+                                carregando={dashboard === null}
+                                erro={dashboard?.erro_assinatura === true}
+                            />
+                            {/* Fim item 34 */}
                                                                                 
                             <div className={css.gridMetricas}>
                                                                                                                                                                        

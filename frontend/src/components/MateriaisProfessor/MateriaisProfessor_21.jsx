@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { FaExternalLinkAlt, FaFileAlt, FaPlus, FaTrash } from "react-icons/fa";
 import css from "./MateriaisProfessor_38.module.css";
 
-const tipos = ["link", "pdf", "livro", "apostila", "codigo", "arquivo", "outro"];
+const tipos = ["link", "pdf", "livro", "apostila", "codigo", "arquivo", "imagem", "outro"];
+const extensoesImagem = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"];
 
 
 
@@ -55,7 +56,7 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
             else form.append("url", url);
             const data = await fetch(`${api}/professor/cursos/${idCurso}/materiais`, { method: "POST", credentials: "include", body: form }).then(ler);
             avisar?.({ tipo: "sucesso", descricao: data?.mensagem?.descricao || "Complemento cadastrado." });
-            setTitulo(""); setUrl(""); setDescricao(""); setArquivo(null);
+            setTitulo(""); setTipo("link"); setUrl(""); setDescricao(""); setArquivo(null);
             formElement.reset();
             await carregar();
         } catch (error) {
@@ -65,6 +66,14 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
         }
     }
     /* Fim item 21 */
+
+    function alterarTipo(novoTipo) {
+        setTipo(novoTipo);
+        if (novoTipo === "imagem") {
+            setUrl("");
+            setArquivo(null);
+        }
+    }
 
     async function excluir(item) {
         try {
@@ -83,13 +92,13 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
             <div><span className={css.etiqueta}>MATERIAIS DE APOIO</span><h2>Complementos do curso</h2><p>Reúna leituras, arquivos e links que ajudam os alunos a praticar o conteúdo.</p></div>
             {/* Fim item 21 */}<strong>{materiais.length} {materiais.length === 1 ? "material" : "materiais"}</strong></header>
             {/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */}
-            <form className={css.formulario} onSubmit={cadastrar}>
+            <form className={css.formulario} onSubmit={cadastrar} noValidate>
                 <div className={css.introFormulario}><h3>Adicionar material</h3><p>Escolha um arquivo ou informe um link. O aluno encontrará o material na aba Complementos do curso.</p></div>
-                <label>Título<input value={titulo} onChange={(event) => setTitulo(event.target.value)} required maxLength={150} /></label>
-                <label>Tipo<select value={tipo} onChange={(event) => setTipo(event.target.value)}>{tipos.map((opcao) => <option key={opcao} value={opcao}>{opcao === "codigo" ? "Código" : opcao[0].toUpperCase() + opcao.slice(1)}</option>)}</select></label>
-                <label>Descrição<textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} maxLength={3000} /></label>
-                <label>Link externo (HTTP/HTTPS)<input type="url" value={url} onChange={(event) => setUrl(event.target.value)} disabled={Boolean(arquivo)} required={!arquivo} placeholder="https://..." /></label>
-                <label>Ou envie um arquivo<input type="file" accept=".pdf,.epub,.mobi,.doc,.docx,.odt,.txt,.rtf,.zip,.rar,.7z,.py,.js,.java,.html,.css,.csv,.xlsx,.pptx" onChange={(event) => setArquivo(event.target.files?.[0] || null)} /></label>
+                <label>Título<input value={titulo} onChange={(event) => setTitulo(event.target.value)} /></label>
+                <label>Tipo<select value={tipo} onChange={(event) => alterarTipo(event.target.value)}>{tipos.map((opcao) => <option key={opcao} value={opcao}>{opcao === "codigo" ? "Código" : opcao[0].toUpperCase() + opcao.slice(1)}</option>)}</select></label>
+                <label>Descrição<textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} /></label>
+                {tipo !== "imagem" && <label>Link externo (HTTP/HTTPS)<input type="text" value={url} onChange={(event) => setUrl(event.target.value)} disabled={Boolean(arquivo)} placeholder="https://..." /></label>}
+                <label>{tipo === "imagem" ? "Imagem" : "Ou envie um arquivo"}<input key={tipo === "imagem" ? "imagem" : "outro"} type="file" accept={tipo === "imagem" ? extensoesImagem.join(",") : ".pdf,.epub,.mobi,.doc,.docx,.odt,.txt,.rtf,.zip,.rar,.7z,.py,.js,.java,.html,.css,.csv,.xlsx,.pptx,.png,.jpg,.jpeg,.gif,.webp,.bmp"} onChange={(event) => setArquivo(event.target.files?.[0] || null)} /></label>
                 {arquivo && <p className={css.selecionado}>Arquivo selecionado: {arquivo.name}</p>}
                 <button type="submit" disabled={salvando}><FaPlus /> {salvando ? "Salvando..." : "Adicionar complemento"}</button>
             </form>

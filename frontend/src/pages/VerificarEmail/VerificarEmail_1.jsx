@@ -45,7 +45,7 @@ async function verificar(evento) {
             sessionStorage.removeItem("cursando_email_pendente");
             await atualizarSessao();
 
-            navigate("/DashboardAluno/assinatura", { replace: true });
+            navigate("/DashboardAluno/financeiro", { replace: true });
         } catch (error) {
             setErro(error.message || "Não foi possível verificar o e-mail.");
         } finally {
