@@ -1,6 +1,7 @@
 
 
 # Valida identificadores da requisição e nomes de campos do banco.
+import json
 import re
 import textwrap
 from threading import RLock
@@ -48,7 +49,16 @@ TABELAS_AUDITADAS = {
 
 
 
-# Seleciona campos incluídos nos snapshots; campos sensíveis ficam de fora.
+# Classificação explícita: estes valores nunca são copiados para os snapshots.
+CAMPOS_SENSIVEIS = {
+    "USUARIOS": {"SENHA", "CODIGO", "CPF", "EMAIL"},
+    "SAQUES_INSTRUTOR": {"CHAVE_PIX", "COMPROVANTE", "RESPOSTA_ARKHE"},
+    "MENSAGENS_CHAT": {"TEXTO"},
+    "QUESTOES_PROVA": {"RESPOSTA_ESPERADA"},
+    "RESPOSTAS_PROVA": {"RESPOSTAS", "FEEDBACK", "CORRECOES_DISSERTATIVAS"},
+}
+
+# Campos permitidos; os demais recebem um marcador com o motivo da omissão.
 VALORES_AUDITAVEIS = {
     
     "USUARIOS": {"NOME", "TIPO_USUARIO", "SITUACAO", "TENTATIVAS", "EMAIL_VERIFICADO"},
@@ -58,14 +68,14 @@ VALORES_AUDITAVEIS = {
     "VIDEOS": {"ID_CURSO", "ID_MODULO", "TITULO", "STATUS", "EXCLUIDO"},
     "MATRICULAS": {"ID_CURSO", "ID_USUARIO", "STATUS_MATRICULA"},
     "ASSINATURAS": {
-        "ID_USUARIO", "VALOR", "STATUS", "DATA_VENCIMENTO", "DATA_PAGAMENTO", "DATA_EXPIRACAO"
+        "ID_USUARIO", "VALOR", "STATUS", "DATA_INICIO", "DATA_VENCIMENTO", "DATA_PAGAMENTO", "DATA_EXPIRACAO"
     },
     "MODULOS_CURSO": {"ID_CURSO", "TITULO", "ORDEM", "STATUS"},
     "MATERIAIS_CURSO": {"ID_CURSO", "TITULO", "TIPO"},
     "AVALIACOES_CURSO": {"ID_CURSO", "ID_USUARIO", "NOTA"},
-    "PROVAS_CURSO": {"ID_CURSO", "TITULO", "PUBLICADA"},
+    "PROVAS_CURSO": {"ID_CURSO", "TITULO", "PUBLICADA", "ESTADO", "NOTA_MINIMA", "VERSAO"},
     "QUESTOES_PROVA": {"ID_PROVA", "TIPO"},
-    "RESPOSTAS_PROVA": {"ID_PROVA", "ID_USUARIO", "STATUS", "CORRIGIDO_EM"},
+    "RESPOSTAS_PROVA": {"ID_PROVA", "ID_CURSO", "ID_USUARIO", "STATUS", "NOTA_MINIMA", "NOTA", "CORRIGIDO_EM", "CORRIGIDO_POR"},
     "CERTIFICADOS": {"ID_CURSO", "ID_USUARIO", "CRIADO_EM"},
     "CUSTOS_PLATAFORMA": {"VALOR", "DATA_CUSTO", "CATEGORIA", "ID_CATEGORIA", "TIPO_CUSTO", "DATA_INICIO", "DATA_FIM", "ID_GRUPO_MENSAL", "ID_USUARIO"},
     "CATEGORIAS_CUSTO": {"NOME"},
@@ -430,16 +440,41 @@ def _valor_texto(alias, campo):
     return f"CAST({coluna} AS VARCHAR(100))"
 
 
-def _json_campo(alias, campo):
+def _motivo_omissao(tabela, campo):
+    if campo["nome"] in CAMPOS_SENSIVEIS.get(tabela, set()):
+        return "conteudo_sensivel"
+    if campo["tipo"] == 261:
+        return "conteudo_blob"
+    if campo["nome"] not in VALORES_AUDITAVEIS.get(tabela, set()):
+        return "fora_da_configuracao"
+    return None
+
+
+def _json_campo(alias, campo, tabela):
     # Monta uma expressão SQL com nome e valor de um campo.
     chave = _literal('"' + campo['nome'] + '":')
-    return f"{chave} || AUDIT_JSON({_valor_texto(alias, campo)})"
+    motivo = _motivo_omissao(tabela, campo)
+    if motivo:
+        marcador = _literal(json.dumps({"__auditoria_omissao": motivo}))
+        coluna = f"{alias}.{_identificador(campo['nome'])}"
+        # NULL continua distinguível de um conteúdo existente que foi omitido.
+        return f"{chave} || CASE WHEN {coluna} IS NULL THEN 'null' ELSE {marcador} END"
+    valor_json = f"AUDIT_JSON({_valor_texto(alias, campo)})"
+    if campo["tipo"] in {14, 37}:
+        coluna = f"{alias}.{_identificador(campo['nome'])}"
+        return (
+            f"{chave} || CASE WHEN CHAR_LENGTH({coluna}) > 1000 THEN "
+            f"'{{\"__auditoria_valor\":' || {valor_json} || "
+            "',\"__auditoria_truncado\":1000}' "
+            f"ELSE {valor_json} END"
+        )
+    return f"{chave} || {valor_json}"
 
 
-def _snapshot_json(alias, campos):
-    # Monta o objeto JSON dos campos permitidos.
+def _snapshot_json(alias, campos, tabela):
+    # Monta o objeto JSON com valores e motivos de omissão.
     
-    partes = [_json_campo(alias, campo) for campo in campos]
+    partes = [_json_campo(alias, campo, tabela) for campo in campos]
     # Sem campos permitidos, não há snapshot a gravar.
     if not partes:
         return "NULL"
@@ -468,25 +503,21 @@ def _ddl_gatilho(tabela, campos, chaves):
     if not chaves:
         raise RuntimeError(f"A tabela {tabela} nÃ£o possui chave primÃ¡ria auditÃ¡vel.")
 
-    # Seleciona apenas campos permitidos que não sejam BLOB.
-    valores = [
-        por_nome[nome]
-        for nome in sorted(VALORES_AUDITAVEIS.get(tabela, set()))
-        if nome in por_nome and por_nome[nome]["tipo"] != 261
-    ]
+    # Cada campo contém seu valor permitido ou um motivo explícito de omissão.
+    valores = campos
     # Respeita a lista de tabelas sem auditoria de UPDATE.
     tem_update = tabela not in _OPERACOES_LIMITADAS
-    colunas_escalars = [campo for campo in campos if campo["tipo"] != 261] if tem_update else []
+    colunas_comparaveis = campos if tem_update else []
     novo = _expressao_chave("NEW", chaves)
     antigo = _expressao_chave("OLD", chaves)
     nome_trigger = f"TRG_AUDIT_{tabela}"
 
-    snapshot_novo = _snapshot_json("NEW", valores)
-    snapshot_antigo = _snapshot_json("OLD", valores)
+    snapshot_novo = _snapshot_json("NEW", valores, tabela)
+    snapshot_antigo = _snapshot_json("OLD", valores, tabela)
 
     linhas_alteracao = []
-    # Registra os campos escalares que mudaram na atualização.
-    for campo in colunas_escalars:
+    # Detecta também alterações de BLOB, sem copiar seu conteúdo para o log.
+    for campo in colunas_comparaveis:
         nome = campo["nome"]
         coluna_nova = f"NEW.{_identificador(nome)}"
         coluna_antiga = f"OLD.{_identificador(nome)}"
@@ -497,25 +528,19 @@ def _ddl_gatilho(tabela, campos, chaves):
             "  ",
             f"  v_campos = v_campos || {_literal(nome + ', ')};",
         ])
-        # Inclui valores antigos e novos somente dos campos permitidos.
-        if nome in {c["nome"] for c in valores}:
-            linhas_alteracao.extend([
-                "  ",
-                "  IF (v_contagem > 0) THEN",
-                "  BEGIN",
-                "    v_antes = v_antes || ',';",
-                "    v_depois = v_depois || ',';",
-                "  END",
-                "  ",
-                f"  v_antes = v_antes || {_json_campo('OLD', campo)};",
-                f"  v_depois = v_depois || {_json_campo('NEW', campo)};",
-                "  ",
-                "  v_contagem = v_contagem + 1;",
-            ])
-        else:
-            linhas_alteracao.append(
-                "  "
-            )
+        linhas_alteracao.extend([
+            "  ",
+            "  IF (v_contagem > 0) THEN",
+            "  BEGIN",
+            "    v_antes = v_antes || ',';",
+            "    v_depois = v_depois || ',';",
+            "  END",
+            "  ",
+            f"  v_antes = v_antes || {_json_campo('OLD', campo, tabela)};",
+            f"  v_depois = v_depois || {_json_campo('NEW', campo, tabela)};",
+            "  ",
+            "  v_contagem = v_contagem + 1;",
+        ])
         linhas_alteracao.append("END")
 
     # Escapa o caminho do banco externo dentro do SQL gerado.
@@ -551,7 +576,7 @@ def _ddl_gatilho(tabela, campos, chaves):
         IF (CHAR_LENGTH(v_campos) > 0) THEN
             v_campos = SUBSTRING(v_campos FROM 1 FOR CHAR_LENGTH(v_campos) - 2);
         ELSE
-            v_campos = '[conteÃºdo textual/sensÃ­vel omitido ou sem alteraÃ§Ã£o escalar]';
+            v_campos = '[sem alteração nos campos auditáveis]';
         
         IF (v_contagem = 0) THEN
         BEGIN

@@ -1,5 +1,9 @@
 
 
+import base64
+from io import BytesIO
+
+import qrcode
 import requests
 from flask import current_app
 
@@ -120,11 +124,22 @@ def _normalizar_cobranca(dados, exigir_codigo_pix=True):
             + ", ".join(campos_faltando)
         )
 
+    # O PNG funciona também no aplicativo, que não renderiza SVG no Image nativo.
+    # Usa o mesmo código da cobrança, inclusive para Pix antigos sem imagem na API.
+    qr_code_png = None
+    if isinstance(codigo_pagamento, str) and codigo_pagamento.strip():
+        imagem = qrcode.make(codigo_pagamento)
+        arquivo = BytesIO()
+        imagem.save(arquivo, format="PNG")
+        qr_code_png = "data:image/png;base64," + base64.b64encode(arquivo.getvalue()).decode("ascii")
+
     return {
         **dados,
         "id_cobranca": id_cobranca,
         "valor": valor,
         "codigo_pagamento": codigo_pagamento,
+        "qr_code_png": qr_code_png,
+        "qr_code_svg": dados.get("qr_code_svg"),
         "status": status,
         "tipo_cobranca": tipo_cobranca or "pix",
     }
@@ -145,7 +160,7 @@ def criar_cobranca_pix(valor):
 
     resposta = _requisitar_arkhe(
         "POST",
-        "/api/v1/cobrancas/pix",
+        "/api/v1/cobrancas/pix/qrcode",
         headers={
             **_headers(),
             "Content-Type": "application/json",

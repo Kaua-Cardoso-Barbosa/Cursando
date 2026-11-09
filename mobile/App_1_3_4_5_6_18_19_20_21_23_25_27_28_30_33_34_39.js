@@ -5,7 +5,7 @@ import * as LocalAuthentication from "expo-local-authentication";
 import Constants from "expo-constants";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Platform, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
-import { apiRequest, carregarSessao, getApiBaseUrl, limparSessao, salvarSessao } from "./src/api/client_3_17";
+import { apiRequest, definirAoInvalidarSessao, carregarSessao, getApiBaseUrl, limparSessao, salvarSessao } from "./src/api/client_3_17";
 import BottomNav from "./src/components/BottomNav_19_23_25_28_39";
 import FeedbackProvider, { useFeedback } from "./src/components/FeedbackProvider_39";
 import AlunosCursoScreen from "./src/screens/AlunosCursoScreen_39";
@@ -24,6 +24,7 @@ import PerfilScreen from "./src/screens/PerfilScreen_39";
 import PlayerAulaScreen from "./src/screens/PlayerAulaScreen_4_10_26_39";
 import ProvasProfessorScreen from "./src/screens/ProvasProfessorScreen_20_39";
 import ProvaAlunoScreen from "./src/screens/ProvaAlunoScreen_20_39";
+import HistoricoProvasAlunoScreen from './src/screens/HistoricoProvasAlunoScreen_20_39';
 import MateriaisProfessorScreen from "./src/screens/MateriaisProfessorScreen_21_39";
 import RelatoriosProfessorScreen from "./src/screens/RelatoriosProfessorScreen_7_22_23_39";
 import LogsAdminScreen from "./src/screens/LogsAdminScreen_25_39";
@@ -44,6 +45,8 @@ export default function App() {
 function AppContent() {
   const { mostrarAlerta } = useFeedback();
   const [token, setToken] = useState("");
+  const sessaoTokenRef = useRef("");
+  const ultimaSincronizacaoRef = useRef(0);
   /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
   const sincronizandoApp = useRef(false);
   /* Fim item 3 */
@@ -69,6 +72,7 @@ function AppContent() {
 
   const [examCourse, setExamCourse] = useState(null);
   const [examAlunoAberto, setExamAlunoAberto] = useState(false);
+  const [historicoProvasAberto, setHistoricoProvasAberto] = useState(false);
   const [materialsCourse, setMaterialsCourse] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -79,7 +83,7 @@ function AppContent() {
   const [codigoEmailEnviado, setCodigoEmailEnviado] = useState(null);
 
 async function carregarDados(authToken = token, authUser = usuario) {
-    if (!authToken) return;
+    if (!authToken || authToken !== sessaoTokenRef.current) return;
     setLoading(true);
     try {
       const tipo = Number(authUser?.tipo ?? usuario?.tipo ?? 1);
@@ -91,6 +95,8 @@ async function carregarDados(authToken = token, authUser = usuario) {
           apiRequest("/perfil", {}, authToken)
         ]);
         /* Fim item 3 */
+        if (sessaoTokenRef.current !== authToken) return;
+        ultimaSincronizacaoRef.current = Date.now();
         setDashboard(dashboardData.metricas || dashboardData || {});
         setCursos([]);
         setPerfil(perfilData);
@@ -125,6 +131,8 @@ async function carregarDados(authToken = token, authUser = usuario) {
       /* Fim item 30 */
 
       const [dashboardData, cursosData, perfilData, financeiroData] = await Promise.all(requisicoes);
+      if (sessaoTokenRef.current !== authToken) return;
+      ultimaSincronizacaoRef.current = Date.now();
       setDashboard(dashboardData);
       setCursos(Array.isArray(cursosData) ? cursosData : []);
       setPerfil(perfilData);
@@ -214,6 +222,7 @@ async function carregarDados(authToken = token, authUser = usuario) {
 
 
 async function validarAcesso(authToken, authUser) {
+    sessaoTokenRef.current = authToken;
     const tipo = Number(authUser?.tipo ?? 1);
     setErroSincronizacao("");
 
@@ -228,6 +237,7 @@ async function validarAcesso(authToken, authUser) {
     setAssinaturaAtiva(null);
     try {
       const dados = await apiRequest("/assinaturas/verificar", {}, authToken);
+      if (sessaoTokenRef.current !== authToken) return null;
       const ativa = dados?.assinatura === true;
       setAssinaturaAtiva(ativa);
 
@@ -280,7 +290,7 @@ async function validarAcesso(authToken, authUser) {
     const aulaId = detalheAulaAluno?.aula?.id;
     const inscricao = AppState.addEventListener("change",
 async (estado) => {
-      if (estado !== "active" || sincronizandoApp.current) return;
+      if (estado !== "active" || sincronizandoApp.current || Date.now() - ultimaSincronizacaoRef.current < 30000) return;
       sincronizandoApp.current = true;
 
       try {
@@ -310,9 +320,19 @@ async (estado) => {
   /* Fim item 34 */
 
   /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Encerra a sessão e limpa os dados autenticados */
+  useEffect(() => {
+    if (!token) return;
+    return definirAoInvalidarSessao(tokenInvalido => {
+      if (tokenInvalido === token) sair();
+    });
+  }, [token]);
+
   async function sair() {
-    await limparSessao();
+    sessaoTokenRef.current = "";
+    ultimaSincronizacaoRef.current = 0;
+    setHistoricoProvasAberto(false);
     setToken("");
+    await limparSessao();
     setUsuario(null);
     setAssinaturaAtiva(null);
     setPerfil(null);
@@ -441,15 +461,21 @@ async function marcarAulaAssistida(aula) {
 
 
   /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Envia as respostas do aluno e atualiza o resultado da prova */
-  async function enviarProvaAluno(respostas) {
+  async function enviarProvaAluno(respostas, idProva) {
     if (!detalheCursoAluno?.curso?.id) return;
 
-    const resultado = await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}/prova`, {
-      method: "POST",
-      body: JSON.stringify({ respostas })
-    }, token);
-    setDetalheCursoAluno(await buscarDetalheCursoAluno(detalheCursoAluno.curso.id));
-    return resultado;
+    const idCurso = detalheCursoAluno.curso.id;
+    try {
+      return await apiRequest(`/aluno/cursos/${idCurso}/prova`, {
+        method: "POST",
+        body: JSON.stringify({ respostas, id_prova: idProva })
+      }, token);
+    } finally {
+      try {
+        const atual = await apiRequest(`/aluno/cursos/${idCurso}/prova`, {}, token);
+        setDetalheCursoAluno((anterior) => anterior?.curso?.id === idCurso ? { ...anterior, prova: atual } : anterior);
+      } catch (error) { console.error('Não foi possível atualizar a prova:', error); }
+    }
   }
   /* Fim item 20 */
 
@@ -514,6 +540,7 @@ async function avaliarCursoAluno(dados) {
 /* Fim item 27 */
 
   function trocarAba(key) {
+    setHistoricoProvasAberto(false);
     setTab(key);
     if (key !== "chat") setChatInicial(null);
     setExamAlunoAberto(false);
@@ -710,6 +737,9 @@ async (novoToken, novoUsuario) => {
   }
 
   const tipoUsuario = Number(usuario?.tipo ?? perfil?.tipo ?? 1);
+  if (tipoUsuario === 2 && historicoProvasAberto) {
+    return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><HistoricoProvasAlunoScreen token={token} onBack={() => setHistoricoProvasAberto(false)} /></SafeAreaView>;
+  }
 
   /* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */
   if (tipoUsuario === 2 && assinaturaAtiva === null && validandoAssinatura) {
@@ -766,8 +796,8 @@ async (novoToken, novoUsuario) => {
   /* Fim item 20 */
 
   /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
-  if (examAlunoAberto && detalheCursoAluno?.prova?.prova) {
-    return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><ProvaAlunoScreen curso={detalheCursoAluno.curso} prova={detalheCursoAluno.prova} onBack={() => setExamAlunoAberto(false)} onSubmit={enviarProvaAluno} /></SafeAreaView>;
+  if (examAlunoAberto && detalheCursoAluno?.prova) {
+    return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><ProvaAlunoScreen token={token} curso={detalheCursoAluno.curso} prova={detalheCursoAluno.prova} onBack={() => setExamAlunoAberto(false)} onSubmit={enviarProvaAluno} /></SafeAreaView>;
   }
   /* Fim item 20 */
 
@@ -844,6 +874,7 @@ async (novoToken, novoUsuario) => {
             carregando={loading}
             onRefresh={carregarDados}
             onOpen={abrirCursoAluno}
+            onHistory={() => setHistoricoProvasAberto(true)}
             tipoUsuario={tipoUsuario}
           />
         )}
@@ -865,6 +896,7 @@ async (novoToken, novoUsuario) => {
         {tab === "courses" && tipoUsuario === 2 && detalheAulaAluno && (
           /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */ <PlayerAulaScreen
             detalhe={detalheAulaAluno}
+            token={token}
             onBack={() => setDetalheAulaAluno(null)}
             onOpenLesson={abrirAulaAluno}
             onFinish={marcarAulaAssistida}
@@ -896,6 +928,7 @@ async (novoToken, novoUsuario) => {
         {tab === "discover" && tipoUsuario === 2 && detalheAulaAluno && (
           /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */ <PlayerAulaScreen
             detalhe={detalheAulaAluno}
+            token={token}
             onBack={() => setDetalheAulaAluno(null)}
             onOpenLesson={abrirAulaAluno}
             onFinish={marcarAulaAssistida}

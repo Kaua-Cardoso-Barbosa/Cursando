@@ -104,56 +104,36 @@ def garantir_coluna_imagem_perfil(cursor, con):
 
 @app.route('/verificar_token', methods=['GET'])
 def verificar_token():
+    # A assinatura e a expiração são verificadas pelo JWT; perfil não altera sua validade.
+    from flask_jwt_extended.exceptions import JWTExtendedException
+    from jwt.exceptions import PyJWTError
     try:
-        # Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Confere a sessão autenticada e retorna o usuário atual
         verify_jwt_in_request()
+    except (JWTExtendedException, PyJWTError):
+        return jsonify(autenticado=False), 401
 
-        id_usuario = get_jwt_identity()
-        tipo = get_jwt().get('tipo')
-
+    con = cursor = None
+    try:
         con = get_db()
         cursor = con.cursor()
-
-        if garantir_coluna_imagem_perfil(cursor, con):
-            con.commit()
-
-        cursor.execute("""
-            SELECT NOME, IMAGEM_PERFIL
-            FROM USUARIOS
-            WHERE ID_USUARIO = ?
-        """, (id_usuario,))
-
+        cursor.execute("SELECT NOME, IMAGEM_PERFIL, TIPO_USUARIO FROM USUARIOS WHERE ID_USUARIO = ?",
+                       (get_jwt_identity(),))
         usuario = cursor.fetchone()
-        redirecionar = None
-
-        
-
-        cursor.close()
-
         if not usuario:
-            return jsonify({
-                'autenticado': False
-            }), 200
-
-        return jsonify({
-            'autenticado': True,
-            'id_usuario': id_usuario,
-            'nome': usuario[0],
-            'imagem_perfil': usuario[1],
-            'tipo': tipo,
-            'redirecionar': redirecionar
-        }), 200
-        # Fim item 3
-
-    except Exception as e:
-        # Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Confere a sessão autenticada e retorna o usuário atual
-        print("ERRO AO VERIFICAR JWT:", repr(e))
-
-        return jsonify({
-            'autenticado': False
-        }), 200
-        # Fim item 3
-
+            return jsonify(autenticado=False), 401
+        retorno = jsonify(autenticado=True, id_usuario=get_jwt_identity(),
+                          nome=usuario[0], imagem_perfil=usuario[1], tipo=usuario[2],
+                          expira_em=get_jwt()['exp'], redirecionar=None)
+        retorno.headers['Cache-Control'] = 'no-store'
+        return retorno
+    except Exception:
+        app.logger.exception("Falha ao consultar a sessão")
+        return jsonify(mensagem="Não foi possível consultar sua sessão. Tente novamente."), 503
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if con is not None:
+            con.close()
 
 
 # Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Gera e encaminha o código para confirmar o e-mail do cadastro

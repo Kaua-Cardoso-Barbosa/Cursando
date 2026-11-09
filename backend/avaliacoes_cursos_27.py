@@ -57,9 +57,8 @@ def avaliar_curso(id_curso):
         cursor.execute(
             """
             SELECT FIRST 1 R.STATUS
-            FROM PROVAS_CURSO P
-            JOIN RESPOSTAS_PROVA R ON R.ID_PROVA = P.ID_PROVA AND R.ID_USUARIO = ?
-            WHERE P.ID_CURSO = ? AND P.PUBLICADA = 1
+            FROM RESPOSTAS_PROVA R
+            WHERE R.ID_USUARIO = ? AND R.ID_CURSO = ? AND R.STATUS = 1
             ORDER BY R.ID_RESPOSTA DESC
             """,
             (get_jwt_identity(), id_curso),

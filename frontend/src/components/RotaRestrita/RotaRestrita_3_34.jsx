@@ -1,3 +1,4 @@
+import { useSessao } from "../../context/useSessao.js";
 import { cloneElement, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
@@ -8,101 +9,35 @@ function RotaProtegida({
                                           exigirAssinatura = false,
                                           children
                                       }) {
-    const [carregando, setCarregando] = useState(true);
-    const [usuario, setUsuario] = useState(null);
-    /* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */
-    const [assinaturaValida, setAssinaturaValida] = useState(!exigirAssinatura);
-    /* Fim item 34 */
+    const { usuario, carregando, erro, atualizarSessao, atualizarUsuario } = useSessao();
+    const [assinaturaValida, setAssinaturaValida] = useState(exigirAssinatura ? null : true);
+    const [erroAssinatura, setErroAssinatura] = useState("");
+    const [consultaAssinatura, setConsultaAssinatura] = useState(0);
     const location = useLocation();
 
-    /* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */
     useEffect(() => {
-        async function verificarSessao() {
+        if (!exigirAssinatura || Number(usuario?.tipo) !== 2) return;
+        let ativo = true;
+        const consultar = async () => {
+            setErroAssinatura("");
             try {
-                const retorno = await fetch(`${api}/verificar_token`, {
-                    method: "GET",
-                    credentials: "include"
-                });
-
-                if (!retorno.ok) {
-                    setUsuario(null);
-                    return;
-                }
-
-                const dados = await retorno.json();
-
-                if (!dados.autenticado) {
-                    setUsuario(null);
-                    return;
-                }
-
-                setUsuario(dados);
-
-                if (exigirAssinatura && Number(dados.tipo) === 2) {
-                    const assinatura = await fetch(`${api}/assinaturas/verificar`, {
-                        credentials: "include"
-                    });
-                    const dadosAssinatura = await assinatura.json().catch(() => ({}));
-                    setAssinaturaValida(assinatura.ok && dadosAssinatura?.assinatura === true);
-                }
-            } catch (erro) {
-                console.error("Erro ao verificar sessao:", erro);
-                setUsuario(null);
-            } finally {
-                setCarregando(false);
-            }
-        }
-
-        verificarSessao();
-    }, [api, exigirAssinatura]);
-    /* Fim item 34 */
-
-    useEffect(() => {
-async function sincronizarSessao() {
-            if (document.hidden) return;
-
-            try {
-                /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
-                const retorno = await fetch(`${api}/verificar_token`, {
-                    method: "GET",
-                    credentials: "include"
-                });
-                /* Fim item 3 */
-
-                if (!retorno.ok) {
-                    setUsuario(null);
-                    return;
-                }
-
-                const dados = await retorno.json();
-                setUsuario(dados.autenticado ? dados : null);
-
-                if (dados.autenticado && exigirAssinatura && Number(dados.tipo) === 2) {
-                    const assinatura = await fetch(`${api}/assinaturas/verificar`, {
-                        credentials: "include"
-                    });
-
-                    if (assinatura.ok) {
-                        setAssinaturaValida(true);
-                    } else if (assinatura.status === 403) {
-
-                        setAssinaturaValida(false);
-                    }
-                }
-            } catch (erro) {
-
-                console.error("Erro ao sincronizar sessao:", erro);
-            }
-        }
-
-        /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
-        window.addEventListener("cursando:sincronizar", sincronizarSessao);
-        /* Fim item 3 */
-        return () => window.removeEventListener("cursando:sincronizar", sincronizarSessao);
-    }, [api, exigirAssinatura]);
+                const resposta = await fetch(`${api}/assinaturas/verificar`, { credentials: "include" });
+                const dados = await resposta.json();
+                if (ativo && (resposta.ok || resposta.status === 403)) setAssinaturaValida(dados.assinatura === true);
+                else if (ativo) setErroAssinatura("Não foi possível consultar sua assinatura.");
+            } catch { if (ativo) setErroAssinatura("Não foi possível consultar sua assinatura."); }
+        };
+        consultar();
+        window.addEventListener("cursando:sincronizar", consultar);
+        return () => { ativo = false; window.removeEventListener("cursando:sincronizar", consultar); };
+    }, [api, exigirAssinatura, usuario?.id_usuario, usuario?.tipo, consultaAssinatura]);
 
     if (carregando) {
         return <p>Verificando sessao...</p>;
+    }
+
+    if (!usuario && erro) {
+        return <div role="alert"><p>{erro}</p><button onClick={() => atualizarSessao()}>Tentar novamente</button></div>;
     }
 
     if (!usuario) {
@@ -117,32 +52,17 @@ async function sincronizarSessao() {
         return <Navigate to={destinoSessao} replace />;
     }
 
-    /* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */
-    if (exigirAssinatura && !assinaturaValida) {
-        return <Navigate to="/DashboardAluno/financeiro" replace />;
-    }
-    /* Fim item 34 */
-
-    if (
-        tipoPermitido !== undefined &&
-        Number(usuario.tipo) !== Number(tipoPermitido)
-    ) {
+    if (tipoPermitido !== undefined && Number(usuario.tipo) !== Number(tipoPermitido)) {
         return <Navigate to="/login" replace />;
     }
-
-    /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Aplica os dados de perfil recebidos à sessão atual */
-    function atualizarUsuario(dadosAtualizados) {
-        setUsuario((usuarioAtual) => ({
-            ...usuarioAtual,
-            ...dadosAtualizados
-        }));
-
-        children.props.onPerfilAtualizado?.(dadosAtualizados);
+    if (exigirAssinatura && Number(usuario.tipo) === 2 && assinaturaValida === null) {
+        return erroAssinatura
+            ? <div role="alert"><p>{erroAssinatura}</p><button onClick={() => setConsultaAssinatura(n => n + 1)}>Tentar novamente</button></div>
+            : <p>Verificando assinatura...</p>;
     }
-    /* Fim item 3 */
+    if (exigirAssinatura && Number(usuario.tipo) === 2 && assinaturaValida === false) {
+        return <Navigate to="/DashboardAluno/financeiro" replace />;
+    }
 
-    return cloneElement(children, {
-        usuario,
-        onPerfilAtualizado: atualizarUsuario
-    });
+    return cloneElement(children, { usuario, onPerfilAtualizado: atualizarUsuario });
 }

@@ -1,10 +1,11 @@
 import React from 'react';
 import css from '../../pages/Home/Home_38.module.css';
+import CapaCurso from '../CapaCurso/CapaCurso.jsx';
 
 const CartaoCurso = ({ imagem, alt, titulo, descricao }) => {
     return (
         <div className={css['cartao-curso']}>
-            <img src={imagem} alt={alt} />
+            <CapaCurso imagem={imagem} titulo={alt || titulo} />
             <div className={css['conteudo-cartao']}>
                 <h4>{titulo}</h4>
                 <p>{descricao}</p>

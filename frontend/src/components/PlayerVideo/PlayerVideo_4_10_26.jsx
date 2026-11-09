@@ -74,7 +74,10 @@ export default function PlayerVideo({
         const quandoAtualizar = () => salvarPosicao(false);
         const quandoBuscar = () => salvarPosicao(true);
         const quandoOcultar = () => {
-            if (document.hidden) salvarPosicao(true);
+            if (document.hidden) {
+                salvarPosicao(true);
+                video.pause();
+            }
         };
         const aoCarregarMetadados = () => {
             if (desmontado) return;

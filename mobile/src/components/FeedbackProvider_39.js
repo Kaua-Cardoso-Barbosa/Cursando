@@ -18,6 +18,8 @@ export default
 function FeedbackProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [confirmacao, setConfirmacao] = useState(null);
+  const [segundosRestantes, setSegundosRestantes] = useState(3);
+  const liberarConfirmacaoEm = useRef(0);
   const resolverConfirmacao = useRef(null);
 
   const mostrarAlerta = useCallback((titulo, descricao, tipo = "info") => {
@@ -27,14 +29,27 @@ function FeedbackProvider({ children }) {
   const confirmar = useCallback((opcoes) => new Promise((resolve) => {
     resolverConfirmacao.current?.(false);
     resolverConfirmacao.current = resolve;
-    setConfirmacao(opcoes);
+    liberarConfirmacaoEm.current = Date.now() + 3000;
+    setSegundosRestantes(3);
+    setConfirmacao({ ...opcoes });
   }), []);
 
   const concluirConfirmacao = useCallback((resultado) => {
+    if (resultado && (!resolverConfirmacao.current || Date.now() < liberarConfirmacaoEm.current)) return;
     resolverConfirmacao.current?.(resultado);
     resolverConfirmacao.current = null;
     setConfirmacao(null);
   }, []);
+
+  useEffect(() => {
+    if (!confirmacao) return undefined;
+    const timer = setInterval(() => {
+      const segundos = Math.max(0, Math.ceil((liberarConfirmacaoEm.current - Date.now()) / 1000));
+      setSegundosRestantes(segundos);
+      if (segundos === 0) clearInterval(timer);
+    }, 100);
+    return () => clearInterval(timer);
+  }, [confirmacao]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -96,10 +111,12 @@ function FeedbackProvider({ children }) {
                 </Pressable>
                 <Pressable
                   onPress={() => concluirConfirmacao(true)}
-                  style={[styles.actionButton, styles.confirmButton]}
+                  disabled={segundosRestantes > 0}
+                  accessibilityState={{ disabled: segundosRestantes > 0 }}
+                  style={[styles.actionButton, styles.confirmButton, segundosRestantes > 0 && styles.confirmButtonDisabled]}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.confirmText}>{confirmacao?.textoConfirmar || "Confirmar"}</Text>
+                  <Text style={styles.confirmText}>{confirmacao?.textoConfirmar || "Confirmar"}{segundosRestantes > 0 ? ` (${segundosRestantes}s)` : ''}</Text>
                 </Pressable>
               </View>
             </View>
@@ -172,6 +189,7 @@ const styles = StyleSheet.create({
   actionButton: { flex: 1, minHeight: 44, alignItems: "center", justifyContent: "center", paddingHorizontal: 12, borderRadius: 7, borderWidth: 1.5 },
   cancelButton: { backgroundColor: colors.white, borderColor: colors.black },
   confirmButton: { backgroundColor: "#b90000", borderColor: "#b90000" },
+  confirmButtonDisabled: { opacity: 0.5 },
   cancelText: { color: colors.black, fontSize: 16, fontWeight: "600" },
   confirmText: { color: colors.white, fontSize: 16, fontWeight: "600" }
 });

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import useChat from "../hooks/useChat";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
@@ -19,29 +20,38 @@ import AppIcon from "../components/AppIcon_39";
 import { colors, globalStyles } from "../styles_39";
 
 export default
-function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, carregando, onRefresh }) {
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-  const [conversas, setConversas] = useState([]);
-  /* Fim item 19 */
-  const [selecionada, setSelecionada] = useState(conversaInicial);
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-  const [mensagens, setMensagens] = useState([]);
-  /* Fim item 19 */
-  const [texto, setTexto] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [tecladoAberto, setTecladoAberto] = useState(false);
-  const enviandoRef = useRef(false);
+function ChatScreen({ token, tipoUsuario, conversaInicial = null, carregando }) {
   const aluno = Number(tipoUsuario) === 2;
-
-
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-  const conversasVisiveis = selecionada && !conversas.some((conversa) =>
-    Number(conversa.id_curso) === Number(selecionada.id_curso) &&
-    Number(conversa.id_aluno) === Number(selecionada.id_aluno)
+  const [texto, setTexto] = useState("");
+  const [tecladoAberto, setTecladoAberto] = useState(false);
+  const [ativo, setAtivo] = useState(AppState.currentState === "active");
+  const scrollRef = useRef(null);
+  const noFim = useRef(true);
+  const request = useCallback((path, options = {}) => apiRequest(path, {
+    ...options, ...(options.body ? { body: JSON.stringify(options.body) } : {})
+  }, token, 10000, false), [token]);
+  const { conversas, selecionada, setSelecionada, mensagens, carregando: loading, enviando, erro,
+    carregarAnteriores, carregandoAnteriores, temAnteriores, confirmarLeitura, enviarTexto, atualizar } =
+    useChat({ request, professor: Number(tipoUsuario) === 1, conversaInicial, ativo });
+  const conversasVisiveis = selecionada && !conversas.some(c =>
+    Number(c.id_curso) === Number(selecionada.id_curso) && Number(c.id_aluno) === Number(selecionada.id_aluno)
   ) ? [selecionada, ...conversas] : conversas;
-  /* Fim item 19 */
-
+  useEffect(() => { noFim.current = true; setTexto(""); }, [selecionada?.id_curso, selecionada?.id_aluno]);
+  useEffect(() => {
+    const inscricao = AppState.addEventListener("change", estado => setAtivo(estado === "active"));
+    return () => inscricao.remove();
+  }, []);
+  useEffect(() => { if (ativo && noFim.current) confirmarLeitura(); }, [ativo, mensagens, confirmarLeitura]);
+  async function enviarMensagem() {
+    const enviado = texto.trim();
+    if (await enviarTexto(enviado)) {
+      setTexto(atual => atual.trim() === enviado ? "" : atual);
+      noFim.current = true;
+      scrollRef.current?.scrollToEnd({ animated: true });
+      confirmarLeitura();
+    }
+  }
+  async function atualizarChat() { await atualizar(); }
 
   function Avatar({ imagem, tamanho = 38 }) {
     return imagem
@@ -60,117 +70,20 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
     };
   }, []);
 
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Consulta as conversas disponíveis para o usuário */
-  async function carregarConversas({ silencioso = false } = {}) {
-    if (!silencioso) setLoading(true);
-    try {
-      if (aluno) {
-        const existentes = await apiRequest("/chat/conversas", {}, token);
-        setConversas(Array.isArray(existentes) ? existentes : []);
-        return;
-      }
-
-      const dados = await apiRequest("/chat/conversas", {}, token);
-      setConversas(Array.isArray(dados) ? dados : []);
-    } catch {
-      setConversas([]);
-    } finally {
-      if (!silencioso) setLoading(false);
-    }
-  }
-  /* Fim item 19 */
-
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Consulta as mensagens da conversa selecionada */
-  async function carregarMensagens(conversa) {
-    if (!conversa) return;
-
-    const query = !aluno ? `?id_aluno=${conversa.id_aluno}` : "";
-    const dados = await apiRequest(`/chat/cursos/${conversa.id_curso}/mensagens${query}`, {}, token);
-    setMensagens(Array.isArray(dados) ? dados : []);
-  }
-  /* Fim item 19 */
-
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Envia a mensagem e recarrega a conversa selecionada */
-  async function enviarMensagem() {
-    const textoMensagem = texto.trim();
-    if (!selecionada || !textoMensagem || enviandoRef.current) return;
-
-    enviandoRef.current = true;
-    setEnviando(true);
-    try {
-      await apiRequest(`/chat/cursos/${selecionada.id_curso}/mensagens`, {
-        method: "POST",
-        body: JSON.stringify({
-          id_aluno: selecionada.id_aluno,
-          texto: textoMensagem
-        })
-      }, token);
-      setTexto("");
-      await carregarMensagens(selecionada);
-      await carregarConversas();
-    } finally {
-      enviandoRef.current = false;
-      setEnviando(false);
-    }
-  }
-  /* Fim item 19 */
-
-  useEffect(() => {
-    carregarConversas();
-  }, [token, tipoUsuario, cursos]);
-
-
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-  useEffect(() => {
-    const intervalo = setInterval(() => {
-      if (AppState.currentState !== "active") return;
-      carregarConversas({ silencioso: true });
-      if (selecionada) carregarMensagens(selecionada).catch(() => setMensagens([]));
-    }, 5000);
-    return () => clearInterval(intervalo);
-  }, [token, tipoUsuario, cursos, selecionada]);
-  /* Fim item 19 */
-
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-  useEffect(() => {
-    carregarMensagens(selecionada).catch(() => setMensagens([]));
-  }, [selecionada]);
-  /* Fim item 19 */
-
-  /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-  useEffect(() => {
-    const inscricao = AppState.addEventListener("change",
-(estado) => {
-      if (estado !== "active") return;
-
-
-      carregarConversas();
-      if (selecionada) {
-        carregarMensagens(selecionada).catch(() => setMensagens([]));
-      }
-    }
-);
-
-    return () => inscricao.remove();
-  }, [token, tipoUsuario, cursos, selecionada]);
-  /* Fim item 19 */
-
-  /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza as conversas e mensagens ao sincronizar o aplicativo */
-  async function atualizarChat() {
-    await onRefresh?.();
-    await carregarConversas();
-    if (selecionada) {
-      await carregarMensagens(selecionada).catch(() => setMensagens([]));
-    }
-  }
-  /* Fim item 3 */
-
   return (
     <KeyboardAvoidingView
       style={styles.keyboardArea}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
+        ref={scrollRef}
+        scrollEventThrottle={100}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
+          noFim.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 80;
+          if (noFim.current) confirmarLeitura();
+        }}
+        onContentSizeChange={() => { if (noFim.current) scrollRef.current?.scrollToEnd({ animated: false }); }}
         style={styles.scroll}
         contentContainerStyle={[globalStyles.page, styles.page, tecladoAberto && styles.keyboardPage]}
         keyboardShouldPersistTaps="handled"
@@ -185,6 +98,7 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
         {/* Fim item 19 */}
 
         {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
+        {erro ? <Text accessibilityRole="alert" style={styles.empty}>{erro}</Text> : null}
         <View style={styles.conversations}>
           {loading ? <ActivityIndicator color={colors.green} /> : null}
           {!loading && conversasVisiveis.length === 0 ? <Text style={globalStyles.message}>{aluno ? "Nenhuma conversa disponivel." : "Nenhuma conversa ainda. Abra os alunos de um curso para iniciar."}</Text> : null}
@@ -221,6 +135,7 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
           ) : null}
           {!selecionada ? <Text style={styles.empty}>Selecione uma conversa.</Text> : null}
           {selecionada && mensagens.length === 0 ? <Text style={styles.empty}>Nenhuma mensagem enviada ainda.</Text> : null}
+          {temAnteriores ? <Pressable disabled={carregandoAnteriores} onPress={() => { noFim.current = false; carregarAnteriores(); }}><Text style={styles.empty}>{carregandoAnteriores ? "Carregando..." : "Carregar mensagens anteriores"}</Text></Pressable> : null}
           {mensagens.map((mensagem) => (
             <View key={mensagem.id} style={[styles.bubble, mensagem.minha && styles.mine]}>
               <View style={styles.senderRow}>
@@ -236,6 +151,7 @@ function ChatScreen({ token, tipoUsuario, cursos = [], conversaInicial = null, c
         {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
         <View style={styles.composer}>
           <TextInput
+            maxLength={10000}
             value={texto}
             onChangeText={setTexto}
             editable={Boolean(selecionada) && !enviando}

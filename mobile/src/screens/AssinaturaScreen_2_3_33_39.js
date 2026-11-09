@@ -1,5 +1,6 @@
 import AppIcon from "../components/AppIcon_39";
 import HistoricoFaturasAluno from "../components/HistoricoFaturasAluno_33_39";
+import PixQrCode from "../components/PixQrCode_2_39";
 import * as Clipboard from "expo-clipboard";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -167,9 +168,10 @@ async function iniciarPagamento() {
               <Text style={styles.price}>R$ {valor.toFixed(2).replace(".", ",")} / mês</Text>
             )}
             <Text style={styles.instructions}>
-              Copie o código PIX, pague no aplicativo do seu banco e confira o status.
+              Escaneie o QR Code no Arkhé ou use o Pix Copia e Cola. Depois, confira o status.
             </Text>
             {/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */}
+            <PixQrCode pagamento={pagamento} />
             <ScrollView horizontal style={styles.codeBox}>
               <Text selectable style={styles.code}>{pagamento.codigo_pagamento}</Text>
             </ScrollView>

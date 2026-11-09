@@ -1225,18 +1225,6 @@
         font-size: 1.5rem;
     }
 
-    .navegacaoCurso {
-        display: grid;
-        grid-template-columns: 1fr;
-        width: 100%;
-    }
-
-    .abaCurso,
-    .abaAtiva {
-        width: 100%;
-        white-space: normal;
-    }
-
     .conteudoCurso {
         padding: 16px;
     }
@@ -1646,33 +1634,67 @@
 
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .navegacaoCurso */
 .navegacaoCurso {
-    gap: 8px;
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    justify-content: flex-start;
+    width: fit-content;
+    max-width: 100%;
+    gap: 10px;
     flex-wrap: wrap;
-    margin: 20px 0;
-    padding: 5px;
+    margin: 0 0 20px;
+    padding: 12px;
     border: 1px solid #dfe9e3;
-    border-radius: 14px;
+    border-radius: 12px;
     background: #ffffff;
 }
 
 /* Fim item 38 */
 .abaCurso,
 .abaAtiva {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 1 auto;
+    min-width: 0;
     min-height: 42px;
-    border: 0;
+    border: 1.4px solid #cbd9d0;
     border-radius: 10px;
-    font-size: 0.94rem;
+    padding: 9px 16px;
+    font-size: 0.93rem;
     font-weight: 650;
+    line-height: 1;
+    box-shadow: none;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .abaCurso {
-    color: #486355;
-    background: transparent;
+    color: #24533d;
+    background: #ffffff;
+}
+
+.abaCurso:hover {
+    color: #24533d;
+    border-color: #087044;
+    background: #eff8f2;
 }
 
 .abaAtiva {
+    border-color: #087044;
     color: #ffffff;
     background: #087044;
+}
+
+.abaAtiva:hover:not(:disabled) {
+    border-color: #055a36;
+    background: #055a36;
+    transform: translateY(-1px);
+}
+
+.abaCurso:focus-visible,
+.abaAtiva:focus-visible {
+    outline: 3px solid rgba(6, 166, 99, 0.35);
+    outline-offset: 2px;
 }
 
 .conteudoCurso {
@@ -1689,8 +1711,15 @@
 
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .painelProva */
 .painelProva {
+    display: grid;
+    width: 100%;
     max-width: 900px;
-    padding: clamp(22px, 4vw, 38px);
+    gap: 20px;
+    margin: 0 0 22px;
+}
+
+.painelProva > .botaoCertificado {
+    margin: 0;
 }
 
 /* Fim item 38 */
@@ -1838,9 +1867,26 @@
 }
 
 .avaliacaoAposProva {
-    margin-top: 28px;
-    padding-top: 24px;
-    border-top: 1px solid #dfe9e3;
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 20px;
+    border: 1px solid #dfe9e3;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.avaliacaoAposProva h2,
+.avaliacaoAposProva p {
+    margin: 0;
+}
+
+.avaliacaoAposProva .textoAvaliacao {
+    margin: 0;
+}
+
+.avaliacaoAposProva .botaoAvaliacao {
+    justify-self: start;
 }
 
 .botaoAvaliacao {
@@ -2014,10 +2060,6 @@
     .secaoUltimasAulas,
     .secaoMetricas:not(.paginaFinanceiro) {
         padding: 17px;
-    }
-
-    .navegacaoCurso {
-        display: flex;
     }
 
     .botaoInscrever {

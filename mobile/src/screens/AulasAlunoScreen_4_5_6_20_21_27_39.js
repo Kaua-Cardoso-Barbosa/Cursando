@@ -3,6 +3,7 @@ import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text
 import * as FileSystem from "expo-file-system/legacy";
 import { getApiBaseUrl, resolverUrlMidia } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
+import EtapaModulo from "../components/EtapaModulo_6_39";
 import { colors, globalStyles } from "../styles_39";
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
@@ -136,22 +137,16 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
 
       {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
-        {[["modulos", "Módulos"], ["complementos", "Complementos"], ...(curso?.matriculado && prova?.prova ? [["prova", "Prova final"]] : [])].map(([chave, rotulo]) => <Pressable key={chave} onPress={() => setAbaCurso(chave)} style={[styles.tab, abaCurso === chave && styles.tabActive]}><Text style={[styles.tabText, abaCurso === chave && styles.tabTextActive]}>{rotulo}</Text></Pressable>)}
+        {[["modulos", "Módulos"], ["complementos", "Complementos"], ...(curso?.matriculado && prova ? [["prova", "Provas e histórico"]] : [])].map(([chave, rotulo]) => <Pressable key={chave} onPress={() => setAbaCurso(chave)} style={[styles.tab, abaCurso === chave && styles.tabActive]}><Text style={[styles.tabText, abaCurso === chave && styles.tabTextActive]}>{rotulo}</Text></Pressable>)}
       </ScrollView>
       {/* Fim item 20 */}
 
       {abaCurso === "modulos" && <View style={styles.list}>
-        {modulos.map((modulo) => (
-          <View key={modulo.id} style={[globalStyles.card, styles.moduleCard]}>
+        {modulos.map((modulo, indice) => (
+          <EtapaModulo key={modulo.id} modulo={modulo} numero={indice + 1} ultima={indice === modulos.length - 1}
+            expandido={Number(moduloAberto) === Number(modulo.id)}
+            onAbrir={() => setModuloAberto(Number(moduloAberto) === Number(modulo.id) ? null : Number(modulo.id))}>
             {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
-            <Pressable style={styles.moduleHeader} onPress={() => setModuloAberto(Number(moduloAberto) === Number(modulo.id) ? null : Number(modulo.id))}>
-              {modulo.imagem ? <Image source={{ uri: resolverUrlMidia(modulo.imagem) }} style={styles.moduleImage} /> : null}
-              <View style={styles.moduleInfo}>
-                <Text style={styles.lessonTitle}>{modulo.titulo}</Text>
-                <Text style={styles.description}>{modulo.descricao || `${modulo.total_aulas || modulo.aulas?.length || 0} aulas`}</Text>
-              </View>
-              <AppIcon name={Number(moduloAberto) === Number(modulo.id) ? "chevron-up" : "chevron-down"} size={20} color={colors.darkGreen} />
-            </Pressable>
             {/* Fim item 6 */}
             {Number(moduloAberto) === Number(modulo.id) ? (
               <View style={styles.moduleLessons}>
@@ -174,7 +169,7 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
                 {!modulo.aulas?.length ? <Text style={globalStyles.message}>Nenhuma aula publicada neste módulo.</Text> : null}
               </View>
             ) : null}
-          </View>
+          </EtapaModulo>
         ))}
         {(modulos.length === 0 ? aulas : aulasSemModulo).map((aula) => (
           <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
@@ -221,18 +216,18 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
         {!carregando && materiais.length === 0 ? <Text style={globalStyles.message}>Nenhum complemento disponivel.</Text> : null}
       </View>}
 
-      {abaCurso === "prova" && Number(curso?.progresso || 0) >= 100 && prova?.prova ? (
+      {abaCurso === "prova" && prova ? (
         <View style={styles.materials}>
-          <Text style={styles.sectionTitle}>Prova final</Text>
+          <Text style={styles.sectionTitle}>Provas e histórico</Text>
           {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-          <Text style={styles.description}>{prova.questoes?.length || 0} questões · Nota de 0 a 100</Text>
+          <Text style={styles.description}>{prova.prova ? `Versão ${prova.prova.versao} · mínimo ${prova.prova.nota_minima}% de acertos` : 'Nenhuma prova vigente.'}</Text>
           {/* Fim item 20 */}
           {prova.envio ? /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <Text style={styles.locked}>{prova.envio.status === 1 ? "Aprovado" : prova.envio.status === 2 ? "Reprovado" : "Aguardando correção"}{prova.envio.nota != null ? ` · ${prova.envio.nota} pontos · ${prova.envio.acertos} de ${prova.envio.total_questoes || prova.questoes?.length || 0} acertos` : ""}</Text> /* Fim item 20 */ : null}
           {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-          <Pressable style={globalStyles.primaryButton} onPress={onOpenExam}><Text style={globalStyles.buttonText}>{prova.envio ? "Ver prova e resultado" : "Fazer prova"}</Text></Pressable>
+          <Pressable style={globalStyles.primaryButton} onPress={onOpenExam}><Text style={globalStyles.buttonText}>Prova vigente e meu histórico</Text></Pressable>
           {/* Fim item 20 */}
                                                                                                                                                                         
-          {prova.envio?.status === 1 ? (
+          {prova.aprovado_curso ? (
             <>
                                                                                                                                                 
               {/* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */}
@@ -383,7 +378,7 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   },
   list: {
-    gap: 22
+    gap: 20
   },
   moduleCard: {
     overflow: "hidden",

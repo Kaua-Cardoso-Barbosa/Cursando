@@ -1,22 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
 import { colors, globalStyles } from "../styles_39";
+import HistoricoProvas, { corResultado } from '../components/HistoricoProvas_20_39';
 
 export default
-function ProvaAlunoScreen({ curso, prova, onBack, onSubmit }) {
+function ProvaAlunoScreen({ curso, prova, token, onBack, onSubmit }) {
   const { mostrarAlerta } = useFeedback();
   /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os dados e o estado da avaliação */
   const [respostas, setRespostas] = useState({});
   /* Fim item 20 */
   const [enviando, setEnviando] = useState(false);
+  useEffect(() => { setRespostas({}); }, [prova?.prova?.id]);
   /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
   const envio = prova?.envio;
   const questoes = prova?.questoes || [];
   /* Fim item 20 */
   const podeRefazer = envio?.status === 2 && (!envio.pode_tentar_em || Date.now() >= new Date(envio.pode_tentar_em).getTime());
-  const podeResponder = !envio || podeRefazer;
+  const podeResponder = Boolean(prova?.pode_responder && prova?.prova);
   /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
   const respondidas = questoes.filter((questao) => String(respostas[questao.id] || "").trim()).length;
   /* Fim item 20 */
@@ -27,7 +29,7 @@ function ProvaAlunoScreen({ curso, prova, onBack, onSubmit }) {
     /* Fim item 20 */
     setEnviando(true);
     try {
-      const resultado = await onSubmit?.(respostas);
+      const resultado = await onSubmit?.(respostas, prova.prova.id);
       setRespostas({});
       mostrarAlerta("Prova enviada", resultado?.mensagem?.descricao || "Suas respostas foram registradas.", "sucesso");
     } catch (error) {
@@ -42,15 +44,16 @@ function ProvaAlunoScreen({ curso, prova, onBack, onSubmit }) {
     {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
     <View style={styles.hero}>
       <Text style={styles.eyebrow}>AVALIAÇÃO FINAL · {curso?.titulo || "Curso"}</Text>
-      <Text style={styles.title}>{prova?.prova?.titulo || "Prova final"}</Text>
-      <Text style={styles.subtitle}>{questoes.length} {questoes.length === 1 ? "questão" : "questões"} · Nota de 0 a 100 · Aprovação com {prova?.prova?.nota_minima ?? 70} pontos</Text>
+      <Text style={styles.title}>{prova?.prova?.titulo || "Provas do curso"}</Text>
+      {prova?.prova ? <Text style={styles.subtitle}>Versão {prova.prova.versao} · {questoes.length} questões · mínimo {prova.prova.nota_minima}% de acertos</Text> : <Text style={styles.subtitle}>Nenhuma prova vigente. Seu histórico continua disponível.</Text>}
       {podeResponder ? <Text style={styles.progress}>{respondidas} de {questoes.length} respondidas</Text> : null}
     </View>
+    {prova?.motivo ? <Text style={styles.feedback}>{prova.motivo}</Text> : null}
     {/* Fim item 20 */}
     {envio ? /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <View style={styles.result}>
-      <Text style={styles.resultTitle}>{envio.status === 1 ? "Aprovado" : envio.status === 2 ? "Reprovado" : "Aguardando correção das dissertativas"}</Text>
-      {envio.nota != null ? <><Text style={styles.score}>{envio.nota} <Text style={styles.scoreUnit}>/ 100 pontos{envio.status === 0 ? " até agora" : ""}</Text></Text>
-      <Text style={styles.resultDetail}>{envio.acertos ?? 0} acertos de {envio.total_questoes || questoes.length} questões{envio.status === 0 ? " · resultado parcial" : ""}</Text></> : <Text style={styles.resultDetail}>Esta tentativa antiga não tem pontuação registrada.</Text>}
+      <Text style={[styles.resultTitle, { color: corResultado(envio.status) }]}>{envio.status === 1 ? "Aprovado" : envio.status === 2 ? "Reprovado" : "Aguardando correção das dissertativas"}</Text>
+      {envio.status === 0 ? <Text style={styles.resultDetail}>A nota e o resultado serão disponibilizados ao concluir a correção.</Text> : envio.nota != null ? <><Text style={[styles.score, { color: corResultado(envio.status) }]}>{envio.nota}% <Text style={styles.scoreUnit}>de acertos</Text></Text>
+      <Text style={styles.resultDetail}>{envio.acertos ?? 0} acertos de {envio.total_questoes || questoes.length} questões</Text></> : <Text style={styles.resultDetail}>Esta tentativa antiga não tem pontuação registrada.</Text>}
       {envio.feedback ? <Text style={styles.feedback}>{envio.feedback}</Text> : null}
       {envio.status === 2 && !podeRefazer ? <Text style={styles.feedback}>Nova tentativa após {envio.pode_tentar_em ? new Date(envio.pode_tentar_em).toLocaleString("pt-BR") : "24 horas"}.</Text> : null}
     </View> /* Fim item 20 */ : null}
@@ -73,6 +76,7 @@ function ProvaAlunoScreen({ curso, prova, onBack, onSubmit }) {
       {/* Fim item 20 */}
       <Text style={styles.hint}>Confira as respostas antes de enviar.</Text>
     </> : null}
+    <HistoricoProvas token={token} idCurso={curso.id} atualizar={envio?.id || 0} />
   </ScrollView>;
 }
 

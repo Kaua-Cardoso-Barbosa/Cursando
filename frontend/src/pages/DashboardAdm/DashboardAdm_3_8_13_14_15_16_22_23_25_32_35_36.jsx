@@ -110,7 +110,18 @@ function rotuloCampoLog(campo) {
 /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Formata o valor de um campo no relatório de logs */
 /* Formata status, valores, datas e identificadores conforme o campo e a tabela. */
 function formatarValorCampoLog(campo, valor, tabela) {
-    if (valor === null || valor === undefined || valor === "") return "não informado";
+    if (valor === null || valor === undefined) return "Sem valor (NULL)";
+    if (valor === "") return "Texto vazio";
+    if (typeof valor === "object" && Object.hasOwn(valor, "__auditoria_truncado")) {
+        return `${valor.__auditoria_valor} (conteúdo truncado: limite de ${valor.__auditoria_truncado} caracteres no histórico)`;
+    }
+    if (typeof valor === "object" && Object.hasOwn(valor, "__auditoria_omissao")) {
+        return ({
+            conteudo_sensivel: "Conteúdo sensível omitido",
+            conteudo_blob: "Conteúdo BLOB omitido (texto extenso ou arquivo)",
+            fora_da_configuracao: "Valor omitido: campo fora da configuração de auditoria"
+        })[valor.__auditoria_omissao] || "Valor omitido: motivo não reconhecido";
+    }
     if (campo.startsWith("ID_")) return `#${valor}`;
     if (campo === "PUBLICADA") return Number(valor) === 1 ? "publicada" : "rascunho";
     if (campo === "EXCLUIDO") return Number(valor) === 1 ? "sim" : "não";
@@ -164,9 +175,9 @@ function alteracoesLog(log) {
         campo,
         rotulo: rotuloCampoLog(campo) || campo.toLowerCase().replaceAll("_", " "),
         antes: log.acao === "INSERT" ? "—" : Object.hasOwn(antes, campo)
-            ? formatarValorCampoLog(campo, antes[campo], log.tabela) : "Valor não registrado",
+            ? formatarValorCampoLog(campo, antes[campo], log.tabela) : "Valor não registrado no histórico (motivo desconhecido)",
         depois: log.acao === "DELETE" ? "—" : Object.hasOwn(depois, campo)
-            ? formatarValorCampoLog(campo, depois[campo], log.tabela) : "Valor não registrado"
+            ? formatarValorCampoLog(campo, depois[campo], log.tabela) : "Valor não registrado no histórico (motivo desconhecido)"
     }));
 }
 /* Fim item 25 */
@@ -1031,8 +1042,8 @@ function DashboardAdm({
                                                         </table>
                                                     </div>
                                                 ) : <p>Valores não registrados para esta atividade.</p>}
-                                                {alteracoes.some((item) => item.antes === "Valor não registrado" || item.depois === "Valor não registrado") && (
-                                                    <p className={css.avisoLog}>Alguns valores foram omitidos pelo trigger por conter dados sensíveis ou conteúdo extenso.</p>
+                                                {alteracoes.some((item) => item.antes === "Valor não registrado no histórico (motivo desconhecido)" || item.depois === "Valor não registrado no histórico (motivo desconhecido)") && (
+                                                    <p className={css.avisoLog}>Este registro não contém alguns valores nem o motivo da ausência. Não é possível determinar se eram dados sensíveis.</p>
                                                 )}
                                             </div>
                                             {/* Metadados de origem e requisição ficam disponíveis sob demanda. */}

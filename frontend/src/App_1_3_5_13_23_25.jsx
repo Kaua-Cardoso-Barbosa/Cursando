@@ -1,95 +1,39 @@
+import { SessaoProvider } from "./context/Sessao.jsx";
+import { API, useSessao } from "./context/useSessao.js";
 import { BrowserRouter, Navigate, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Header from "./components/Header/Header_3.jsx";
 import Home from "./pages/Home/Home.jsx";
 import Pagina404 from "./pages/Pagina404/Pagina404.jsx";
 import Login from "./pages/Login/Login_3.jsx";
 import Cadastro from "./pages/Cadastro/Cadastro_1.jsx";
-import DashboardAluno from "./pages/DashboardAluno/DashboardAluno_2_3_4_5_6_10_19_20_21_26_27_28_29_33_34.jsx";
-import DashboardAdm from "./pages/DashboardAdm/DashboardAdm_3_8_13_14_15_16_22_23_25_32_35_36.jsx";
-import GerenciamentoUsuarios from "./pages/DashboardAdm/GerenciamentoUsuarios_33_35.jsx";
-import DashboardProfessor from "./pages/DashboardProfessor/DashboardProfessor_3_6_7_8_9_12_15_19_20_21_22_23_28_30_31_32.jsx";
+const DashboardAluno = lazy(() => import("./pages/DashboardAluno/DashboardAluno_2_3_4_5_6_10_19_20_21_26_27_28_29_33_34.jsx"));
+const DashboardAdm = lazy(() => import("./pages/DashboardAdm/DashboardAdm_3_8_13_14_15_16_22_23_25_32_35_36.jsx"));
+const GerenciamentoUsuarios = lazy(() => import("./pages/DashboardAdm/GerenciamentoUsuarios_33_35.jsx"));
+const DashboardProfessor = lazy(() => import("./pages/DashboardProfessor/DashboardProfessor_3_6_7_8_9_12_15_19_20_21_22_23_28_30_31_32.jsx"));
 import Alerts from "./components/Alerts/Alerts.jsx";
 import ConfirmAlert from "./components/ConfirmAlert/ConfirmAlert.jsx";
-import {useCallback, useEffect, useState} from "react";
+import {lazy, Suspense, useEffect, useState} from "react";
 import RotaRestrita from "./components/RotaRestrita/RotaRestrita_3_34.jsx";
 import VerificarEmail from "./pages/VerificarEmail/VerificarEmail_1.jsx";
-import VerificarCertificado from "./pages/VerificarCertificado/VerificarCertificado_5.jsx";
+const VerificarCertificado = lazy(() => import("./pages/VerificarCertificado/VerificarCertificado_5.jsx"));
 
 export default function App() {
     return (
         <BrowserRouter>
-            <AppConteudo />
+            <SessaoProvider><AppConteudo /></SessaoProvider>
         </BrowserRouter>
     );
 }
 
 function AppConteudo() {
 
-    const api = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5000`;
+    const api = API;
 
     const navigate = useNavigate();
 
     const [mensagem, setMensagem] = useState('');
     const [confirmarLogout, setConfirmarLogout] = useState(false);
-    const [usuario, setUsuario] = useState(null);
-
-    /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
-    const atualizarSessao = useCallback(
-async () => {
-        try {
-            const retorno = await fetch(`${api}/verificar_token`, {
-                method: "GET",
-                credentials: "include"
-            });
-
-            if (!retorno.ok) {
-                setUsuario(null);
-                return;
-            }
-
-            const dados = await retorno.json();
-            setUsuario(dados.autenticado ? dados : null);
-            return dados;
-        } catch (erro) {
-            console.error("Erro ao verificar sessao:", erro);
-
-            return null;
-        }
-    }
-, [api]);
-    /* Fim item 3 */
-
-    /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
-    useEffect(() => {
-        atualizarSessao();
-    }, [atualizarSessao]);
-    /* Fim item 3 */
-
-    useEffect(() => {
-/* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza a sessão quando a página volta a ficar visível */
-function sincronizarAoRetomar() {
-            if (document.hidden) return;
-
-
-            atualizarSessao();
-            window.dispatchEvent(new Event("cursando:sincronizar"));
-        }
-/* Fim item 3 */
-
-        /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
-        document.addEventListener("visibilitychange", sincronizarAoRetomar);
-        /* Fim item 3 */
-        return () => document.removeEventListener("visibilitychange", sincronizarAoRetomar);
-    }, [atualizarSessao]);
-
-    /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Aplica os dados de perfil recebidos à sessão atual */
-    function atualizarUsuario(dadosAtualizados) {
-        setUsuario((usuarioAtual) => ({
-            ...usuarioAtual,
-            ...dadosAtualizados
-        }));
-    }
-    /* Fim item 3 */
+    const { usuario, erro: erroSessao, atualizarSessao, atualizarUsuario, limparSessao } = useSessao();
 
     /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Solicita a confirmação de saída da sessão */
     function sair() {
@@ -113,7 +57,7 @@ function sincronizarAoRetomar() {
             }
 
             setConfirmarLogout(false);
-            setUsuario(null);
+            limparSessao();
             navigate("/login", { replace: true });
 
         } catch (erro) {
@@ -136,6 +80,7 @@ function sincronizarAoRetomar() {
 
             "/DashboardAluno": "Dashboard Usuário - Cursando",
             "/DashboardAluno/cursos": "Meus Cursos - Cursando",
+            "/DashboardAluno/provas": "Histórico de provas - Cursando",
             "/DashboardAluno/descobrir": "Descobrir Cursos - Cursando",
             "/DashboardAluno/perfil": "Meu Perfil - Cursando",
 
@@ -174,6 +119,7 @@ function sincronizarAoRetomar() {
     return (
         <>
             <Header usuario={usuario} sair={sair}/>
+            {usuario && erroSessao && <p role="alert">{erroSessao}</p>}
             {mensagem && <Alerts key={mensagem.id} tipo={mensagem.tipo} imagem={`/imagens_assets/${mensagem.tipo}.png`} duracao={'8000'} descricao={mensagem.descricao} fechar={() => setMensagem(null)} />}
             <ConfirmAlert
                 aberto={confirmarLogout}
@@ -182,6 +128,7 @@ function sincronizarAoRetomar() {
                 aoCancelar={() => setConfirmarLogout(false)}
                 aoConfirmar={confirmarSaida}
             />
+            <Suspense fallback={<p role="status">Carregando pagina...</p>}>
             <Routes>
                 <Route path="/" element={<Home/>}/>
                 <Route path="/home" element={<Navigate to="/" replace />}/>
@@ -265,6 +212,7 @@ function sincronizarAoRetomar() {
                     </RotaRestrita>
                 }/>
             </Routes>
+            </Suspense>
         </>
     );
 }

@@ -88,7 +88,7 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
 
 
     const titulo = `${editando ? "Editar" : "Adicionar"} ${tipo === "curso" ? "Curso" : tipo === "modulo" ? "Módulo" : "Aula"}`;
-    const arquivoLabel = tipo === "aula" ? "Enviar vídeo" : tipo === "modulo" ? "Enviar imagem do módulo" : "Enviar imagem";
+    const arquivoLabel = tipo === "aula" ? "Enviar vídeo" : "Enviar imagem";
     const thumbLabel = "Enviar thumb";
     const accept = tipo === "aula" ? "video/mp4,video/webm,video/ogg,video/quicktime" : "image/png,image/jpeg,image/webp";
     const thumbAccept = "image/png,image/jpeg,image/webp";
@@ -158,11 +158,11 @@ function FormularioModalProfessor({ api, tipo, item, salvando, onFechar, onSalva
                         </label>
                     )}
 
-                    <label className={css.uploadBox}>
+                    {tipo !== "modulo" && <label className={css.uploadBox}>
                         <FaUpload />
                         <span>{form.arquivo?.name || arquivoLabel}</span>
                         <input type="file" accept={accept} onChange={(e) => setForm({ ...form, arquivo: e.target.files[0] || null })} />
-                    </label>
+                    </label>}
 
                     <div className={css.acoesModal}>
                         <Button

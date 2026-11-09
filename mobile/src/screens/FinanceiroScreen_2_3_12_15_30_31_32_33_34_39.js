@@ -4,6 +4,7 @@ import { AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, Text
 import { apiRequest, PAYMENT_REQUEST_TIMEOUT_MS } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import HistoricoFaturasAluno from "../components/HistoricoFaturasAluno_33_39";
+import PixQrCode from "../components/PixQrCode_2_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
 import { colors, globalStyles } from "../styles_39";
 
@@ -236,6 +237,7 @@ async function solicitarSaque() {
             {pagamento?.codigo_pagamento && (
               /* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */ <View style={styles.invoiceCard}>
                 <Text style={styles.invoiceTitle}>PIX gerado</Text>
+                <PixQrCode pagamento={pagamento} />
                 <Text style={styles.invoiceText}>{pagamento.codigo_pagamento}</Text>
                 <Pressable style={styles.confirmButton} onPress={copiarPix}>
                   <Text style={styles.payButtonText}>{pixCopiado ? "PIX copiado" : "Copiar pix"}</Text>

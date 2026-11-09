@@ -1,11 +1,11 @@
 import AppIcon from "../components/AppIcon_39";
 import { ResizeMode, Video } from "expo-av";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 /* Sprint item 26 - Bloquear gravação de tela durante o curso - Carrega o recurso nativo usado também para proteger contra gravação da tela */
-import { usePreventScreenCapture } from "expo-screen-capture";
+import * as ScreenCapture from "expo-screen-capture";
 /* Fim item 26 */
-import { AppState, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { resolverUrlMidia } from "../api/client_3_17";
+import { ActivityIndicator, AppState, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { getApiBaseUrl, resolverUrlMidia } from "../api/client_3_17";
 import { colors, globalStyles } from "../styles_39";
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
@@ -23,16 +23,27 @@ function formatarPosicaoAula(milissegundos) {
 /* Fim item 4 */
 
 export default
-function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFinish, onSaveProgress }) {
+function PlayerAulaScreen({ detalhe, token, onBack, onOpenLesson, onFinish, onSaveProgress }) {
 
 
   /* Sprint item 10 - Bloquear captura de tela durante o curso - Ativa a proteção nativa contra captura de tela durante a aula */
-  usePreventScreenCapture("aula-protegida");
+  const [protecaoPronta, setProtecaoPronta] = useState(false);
+  const [erroProtecao, setErroProtecao] = useState("");
+  const [tentativaProtecao, setTentativaProtecao] = useState(0);
+  const [appAtivo, setAppAtivo] = useState(AppState.currentState === "active");
+  const [expandido, setExpandido] = useState(false);
+  const [statusVideo, setStatusVideo] = useState({});
   /* Fim item 10 */
 
   const aula = detalhe?.aula;
   const proximas = detalhe?.proximas || [];
   const videoRef = useRef(null);
+  const larguraBarraRef = useRef(0);
+  const [videoProntoId, setVideoProntoId] = useState(null);
+  const [erroVideo, setErroVideo] = useState("");
+  const [tentativaVideo, setTentativaVideo] = useState(0);
+  const urlVideo = aula?.id ? `${getApiBaseUrl()}/aluno/aulas/${aula.id}/mobile.mp4` : "";
+  const videoPronto = videoProntoId === aula?.id;
   /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */
   const onSaveProgressRef = useRef(onSaveProgress);
   const onFinishRef = useRef(onFinish);
@@ -49,6 +60,109 @@ function PlayerAulaScreen({ detalhe, onBack, onOpenLesson, onFinish, onSaveProgr
   /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */
   onFinishRef.current = onFinish;
   /* Fim item 4 */
+
+  // A aula só é exibida depois que o sistema confirma o bloqueio de captura.
+  useEffect(() => {
+    let ativo = true;
+    let bloqueioSolicitado = false;
+    let privacidadeAtiva = false;
+    const chave = `aula-protegida-${Date.now()}-${Math.random()}`;
+    setProtecaoPronta(false);
+    setErroProtecao("");
+
+    const configuracao = (async () => {
+      try {
+        if (!await ScreenCapture.isAvailableAsync()) {
+          throw new Error("Abra a aula no aplicativo Android ou iOS para assistir com proteção de tela.");
+        }
+        bloqueioSolicitado = true;
+        await ScreenCapture.preventScreenCaptureAsync(chave);
+        if (ativo && Platform.OS === "ios") {
+          await ScreenCapture.enableAppSwitcherProtectionAsync(1);
+          privacidadeAtiva = true;
+        }
+        if (ativo) setProtecaoPronta(true);
+      } catch (error) {
+        console.error("Erro ao proteger a aula:", error);
+        if (ativo) setErroProtecao("Não foi possível ativar a proteção da aula. Tente novamente no aplicativo.");
+      }
+    })();
+
+    return () => {
+      ativo = false;
+      // Espera a ativação terminar antes de liberar; evita deixar a tela bloqueada ao sair rapidamente.
+      configuracao.then(async () => {
+        try {
+          if (privacidadeAtiva) await ScreenCapture.disableAppSwitcherProtectionAsync();
+        } catch (error) {
+          console.error("Erro ao liberar a privacidade da aula:", error);
+        } finally {
+          if (bloqueioSolicitado) {
+            try {
+              await ScreenCapture.allowScreenCaptureAsync(chave);
+            } catch (error) {
+              console.error("Erro ao liberar a proteção da aula:", error);
+            }
+          }
+        }
+      });
+    };
+  }, [tentativaProtecao]);
+
+  // O MP4 é preparado a partir dos arquivos das aulas já cadastradas.
+  useEffect(() => {
+    let ativo = true;
+    let controlador = null;
+
+    async function prepararVideo() {
+      setVideoProntoId(null);
+      setErroVideo("");
+      if (!aula?.id || !token) {
+        if (ativo) setErroVideo("Não foi possível autenticar a reprodução desta aula.");
+        return;
+      }
+
+      while (ativo) {
+        try {
+          controlador = new AbortController();
+          const limite = setTimeout(() => controlador.abort(), 12000);
+          let resposta;
+          try {
+            resposta = await fetch(urlVideo, {
+              method: "HEAD",
+              headers: { Authorization: `Bearer ${token}` },
+              signal: controlador.signal,
+            });
+          } finally {
+            clearTimeout(limite);
+          }
+          if (!ativo) return;
+          if (resposta.status === 202) {
+            await new Promise((resolver) => setTimeout(resolver, 2000));
+            continue;
+          }
+          if (!resposta.ok) {
+            throw new Error(resposta.status === 402
+              ? "Sua assinatura precisa estar ativa para assistir à aula."
+              : "Não foi possível preparar este vídeo.");
+          }
+          setVideoProntoId(aula.id);
+          return;
+        } catch (error) {
+          if (ativo) setErroVideo(error.name === "AbortError"
+            ? "A conexão demorou para responder. Tente novamente."
+            : error.message || "Não foi possível carregar o vídeo.");
+          return;
+        }
+      }
+    }
+
+    prepararVideo();
+    return () => {
+      ativo = false;
+      controlador?.abort();
+    };
+  }, [aula?.id, token, urlVideo, tentativaVideo]);
 
 /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Ordena os salvamentos para preservar a última posição do vídeo */
 function enfileirarProgresso(idAula, posicaoMillis, forcar = false) {
@@ -101,12 +215,21 @@ function salvarPosicaoAtual(forcar = false, registrarMesmoPonto = false) {
 
   /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */
   useEffect(() => {
-    const inscricao = AppState.addEventListener("change", (estado) => {
-      if (estado !== "active") salvarPosicaoAtual(true, true);
-    });
+    function atualizarFoco(ativo) {
+      setAppAtivo(ativo);
+      if (!ativo) {
+        salvarPosicaoAtual(true, true);
+        videoRef.current?.pauseAsync().catch((error) => console.error("Erro ao pausar a aula:", error));
+      }
+    }
+    const inscricao = AppState.addEventListener("change", (estado) => atualizarFoco(estado === "active"));
+    const aoPerderFoco = Platform.OS === "android" ? AppState.addEventListener("blur", () => atualizarFoco(false)) : null;
+    const aoGanharFoco = Platform.OS === "android" ? AppState.addEventListener("focus", () => atualizarFoco(AppState.currentState === "active")) : null;
 
     return () => {
       inscricao.remove();
+      aoPerderFoco?.remove();
+      aoGanharFoco?.remove();
       salvarPosicaoAtual(true, true);
     };
   }, []);
@@ -141,6 +264,7 @@ function salvarPosicaoAtual(forcar = false, registrarMesmoPonto = false) {
 
 /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Acompanha a reprodução e persiste a posição ou a conclusão */
 function atualizarReproducao(status) {
+    setStatusVideo(status);
     const atual = progressoAtualRef.current;
     if (!status?.isLoaded || atual.idAula !== aula?.id || !atual.carregado) return;
 
@@ -171,52 +295,116 @@ function atualizarReproducao(status) {
 
     salvarPosicaoAtual(!status.isPlaying);
   }
-/* Fim item 4 */
+  /* Fim item 4 */
+
+  async function controlarVideo(acao) {
+    if (!protecaoPronta || !appAtivo || !statusVideo.isLoaded) return;
+    try {
+      await acao(videoRef.current);
+    } catch (error) {
+      console.error("Erro no controle da aula:", error);
+    }
+  }
+
+  function buscarPosicao(posicao) {
+    const limite = Number(statusVideo.durationMillis || 0);
+    return controlarVideo((video) => video?.setPositionAsync(Math.min(limite, Math.max(0, posicao))));
+  }
 
   return (
-    <ScrollView contentContainerStyle={globalStyles.page}>
-      <Pressable style={styles.back} onPress={onBack}>
+    <ScrollView contentContainerStyle={[globalStyles.page, expandido && styles.paginaExpandida]} scrollEnabled={!expandido}>
+      <Pressable style={[styles.back, expandido && styles.oculto]} onPress={onBack}>
         <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
         <Text style={styles.backText}>Voltar</Text>
       </Pressable>
 
       {aula ? (
         <>
-          {Number(aula.progresso_segundos) > 0 ? (
+          {!expandido && Number(aula.progresso_segundos) > 0 ? (
             /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */ <Text style={styles.resumeHint}>
               Retomando de {formatarPosicaoAula(Number(aula.progresso_segundos) * 1000)}
             </Text> /* Fim item 4 */
           ) : null}
           {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
-          <View style={styles.playerWrap}>
-            <Video
+          <View style={[styles.playerWrap, expandido && styles.playerExpandido]}>
+            <View style={[styles.playerSurface, expandido && styles.superficieExpandida]}>
+            {videoPronto && protecaoPronta ? <Video
+              key={aula.id}
               ref={videoRef}
-              source={{ uri: resolverUrlMidia(aula.video) }}
+              source={{ uri: urlVideo, headers: { Authorization: `Bearer ${token}` } }}
               posterSource={aula.thumb ? { uri: resolverUrlMidia(aula.thumb) } : undefined}
               usePoster={Boolean(aula.thumb)}
               style={styles.player}
-              useNativeControls
+              useNativeControls={false}
               resizeMode={ResizeMode.CONTAIN}
               positionMillis={Math.max(0, Number(aula.progresso_segundos || 0) * 1000)}
               progressUpdateIntervalMillis={1000}
               onLoad={carregarVideo}
               onPlaybackStatusUpdate={atualizarReproducao}
-            />
-            <View style={styles.overlayTitle} pointerEvents="none">
+              onError={() => {
+                setVideoProntoId(null);
+                setErroVideo("Não foi possível reproduzir este vídeo. Tente novamente.");
+              }}
+            /> : (
+              <View style={styles.videoEspera}>
+                {erroProtecao || erroVideo ? (
+                  <>
+                    <Text style={styles.videoEsperaTexto}>{erroProtecao || erroVideo}</Text>
+                    <Pressable style={styles.botaoTentar} onPress={() => erroProtecao
+                      ? setTentativaProtecao((valor) => valor + 1)
+                      : setTentativaVideo((valor) => valor + 1)}>
+                      <Text style={styles.botaoTentarTexto}>Tentar novamente</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    <ActivityIndicator color={colors.white} />
+                    <Text style={styles.videoEsperaTexto}>{protecaoPronta ? "Preparando vídeo para reprodução..." : "Ativando proteção da aula..."}</Text>
+                  </>
+                )}
+              </View>
+            )}
+            {videoPronto && protecaoPronta && <View style={styles.overlayTitle} pointerEvents="none">
               <Text style={styles.videoTitle} numberOfLines={1}>{aula.titulo}</Text>
               <Text style={styles.videoDescription} numberOfLines={1}>{aula.descricao}</Text>
+            </View>}
+            {!appAtivo && <View style={styles.coberturaPrivacidade}><Text style={styles.videoEsperaTexto}>Aula pausada</Text></View>}
             </View>
+            {videoPronto && protecaoPronta && <View style={styles.controles}>
+              <View style={styles.linhaControles}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Voltar dez segundos" style={styles.controleBotao} onPress={() => buscarPosicao(Number(statusVideo.positionMillis || 0) - 10000)}>
+                  <Text style={styles.controleTexto}>−10s</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={statusVideo.isPlaying ? "Pausar aula" : "Reproduzir aula"} style={styles.controleBotao} onPress={() => controlarVideo((video) => statusVideo.isPlaying ? video?.pauseAsync() : video?.playAsync())}>
+                  <AppIcon name={statusVideo.isPlaying ? "pause" : "play"} size={22} color={colors.white} />
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="Avançar dez segundos" style={styles.controleBotao} onPress={() => buscarPosicao(Number(statusVideo.positionMillis || 0) + 10000)}>
+                  <Text style={styles.controleTexto}>+10s</Text>
+                </Pressable>
+                <Text style={styles.tempoVideo}>{formatarPosicaoAula(statusVideo.positionMillis)} / {formatarPosicaoAula(statusVideo.durationMillis)}</Text>
+              </View>
+              <View style={styles.linhaControles}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Ir para posição na aula" style={styles.barraBusca} onLayout={(evento) => { larguraBarraRef.current = evento.nativeEvent.layout.width; }} onPress={(evento) => {
+                  if (larguraBarraRef.current > 0) buscarPosicao(evento.nativeEvent.locationX / larguraBarraRef.current * Number(statusVideo.durationMillis || 0));
+                }}>
+                  <View style={styles.trilho}><View style={[styles.progressoVideo, { width: `${Math.min(100, Number(statusVideo.positionMillis || 0) / Math.max(1, Number(statusVideo.durationMillis || 0)) * 100)}%` }]} /></View>
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={expandido ? "Recolher vídeo" : "Ampliar vídeo"} style={styles.controleBotao} onPress={() => setExpandido((valor) => !valor)}>
+                  <AppIcon name={expandido ? "compress" : "expand"} size={18} color={colors.white} />
+                </Pressable>
+              </View>
+            </View>}
           </View>
           {/* Fim item 4 */}
 
           {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
-          <View style={styles.sectionHeader}>
+          <View style={[styles.sectionHeader, expandido && styles.oculto]}>
             <Text style={styles.nextTitle}>Proximas video-aulas</Text>
             <View style={globalStyles.divider} />
           </View>
           {/* Fim item 4 */}
           {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
-          <View style={styles.list}>
+          <View style={[styles.list, expandido && styles.oculto]}>
             {proximas.map((proxima) => (
               <Pressable key={proxima.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(proxima)}>
                 <View style={styles.preview}>
@@ -268,7 +456,6 @@ const styles = StyleSheet.create({
   },
   playerWrap: {
     width: "100%",
-    aspectRatio: 16 / 9,
     overflow: "hidden",
     borderWidth: 1.5,
     borderColor: colors.black,
@@ -276,9 +463,67 @@ const styles = StyleSheet.create({
     backgroundColor: colors.black,
     marginBottom: 24
   },
+  playerSurface: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    position: "relative"
+  },
+  paginaExpandida: {
+    flex: 1,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    backgroundColor: colors.black
+  },
+  playerExpandido: {
+    flex: 1,
+    marginBottom: 0,
+    borderRadius: 0
+  },
+  superficieExpandida: {
+    flex: 1,
+    aspectRatio: undefined
+  },
+  oculto: { display: "none" },
+  coberturaPrivacidade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.black,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  controles: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#161616" },
+  linhaControles: { flexDirection: "row", alignItems: "center", gap: 6 },
+  controleBotao: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
+  controleTexto: { color: colors.white, fontSize: 14, fontWeight: "700" },
+  tempoVideo: { flex: 1, color: colors.white, fontSize: 12, textAlign: "right" },
+  barraBusca: { flex: 1, minHeight: 40, justifyContent: "center" },
+  trilho: { height: 5, backgroundColor: "#666666", borderRadius: 3, overflow: "hidden" },
+  progressoVideo: { height: "100%", backgroundColor: colors.green },
   player: {
     width: "100%",
     height: "100%"
+  },
+  videoEspera: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingHorizontal: 20
+  },
+  videoEsperaTexto: {
+    color: colors.white,
+    textAlign: "center",
+    fontSize: 14
+  },
+  botaoTentar: {
+    borderRadius: 6,
+    backgroundColor: colors.darkGreen,
+    paddingHorizontal: 16,
+    paddingVertical: 9
+  },
+  botaoTentarTexto: {
+    color: colors.white,
+    fontWeight: "700"
   },
   overlayTitle: {
     position: "absolute",

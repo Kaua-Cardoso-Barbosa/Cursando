@@ -1,165 +1,92 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FaPaperPlane, FaUserCircle } from "react-icons/fa";
+import useChat from "../../hooks/useChat.js";
 import css from "./ChatCurso_38.module.css";
 
-export default
-function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null }) {
-    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-    const [conversas, setConversas] = useState([]);
-    /* Fim item 19 */
-    const [selecionada, setSelecionada] = useState(conversaInicial);
-    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-    const [mensagens, setMensagens] = useState([]);
-    /* Fim item 19 */
+export default function ChatCurso({ api, perfil = "aluno", conversaInicial = null }) {
     const [texto, setTexto] = useState("");
-    const [carregando, setCarregando] = useState(false);
-    const [enviando, setEnviando] = useState(false);
+    const [ativo, setAtivo] = useState(!document.hidden);
     const mensagensRef = useRef(null);
     const textoRef = useRef(null);
-    const enviandoRef = useRef(false);
-
-
-    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-    const conversasVisiveis = selecionada && !conversas.some((conversa) =>
-        Number(conversa.id_curso) === Number(selecionada.id_curso) &&
-        Number(conversa.id_aluno) === Number(selecionada.id_aluno)
+    const noFim = useRef(true);
+    const posicaoAnterior = useRef(null);
+    const request = useCallback(async (path, options = {}) => {
+        const abort = new AbortController();
+        const timeout = window.setTimeout(() => abort.abort(), 10000);
+        try {
+            const resposta = await fetch(`${api}${path}`, { credentials: "include", ...options,
+                ...(options.body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(options.body) } : {}),
+                signal: abort.signal });
+            const dados = await resposta.json().catch(() => ({}));
+            if (resposta.status === 401) window.dispatchEvent(new Event("cursando:sessao-invalida"));
+            if (!resposta.ok) throw new Error(dados?.mensagem?.descricao || dados?.mensagem || "Nao foi possivel atualizar o chat.");
+            return dados;
+        } finally { window.clearTimeout(timeout); }
+    }, [api]);
+    const { conversas, selecionada, setSelecionada, mensagens, carregando, enviando, erro,
+        carregarAnteriores, carregandoAnteriores, temAnteriores, confirmarLeitura, enviarTexto } =
+        useChat({ request, professor: perfil === "professor", conversaInicial, ativo });
+    const conversasVisiveis = selecionada && !conversas.some(c =>
+        Number(c.id_curso) === Number(selecionada.id_curso) && Number(c.id_aluno) === Number(selecionada.id_aluno)
     ) ? [selecionada, ...conversas] : conversas;
-    /* Fim item 19 */
-
 
     function urlImagem(caminho) {
         if (!caminho) return "";
         if (caminho.startsWith("http://") || caminho.startsWith("https://") || caminho.startsWith("/imagens_")) return caminho;
         return `${api}${caminho}`;
     }
-
-    const lerResposta = useCallback(async (resposta) => {
-        const dados = await resposta.json().catch(() => ({}));
-        if (dados.mensagem && typeof dados.mensagem === "object") setMensagem?.(dados.mensagem);
-        if (!resposta.ok) {
-            throw new Error(
-                typeof dados?.mensagem === "string"
-                    ? dados.mensagem
-                    : dados?.mensagem?.descricao || "Erro ao conectar com a API."
-            );
+    useEffect(() => {
+        const visibilidade = () => setAtivo(!document.hidden);
+        document.addEventListener("visibilitychange", visibilidade);
+        return () => document.removeEventListener("visibilitychange", visibilidade);
+    }, []);
+    useEffect(() => { noFim.current = true; posicaoAnterior.current = null; setTexto(""); }, [selecionada?.id_curso, selecionada?.id_aluno]);
+    useLayoutEffect(() => {
+        const elemento = mensagensRef.current;
+        if (!elemento || !ativo) return;
+        if (posicaoAnterior.current) {
+            elemento.scrollTop = posicaoAnterior.current.top + elemento.scrollHeight - posicaoAnterior.current.altura;
+            posicaoAnterior.current = null;
+        } else if (noFim.current) {
+            elemento.scrollTop = elemento.scrollHeight;
+            confirmarLeitura();
         }
-        return dados;
-    }, [setMensagem]);
-
-    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-    const carregarConversas = useCallback(async ({ silencioso = false } = {}) => {
-        if (!silencioso) setCarregando(true);
-        try {
-            if (perfil === "aluno") {
-                const resposta = await fetch(`${api}/chat/conversas`, { credentials: "include" });
-                const dados = await lerResposta(resposta);
-                setConversas(Array.isArray(dados) ? dados : []);
-                return;
-            }
-
-            const resposta = await fetch(`${api}/chat/conversas`, { credentials: "include" });
-            const dados = await lerResposta(resposta);
-            setConversas(Array.isArray(dados) ? dados : []);
-        } catch (erro) {
-            console.error("Erro ao carregar conversas:", erro);
-            setMensagem?.({ tipo: "erro", descricao: erro.message });
-            setConversas([]);
-        } finally {
-            if (!silencioso) setCarregando(false);
-        }
-    }, [api, lerResposta, perfil, setMensagem]);
-
-    const carregarMensagens = useCallback(async (conversa) => {
-        if (!conversa) return;
-        const query = perfil === "professor" ? `?id_aluno=${conversa.id_aluno}` : "";
-        const resposta = await fetch(`${api}/chat/cursos/${conversa.id_curso}/mensagens${query}`, {
-            credentials: "include"
-        });
-        const dados = await lerResposta(resposta);
-        setMensagens(Array.isArray(dados) ? dados : []);
-    }, [api, lerResposta, perfil]);
-    /* Fim item 19 */
-
-    useEffect(() => {
-        carregarConversas();
-    }, [carregarConversas]);
-
-    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-    useEffect(() => {
-        carregarMensagens(selecionada).catch((erro) => {
-            console.error("Erro ao carregar mensagens:", erro);
-            setMensagem?.({ tipo: "erro", descricao: erro.message });
-        });
-    }, [carregarMensagens, selecionada, setMensagem]);
-    /* Fim item 19 */
-
-    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */
-    useEffect(() => {
-        const intervalo = window.setInterval(() => {
-            carregarConversas({ silencioso: true });
-            if (selecionada) {
-                carregarMensagens(selecionada).catch((erro) => {
-                    console.error("Erro ao atualizar mensagens:", erro);
-                });
-            }
-        }, 3000);
-
-        return () => window.clearInterval(intervalo);
-    }, [carregarConversas, carregarMensagens, selecionada]);
-    /* Fim item 19 */
-
-    useEffect(() => {
-        if (!mensagensRef.current) return;
-        mensagensRef.current.scrollTop = mensagensRef.current.scrollHeight;
-    }, [mensagens]);
-
+    }, [mensagens, ativo, confirmarLeitura]);
+    function aoRolar() {
+        const elemento = mensagensRef.current;
+        noFim.current = elemento.scrollHeight - elemento.scrollTop - elemento.clientHeight < 60;
+        if (noFim.current) confirmarLeitura();
+    }
+    async function verAnteriores() {
+        const elemento = mensagensRef.current;
+        posicaoAnterior.current = { altura: elemento.scrollHeight, top: elemento.scrollTop };
+        const carregou = await carregarAnteriores();
+        if (!carregou) posicaoAnterior.current = null;
+    }
     useEffect(() => {
         if (!textoRef.current) return;
         textoRef.current.style.height = "auto";
         textoRef.current.style.height = `${textoRef.current.scrollHeight}px`;
     }, [texto]);
-
-    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Envia a mensagem e recarrega a conversa selecionada */
     async function enviarMensagem() {
-        const textoMensagem = texto.trim();
-        if (!selecionada || !textoMensagem || enviandoRef.current) return;
-
-        enviandoRef.current = true;
-        setEnviando(true);
-        try {
-            const resposta = await fetch(`${api}/chat/cursos/${selecionada.id_curso}/mensagens`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id_aluno: selecionada.id_aluno,
-                    texto: textoMensagem
-                })
-            });
-            await lerResposta(resposta);
-            setTexto("");
-            await carregarMensagens(selecionada);
-            await carregarConversas({ silencioso: true });
-        } catch (erro) {
-            console.error("Erro ao enviar mensagem:", erro);
-            setMensagem?.({ tipo: "erro", descricao: erro.message });
-        } finally {
-            enviandoRef.current = false;
-            setEnviando(false);
+        const enviado = texto.trim();
+        if (await enviarTexto(enviado)) {
+            setTexto(atual => atual.trim() === enviado ? "" : atual);
+            noFim.current = true;
+            const elemento = mensagensRef.current;
+            if (elemento) elemento.scrollTop = elemento.scrollHeight;
+            confirmarLeitura();
         }
     }
-    /* Fim item 19 */
-
-    /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Envia a mensagem ao pressionar Enter sem Shift */
     function aoTeclarMensagem(evento) {
         if (evento.key !== "Enter" || evento.shiftKey) return;
         evento.preventDefault();
         enviarMensagem();
     }
-    /* Fim item 19 */
 
     return (
         <section className={css.chat}>
+            {erro && <p role="alert" className={css.estado}>{erro}</p>}
             <div className={css.layout}>
                 <aside className={css.listaConversas}>
                     {carregando && /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */ <p className={css.estado}>Carregando conversas...</p> /* Fim item 19 */}
@@ -202,7 +129,8 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
                     {/* Fim item 19 */}
 
                     {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
-                    <div className={css.mensagens} ref={mensagensRef}>
+                    <div className={css.mensagens} ref={mensagensRef} onScroll={aoRolar}>
+                        {temAnteriores && <button type="button" onClick={verAnteriores} disabled={carregandoAnteriores}>{carregandoAnteriores ? "Carregando..." : "Carregar mensagens anteriores"}</button>}
                         {!selecionada && <p className={css.estado}>Escolha uma conversa para começar.</p>}
                         {selecionada && mensagens.length === 0 && <p className={css.estado}>Nenhuma mensagem enviada ainda.</p>}
                         {mensagens.map((mensagem) => (
@@ -227,6 +155,7 @@ function ChatCurso({ api, perfil = "aluno", setMensagem, conversaInicial = null 
                     <div className={css.compositor}>
                         <textarea
                             ref={textoRef}
+                            maxLength={10000}
                             value={texto}
                             onChange={(evento) => setTexto(evento.target.value)}
                             onKeyDown={aoTeclarMensagem}

@@ -1,3 +1,7 @@
+import ProvaCursoAluno from '../../components/Provas/ProvaCursoAluno.jsx';
+import HistoricoAlunoCursos from '../../components/Provas/HistoricoAlunoCursos.jsx';
+import EtapaModulo, { ListaEtapasModulo } from '../../components/EtapaModulo/EtapaModulo.jsx';
+import CapaCurso from '../../components/CapaCurso/CapaCurso.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -14,11 +18,13 @@ import {
     FaUserCircle
 } from "react-icons/fa";
 import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno_3.jsx";
+import Alerts from "../../components/Alerts/Alerts.jsx";
 import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario_3.jsx";
 import css from "./DashboardAluno_38.module.css";
 import PlayerVideo from "../../components/PlayerVideo/PlayerVideo_4_10_26.jsx";
 import ChatCurso from "../../components/ChatCurso/ChatCurso_19.jsx";
 import ResumoAssinatura from "./ResumoAssinatura_34.jsx";
+import PixQrCode from "../../components/PixQrCode/PixQrCode.jsx";
 
 const PLACEHOLDER_CURSO = "/imagens_banner_curso/Placholder.png";
 const PLACEHOLDER_AULA = "/imagens_thumb_video/Placeholder.png";
@@ -166,8 +172,7 @@ function CursoCard({ curso, api, onAbrir, mostrarProgresso = false }) {
     return (
         <article className={css.cardCurso}>
             <button className={css.areaCardClicavel} onClick={() => onAbrir?.(curso)}>
-                <div className={css.imagemCursoContainer}>
-                    <img src={imagem} alt={curso.titulo} className={css.imagemCurso} />
+                <CapaCurso imagem={imagem} titulo={curso.titulo}>
                     {mostrarProgresso && (
                         <div className={css.progressoCurso} aria-label={`${progresso}% concluido`}>
                             <span>{progresso}%</span>
@@ -176,7 +181,7 @@ function CursoCard({ curso, api, onAbrir, mostrarProgresso = false }) {
                             </div>
                         </div>
                     )}
-                </div>
+                </CapaCurso>
                 <div className={css.infoCurso}>
                     <div className={css.textoCurso}>
                         <h3>{curso.titulo}</h3>
@@ -253,8 +258,6 @@ function DashboardAluno({
     /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
     const [provaAluno, setProvaAluno] = useState(null);
     /* Fim item 20 */
-    const [respostasProva, setRespostasProva] = useState({});
-    const [enviandoProva, setEnviandoProva] = useState(false);
     const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
     const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
     const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
@@ -283,6 +286,7 @@ function DashboardAluno({
 
         if (location.pathname.endsWith("/assinatura")) return "financeiro";
         if (location.pathname.endsWith("/chat")) return "chat";
+        if (location.pathname.endsWith("/provas")) return "provas";
         if (location.pathname.includes("/descobrir")) return "descobrir";
         if (location.pathname.includes("/aulas/")) return "aula";
         if (location.pathname.includes("/cursos")) return "meus-cursos";
@@ -291,7 +295,7 @@ function DashboardAluno({
 , [location.pathname]);
     /* Fim item 3 */
 
-    const itemAtivo = visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
+    const itemAtivo = visao === "provas" ? "provas" : visao === "descobrir" ? "descobrir" : visao === "financeiro" ? "financeiro" : visao === "chat" ? "chat" : visao === "perfil" ? "perfil" : visao === "inicio" ? "inicio" : "meus-cursos";
 
     const avisar = useCallback((mensagem) => {
         if (mensagem && setMensagem) setMensagem(mensagem);
@@ -321,7 +325,7 @@ async () => {
         } catch (erro) {
             console.error("Erro ao carregar dashboard do aluno:", erro);
 
-            setDashboard({ metricas: { inscritos: 0, finalizados: 0, iniciados: 0 }, recentes: [], erro_assinatura: true });
+            setDashboard({ metricas: { inscritos: 0, finalizados: 0, iniciados: 0 }, recentes: [], erro_assinatura: true, erro: erro.message });
         }
     }
 , [api, lerResposta]);
@@ -405,12 +409,9 @@ async (idCurso) => {
             const [resposta, respostaMateriais] = await Promise.all(requisicoes);
             const dadosCurso = await lerResposta(resposta);
             setDetalheCurso(dadosCurso);
-            setIdModuloAberto(null);
-            setAbaCurso("modulos");
-            setRespostasProva({});
             setMateriaisCurso(await lerResposta(respostaMateriais));
 
-            if (dadosCurso?.curso?.matriculado && Number(dadosCurso.curso.progresso || 0) >= 100) {
+            if (dadosCurso?.curso?.matriculado) {
                 try {
                     /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
                     const respostaProva = await fetch(`${api}/aluno/cursos/${idCurso}/prova`, { credentials: "include" });
@@ -840,26 +841,6 @@ async function baixarCertificado(curso) {
 
 
     /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Envia as respostas do aluno e atualiza o resultado da prova */
-    async function enviarProvaAluno() {
-        if (enviandoProva) return;
-        setEnviandoProva(true);
-        try {
-            const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/prova`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ respostas: respostasProva })
-            });
-            await lerResposta(resposta);
-            await carregarDetalheCurso(cursoDetalhe.id);
-            setAbaCurso("prova");
-            setRespostasProva({});
-        } catch (erro) {
-            if (!erro.status) avisar({ tipo: "erro", descricao: "Não foi possível enviar a prova." });
-        } finally {
-            setEnviandoProva(false);
-        }
-    }
     /* Fim item 20 */
 
 
@@ -891,11 +872,13 @@ async function baixarCertificado(curso) {
     useEffect(() => {
         setAvaliacaoEnviada(false);
         setAvaliacao({ nota: 5, comentario: "" });
+        setIdModuloAberto(null);
+        setAbaCurso("modulos");
     }, [cursoDetalhe?.id]);
     const aulasDetalhe = detalheCurso?.aulas || [];
     /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
     const modulosDetalhe = detalheCurso?.modulos || [];
-    const moduloAberto = modulosDetalhe.find((modulo) => Number(modulo.id) === Number(idModuloAberto));
+    const moduloAberto = idModuloAberto == null ? null : modulosDetalhe.find((modulo) => Number(modulo.id) === Number(idModuloAberto));
     const aulasSemModulo = aulasDetalhe.filter((aula) => !aula.id_modulo);
     /* Fim item 6 */
     const videoAula = aulaAtual?.aula;
@@ -924,6 +907,13 @@ async function baixarCertificado(curso) {
                                 <h2>Seu aprendizado em andamento</h2>
                                 <p>Retome suas aulas, acompanhe sua assinatura e veja o progresso dos seus cursos.</p>
                             </header>
+                            {dashboard === null && <p className={css.textoApoio} role="status">Carregando dashboard...</p>}
+                            {dashboard?.erro && (
+                                <div>
+                                    <Alerts tipo="erro" descricao={dashboard.erro} duracao={0} />
+                                    <button className={css.linkVoltar} type="button" onClick={carregarDashboard}>Tentar novamente</button>
+                                </div>
+                            )}
                             <section className={css.secaoUltimasAulas}>
                                 <div className={css.tituloUltimasAulas}>
                                     <h2>Últimas aulas vistas:</h2>
@@ -980,6 +970,8 @@ async function baixarCertificado(curso) {
                             </div>
                         </section>
                     )}
+
+                    {visao === "provas" && <HistoricoAlunoCursos api={api} />}
 
                     {visao === "descobrir" && !cursoDetalhe && (
                         <section className={css.secaoCursos}>
@@ -1091,7 +1083,7 @@ async function baixarCertificado(curso) {
                                 >
                                     Complementos
                                 </button>
-                                {cursoDetalhe.matriculado && provaAluno?.prova && (
+                                {cursoDetalhe.matriculado && provaAluno && (
                                     <button
                                         className={abaCurso === "prova" ? css.abaAtiva : css.abaCurso}
                                         onClick={() => setAbaCurso("prova")}
@@ -1107,11 +1099,10 @@ async function baixarCertificado(curso) {
                                     {moduloAberto ? (
                                         <section className={css.detalheModuloAluno}>
                                             <button className={css.linkVoltar} onClick={() => setIdModuloAberto(null)}>Voltar aos módulos</button>
-                                            {moduloAberto.imagem && <img className={css.capaModuloAluno} src={resolverUrlMidia(api, moduloAberto.imagem)} alt="" />}
-                                            <h3>{moduloAberto.titulo}</h3>
+                                            <h3>Módulo {modulosDetalhe.findIndex((item) => Number(item.id) === Number(moduloAberto.id)) + 1} · {moduloAberto.titulo}</h3>
                                             {moduloAberto.descricao && <p>{moduloAberto.descricao}</p>}
                                             <h4>Aulas deste módulo</h4>
-                                            {moduloAberto.aulas?.length === 0 && <EstadoVazio texto="Nenhuma aula publicada neste módulo." />}
+                                            {!moduloAberto.aulas?.length && <EstadoVazio texto="Nenhuma aula publicada neste módulo." />}
                                             <div className={css.gridAulas}>
                                                 {(moduloAberto.aulas || []).map((aula) => (
                                                     <AulaCard key={aula.id} aula={aula} api={api}
@@ -1122,20 +1113,11 @@ async function baixarCertificado(curso) {
                                         </section>
                                     ) : (
                                         <>
-                                            {modulosDetalhe.length === 0 && <EstadoVazio texto="Nenhum módulo disponível neste curso." />}
-                                            <div className={css.gradeModulosAluno}>
-                                                {modulosDetalhe.map((modulo) => (
-                                                    /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */ <button key={modulo.id} className={css.cardModuloAluno} onClick={() => setIdModuloAberto(Number(modulo.id))}>
-                                                        <img src={modulo.imagem ? resolverUrlMidia(api, modulo.imagem) : PLACEHOLDER_CURSO} alt="" />
-                                                        <span className={css.infoCardModuloAluno}>
-                                                            <strong>{modulo.titulo}</strong>
-                                                            <small>{modulo.total_aulas || modulo.aulas?.length || 0} aulas</small>
-                                                            {modulo.descricao && <span>{modulo.descricao}</span>}
-                                                            <em>Ver aulas do módulo</em>
-                                                        </span>
-                                                    </button> /* Fim item 6 */
+                                            {modulosDetalhe.length > 0 && <ListaEtapasModulo>
+                                                {modulosDetalhe.map((modulo, indice) => (
+                                                    /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */ <EtapaModulo key={modulo.id} modulo={modulo} numero={indice + 1} status={cursoDetalhe.matriculado ? `${(modulo.aulas || []).filter((aula) => aula.assistida).length} concluídas` : "Disponível após inscrição"} onAbrir={() => setIdModuloAberto(Number(modulo.id))} /> /* Fim item 6 */
                                                 ))}
-                                            </div>
+                                            </ListaEtapasModulo>}
                                         </>
                                     )}
                                 </div>
@@ -1168,49 +1150,11 @@ async function baixarCertificado(curso) {
                                 </div>
                             )}
 
-                            {abaCurso === "prova" && cursoDetalhe.matriculado && provaAluno?.prova && (
-                                <section className={`${css.conteudoCurso} ${css.painelProva}`}>
+                            {abaCurso === "prova" && cursoDetalhe.matriculado && provaAluno && (
+                                <section className={css.painelProva}>
                                     {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-                                    <div className={css.cabecalhoProva}>
-                                        <div>
-                                            <span className={css.rotuloProva}>AVALIAÇÃO FINAL</span>
-                                            <h2>{provaAluno.prova.titulo || "Prova final"}</h2>
-                                            <p>{provaAluno.questoes?.length || 0} questões · Nota de 0 a 100 · Aprovação com {provaAluno.prova.nota_minima ?? 70} pontos.</p>
-                                        </div>
-                                        {provaAluno.envio && <span className={css.statusProva}>{provaAluno.envio.status === 1 ? "Aprovado" : provaAluno.envio.status === 2 ? "Reprovado" : "Aguardando correção"}</span>}
-                                    </div>
-                                    {/* Fim item 20 */}
-                                    {provaAluno.envio && /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <p><strong>{provaAluno.envio.nota ?? "Aguardando nota"}{provaAluno.envio.nota != null ? " pontos de 100" : ""}</strong> · {provaAluno.envio.acertos ?? 0} acertos de {provaAluno.envio.total_questoes || provaAluno.questoes?.length || 0} questões{provaAluno.envio.status === 0 ? " (resultado parcial)" : ""}.</p> /* Fim item 20 */}
-                                    {provaAluno.envio?.status === 2 && <p className={css.avisoReprovacao}>Você foi reprovado. {provaAluno.envio.feedback ? `Feedback: ${provaAluno.envio.feedback}. ` : ""}{provaAluno.envio.pode_tentar_em ? `Tente novamente após ${new Date(provaAluno.envio.pode_tentar_em).toLocaleString("pt-BR")}.` : "Tente novamente após 1 dia da correção."}</p>}
-                                    {(!provaAluno.envio || (provaAluno.envio.status === 2 && (!provaAluno.envio.pode_tentar_em || Date.now() >= new Date(provaAluno.envio.pode_tentar_em).getTime()))) && (
-                                        <div className={css.listaQuestoes}>
-                                            {provaAluno.questoes?.map((questao, indice) => (
-                                                /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <fieldset key={questao.id} className={css.cartaoQuestao}>
-                                                    <legend>Questão {indice + 1}</legend>
-                                                    <p className={css.enunciadoQuestao}>{questao.enunciado}</p>
-                                                    {questao.tipo === "objetiva" ? (
-                                                        <div className={css.alternativasQuestao}>
-                                                            {(questao.alternativas || []).map((opcao, opcaoIndice) => (
-                                                                <label key={`${questao.id}-${opcaoIndice}`} className={css.alternativaQuestao}>
-                                                                    <input type="radio" name={`questao-${questao.id}`} value={opcao} checked={respostasProva[questao.id] === opcao} onChange={() => setRespostasProva((atual) => ({ ...atual, [questao.id]: opcao }))} />
-                                                                    <span>{opcao}</span>
-                                                                </label>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <textarea className={css.respostaDissertativa} aria-label={`Resposta da questão ${indice + 1}`} placeholder="Escreva sua resposta aqui" rows={5} value={respostasProva[questao.id] || ""} onChange={(e) => setRespostasProva((atual) => ({ ...atual, [questao.id]: e.target.value }))} />
-                                                    )}
-                                                </fieldset> /* Fim item 20 */
-                                            ))}
-                                            {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-                                            <div className={css.rodapeProva}>
-                                                <span>Confira suas respostas antes de enviar.</span>
-                                                <button className={css.botaoInscrever} onClick={enviarProvaAluno} disabled={enviandoProva || !provaAluno.questoes?.length || provaAluno.questoes.some((questao) => !String(respostasProva[questao.id] || "").trim())}>{enviandoProva ? "Enviando..." : "Enviar prova"}</button>
-                                            </div>
-                                            {/* Fim item 20 */}
-                                        </div>
-                                    )}
-                                    {provaAluno.envio?.status === 1 && (
+                                    <ProvaCursoAluno api={api} idCurso={cursoDetalhe.id} dados={provaAluno} onAtualizar={setProvaAluno} />
+                                    {provaAluno.aprovado_curso && (
                                         <>
                                             {/* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */}
                                             <button className={css.botaoCertificado} type="button" onClick={() => baixarCertificado(cursoDetalhe)} disabled={baixandoCertificado}>
@@ -1237,7 +1181,7 @@ async function baixarCertificado(curso) {
                                     )}
                                 </section>
                             )}
-                            {modulosDetalhe.length === 0 && (
+                            {abaCurso === "modulos" && modulosDetalhe.length === 0 && (
                                 <>
                                     <h2>{cursoDetalhe.matriculado ? "Videoaulas do curso" : "Videoaulas disponíveis após a inscrição"}</h2>
                                     {aulasDetalhe.length === 0 && <EstadoVazio texto="Nenhuma aula publicada neste curso." />}
@@ -1249,7 +1193,7 @@ async function baixarCertificado(curso) {
                                     </div>
                                 </>
                             )}
-                            {modulosDetalhe.length > 0 && aulasSemModulo.length > 0 && (
+                            {abaCurso === "modulos" && !moduloAberto && modulosDetalhe.length > 0 && aulasSemModulo.length > 0 && (
                                 <section className={css.conteudoCurso}>
                                     <h2>Aulas sem módulo</h2>
                                     <div className={css.gridAulas}>
@@ -1418,6 +1362,7 @@ async function baixarCertificado(curso) {
                                             </div>
                                             {/* Fim item 2 */}
                                             {/* Sprint item 2 - Integrar pagamentos pelo ARKHE - Solicita ou confere a cobrança Pix pela API de pagamentos */}
+                                            <PixQrCode pagamento={pagamentoFatura} />
                                             <div className={css.caixaCodigoPixFinanceiro}>
                                                 <span>Pix copia e cola</span>
                                                 <p className={css.codigoPixFinanceiro}>{pagamentoFatura.codigo_pagamento}</p>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import EtapaModulo, { ListaEtapasModulo } from "../../components/EtapaModulo/EtapaModulo.jsx";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     FaBookOpen,
@@ -101,6 +102,7 @@ function DashboardProfessor({
     const [solicitandoSaque, setSolicitandoSaque] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+    const inicioAtivo = visao === "inicio" && /\/DashboardProfessor\/?$/i.test(location.pathname);
 
     const avisar = useCallback((mensagem) => {
         if (mensagem && setMensagem) {
@@ -328,13 +330,13 @@ function DashboardProfessor({
 
     /* Sprint item 8 - Criar dashboard com gráficos para administrador e instrutor - Monta os gráficos e os indicadores do painel */
     useEffect(() => {
-        carregarDashboard();
-    }, [carregarDashboard]);
+        if (inicioAtivo) carregarDashboard();
+    }, [carregarDashboard, inicioAtivo]);
     /* Fim item 8 */
 
     useEffect(
 () => {
-        if (visao !== "inicio") return undefined;
+        if (!inicioAtivo) return undefined;
 
 
         carregarAnaliticosMensais();
@@ -351,7 +353,7 @@ function DashboardProfessor({
         }, 60000);
         return () => window.clearInterval(intervalo);
     }
-, [carregarAnaliticosMensais, visao]);
+, [carregarAnaliticosMensais, inicioAtivo]);
 
     useEffect(() => {
         if (visao === "cursos") {
@@ -430,8 +432,8 @@ async function sincronizarVisaoAtiva() {
             sincronizando = true;
 
             try {
-                const tarefas = [carregarDashboard()];
-                if (visao === "inicio") tarefas.push(carregarAnaliticosMensais());
+                const tarefas = [];
+                if (inicioAtivo) tarefas.push(carregarDashboard(), carregarAnaliticosMensais());
                 if (visao === "cursos") tarefas.push(carregarCursos(filtroCursos));
                 if (visao === "aulas" && cursoSelecionado) {
                     tarefas.push(carregarAulas(cursoSelecionado.id, filtroAulas, idModuloSelecionado));
@@ -470,6 +472,7 @@ async function sincronizarVisaoAtiva() {
         filtroAulas,
         filtroCursos,
         lerResposta,
+        inicioAtivo,
         visao
     ]);
 
@@ -1098,11 +1101,11 @@ async function solicitarSaque() {
                             </div>
 
                                                                                                                                                                                                         
-                            <div className={css.barraTitulo}>
-                                <button className={abaGestaoCurso === "modulos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("modulos"); setIdModuloSelecionado(null); }}>Módulos</button>
-                                <button className={abaGestaoCurso === "complementos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("complementos"); setIdModuloSelecionado(null); }}>Complementos</button>
-                                <button className={abaGestaoCurso === "provas" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("provas"); setIdModuloSelecionado(null); }}>Provas</button>
-                            </div>
+                            <nav className={css.navegacaoGestaoCurso} aria-label="Seções do curso">
+                                <button type="button" aria-pressed={abaGestaoCurso === "modulos"} className={abaGestaoCurso === "modulos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("modulos"); setIdModuloSelecionado(null); }}>Módulos</button>
+                                <button type="button" aria-pressed={abaGestaoCurso === "complementos"} className={abaGestaoCurso === "complementos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("complementos"); setIdModuloSelecionado(null); }}>Complementos</button>
+                                <button type="button" aria-pressed={abaGestaoCurso === "provas"} className={abaGestaoCurso === "provas" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("provas"); setIdModuloSelecionado(null); }}>Provas</button>
+                            </nav>
 
                             {abaGestaoCurso === "complementos" && /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */ <MateriaisProfessor api={api} idCurso={cursoSelecionado.id} avisar={avisar} /> /* Fim item 21 */}
                             {abaGestaoCurso === "provas" && /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <ProvasProfessor key={cursoSelecionado.id} api={api} idCurso={cursoSelecionado.id} setMensagem={setMensagem} /> /* Fim item 20 */}
@@ -1116,23 +1119,12 @@ async function solicitarSaque() {
                                     </div>
                                     {carregando && <p className={css.textoApoio}>Carregando módulos...</p>}
                                     {!carregando && modulos.length === 0 && <EstadoVazioProfessor texto="Este curso ainda não tem módulos. Crie o primeiro para organizar as aulas." />}
-                                    <div className={css.gradeModulos}>
+                                    <ListaEtapasModulo>
                                         {modulos.map(
-(modulo) => (
-                                            /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */ <article className={css.cardCurso} key={modulo.id}>
+(modulo, indice) => (
+                                            /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */ <EtapaModulo key={modulo.id} modulo={modulo} numero={indice + 1} status={modulo.status_nome} onAbrir={() => abrirModulo(modulo)}>
                                                                                                                                                                        
                                                                                                                  
-                                                <button type="button" className={css.areaCardClicavel} onClick={() => abrirModulo(modulo)} aria-label={`Abrir módulo ${modulo.titulo}`}>
-                                                    <img src={modulo.imagem ? resolverUrlMidia(api, modulo.imagem) : PLACEHOLDER_CURSO} alt="" className={css.imagemCurso} />
-                                                    <div className={css.infoCurso}>
-                                                        <div>
-                                                            <h3>{modulo.titulo}</h3>
-                                                            <p>{modulo.descricao || "Sem descrição"}</p>
-                                                            <span className={css.infoInscritos}><FaBookOpen /> {modulo.total_aulas || 0} {modulo.total_aulas === 1 ? "aula" : "aulas"}</span>
-                                                        </div>
-                                                        <span className={css.statusBadge}>{modulo.status_nome}</span>
-                                                    </div>
-                                                </button>
                                                 <div className={css.acoesCard}>
                                                     <button type="button" title="Editar módulo" aria-label={`Editar módulo ${modulo.titulo}`} onClick={() => setModal({ tipo: "modulo", item: modulo })}><FaEdit /></button>
                                                     {modulo.status !== 1 && <button type="button" title="Publicar módulo" aria-label={`Publicar módulo ${modulo.titulo}`} onClick={() => alterarStatusModulo(modulo, 1)}><FaEye /></button>}
@@ -1140,10 +1132,10 @@ async function solicitarSaque() {
                                                     {modulo.status !== 2 && <button type="button" title="Arquivar módulo" aria-label={`Arquivar módulo ${modulo.titulo}`} onClick={() => alterarStatusModulo(modulo, 2)}><FaArchive /></button>}
                                                     <button type="button" className={css.botaoExcluir} disabled={modulo.total_aulas > 0} title={modulo.total_aulas > 0 ? "Exclua ou mova as aulas antes de excluir o módulo" : "Excluir módulo"} aria-label={`Excluir módulo ${modulo.titulo}`} onClick={() => setConfirmacao({ tipo: "modulo", item: modulo })}><FaTrash /></button>
                                                 </div>
-                                            </article> /* Fim item 6 */
+                                            </EtapaModulo> /* Fim item 6 */
                                         )
 )}
-                                    </div>
+                                    </ListaEtapasModulo>
                                     {aulas.some((aula) => !aula.id_modulo) && (
                                         <div className={css.aulasSemModulo}>
                                             <h3>Aulas antigas sem módulo</h3>
@@ -1176,7 +1168,7 @@ async function solicitarSaque() {
                                     <div className={css.barraTitulo}>
                                         <div className={css.resumoModuloProfessor}>
                                             <button className={css.linkVoltar} onClick={() => navigate(`/DashboardProfessor/cursos/${cursoSelecionado.id}/aulas`)}>Voltar aos módulos</button>
-                                            <h2>{moduloSelecionado.titulo}</h2>
+                                            <h2>Módulo {modulos.findIndex((item) => Number(item.id) === Number(moduloSelecionado.id)) + 1} · {moduloSelecionado.titulo}</h2>
                                             <p className={css.textoApoio}>{moduloSelecionado.descricao}</p>
                                         </div>
                                         <button className={css.botaoPrimario} onClick={() => setModal({ tipo: "aula", item: null })}>

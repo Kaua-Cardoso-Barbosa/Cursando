@@ -71,18 +71,16 @@ def certificado_aluno(id_curso):
         # Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Consulta os requisitos e os resultados da prova do curso
         cursor.execute(
             """
-            SELECT FIRST 1 P.ID_PROVA, R.STATUS, R.FEEDBACK
-            FROM PROVAS_CURSO P
-            LEFT JOIN RESPOSTAS_PROVA R
-              ON R.ID_PROVA = P.ID_PROVA AND R.ID_USUARIO = ?
-            WHERE P.ID_CURSO = ? AND P.PUBLICADA = 1
-            ORDER BY P.ID_PROVA DESC, R.ID_RESPOSTA DESC
+            SELECT FIRST 1 R.ID_PROVA, R.STATUS, R.FEEDBACK
+            FROM RESPOSTAS_PROVA R
+            WHERE R.ID_USUARIO = ? AND R.ID_CURSO = ? AND R.STATUS = 1
+            ORDER BY R.ID_RESPOSTA DESC
             """,
             (get_jwt_identity(), id_curso),
         )
         prova = cursor.fetchone()
         if not prova:
-            return resposta("Certificado bloqueado: curso sem prova publicada.", 403)
+            return resposta("Certificado liberado após aprovação em uma prova do curso, inclusive arquivada.", 403)
 
         if int(prova[1] or 0) == 0:
             return resposta("Certificado bloqueado: prova aguardando correcao.", 403)

@@ -6,6 +6,7 @@ import {
     FaTrash
 } from "react-icons/fa";
 import css from "../../pages/DashboardProfessor/DashboardProfessor_38.module.css";
+import CapaCurso from "../CapaCurso/CapaCurso.jsx";
 
 const STATUS_PRIVADO = 0;
 const STATUS_PUBLICADO = 1;
@@ -29,7 +30,7 @@ export default function CursoCardProfessor({ curso, api, onAbrir, onEditar, onEx
     return (
         <article className={css.cardCurso}>
             <button className={css.areaCardClicavel} onClick={() => onAbrir(curso)}>
-                <img src={imagem} alt={curso.titulo} className={css.imagemCurso} />
+                <CapaCurso imagem={imagem} titulo={curso.titulo} />
                 <div className={css.infoCurso}>
                     <div>
                         <h3>{curso.titulo}</h3>

@@ -7,6 +7,7 @@ import {
     FaUsers
 } from "react-icons/fa";
 import css from "../../pages/DashboardProfessor/DashboardProfessor_38.module.css";
+import CapaCurso from "../CapaCurso/CapaCurso.jsx";
 
 const STATUS_PRIVADO = 0;
 const STATUS_PUBLICADO = 1;
@@ -54,7 +55,7 @@ function ItemCardProfessor({
         return (
             <article className={css.cardCurso}>
                 <button className={css.areaCardClicavel} onClick={() => onAbrir?.(item)}>
-                    <img src={imagem} alt={item.titulo} className={css.imagemCurso} />
+                    <CapaCurso imagem={imagem} titulo={item.titulo} />
                         <div className={css.infoCurso}>
                             <div>
                                 <h3>{item.titulo}</h3>

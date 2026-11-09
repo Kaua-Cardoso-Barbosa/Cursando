@@ -15,6 +15,28 @@ const API_HOSTS = [
 ];
 
 let activeApiUrl = null;
+let descobertaPendente = null;
+
+// Descobre o servidor por uma leitura antes do primeiro envio. Assim, login e
+// mensagens não são repetidos em vários endereços quando a resposta demora.
+async function descobrirApi() {
+  if (descobertaPendente) return descobertaPendente;
+  descobertaPendente = (async () => {
+    for (const baseUrl of getApiUrlCandidates()) {
+      try {
+        const resposta = await fetchWithTimeout(`${baseUrl}/health`);
+        const dados = await resposta.json();
+        if (resposta.ok && dados.status === "ok") {
+          activeApiUrl = baseUrl;
+          return;
+        }
+      } catch { /* Tenta o proximo endereco apenas nesta leitura. */ }
+    }
+    throw new Error("Nao foi possivel localizar a API. Verifique a conexao.");
+  })();
+  try { await descobertaPendente; }
+  finally { descobertaPendente = null; }
+}
 
 
 /* Sprint item 17 - Integrar o aplicativo com a API - Monta os endereços candidatos da API a partir da configuração do app */
@@ -90,6 +112,7 @@ async function carregarSessao() {
 export
 /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Remove a sessão persistida no dispositivo */
 async function limparSessao() {
+  invalidarLeituras();
   await AsyncStorage.multiRemove([
     TOKEN_KEY,
     USER_KEY
@@ -150,21 +173,20 @@ function isConnectionError(error) {
 /* Fim item 17 */
 
 
-export
 /* Sprint item 17 - Integrar o aplicativo com a API - Envia a requisição autenticada e trata as respostas e falhas da API */
-async function apiRequest(
+async function executarRequisicao(
     path,
     options = {},
     token = null,
     timeoutMs = REQUEST_TIMEOUT_MS,
     retryOnAbort = true
 ) {
-
-
+  const leitura = ["GET", "HEAD"].includes((options.method || "GET").toUpperCase());
+  if (!leitura && !activeApiUrl) await descobrirApi();
   const headers = {
     Accept: "application/json",
 
-    ...(options.body instanceof FormData
+    ...(!options.body || options.body instanceof FormData
         ? {}
         : {
           "Content-Type": "application/json"
@@ -176,7 +198,7 @@ async function apiRequest(
         }
         : {}),
 
-    ...(options.headers || {})
+    ...options.headers
   };
 
   const candidates = [
@@ -193,10 +215,6 @@ async function apiRequest(
 
   for (const apiUrl of uniqueCandidates) {
     try {
-      console.log(
-          `[API] Tentando: ${apiUrl}${path}`
-      );
-
       const response = await fetchWithTimeout(
           `${apiUrl}${path}`,
           {
@@ -211,6 +229,8 @@ async function apiRequest(
           .catch(() => ({}));
 
       if (!response.ok) {
+        if (response.status === 401 && token) aoInvalidarSessao?.(token);
+
 
         const error = new Error(
             data?.mensagem?.descricao ||
@@ -225,25 +245,18 @@ async function apiRequest(
 
       activeApiUrl = apiUrl;
 
-      console.log(
-          `[API] Conectado: ${activeApiUrl}`
-      );
-
       return data;
 
     } catch (error) {
 
-      if (error?.name === "AbortError" && !retryOnAbort) {
-        throw new Error("A API demorou para responder. Consulte os pagamentos antes de tentar novamente.");
+      if (isConnectionError(error) && (!leitura || (error?.name === "AbortError" && !retryOnAbort))) {
+        if (activeApiUrl === apiUrl) activeApiUrl = null;
+        throw new Error("Nao foi possivel confirmar a resposta da API. Atualize os dados antes de tentar novamente.");
       }
 
       if (!isConnectionError(error)) {
         throw error;
       }
-
-      console.log(
-          `[API] Falhou: ${apiUrl}`
-      );
 
       failedUrls.push(apiUrl);
     }
@@ -256,3 +269,39 @@ async function apiRequest(
   );
 }
 /* Fim item 17 */
+
+// Compartilha somente leituras identicas em andamento. Perfil tem cache curto em memoria.
+const leiturasPendentes = new Map();
+const cacheLeituras = new Map();
+let versaoCache = 0;
+let aoInvalidarSessao = null;
+export function definirAoInvalidarSessao(callback) {
+  aoInvalidarSessao = callback;
+  return () => { if (aoInvalidarSessao === callback) aoInvalidarSessao = null; };
+}
+function invalidarLeituras() {
+  versaoCache++;
+  leiturasPendentes.clear();
+  cacheLeituras.clear();
+}
+export async function apiRequest(path, options = {}, token = null, timeoutMs = REQUEST_TIMEOUT_MS, retryOnAbort = true) {
+  const leitura = (options.method || "GET").toUpperCase() === "GET";
+  if (!leitura) {
+    invalidarLeituras();
+    try { return await executarRequisicao(path, options, token, timeoutMs, retryOnAbort); }
+    finally { invalidarLeituras(); }
+  }
+  const chave = JSON.stringify([token, path, options, timeoutMs, retryOnAbort]);
+  const cache = cacheLeituras.get(chave);
+  if (cache && cache.expira > Date.now()) return cache.dados;
+  if (leiturasPendentes.has(chave)) return leiturasPendentes.get(chave);
+  const versao = versaoCache;
+  const pendente = executarRequisicao(path, options, token, timeoutMs, retryOnAbort).then(dados => {
+    if (versao === versaoCache && path === "/perfil") cacheLeituras.set(chave, { dados, expira: Date.now() + 30000 });
+    return dados;
+  }).finally(() => {
+    if (leiturasPendentes.get(chave) === pendente) leiturasPendentes.delete(chave);
+  });
+  leiturasPendentes.set(chave, pendente);
+  return pendente;
+}

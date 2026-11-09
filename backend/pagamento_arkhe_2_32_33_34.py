@@ -197,6 +197,8 @@ def faturas_aluno():
                     "id_cobranca": cobranca["id_cobranca"],
                     "valor": valor,
                     "codigo_pagamento": cobranca["codigo_pagamento"],
+                    "qr_code_png": cobranca.get("qr_code_png"),
+                    "qr_code_svg": cobranca.get("qr_code_svg"),
                     "status": cobranca["status"],
                     "tipo_cobranca": cobranca["tipo_cobranca"],
                 }), 201
@@ -679,6 +681,8 @@ def preparar_pagamento_fatura(cursor, con, id_assinatura, id_cobranca, valor, ve
                 "id_cobranca": anterior["id_cobranca"],
                 "valor": valor,
                 "codigo_pagamento": anterior["codigo_pagamento"],
+                "qr_code_png": anterior.get("qr_code_png"),
+                "qr_code_svg": anterior.get("qr_code_svg"),
                 "status": anterior["status"],
                 "tipo_cobranca": anterior["tipo_cobranca"],
                 "fatura_existente": True,
@@ -697,6 +701,8 @@ def preparar_pagamento_fatura(cursor, con, id_assinatura, id_cobranca, valor, ve
         "id_cobranca": cobranca["id_cobranca"],
         "valor": valor,
         "codigo_pagamento": cobranca["codigo_pagamento"],
+        "qr_code_png": cobranca.get("qr_code_png"),
+        "qr_code_svg": cobranca.get("qr_code_svg"),
         "status": cobranca["status"],
         "tipo_cobranca": cobranca["tipo_cobranca"],
         "fatura_existente": True,
@@ -753,6 +759,8 @@ def criar_pagamento_pix():
             "id_cobranca": cobranca["id_cobranca"],
             "valor": cobranca["valor"],
             "codigo_pagamento": cobranca["codigo_pagamento"],
+            "qr_code_png": cobranca.get("qr_code_png"),
+            "qr_code_svg": cobranca.get("qr_code_svg"),
             "status": cobranca["status"],
             "tipo_cobranca": cobranca["tipo_cobranca"],
         }), 201
@@ -829,6 +837,8 @@ def criar_pix_assinatura():
                     "id_cobranca": cobranca["id_cobranca"],
                     "valor": valor_pendente,
                     "codigo_pagamento": cobranca["codigo_pagamento"],
+                    "qr_code_png": cobranca.get("qr_code_png"),
+                    "qr_code_svg": cobranca.get("qr_code_svg"),
                     "status": cobranca["status"],
                     "tipo_cobranca": cobranca["tipo_cobranca"],
                     "cobranca_existente": True
@@ -881,6 +891,8 @@ def criar_pix_assinatura():
             "id_cobranca": cobranca["id_cobranca"],
             "valor": valor,
             "codigo_pagamento": cobranca["codigo_pagamento"],
+            "qr_code_png": cobranca.get("qr_code_png"),
+            "qr_code_svg": cobranca.get("qr_code_svg"),
             "status": cobranca["status"],
             "tipo_cobranca": cobranca["tipo_cobranca"]
         }), 201

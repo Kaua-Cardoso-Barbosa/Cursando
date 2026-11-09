@@ -1,14 +1,16 @@
 import AppIcon from "../components/AppIcon_39";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest, resolverUrlMidia } from "../api/client_3_17";
 import BrandLogo from "../components/BrandLogo_39";
 import Field from "../components/Field_39";
+import { useFeedback } from "../components/FeedbackProvider_39";
 import { colors, globalStyles } from "../styles_39";
 
 export default
 function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
+  const { mostrarAlerta } = useFeedback();
   const [titulo, setTitulo] = useState(curso?.titulo || "");
   const [descricao, setDescricao] = useState(curso?.descricao || "");
   const [imagem, setImagem] = useState(null);
@@ -41,11 +43,13 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
       setTemas(Array.isArray(listaTemas) ? listaTemas : []);
       setIdCategoria(taxonomiaCurso.id_categoria ? String(taxonomiaCurso.id_categoria) : "");
       setIdTema(taxonomiaCurso.id_tema ? String(taxonomiaCurso.id_tema) : "");
-    }).catch((error) => Alert.alert("Erro", error.message)).finally(() => {
+    }).catch((error) => {
+      if (ativo) mostrarAlerta("Erro", error.message, "erro");
+    }).finally(() => {
       if (ativo) setCarregandoTaxonomias(false);
     });
     return () => { ativo = false; };
-  }, [curso.id, token]);
+  }, [curso.id, token, mostrarAlerta]);
   /* Fim item 28 */
 
   /* Sprint item 18 - Integrar recursos nativos: biometria, câmera, vibração e notificações - Abre a galeria nativa para selecionar uma imagem */
@@ -67,7 +71,7 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
   async function tirarFoto() {
     const permissao = await ImagePicker.requestCameraPermissionsAsync();
     if (!permissao.granted) {
-      Alert.alert("Permissão da câmera", "Permita o acesso à câmera nas configurações do aparelho para tirar uma foto.");
+      mostrarAlerta("Permissão da câmera", "Permita o acesso à câmera nas configurações do aparelho para tirar uma foto.");
       return;
     }
 

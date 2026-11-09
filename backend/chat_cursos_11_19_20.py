@@ -16,7 +16,7 @@ from professor_7 import de_blob_texto, para_blob_texto
 
 
 from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
-from utilitarios_backend_5_9_12_15_20_24_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _professor_responsavel, proximo_id, resposta
+from utilitarios_backend_5_9_12_15_20_24_28_34 import _aluno_matriculado, _bloqueio_assinatura_aluno, _curso_do_professor, _professor_responsavel, resposta
 
 
 
@@ -122,20 +122,39 @@ def chat_conversas():
 
 
 
-@app.route("/chat/cursos/<int:id_curso>/mensagens", methods=["GET", "POST"])
+def _mensagem_chat(row, id_usuario):
+    return dict(id=row[0], id_remetente=row[1], nome=row[2], email=row[3],
+                imagem_perfil=row[4], texto=de_blob_texto(row[5]), lida=row[6] == 1,
+                criado_em=row[7].isoformat() if row[7] else None, minha=int(row[1]) == id_usuario)
+
+
+_SELECT_MENSAGEM = """SELECT M.ID_MENSAGEM, M.ID_REMETENTE, U.NOME, U.EMAIL,
+    U.IMAGEM_PERFIL, M.TEXTO, M.LIDA, M.CRIADO_EM
+    FROM MENSAGENS_CHAT M JOIN USUARIOS U ON U.ID_USUARIO = M.ID_REMETENTE"""
+
+
+def _inteiro_chat(valor, minimo=0):
+    if isinstance(valor, bool) or not str(valor).isdigit():
+        raise ValueError('Parametro inteiro invalido.')
+    numero = int(valor)
+    if not minimo <= numero <= 2147483647:
+        raise ValueError('Parametro fora do intervalo permitido.')
+    return numero
+
+
+@app.route("/chat/cursos/<int:id_curso>/mensagens", methods=["GET", "POST", "PATCH"])
 @jwt_required()
 def chat_mensagens(id_curso):
-    
     garantir_estrutura_banco()
     tipo = int(get_jwt().get("tipo", -1))
     id_usuario = int(get_jwt_identity())
     con = get_db()
     cursor = con.cursor()
-
     try:
+        dados = request.get_json(silent=True) or {}
+        if not isinstance(dados, dict):
+            raise ValueError('Envie um objeto JSON.')
         if tipo == 2:
-            
-            
             id_aluno = id_usuario
             if not _aluno_matriculado(cursor, id_curso, id_aluno):
                 return resposta("Aluno sem matricula ativa neste curso.", 403)
@@ -143,89 +162,89 @@ def chat_mensagens(id_curso):
             if bloqueio:
                 return bloqueio
         elif tipo == 1:
-            
-            
             if not _curso_do_professor(cursor, id_curso, id_usuario):
                 return resposta("Curso nao encontrado para este instrutor.", 404)
-            id_aluno = int((request.args.get("id_aluno") or (request.get_json(silent=True) or {}).get("id_aluno") or 0))
-            if not id_aluno or not _aluno_matriculado(cursor, id_curso, id_aluno):
+            id_aluno = _inteiro_chat(request.args.get('id_aluno') or dados.get('id_aluno') or 0, 1)
+            if not _aluno_matriculado(cursor, id_curso, id_aluno):
                 return resposta("Informe um aluno matriculado para a conversa.", 400)
         else:
             return resposta("Chat disponivel apenas para alunos e instrutores.", 403)
 
-        if request.method == "GET":
-            
-            
-            cursor.execute(
-                """
-                UPDATE MENSAGENS_CHAT
-                SET LIDA = 1
-                WHERE ID_CURSO = ? AND ID_ALUNO = ? AND ID_DESTINATARIO = ?
-                """,
-                (id_curso, id_aluno, id_usuario),
-            )
-            cursor.execute(
-                """
-                SELECT M.ID_MENSAGEM, M.ID_REMETENTE, U.NOME, U.EMAIL, U.IMAGEM_PERFIL, M.TEXTO, M.LIDA, M.CRIADO_EM
-                FROM MENSAGENS_CHAT M
-                JOIN USUARIOS U ON U.ID_USUARIO = M.ID_REMETENTE
-                WHERE M.ID_CURSO = ? AND M.ID_ALUNO = ?
-                ORDER BY M.ID_MENSAGEM
-                """,
-                (id_curso, id_aluno),
-            )
-            mensagens = [
-                {
-                    "id": row[0],
-                    "id_remetente": row[1],
-                    "nome": row[2],
-                    "email": row[3],
-                    "imagem_perfil": row[4],
-                    "texto": de_blob_texto(row[5]),
-                    "lida": row[6] == 1,
-                    "criado_em": row[7].isoformat() if row[7] else None,
-                    "minha": int(row[1]) == id_usuario,
-                }
-                for row in cursor.fetchall()
-            ]
+        if request.method == 'PATCH':
+            # Confirma somente o intervalo efetivamente carregado e visualizado.
+            ate = _inteiro_chat(dados.get('ate_id'), 1)
+            cursor.execute("""UPDATE MENSAGENS_CHAT SET LIDA = 1 WHERE ID_CURSO = ?
+                AND ID_ALUNO = ? AND ID_DESTINATARIO = ? AND LIDA = 0 AND ID_MENSAGEM <= ?""",
+                (id_curso, id_aluno, id_usuario, ate))
             con.commit()
+            return jsonify(lidas_ate=ate)
+
+        if request.method == 'GET':
+            incremental = 'depois_id' in request.args
+            depois = _inteiro_chat(request.args.get('depois_id', 0))
+            antes = _inteiro_chat(request.args.get('antes_id', 0))
+            limite = min(_inteiro_chat(request.args.get('limite', 50), 1), 100)
+            if incremental and 'antes_id' in request.args:
+                raise ValueError('Use apenas um cursor de mensagens.')
+            filtro, parametros = 'M.ID_CURSO = ? AND M.ID_ALUNO = ?', [id_curso, id_aluno]
+            if incremental or antes:
+                filtro += ' AND M.ID_MENSAGEM ' + ('> ?' if incremental else '< ?')
+                parametros.append(depois if incremental else antes)
+            ordem = 'ASC' if incremental else 'DESC'
+            consulta = _SELECT_MENSAGEM.replace('SELECT ', f'SELECT FIRST {limite + 1} ', 1)
+            cursor.execute(consulta + f' WHERE {filtro} ORDER BY M.ID_MENSAGEM {ordem}', parametros)
+            rows = cursor.fetchall()
+            tem_mais = len(rows) > limite
+            rows = rows[:limite]
+            if not incremental:
+                rows.reverse()
+            mensagens = [_mensagem_chat(r, id_usuario) for r in rows]
+            if request.args.get('paginado') == '1':
+                return jsonify(mensagens=mensagens, tem_mais=tem_mais,
+                               primeiro_id=mensagens[0]['id'] if mensagens else None,
+                               ultimo_id=mensagens[-1]['id'] if mensagens else depois or None)
+            # Clientes anteriores recebem um array limitado, sem gravacoes em GET.
             return jsonify(mensagens)
 
-        dados = request.get_json() or {}
-        texto = (dados.get("texto") or "").strip()
-        if not texto:
-            return resposta("Mensagem nao pode ficar vazia.", 400)
-
-        if tipo == 2:
-            
-            
-            id_destinatario = _professor_responsavel(cursor, id_curso)
-            if not id_destinatario:
-                return resposta("Curso sem instrutor responsavel.", 400)
-        else:
-            id_destinatario = id_aluno
-
-        cursor.execute(
-            """
-            INSERT INTO MENSAGENS_CHAT (
-                ID_MENSAGEM, ID_CURSO, ID_ALUNO, ID_REMETENTE, ID_DESTINATARIO, TEXTO
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                proximo_id(cursor, "MENSAGENS_CHAT", "ID_MENSAGEM"),
-                id_curso,
-                id_aluno,
-                id_usuario,
-                id_destinatario,
-                para_blob_texto(texto),
-            ),
-        )
+        texto = dados.get('texto')
+        if not isinstance(texto, str) or not 1 <= len(texto.strip()) <= 10000:
+            raise ValueError('A mensagem deve conter de 1 a 10000 caracteres.')
+        texto = texto.strip()
+        chave = dados.get('chave_envio')
+        if chave is not None and (not isinstance(chave, str) or not 1 <= len(chave) <= 80):
+            raise ValueError('Identificador de envio invalido.')
+        # O bloqueio ordena os commits deste curso antes de disponibilizar o cursor.
+        # A sequencia elimina a disputa de MAX(ID)+1 entre cursos e processos.
+        cursor.execute('SELECT ID_CURSO FROM CURSOS WHERE ID_CURSO = ? WITH LOCK', (id_curso,))
+        cursor.fetchone()
+        if chave:
+            cursor.execute("SELECT ID_MENSAGEM, ID_CURSO, ID_ALUNO FROM MENSAGENS_CHAT WHERE (CAST(ID_REMETENTE AS VARCHAR(20)) || ':' || CHAVE_ENVIO) = ?", (f'{id_usuario}:{chave}',))
+            existente = cursor.fetchone()
+            if existente:
+                if existente[1:] != (id_curso, id_aluno):
+                    return resposta('Identificador ja utilizado em outra conversa.', 409)
+                cursor.execute(_SELECT_MENSAGEM + ' WHERE M.ID_MENSAGEM = ?', (existente[0],))
+                return jsonify(mensagem=_mensagem_chat(cursor.fetchone(), id_usuario)), 200
+        destinatario = _professor_responsavel(cursor, id_curso) if tipo == 2 else id_aluno
+        if not destinatario:
+            return resposta('Curso sem instrutor responsavel.', 400)
+        cursor.execute('SELECT GEN_ID(GEN_CHAT_MENSAGEM, 1) FROM RDB$DATABASE')
+        id_mensagem = cursor.fetchone()[0]
+        cursor.execute("""INSERT INTO MENSAGENS_CHAT
+            (ID_MENSAGEM, ID_CURSO, ID_ALUNO, ID_REMETENTE, ID_DESTINATARIO, TEXTO, CHAVE_ENVIO)
+            VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (id_mensagem, id_curso, id_aluno, id_usuario, destinatario, para_blob_texto(texto), chave))
+        cursor.execute(_SELECT_MENSAGEM + ' WHERE M.ID_MENSAGEM = ?', (id_mensagem,))
+        mensagem = _mensagem_chat(cursor.fetchone(), id_usuario)
         con.commit()
-        return resposta("Mensagem enviada.", 201, "sucesso")
-    except Exception as erro:
+        return jsonify(mensagem=mensagem), 201
+    except ValueError as erro:
         con.rollback()
-        return resposta(f"Erro ao processar chat: {erro}", 500)
+        return resposta(str(erro), 400)
+    except Exception:
+        con.rollback()
+        current_app.logger.exception('Falha ao processar chat')
+        return resposta('Nao foi possivel atualizar o chat. Tente novamente.', 500)
     finally:
         cursor.close()
         con.close()

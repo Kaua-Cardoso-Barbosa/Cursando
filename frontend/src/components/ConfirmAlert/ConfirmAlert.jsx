@@ -1,8 +1,13 @@
+import { useEffect, useRef, useState } from "react";
 import { FaExclamationTriangle } from "react-icons/fa";
 import css from "./ConfirmAlert_38.module.css";
 
-export default function ConfirmAlert({
-                                         aberto,
+export default function ConfirmAlert(props) {
+    // Montar novamente reinicia a espera a cada abertura do diálogo.
+    return props.aberto ? <DialogoConfirmacao {...props} /> : null;
+}
+
+function DialogoConfirmacao({
                                          titulo = "Confirmar ação",
                                          descricao,
                                          textoCancelar = "Cancelar",
@@ -12,8 +17,21 @@ export default function ConfirmAlert({
                                          aoCancelar,
                                          aoConfirmar
                                      }) {
-    if (!aberto) {
-        return null;
+    const [segundosRestantes, setSegundosRestantes] = useState(3);
+    const liberarEm = useRef(Date.now() + 3000);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            const segundos = Math.max(0, Math.ceil((liberarEm.current - Date.now()) / 1000));
+            setSegundosRestantes(segundos);
+            if (segundos === 0) clearInterval(timer);
+        }, 100);
+        return () => clearInterval(timer);
+    }, []);
+
+    function confirmar() {
+        if (carregando || Date.now() < liberarEm.current) return;
+        aoConfirmar?.();
     }
 
     return (
@@ -42,10 +60,10 @@ export default function ConfirmAlert({
                     <button
                         type="button"
                         className={`${css.confirmar} ${css[variante]}`}
-                        onClick={aoConfirmar}
-                        disabled={carregando}
+                        onClick={confirmar}
+                        disabled={carregando || segundosRestantes > 0}
                     >
-                        {carregando ? "Aguarde..." : textoConfirmar}
+                        {carregando ? "Aguarde..." : segundosRestantes > 0 ? `${textoConfirmar} (${segundosRestantes}s)` : textoConfirmar}
                     </button>
                 </div>
             </section>

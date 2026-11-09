@@ -11,7 +11,7 @@ const placeholders = [
 ];
 
 export default
-function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onExams, onComplements, onStudents, tipoUsuario = 1 }) {
+function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onExams, onComplements, onStudents, onHistory, tipoUsuario = 1 }) {
 
   const aluno = Number(tipoUsuario) === 2;
   const { confirmar } = useFeedback();
@@ -40,6 +40,7 @@ function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen,
       </View>
 
       <View style={styles.list}>
+        {aluno && onHistory && <Pressable style={globalStyles.secondaryButton} onPress={onHistory}><Text style={globalStyles.secondaryText}>Meu histórico de provas</Text></Pressable>}
         {cursos.map(
 (curso, index) => {
           const imagem = curso.imagem ? resolverUrlMidia(curso.imagem) : placeholders[index % placeholders.length];

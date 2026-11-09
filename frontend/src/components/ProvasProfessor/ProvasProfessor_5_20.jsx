@@ -1,222 +1,121 @@
-import { useCallback, useEffect, useState } from "react";
-import css from "./ProvasProfessor_38.module.css";
+import { useEffect, useState } from 'react';
+import HistoricoProvas from '../Provas/HistoricoProvas';
+import ConfirmAlert from '../ConfirmAlert/ConfirmAlert';
+import css from '../Provas/Provas.module.css';
 
-/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os campos de uma nova questão da prova */
-const questaoVazia = () => ({ enunciado: "", tipo: "objetiva", alternativas: ["", ""], resposta_esperada: "" });
-/* Fim item 20 */
-
-
-export default
-function ProvasProfessor({ api, idCurso, setMensagem }) {
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os dados e o estado da avaliação */
+const vazia = () => ({ enunciado: '', tipo: 'objetiva', alternativas: ['', ''], resposta_esperada: '' });
+export default function ProvasProfessor({ api, idCurso, setMensagem }) {
+    const [provas, setProvas] = useState([]);
     const [prova, setProva] = useState(null);
-    /* Fim item 20 */
-    const [titulo, setTitulo] = useState("");
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os dados e o estado da avaliação */
-    const [questoes, setQuestoes] = useState([questaoVazia()]);
-    const [respostas, setRespostas] = useState([]);
-    /* Fim item 20 */
-    const [carregando, setCarregando] = useState(false);
-    const [salvando, setSalvando] = useState(false);
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os dados e o estado da avaliação */
-    const [feedbacks, setFeedbacks] = useState({});
-    /* Fim item 20 */
+    const [titulo, setTitulo] = useState('');
+    const [minimo, setMinimo] = useState(70);
+    const [questoes, setQuestoes] = useState([vazia()]);
+    const [ocupado, setOcupado] = useState(false);
+    const [revisao, setRevisao] = useState(0);
+    const [salvo, setSalvo] = useState('');
+    const [confirmacao, setConfirmacao] = useState(null);
+    const editavel = !prova || prova.estado === 'rascunho';
+    const alterado = JSON.stringify({ titulo, nota_minima: Number(minimo), questoes }) !== salvo;
 
-    const ler = useCallback(async (response) => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data?.mensagem?.descricao || data?.mensagem || "Não foi possível concluir a operação.");
-        return data;
-    }, []);
-
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
-    const carregar = useCallback(async () => {
-        if (!idCurso) return;
-        setCarregando(true);
-        try {
-            const [exam, submissions] = await Promise.all([
-                fetch(`${api}/professor/cursos/${idCurso}/prova`, { credentials: "include" }).then(ler),
-                fetch(`${api}/professor/provas/respostas`, { credentials: "include" }).then(ler)
-            ]);
-            setProva(exam.prova);
-            setTitulo(exam.prova?.titulo || "");
-            setQuestoes(exam.questoes?.length ? exam.questoes.map((item) => ({
-                ...item,
-                alternativas: Array.isArray(item.alternativas) && item.alternativas.length ? item.alternativas : [""]
-            })) : [questaoVazia()]);
-            setRespostas(Array.isArray(submissions) ? submissions.filter((item) => String(item.id_curso) === String(idCurso)) : []);
-            setFeedbacks((atual) => ({ ...Object.fromEntries((Array.isArray(submissions) ? submissions : []).map((item) => [item.id, item.feedback || ""])), ...atual }));
-        } catch (error) {
-            setMensagem?.({ tipo: "erro", descricao: error.message });
-        } finally {
-            setCarregando(false);
-        }
-    }, [api, idCurso, ler, setMensagem]);
-    /* Fim item 20 */
-
-    useEffect(() => { carregar(); }, [carregar]);
-
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Atualiza os campos da questão em edição */
-    function alterarQuestao(index, campo, valor) {
-        setQuestoes((atuais) => atuais.map((item, i) => i === index ? { ...item, [campo]: valor } : item));
+    async function requisicao(caminho, metodo = 'GET', dados) {
+        const response = await fetch(`${api}${caminho}`, { method: metodo, credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }, body: dados ? JSON.stringify(dados) : undefined });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.mensagem?.descricao || 'Não foi possível concluir a operação.');
+        return result;
     }
-    /* Fim item 20 */
-
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Atualiza uma alternativa da questão objetiva */
-    function alterarAlternativa(index, indice, valor) {
-        setQuestoes((atuais) => atuais.map((item, i) => i === index ? {
-            ...item,
-            alternativas: item.alternativas.map((opcao, j) => j === indice ? valor : opcao),
-            resposta_esperada: item.resposta_esperada && item.resposta_esperada === item.alternativas[indice] ? valor : item.resposta_esperada
-        } : item));
+    const erro = (error) => setMensagem?.({ tipo: 'erro', descricao: error.message });
+    function novo() { setProva(null); setTitulo(''); setMinimo(70); setQuestoes([vazia()]); }
+    async function abrir(id) {
+        if (!id) { novo(); return; }
+        const dados = await requisicao(`/professor/provas/${id}`);
+        setProva(dados.prova); setTitulo(dados.prova.titulo); setMinimo(dados.prova.nota_minima); setQuestoes(dados.questoes);
+        setSalvo(JSON.stringify({ titulo: dados.prova.titulo, nota_minima: dados.prova.nota_minima, questoes: dados.questoes }));
     }
-    /* Fim item 20 */
-
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Valida e grava as questões e os critérios da prova */
-    async function salvarProva() {
-        const questoesPreparadas = questoes.map((item) => ({
-            ...item,
-            alternativas: item.tipo === "objetiva" ? item.alternativas.map((opcao) => opcao.trim()).filter(Boolean) : []
-        }));
-        if (questoesPreparadas.some((item) => item.tipo === "objetiva" && (item.alternativas.length < 2 || !item.alternativas.includes(item.resposta_esperada?.trim())))) {
-            setMensagem?.({ tipo: "erro", descricao: "Preencha pelo menos duas alternativas e selecione a correta em cada questão objetiva." });
-            return;
-        }
-        setSalvando(true);
-        try {
-            const dados = await fetch(`${api}/professor/cursos/${idCurso}/prova`, {
-                method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ titulo, questoes: questoesPreparadas })
-            }).then(ler);
-            setMensagem?.({ tipo: "sucesso", descricao: dados.mensagem?.descricao || "Prova salva como rascunho." });
-            await carregar();
-        } catch (error) {
-            setMensagem?.({ tipo: "erro", descricao: error.message });
-        } finally {
-            setSalvando(false);
-        }
+    async function carregar(preferido) {
+        const dados = await requisicao(`/professor/cursos/${idCurso}/provas`);
+        setProvas(dados.provas);
+        await abrir(preferido === undefined ? (dados.provas.find((p) => p.estado === 'rascunho') || dados.provas.find((p) => p.estado === 'vigente') || dados.provas[0])?.id : preferido);
     }
-    /* Fim item 20 */
+    useEffect(() => { carregar().catch(erro); }, [api, idCurso]);
 
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Publica a prova cadastrada para os alunos do curso */
-    async function publicarProva() {
-        if (!prova?.id) return;
-        try {
-            const dados = await fetch(`${api}/professor/provas/${prova.id}/publicar`, { method: "PATCH", credentials: "include" }).then(ler);
-            setMensagem?.({ tipo: "sucesso", descricao: dados.mensagem?.descricao || "Prova publicada." });
-            await carregar();
-        } catch (error) {
-            setMensagem?.({ tipo: "erro", descricao: error.message });
-        }
+    async function acao(executar) {
+        setOcupado(true);
+        try { await executar(); setRevisao((n) => n + 1); }
+        catch (error) { erro(error); }
+        finally { setOcupado(false); }
     }
-    /* Fim item 20 */
-
-
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Confirma e solicita a exclusão da prova e suas respostas */
-    async function excluirProva() {
-        if (!prova?.id || !window.confirm("Excluir a prova e todas as respostas dos alunos?")) return;
-        setSalvando(true);
-        try {
-            await fetch(`${api}/professor/cursos/${idCurso}/prova`, { method: "DELETE", credentials: "include" }).then(ler);
-            setMensagem?.({ tipo: "sucesso", descricao: "Prova excluída. Crie uma nova quando quiser." });
-            await carregar();
-        } catch (error) {
-            setMensagem?.({ tipo: "erro", descricao: error.message });
-        } finally {
-            setSalvando(false);
-        }
+    function alterar(i, campo, valor) { setQuestoes((qs) => qs.map((q, j) => i === j ? { ...q, [campo]: valor } : q)); }
+    function salvar() {
+        return acao(async () => {
+            const dados = await requisicao(prova ? `/professor/provas/${prova.id}` : `/professor/cursos/${idCurso}/provas`, prova ? 'PUT' : 'POST', { titulo, nota_minima: Number(minimo), questoes });
+            await carregar(prova?.id || dados.id_prova);
+            setMensagem?.({ tipo: 'sucesso', descricao: 'Rascunho salvo.' });
+        });
     }
-    /* Fim item 20 */
-
-    /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Envia a nota e o feedback da questão dissertativa */
-    async function corrigirQuestao(item, questao, correta) {
-        try {
-            const dados = await fetch(`${api}/professor/provas/respostas/${item.id}/questoes/${questao.id}`, {
-                method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ correta, feedback: feedbacks[item.id] || "" })
-            }).then(ler);
-            setMensagem?.({ tipo: "sucesso", descricao: dados.resultado?.status ? `Prova concluída: ${dados.resultado.nota} pontos, ${dados.resultado.acertos} de ${dados.resultado.total_questoes} acertos.` : "Questão corrigida." });
-            await carregar();
-        } catch (error) {
-            setMensagem?.({ tipo: "erro", descricao: error.message });
-        }
+    function mudarEstado(tipo) {
+        setConfirmacao({ tipo, id: prova.id });
     }
-    /* Fim item 20 */
+    async function confirmarAcao() {
+        if (!confirmacao || ocupado) return;
+        const { tipo, id } = confirmacao;
+        await acao(async () => {
+            if (tipo === 'excluir') {
+                await requisicao(`/professor/provas/${id}`, 'DELETE');
+                await carregar(null);
+            } else {
+                await requisicao(`/professor/provas/${id}/${tipo}`, 'PATCH');
+                await carregar(id);
+            }
+        });
+        setConfirmacao(null);
+    }
 
-    return (
-        <section className={css.pagina}>
-            {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-            <header><div><span>AVALIAÇÃO</span><h2>Provas do curso</h2><p>As alternativas são corrigidas automaticamente. Corrija cada dissertativa; a aprovação exige {prova?.nota_minima ?? 70} pontos de 100.</p></div>
-            </header>
-            {/* Fim item 20 */}
-            {!idCurso ? /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <p className={css.vazio}>Selecione um curso para configurar uma prova.</p> /* Fim item 20 */ : <>
-                <section className={css.cartao}>
-                    {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-                    <h3>{prova?.publicada ? "Editar prova publicada" : "Cadastro da prova"}</h3>
-                    {/* Fim item 20 */}
-                    {prova?.publicada && <p className={css.avisoEdicao}>Ao salvar alterações, as respostas anteriores desta prova serão removidas para que os alunos respondam à versão atual.</p>}
-                    <label>Título da prova<input value={titulo} onChange={(event) => setTitulo(event.target.value)} /></label>
-                    {questoes.map((questao, index) => /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <article className={css.questao} key={questao.id || index}>
-                        <div className={css.questaoTopo}><h4>Questão {index + 1}</h4>{questoes.length > 1 && <button type="button" onClick={() => setQuestoes((atual) => atual.filter((_, i) => i !== index))}>Remover</button>}</div>
-                        <label>Enunciado<textarea value={questao.enunciado} onChange={(event) => alterarQuestao(index, "enunciado", event.target.value)} /></label>
-                        <label>Tipo<select value={questao.tipo} onChange={(event) => alterarQuestao(index, "tipo", event.target.value)}><option value="objetiva">Objetiva</option><option value="dissertativa">Dissertativa</option></select></label>
-                        {questao.tipo === "objetiva" && <div className={css.alternativas}>
-                            {questao.alternativas.map((alternativa, indiceAlternativa) => <div className={css.alternativa} key={indiceAlternativa}>
-                                <label>Alternativa {indiceAlternativa + 1}
-                                    <textarea
-                                        value={alternativa}
-                                        onChange={(event) => alterarAlternativa(index, indiceAlternativa, event.target.value)}
-                                        rows={3}
-                                    />
-                                </label>
-                                <label className={css.gabarito}><input type="radio" name={`gabarito-${index}`} checked={questao.resposta_esperada === alternativa && !!alternativa.trim()} onChange={() => alterarQuestao(index, "resposta_esperada", alternativa)} disabled={!alternativa.trim()} /> Resposta correta</label>
-                                {questao.alternativas.length > 2 && <div className={css.questaoTopo}>
-                                    <button type="button" aria-label={`Remover alternativa ${indiceAlternativa + 1} da questão ${index + 1}`} onClick={() => setQuestoes((atuais) => atuais.map((item, i) => i === index ? { ...item, alternativas: item.alternativas.filter((_, indice) => indice !== indiceAlternativa), resposta_esperada: item.resposta_esperada === alternativa ? "" : item.resposta_esperada } : item))}>Remover alternativa</button>
-                                </div>}
-                            </div>)}
-                            <div className={css.acoes}>
-                                <button type="button" onClick={() => alterarQuestao(index, "alternativas", [...questao.alternativas, ""])}>Adicionar Alternativa</button>
-                            </div>
-                        </div>}
-                    </article> /* Fim item 20 */)}
-                    {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-                    <div className={css.acoes}><button type="button" onClick={() => setQuestoes((atual) => [...atual, questaoVazia()])}>Adicionar questão</button><button type="button" onClick={salvarProva} disabled={salvando}>{salvando ? "Salvando..." : prova?.publicada ? "Salvar alterações" : "Salvar rascunho"}</button>{prova && !prova.publicada && <button type="button" onClick={publicarProva}>Publicar prova</button>}{prova && <button type="button" className={css.botaoExcluir} onClick={excluirProva} disabled={salvando}>Excluir prova</button>}</div>
-                    {/* Fim item 20 */}
-                    {prova?.publicada && /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */ <p className={css.publicada}>A prova está publicada e é exigida para novos certificados.</p> /* Fim item 5 */}
-                </section>
-                <section className={css.cartao}><h3>Respostas para corrigir</h3>
-                    {carregando && <p>Carregando...</p>}
-                    {!carregando && respostas.filter((item) => item.status === 0).length === 0 && <p className={css.vazio}>Nenhuma resposta aguardando correção neste curso.</p>}
-                    {respostas.filter((item) => item.status === 0).map((item) => {
-                        /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara os dados e o estado da avaliação */
-                        let respostasAluno = {};
-                        /* Fim item 20 */
-                        try { respostasAluno = typeof item.respostas === "string" ? JSON.parse(item.respostas) : item.respostas || {}; } catch { respostasAluno = {}; }
-                        return <article className={css.resposta} key={item.id}><h4>{item.aluno} · {item.prova}</h4><p>{item.criado_em ? new Date(item.criado_em).toLocaleString("pt-BR") : ""}</p>
-                            {Object.entries(respostasAluno).map(([idQuestao, valor], index) => {
-                                /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
-                                const questao = item.questoes?.find((pergunta) => String(pergunta.id) === idQuestao);
-                                const corrigida = item.correcoes_dissertativas?.[idQuestao];
-                                /* Fim item 20 */
-                                return <div key={idQuestao}><p><strong>{questao?.enunciado || `Questão ${index + 1}`}:</strong> {String(valor)}</p>
-                                    {questao?.tipo === "objetiva" && <p>{String(valor) === questao.resposta_esperada ? "Resposta correta." : `Resposta incorreta. Gabarito: ${questao.resposta_esperada}.`}</p>}
-                                    {questao?.tipo === "dissertativa" && <div className={css.acoes}><span>{corrigida === undefined ? "Aguardando sua correção" : corrigida ? "Correta" : "Incorreta"}</span><button type="button" onClick={() => corrigirQuestao(item, questao, true)}>Correta</button><button type="button" onClick={() => corrigirQuestao(item, questao, false)}>Incorreta</button></div>}
-                                </div>;
-                            })}
-                            <p>{item.nota ?? 0} pontos · {item.acertos ?? 0} de {item.total_questoes || item.questoes?.length || 0} acertos até agora</p>
-                            <textarea placeholder="Feedback para o aluno (opcional)" value={feedbacks[item.id] || ""} onChange={(event) => setFeedbacks((atual) => ({ ...atual, [item.id]: event.target.value }))} />
-                        </article>;
-                    })}
-                </section>
-                {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-                <section className={css.cartao}><h3>Resultados corrigidos</h3>
-                    {respostas.filter((item) => item.status !== 0).length === 0 && <p className={css.vazio}>Nenhuma prova corrigida neste curso.</p>}
-                    {respostas.filter((item) => item.status !== 0).map((item) => <article className={css.resposta} key={item.id}>
-                        <h4>{item.aluno} · {item.prova}</h4>
-                        <p>{item.status === 1 ? "Aprovado" : "Reprovado"} · {item.nota ?? 0} pontos · {item.acertos ?? 0} de {item.total_questoes || item.questoes?.length || 0} acertos</p>
-                    </article>)}
-                </section>
-                {/* Fim item 20 */}
-            </>}
+    return <section className={css.pagina}>
+        <section className={css.cartao}>
+            <h2>Provas do curso</h2><p>Provas publicadas são permanentes. Crie outra versão para alterar conteúdo ou percentual de aprovação.</p>
+            <div className={css.acoes}><button disabled={ocupado} onClick={novo}>Novo rascunho</button></div>
+            <label>Prova<select value={prova?.id || ''} disabled={ocupado} onChange={(e) => acao(() => abrir(e.target.value))}>
+                <option value="">Novo rascunho</option>{provas.map((p) => <option value={p.id} key={p.id}>{p.titulo} · v{p.versao} · {p.estado} · mínimo {p.nota_minima}%</option>)}
+            </select></label>
+            {prova && <p>Versão {prova.versao} · {prova.estado}</p>}
+            <label>Título<input value={titulo} maxLength={150} disabled={!editavel || ocupado} onChange={(e) => setTitulo(e.target.value)} /></label>
+            <label>Percentual mínimo para aprovação (%)<input type="number" min="50" max="100" step="1" value={minimo} disabled={!editavel || ocupado} onChange={(e) => setMinimo(e.target.value)} /></label>
+            <p>Escolha um percentual inteiro entre 50% e 100%. Ele será preservado nas tentativas desta versão.</p>
+            {questoes.map((q, i) => <article className={css.questao} key={i}>
+                <h3>Questão {i + 1}</h3>
+                <label>Enunciado<textarea value={q.enunciado} disabled={!editavel || ocupado} onChange={(e) => alterar(i, 'enunciado', e.target.value)} /></label>
+                <label>Tipo<select disabled={!editavel || ocupado} value={q.tipo} onChange={(e) => alterar(i, 'tipo', e.target.value)}><option value="objetiva">Objetiva</option><option value="dissertativa">Dissertativa</option></select></label>
+                {q.tipo === 'objetiva' && <>
+                    <p>Marque a alternativa correta.</p>
+                    {q.alternativas.map((a, j) => <label className={css.alternativa} key={j}>
+                        <input type="radio" aria-label={`Alternativa correta ${j + 1}`} name={`gabarito-${i}`} checked={!!a && q.resposta_esperada === a} disabled={!editavel || ocupado} onChange={() => alterar(i, 'resposta_esperada', a)} />
+                        <input aria-label={`Alternativa ${j + 1}`} value={a} disabled={!editavel || ocupado} onChange={(e) => {
+                            const alternativas = q.alternativas.map((op, k) => k === j ? e.target.value : op);
+                            setQuestoes((qs) => qs.map((op, k) => k === i ? { ...op, alternativas, resposta_esperada: q.resposta_esperada === a ? e.target.value : q.resposta_esperada } : op));
+                        }} />
+                        {editavel && q.alternativas.length > 2 && <button onClick={() => alterar(i, 'alternativas', q.alternativas.filter((_, k) => j !== k))}>Remover</button>}
+                    </label>)}
+                    {editavel && <button disabled={ocupado} onClick={() => alterar(i, 'alternativas', [...q.alternativas, ''])}>Adicionar alternativa</button>}
+                </>}
+                {editavel && questoes.length > 1 && <button disabled={ocupado} className={css.perigo} onClick={() => setQuestoes((qs) => qs.filter((_, j) => i !== j))}>Remover questão</button>}
+            </article>)}
+            <div className={css.acoes}>
+                {editavel ? <><button disabled={ocupado} onClick={() => setQuestoes((qs) => [...qs, vazia()])}>Adicionar questão</button><button className={css.primario} disabled={ocupado || minimo === '' || Number(minimo) < 50 || Number(minimo) > 100 || !Number.isInteger(Number(minimo))} onClick={salvar}>Salvar rascunho</button></> : <button disabled={ocupado} onClick={() => { setProva(null); setQuestoes((qs) => qs.map((q) => ({ ...q, id: undefined }))); }}>Criar versão a partir desta</button>}
+                {prova?.estado === 'rascunho' && <><button disabled={ocupado || alterado} onClick={() => mudarEstado('publicar')}>{alterado ? 'Salve as alterações antes de publicar' : 'Publicar versão salva'}</button><button disabled={ocupado} className={css.perigo} onClick={() => setConfirmacao({ tipo: 'excluir', id: prova.id })}>Excluir rascunho</button></>}
+                {prova?.estado === 'vigente' && <button disabled={ocupado} onClick={() => mudarEstado('arquivar')}>Arquivar prova</button>}
+            </div>
         </section>
-    );
+        <HistoricoProvas api={api} idCurso={idCurso} professor atualizar={revisao} />
+        <ConfirmAlert
+            aberto={Boolean(confirmacao)}
+            titulo={confirmacao?.tipo === 'publicar' ? 'Publicar esta prova?' : confirmacao?.tipo === 'arquivar' ? 'Arquivar esta prova?' : 'Excluir este rascunho?'}
+            descricao={confirmacao?.tipo === 'publicar' ? 'A prova vigente será arquivada e seu histórico será preservado.' : confirmacao?.tipo === 'arquivar' ? 'Esta prova deixará de aceitar respostas; o histórico será preservado.' : 'O rascunho e suas questões serão excluídos.'}
+            textoConfirmar={confirmacao?.tipo === 'publicar' ? 'Publicar' : confirmacao?.tipo === 'arquivar' ? 'Arquivar' : 'Excluir rascunho'}
+            variante={confirmacao?.tipo === 'publicar' ? 'primario' : 'perigo'}
+            carregando={ocupado}
+            aoCancelar={() => { if (!ocupado) setConfirmacao(null); }}
+            aoConfirmar={confirmarAcao}
+        />
+    </section>;
 }

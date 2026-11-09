@@ -1,0 +1,27 @@
+.pagina { display: grid; gap: 20px; color: #173e2c; }
+.cartao { display: grid; gap: 16px; padding: 22px; background: #fff; border: 1px solid #dbe7df; border-radius: 10px; }
+.cartao h2, .cartao h3, .cartao h4 { margin: 0; }
+.cartao p { line-height: 1.5; }
+.cartao input:not([type=radio]), .cartao textarea, .cartao select { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #b9cdbf; border-radius: 6px; font: inherit; color: #173e2c; background: #fff; }
+.cartao textarea { min-height: 85px; resize: vertical; }
+.cartao label { display: grid; gap: 6px; }
+.cartao button { min-height: 38px; padding: 8px 14px; border: 1px solid #087347; background: #fff; color: #087347; border-radius: 6px; font: inherit; cursor: pointer; }
+.cartao button:disabled { opacity: .5; cursor: default; }
+.cartao button:hover:not(:disabled) { background: #edf8f1; }
+.acoes, .paginacao { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.cartao .primario { background: #07834e; color: #fff; }
+.cartao .perigo { color: #a52327; border-color: #a52327; }
+.questao { display: grid; gap: 12px; padding: 16px; border: 1px solid #dbe7df; border-radius: 8px; }
+.alternativa { display: flex !important; align-items: center; gap: 10px; }
+.alternativa input[type=radio] { flex: none; width: 18px; height: 18px; }
+.alternativa input:not([type=radio]) { flex: 1; min-width: 0; }
+.filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.registro { display: grid; gap: 10px; padding: 18px; border: 1px solid #dbe7df; border-radius: 8px; }
+.aprovado { color: #076438; }
+.reprovado { color: #ac2027; }
+.pendente { color: #68501c; }
+.registro .situacao { display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 4px; background: #edf1ee; color: #445b4c; font-size: .8em; }
+.detalhes { display: grid; gap: 14px; padding-top: 12px; border-top: 1px solid #dbe7df; }
+.erro { color: #ac2027; }
+.aviso { padding: 12px; background: #eef6f0; color: #3e5f49; border-radius: 6px; }
+@media(max-width: 600px) { .cartao { padding: 16px; } .filtros { grid-template-columns: 1fr; } }
