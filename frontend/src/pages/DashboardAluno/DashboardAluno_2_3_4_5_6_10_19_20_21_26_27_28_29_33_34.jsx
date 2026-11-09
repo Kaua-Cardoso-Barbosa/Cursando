@@ -1,9 +1,15 @@
+import BotaoVoltar from '../../components/BotaoVoltar/BotaoVoltar.jsx';
+import CabecalhoPagina from '../../components/CabecalhoPagina/CabecalhoPagina.jsx';
+import videoCss from './PaginaVideo.module.css';
+import MeusCursos from '../../components/MeusCursos/MeusCursos.jsx';
+import CursoCardBase from '../../components/CursoCard/CursoCard.jsx';
+import AutoTextarea from '../../components/AutoTextarea/AutoTextarea.jsx';
+import PaginaIndisponivel from '../PaginaIndisponivel/PaginaIndisponivel.jsx';
 import ProvaCursoAluno from '../../components/Provas/ProvaCursoAluno.jsx';
 import HistoricoAlunoCursos from '../../components/Provas/HistoricoAlunoCursos.jsx';
 import EtapaModulo, { ListaEtapasModulo } from '../../components/EtapaModulo/EtapaModulo.jsx';
-import CapaCurso from '../../components/CapaCurso/CapaCurso.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
     FaCheck,
     FaCalendarAlt,
@@ -165,56 +171,46 @@ function CardMetrica({ titulo, detalhe, valor, icone = <FaGraduationCap /> }) {
 
 function CursoCard({ curso, api, onAbrir, mostrarProgresso = false }) {
     const imagem = curso.imagem ? resolverUrlMidia(api, curso.imagem) : PLACEHOLDER_CURSO;
-    /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */
     const progresso = Number(curso.progresso || 0);
-    /* Fim item 4 */
-
-    return (
-        <article className={css.cardCurso}>
-            <button className={css.areaCardClicavel} onClick={() => onAbrir?.(curso)}>
-                <CapaCurso imagem={imagem} titulo={curso.titulo}>
-                    {mostrarProgresso && (
-                        <div className={css.progressoCurso} aria-label={`${progresso}% concluido`}>
-                            <span>{progresso}%</span>
-                            <div className={css.barraProgresso} aria-hidden="true">
-                                <i style={{ width: `${progresso}%` }} />
-                            </div>
-                        </div>
-                    )}
-                </CapaCurso>
-                <div className={css.infoCurso}>
-                    <div className={css.textoCurso}>
-                        <h3>{curso.titulo}</h3>
-                        <p>{curso.descricao}</p>
-                    </div>
-                </div>
-            </button>
-        </article>
-    );
+    return <CursoCardBase imagem={imagem} titulo={curso.titulo} descricao={curso.descricao}
+        onAbrir={() => onAbrir?.(curso)}
+        capaExtra={mostrarProgresso && <div className={css.progressoCurso} aria-label={progresso + '% concluido'}>
+            <span>{progresso}%</span><div className={css.barraProgresso} aria-hidden="true"><i style={{ width: progresso + '%' }} /></div>
+        </div>} />;
 }
 
-function AulaCard({ aula, api, onAbrir }) {
+function AulaCard({ aula, api, onAbrir, compacto = false }) {
     const imagem = aula.thumb ? resolverUrlMidia(api, aula.thumb) : PLACEHOLDER_AULA;
+    const duracao = Number(aula.duracao_segundos);
+    const posicao = Number(aula.progresso_segundos) || 0;
+    const percentual = aula.assistida ? 100 : duracao > 0 && Number.isFinite(duracao)
+        ? Math.min(100, Math.max(0, posicao / duracao * 100)) : null;
 
     return (
-        <article className={css.cardAula}>
+        <article className={`${css.cardAula} ${compacto ? videoCss.aulaLateral : ''}`}>
             {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
             <button className={css.areaCardClicavel} onClick={() => onAbrir?.(aula)} disabled={!onAbrir}>
                 <div className={css.previewAula}>
                     <img src={imagem} alt={aula.titulo} />
                     <span className={css.playBadge}><FaPlay /></span>
+                    {aula.assistida && <span className={css.seloAulaConcluida}><FaCheck aria-hidden="true" /> Concluída</span>}
+                    {percentual !== null && percentual > 0 && (
+                        <div className={`${css.progressoVideo} ${aula.assistida ? css.videoConcluido : ''}`}
+                            role="progressbar" aria-label="Progresso do vídeo"
+                            aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(percentual)}>
+                            <span style={{ width: `${percentual}%` }} />
+                        </div>
+                    )}
                 </div>
                 <div className={css.infoAula}>
                     <div>
                         <h3>{aula.titulo}</h3>
-                        <p>{aula.descricao}</p>
                         {Number(aula.progresso_segundos) > 0 && (
                             <small className={css.retomadaAula}>
                                 Continuar de {formatarPosicaoAula(aula.progresso_segundos)}
                             </small>
                         )}
                     </div>
-                    {aula.assistida && <FaCheck className={css.checkAula} />}
                 </div>
             </button>
             {/* Fim item 4 */}
@@ -262,6 +258,7 @@ function DashboardAluno({
     const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
     const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
     const [aulaAtual, setAulaAtual] = useState(null);
+    const consultaAulaRef = useRef(0);
     /* Sprint item 26 - Bloquear gravação de tela durante o curso - Protege a reprodução diante de gravação ou ocultação da tela detectável */
     const [protecaoAtiva, setProtecaoAtiva] = useState(false);
     /* Fim item 26 */
@@ -272,7 +269,16 @@ function DashboardAluno({
     /* Fim item 5 */
 
     /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
-    const [idModuloAberto, setIdModuloAberto] = useState(null);
+    const [parametros, setParametros] = useSearchParams();
+    const idModuloAberto = parametros.get('modulo');
+    function setIdModuloAberto(id) {
+        setParametros((atuais) => {
+            const novos = new URLSearchParams(atuais);
+            if (id == null) novos.delete('modulo');
+            else novos.set('modulo', String(id));
+            return novos;
+        }, { replace: true });
+    }
     /* Fim item 6 */
     const location = useLocation();
     const navigate = useNavigate();
@@ -325,7 +331,7 @@ async () => {
         } catch (erro) {
             console.error("Erro ao carregar dashboard do aluno:", erro);
 
-            setDashboard({ metricas: { inscritos: 0, finalizados: 0, iniciados: 0 }, recentes: [], erro_assinatura: true, erro: erro.message });
+            setDashboard({ metricas: { inscritos: 0, finalizados: 0, iniciados: 0 }, recentes: [], erro_assinatura: true, erro: erro.message, indisponivel: !erro.status || erro.status >= 500 });
         }
     }
 , [api, lerResposta]);
@@ -440,10 +446,15 @@ async (idCurso) => {
                 avisar({ tipo: "erro", descricao: erro.message });
                 navigate(erro.dados?.redirecionar || "/DashboardAluno/financeiro");
             }
-            setDetalheCurso(null);
-            setMateriaisCurso([]);
+            // Uma falha temporária na sincronização não deve fechar o módulo aberto.
+            if (!erro.status || erro.status >= 500) {
+                setDetalheCurso((anterior) => Number(anterior?.curso?.id) === Number(idCurso) ? anterior : null);
+            } else {
+                setDetalheCurso(null);
+                setMateriaisCurso([]);
+                setProvaAluno(null);
+            }
             /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
-            setProvaAluno(null);
             /* Fim item 20 */
         } finally {
             setCarregando(false);
@@ -452,11 +463,15 @@ async (idCurso) => {
 , [api, lerResposta]);
 
     const carregarAula = useCallback(async (idAula) => {
+        const consulta = ++consultaAulaRef.current;
         setCarregando(true);
         try {
             const resposta = await fetch(`${api}/aluno/aulas/${idAula}`, { credentials: "include" });
-            setAulaAtual(await lerResposta(resposta));
+            const dados = await lerResposta(resposta);
+            if (consulta !== consultaAulaRef.current) return;
+            setAulaAtual(dados);
         } catch (erro) {
+            if (consulta !== consultaAulaRef.current) return;
             console.error("Erro ao carregar aula:", erro);
             if (erro.status === 402) {
                 avisar({ tipo: "erro", descricao: erro.message });
@@ -464,7 +479,7 @@ async (idCurso) => {
             }
             setAulaAtual(null);
         } finally {
-            setCarregando(false);
+            if (consulta === consultaAulaRef.current) setCarregando(false);
         }
     }, [api, lerResposta]);
 
@@ -778,7 +793,7 @@ async function confirmarFatura(idAssinatura) {
             });
             await lerResposta(resposta);
             await carregarDashboard();
-            setAulaAtual((atual) => atual ? { ...atual, aula: { ...atual.aula, assistida: true } } : atual);
+            setAulaAtual((atual) => Number(atual?.aula?.id) === Number(aula.id) ? { ...atual, aula: { ...atual.aula, assistida: true } } : atual);
         } catch (erro) {
             console.error("Erro ao marcar aula como assistida:", erro);
         }
@@ -846,7 +861,7 @@ async function baixarCertificado(curso) {
 
     /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia a nota e o comentário da avaliação do curso */
     async function enviarAvaliacaoCurso() {
-        if (enviandoAvaliacao || avaliacaoEnviada) return;
+        if (!podeAvaliar || enviandoAvaliacao || avaliacaoEnviada) return;
         setEnviandoAvaliacao(true);
         try {
             const resposta = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}/avaliacoes`, {
@@ -858,6 +873,16 @@ async function baixarCertificado(curso) {
             await lerResposta(resposta);
             setAvaliacaoEnviada(true);
             avisar({ tipo: "sucesso", descricao: "Avaliação cadastrada com sucesso." });
+            // Atualiza os comentários sem desmontar a página nem apagar a nota enviada.
+            try {
+                const atualizacao = await fetch(`${api}/aluno/cursos/${cursoDetalhe.id}`, { credentials: "include" });
+                if (atualizacao.ok) {
+                    const dados = await atualizacao.json();
+                    setDetalheCurso((anterior) => anterior?.curso?.id === dados.curso?.id ? dados : anterior);
+                }
+            } catch {
+                // A avaliação já foi salva; os comentários serão atualizados na próxima visita.
+            }
         } catch (erro) {
             if (!erro.status) avisar({ tipo: "erro", descricao: erro.message || "Não foi possível cadastrar a avaliação." });
         } finally {
@@ -869,10 +894,14 @@ async function baixarCertificado(curso) {
     const metricas = dashboard?.metricas || { inscritos: 0, finalizados: 0, iniciados: 0 };
     const recentes = dashboard?.recentes || [];
     const cursoDetalhe = detalheCurso?.curso;
+    const liberacaoAvaliacao = detalheCurso?.avaliacao;
+    const podeAvaliar = Boolean(liberacaoAvaliacao?.pode_avaliar);
+    const ultimoCursoAvaliado = useRef(null);
     useEffect(() => {
+        if (!cursoDetalhe?.id || ultimoCursoAvaliado.current === cursoDetalhe.id) return;
+        ultimoCursoAvaliado.current = cursoDetalhe.id;
         setAvaliacaoEnviada(false);
         setAvaliacao({ nota: 5, comentario: "" });
-        setIdModuloAberto(null);
         setAbaCurso("modulos");
     }, [cursoDetalhe?.id]);
     const aulasDetalhe = detalheCurso?.aulas || [];
@@ -881,8 +910,19 @@ async function baixarCertificado(curso) {
     const moduloAberto = idModuloAberto == null ? null : modulosDetalhe.find((modulo) => Number(modulo.id) === Number(idModuloAberto));
     const aulasSemModulo = aulasDetalhe.filter((aula) => !aula.id_modulo);
     /* Fim item 6 */
-    const videoAula = aulaAtual?.aula;
+    const idAulaNaRota = location.pathname.match(/\/DashboardAluno\/aulas\/(\d+)$/)?.[1];
+    const videoAula = Number(aulaAtual?.aula?.id) === Number(idAulaNaRota) ? aulaAtual.aula : null;
     const proximas = aulaAtual?.proximas || [];
+    const origemCurso = location.state?.origemCurso;
+    const retornoCurso = origemCurso && /^\/DashboardAluno\/(cursos|descobrir)\/\d+(\?|$)/.test(origemCurso)
+        ? origemCurso : videoAula ? `/DashboardAluno/cursos/${videoAula.id_curso}` : '/DashboardAluno/cursos';
+
+    function abrirVideo(aula) {
+        const origem = visao === 'aula' ? origemCurso
+            : /^\/DashboardAluno\/(cursos|descobrir)\/\d+$/.test(location.pathname)
+                ? location.pathname + location.search : undefined;
+        navigate(`/DashboardAluno/aulas/${aula.id}`, { state: { origemCurso: origem } });
+    }
     /* Sprint item 34 - Exibir faturas em aberto - Seleciona as faturas ainda pendentes de pagamento */
     const faturasAbertas = faturas.filter((fatura) => fatura.aberta);
     /* Fim item 34 */
@@ -892,7 +932,9 @@ async function baixarCertificado(curso) {
     /* Fim item 33 */
 
     return (
-        <div className={css.painelAluno}>
+        dashboard?.indisponivel
+            ? <PaginaIndisponivel aoTentarNovamente={carregarDashboard} />
+            : <div className={css.painelAluno}>
             <MenuLateralAluno itemAtivo={itemAtivo} />
 
             <div className={css.conteudoPrincipal}>
@@ -922,7 +964,7 @@ async function baixarCertificado(curso) {
                                 {recentes.length === 0 && <EstadoVazio texto="Nenhuma aula assistida ainda." />}
                                 <div className={css.carrosselCursos}>
                                     {recentes.map((aula) => (
-                                        <AulaCard key={aula.id} aula={aula} api={api} onAbrir={() => navigate(`/DashboardAluno/aulas/${aula.id}`)} />
+                                        <AulaCard key={aula.id} aula={aula} api={api} onAbrir={() => abrirVideo(aula)} />
                                     ))}
                                 </div>
                             </section>
@@ -954,21 +996,12 @@ async function baixarCertificado(curso) {
                     )}
 
                     {visao === "meus-cursos" && !cursoDetalhe && (
-                        <section className={css.secaoCursos}>
-                                                                                                                                                                                    
-                            <header className={css.cabecalhoPagina}>
-                                <span className={css.etiquetaPagina}>MINHA APRENDIZAGEM</span>
-                                <h2>Meus cursos</h2>
-                                <p>Acesse os cursos em que você está inscrito e continue de onde parou.</p>
-                            </header>
-                            {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
-                            {!carregando && meusCursos.length === 0 && <EstadoVazio texto="Você ainda não se inscreveu em cursos." />}
-                            <div className={css.gridCursos}>
-                                {meusCursos.map((curso) => (
-                                    <CursoCard key={curso.id} curso={curso} api={api} mostrarProgresso onAbrir={() => navigate(`/DashboardAluno/cursos/${curso.id}`)} />
-                                ))}
-                            </div>
-                        </section>
+                        <MeusCursos descricao="Acesse os cursos em que você está inscrito e continue de onde parou."
+                            carregando={carregando} vazio={meusCursos.length === 0}
+                            mensagemVazia="Você ainda não se inscreveu em cursos.">
+                            {meusCursos.map((curso) => <CursoCard key={curso.id} curso={curso} api={api} mostrarProgresso
+                                onAbrir={() => navigate('/DashboardAluno/cursos/' + curso.id)} />)}
+                        </MeusCursos>
                     )}
 
                     {visao === "provas" && <HistoricoAlunoCursos api={api} />}
@@ -1051,9 +1084,9 @@ async function baixarCertificado(curso) {
 
                     {(visao === "meus-cursos" || visao === "descobrir") && cursoDetalhe && (
                         <section className={css.secaoDetalheCurso}>
-                            <button className={css.linkVoltar} onClick={() => navigate(visao === "descobrir" ? "/DashboardAluno/descobrir" : "/DashboardAluno/cursos")}>
+                            <BotaoVoltar  onClick={() => navigate(visao === "descobrir" ? "/DashboardAluno/descobrir" : "/DashboardAluno/cursos")}>
                                 Voltar
-                            </button>
+                            </BotaoVoltar>
 
                             <div className={css.heroCurso}>
                                 <img src={cursoDetalhe.imagem ? resolverUrlMidia(api, cursoDetalhe.imagem) : PLACEHOLDER_CURSO} alt={cursoDetalhe.titulo} />
@@ -1093,12 +1126,14 @@ async function baixarCertificado(curso) {
                                 )}
                             </div>
 
+                            {abaCurso === "modulos" && moduloAberto && (
+                                <BotaoVoltar onClick={() => setIdModuloAberto(null)}>Voltar aos módulos</BotaoVoltar>
+                            )}
                             {abaCurso === "modulos" && (
                                 <div className={css.conteudoCurso}>
                                     <h2>Módulos do curso</h2>
                                     {moduloAberto ? (
                                         <section className={css.detalheModuloAluno}>
-                                            <button className={css.linkVoltar} onClick={() => setIdModuloAberto(null)}>Voltar aos módulos</button>
                                             <h3>Módulo {modulosDetalhe.findIndex((item) => Number(item.id) === Number(moduloAberto.id)) + 1} · {moduloAberto.titulo}</h3>
                                             {moduloAberto.descricao && <p>{moduloAberto.descricao}</p>}
                                             <h4>Aulas deste módulo</h4>
@@ -1106,7 +1141,7 @@ async function baixarCertificado(curso) {
                                             <div className={css.gridAulas}>
                                                 {(moduloAberto.aulas || []).map((aula) => (
                                                     <AulaCard key={aula.id} aula={aula} api={api}
-                                                        onAbrir={cursoDetalhe.matriculado ? () => navigate(`/DashboardAluno/aulas/${aula.id}`) : undefined} />
+                                                        onAbrir={cursoDetalhe.matriculado ? () => abrirVideo(aula) : undefined} />
                                                 ))}
                                             </div>
                                             {!cursoDetalhe.matriculado && <p className={css.avisoPreviewModulo}>Inscreva-se para assistir às aulas.</p>}
@@ -1162,20 +1197,7 @@ async function baixarCertificado(curso) {
                                             </button>
                                             {/* Fim item 5 */}
                                             {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
-                                            <div className={css.avaliacaoAposProva}>
-                                                <h2>Avaliar curso</h2>
-                                                <div className={css.seletorEstrelas} role="radiogroup" aria-label="Nota de 0 a 5 estrelas">
-                                                    <button type="button" className={avaliacao.nota === 0 ? css.estrelasZeroAtivo : css.estrelasZero} aria-label="0 estrelas" aria-pressed={avaliacao.nota === 0} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota: 0 }); setAvaliacaoEnviada(false); }}>0</button>
-                                                    {[1, 2, 3, 4, 5].map((nota) => (
-                                                        <button key={nota} type="button" className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }}>★</button>
-                                                    ))}
-                                                    <span>{avaliacao.nota} de 5</span>
-                                                </div>
-                                                <textarea className={css.textoAvaliacao} rows="4" value={avaliacao.comentario} onChange={(e) => { setAvaliacao({ ...avaliacao, comentario: e.target.value }); setAvaliacaoEnviada(false); }} placeholder="Escreva sua avaliação (opcional)" disabled={enviandoAvaliacao} />
-                                                <button type="button" className={`${css.botaoInscrever} ${css.botaoAvaliacao} ${avaliacaoEnviada ? css.botaoAvaliacaoEnviada : ""}`} onClick={enviarAvaliacaoCurso} disabled={enviandoAvaliacao || avaliacaoEnviada} aria-busy={enviandoAvaliacao}>
-                                                    {enviandoAvaliacao ? "Enviando avaliação..." : avaliacaoEnviada ? "✓ Avaliação salva" : "Enviar avaliação"}
-                                                </button>
-                                            </div>
+
                                             {/* Fim item 27 */}
                                         </>
                                     )}
@@ -1188,7 +1210,7 @@ async function baixarCertificado(curso) {
                                     <div className={css.gridAulas}>
                                         {aulasDetalhe.map((aula) => (
                                             <AulaCard key={aula.id} aula={aula} api={api}
-                                                onAbrir={cursoDetalhe.matriculado ? () => navigate(`/DashboardAluno/aulas/${aula.id}`) : undefined} />
+                                                onAbrir={cursoDetalhe.matriculado ? () => abrirVideo(aula) : undefined} />
                                         ))}
                                     </div>
                                 </>
@@ -1199,13 +1221,34 @@ async function baixarCertificado(curso) {
                                     <div className={css.gridAulas}>
                                         {aulasSemModulo.map((aula) => (
                                             <AulaCard key={aula.id} aula={aula} api={api}
-                                                onAbrir={cursoDetalhe.matriculado ? () => navigate(`/DashboardAluno/aulas/${aula.id}`) : undefined} />
+                                                onAbrir={cursoDetalhe.matriculado ? () => abrirVideo(aula) : undefined} />
                                         ))}
                                     </div>
                                 </section>
                             )}
 
                                                                                                                                                                                      
+                            {cursoDetalhe.matriculado && (
+                                <div className={css.avaliacaoAposProva}>
+                                    <h2>Avaliar curso</h2>
+                                    <p>Assista e conclua pelo menos <strong>75% das aulas</strong> para dar uma nota ao curso.</p>
+                                    <p role="status">{liberacaoAvaliacao?.mensagem || "Carregando seu progresso de aulas..."}</p>
+                                    <fieldset className={css.camposAvaliacao} aria-label="Sua nota e comentário" disabled={!podeAvaliar || enviandoAvaliacao}>
+                                        <div className={css.seletorEstrelas} role="radiogroup" aria-label="Nota de 0 a 5 estrelas">
+                                            <button type="button" className={avaliacao.nota === 0 ? css.estrelasZeroAtivo : css.estrelasZero} aria-label="0 estrelas" aria-pressed={avaliacao.nota === 0} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota: 0 }); setAvaliacaoEnviada(false); }}>0</button>
+                                            {[1, 2, 3, 4, 5].map((nota) => (
+                                                <button key={nota} type="button" className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }}>★</button>
+                                            ))}
+                                            <span>{avaliacao.nota} de 5</span>
+                                        </div>
+                                        <AutoTextarea className={css.textoAvaliacao} rows="1" value={avaliacao.comentario} onChange={(e) => { setAvaliacao({ ...avaliacao, comentario: e.target.value }); setAvaliacaoEnviada(false); }} placeholder="Escreva sua avaliação (opcional)" disabled={enviandoAvaliacao} />
+                                        <button type="button" className={`${css.botaoInscrever} ${css.botaoAvaliacao} ${avaliacaoEnviada ? css.botaoAvaliacaoEnviada : ""}`} onClick={enviarAvaliacaoCurso} disabled={!podeAvaliar || enviandoAvaliacao || avaliacaoEnviada} aria-busy={enviandoAvaliacao}>
+                                            {enviandoAvaliacao ? "Enviando avaliação..." : avaliacaoEnviada ? "✓ Avaliação salva" : "Enviar avaliação"}
+                                        </button>
+                                    </fieldset>
+                                </div>
+                            )}
+
                             <section className={css.comentariosCurso}>
                                 <h2>Comentários</h2>
                                 {detalheCurso?.avaliacoes?.length ? (
@@ -1241,22 +1284,14 @@ async function baixarCertificado(curso) {
 
                     {visao === "aula" && (
                         <section className={css.secaoAulaAberta}>
-                            <button className={css.linkVoltar} onClick={() => navigate(videoAula ? `/DashboardAluno/cursos/${videoAula.id_curso}` : "/DashboardAluno/cursos")}>
-                                Voltar
-                            </button>
-
-                            {carregando && <p className={css.textoApoio}>Carregando aula...</p>}
+                            <BotaoVoltar   onClick={() => navigate(retornoCurso)}>
+                                {retornoCurso.includes('modulo=') ? 'Voltar ao módulo' : 'Voltar ao curso'}
+                            </BotaoVoltar>
+                            {carregando && !videoAula && <p role="status" className={css.textoApoio}>Carregando aula...</p>}
                             {!carregando && !videoAula && <EstadoVazio texto="Aula não encontrada." />}
-
-                            {videoAula && (
-                                <>
-                                                                                                                                                                                           
-                                    <header className={css.cabecalhoPagina}>
-                                        <span className={css.etiquetaPagina}>AULA EM ANDAMENTO</span>
-                                        <h2>{videoAula.titulo}</h2>
-                                        <p>{videoAula.descricao || "Continue assistindo e seu progresso será salvo automaticamente."}</p>
-                                    </header>
-                                    {/* Sprint item 26 - Bloquear gravação de tela durante o curso - Protege a reprodução diante de gravação ou ocultação da tela detectável */}
+                            {videoAula && <div className={videoCss.layoutVideo}>
+                                <div className={videoCss.colunaVideo}>
+                                    <div className={videoCss.molduraPlayer}>
                                     <div className={protecaoAtiva ? css.playerProtegido : ""}>
                                                                                                               
                                         <PlayerVideo
@@ -1279,34 +1314,40 @@ async function baixarCertificado(curso) {
                                             </div>
                                         )}
                                     </div>
-                                    {/* Fim item 26 */}
 
-                                    <h2>Próximas videoaulas</h2>
-                                    <div className={css.gridAulas}>
-                                        {proximas.map((aula) => (
-                                            <AulaCard key={aula.id} aula={aula} api={api} onAbrir={() => navigate(`/DashboardAluno/aulas/${aula.id}`)} />
-                                        ))}
                                     </div>
-                                </>
-                            )}
+                                    <header className={videoCss.informacoesVideo}>
+                                        <h1>{videoAula.titulo}</h1>
+                                        <div className={videoCss.linhaInformacoesVideo}>
+                                            <button type="button" onClick={() => navigate(retornoCurso)} className={videoCss.linkCursoVideo}>
+                                                <FaGraduationCap aria-hidden="true" /> {aulaAtual?.curso?.titulo || 'Ver curso'}
+                                            </button>
+                                            {videoAula.assistida && <span className={videoCss.statusVideo}><FaCheckCircle aria-hidden="true" /> Aula concluída</span>}
+                                        </div>
+                                    </header>
+                                    <div className={videoCss.descricaoVideo}>
+                                        <h2>Sobre esta aula</h2>
+                                        <p>{videoAula.descricao || 'Seu progresso é salvo automaticamente enquanto você assiste.'}</p>
+                                    </div>
+                                </div>
+                                <aside className={videoCss.listaLateralVideo} aria-label="Aulas do curso">
+                                    <div className={videoCss.tituloListaVideo}><h2>Aulas do curso</h2><span>{proximas.length} aulas</span></div>
+                                    {proximas.map((aula) => <AulaCard key={aula.id} aula={aula} api={api} compacto onAbrir={() => abrirVideo(aula)} />)}
+                                    {proximas.length === 0 && <p className={css.textoApoio}>Nenhuma outra aula disponível neste curso.</p>}
+                                </aside>
+                            </div>}
                         </section>
                     )}
 
                     {visao === "perfil" && (
-                        <section className={css.secaoPerfil}>
-                            <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
-                        </section>
+                        <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                     )}
 
                     {visao === "financeiro" && (
                         <section className={`${css.secaoMetricas} ${css.paginaFinanceiro}`}>
                                                                                                                                                                                               
                             {/* Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Consulta e apresenta o total gasto e o histórico de faturas pagas */}
-                            <header className={css.cabecalhoPagina}>
-                                <span className={css.etiquetaPagina}>ASSINATURA E FINANCEIRO</span>
-                                <h2>Minha assinatura e financeiro</h2>
-                                <p>Acompanhe suas mensalidades, consulte cobranças pendentes e acesse o histórico.</p>
-                            </header>
+                            <CabecalhoPagina etiqueta="FINANCEIRO" titulo="Minha assinatura e financeiro" descricao="Acompanhe suas mensalidades, cobranças e pagamentos." />
                             {/* Fim item 33 */}
                             {/* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */}
                             <ResumoAssinatura

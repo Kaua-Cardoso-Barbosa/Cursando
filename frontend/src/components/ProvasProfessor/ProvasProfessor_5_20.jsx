@@ -1,3 +1,4 @@
+import AutoTextarea from '../AutoTextarea/AutoTextarea.jsx';
 import { useEffect, useState } from 'react';
 import HistoricoProvas from '../Provas/HistoricoProvas';
 import ConfirmAlert from '../ConfirmAlert/ConfirmAlert';
@@ -84,7 +85,7 @@ export default function ProvasProfessor({ api, idCurso, setMensagem }) {
             <p>Escolha um percentual inteiro entre 50% e 100%. Ele será preservado nas tentativas desta versão.</p>
             {questoes.map((q, i) => <article className={css.questao} key={i}>
                 <h3>Questão {i + 1}</h3>
-                <label>Enunciado<textarea value={q.enunciado} disabled={!editavel || ocupado} onChange={(e) => alterar(i, 'enunciado', e.target.value)} /></label>
+                <label>Enunciado<AutoTextarea value={q.enunciado} disabled={!editavel || ocupado} onChange={(e) => alterar(i, 'enunciado', e.target.value)} /></label>
                 <label>Tipo<select disabled={!editavel || ocupado} value={q.tipo} onChange={(e) => alterar(i, 'tipo', e.target.value)}><option value="objetiva">Objetiva</option><option value="dissertativa">Dissertativa</option></select></label>
                 {q.tipo === 'objetiva' && <>
                     <p>Marque a alternativa correta.</p>

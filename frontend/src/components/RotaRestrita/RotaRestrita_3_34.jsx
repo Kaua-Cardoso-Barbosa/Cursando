@@ -1,6 +1,7 @@
 import { useSessao } from "../../context/useSessao.js";
 import { cloneElement, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import PaginaIndisponivel from '../../pages/PaginaIndisponivel/PaginaIndisponivel.jsx';
 
 export default
 function RotaProtegida({
@@ -36,8 +37,8 @@ function RotaProtegida({
         return <p>Verificando sessao...</p>;
     }
 
-    if (!usuario && erro) {
-        return <div role="alert"><p>{erro}</p><button onClick={() => atualizarSessao()}>Tentar novamente</button></div>;
+    if (erro) {
+        return <PaginaIndisponivel aoTentarNovamente={() => atualizarSessao()} />;
     }
 
     if (!usuario) {
@@ -57,7 +58,7 @@ function RotaProtegida({
     }
     if (exigirAssinatura && Number(usuario.tipo) === 2 && assinaturaValida === null) {
         return erroAssinatura
-            ? <div role="alert"><p>{erroAssinatura}</p><button onClick={() => setConsultaAssinatura(n => n + 1)}>Tentar novamente</button></div>
+            ? <PaginaIndisponivel aoTentarNovamente={() => setConsultaAssinatura(n => n + 1)} />
             : <p>Verificando assinatura...</p>;
     }
     if (exigirAssinatura && Number(usuario.tipo) === 2 && assinaturaValida === false) {

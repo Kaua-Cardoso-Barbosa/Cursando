@@ -10,6 +10,8 @@ export default function Button({
                                   efeito,
                                   borda,
                                   classe,
+                                  className = "",
+                                  disabled = false,
                                   onClick,
                                   tipo
                               }) {
@@ -25,6 +27,7 @@ export default function Button({
             >
 
                 <button
+                    disabled={disabled}
                     type={tipo}
                     className={
                         css.botao + " " +
@@ -32,7 +35,7 @@ export default function Button({
                         css[borda] + " " +
                         css[tamanho] + " " +
                         css[efeito] + " " +
-                        css[classe]
+                        css[classe] + " " + className
                     }
                     onClick={onClick}
                 >
@@ -48,6 +51,7 @@ export default function Button({
         <div className={css.botao}>
 
             <button
+                disabled={disabled}
                 type={tipo}
                 className={
                     css.botao + " " +
@@ -55,7 +59,7 @@ export default function Button({
                     css[borda] + " " +
                     css[tamanho] + " " +
                     css[efeito] + " " +
-                    css[classe]
+                    css[classe] + " " + className
                 }
                 onClick={onClick}
             >

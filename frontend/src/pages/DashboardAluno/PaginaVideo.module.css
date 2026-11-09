@@ -1,0 +1,29 @@
+.layoutVideo { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; margin-top: 16px; }
+.colunaVideo { min-width: 0; }
+.molduraPlayer { overflow: hidden; border-radius: 12px; background: #000; }
+.informacoesVideo { padding: 18px 0; }
+.informacoesVideo h1 { margin: 0 0 14px; color: #173e2c; font-size: clamp(1.2rem, 2vw, 1.65rem); line-height: 1.35; font-weight: 700; letter-spacing: normal; overflow-wrap: anywhere; }
+.linhaInformacoesVideo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.linkCursoVideo { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: #087044; font: inherit; font-size: .9rem; font-weight: 600; text-align: left; cursor: pointer; }
+.linkCursoVideo:hover { text-decoration: underline; }
+.linkCursoVideo:focus-visible { outline: 3px solid #06a66380; outline-offset: 4px; }
+.statusVideo { display: inline-flex; align-items: center; gap: 6px; color: #087044; font-size: .8rem; }
+.descricaoVideo { padding: 18px; border-radius: 12px; background: #edf3ef; }
+.layoutVideo .descricaoVideo h2, .layoutVideo .tituloListaVideo h2 { margin: 0; color: #173e2c; font-size: 1rem; font-weight: 650; }
+.descricaoVideo p { margin: 10px 0 0; color: #4d6457; font-size: .9rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.listaLateralVideo { display: grid; gap: 16px; min-width: 0; }
+.tituloListaVideo { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #dfe9e3; }
+.tituloListaVideo > span { color: #607468; font-size: .75rem; white-space: nowrap; }
+.aulaLateral.aulaLateral { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.aulaLateral.aulaLateral:hover { transform: none; box-shadow: none; }
+.aulaLateral button { display: grid; grid-template-columns: 130px minmax(0, 1fr); align-items: start; gap: 12px; border-radius: 8px; }
+.aulaLateral button:focus-visible { outline: 3px solid #06a66380; outline-offset: 3px; }
+.aulaLateral button > div:first-child { height: auto; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; }
+.aulaLateral button > div + div { min-width: 0; min-height: 0; padding: 0; }
+.aulaLateral.aulaLateral h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 6px; font-size: .85rem; font-weight: 650; line-height: 1.35; }
+.aulaLateral p { display: none; }
+.aulaLateral small { font-size: .72rem; }
+.aulaLateral button > div:first-child > span:first-of-type { font-size: 1.6rem; }
+.aulaLateral button > div:first-child > span:nth-of-type(2) { top: 5px; right: 5px; gap: 4px; padding: 3px 5px; font-size: .6rem; }
+@media (max-width: 1100px) { .layoutVideo { grid-template-columns: minmax(0, 1fr); } .aulaLateral button { grid-template-columns: 160px minmax(0, 1fr); } }
+@media (max-width: 480px) { .layoutVideo { gap: 20px; } .aulaLateral button { grid-template-columns: 125px minmax(0, 1fr); gap: 10px; } }

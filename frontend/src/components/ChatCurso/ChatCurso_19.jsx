@@ -1,3 +1,4 @@
+import AutoTextarea from '../AutoTextarea/AutoTextarea.jsx';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FaPaperPlane, FaUserCircle } from "react-icons/fa";
 import useChat from "../../hooks/useChat.js";
@@ -153,7 +154,7 @@ export default function ChatCurso({ api, perfil = "aluno", conversaInicial = nul
 
                     {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
                     <div className={css.compositor}>
-                        <textarea
+                        <AutoTextarea
                             ref={textoRef}
                             maxLength={10000}
                             value={texto}

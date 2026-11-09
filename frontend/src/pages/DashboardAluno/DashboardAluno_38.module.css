@@ -17,6 +17,7 @@
 }
 
 /* Fim item 38 */
+
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .conteudoPrincipal */
 .conteudoPrincipal {
     grid-column: 2;
@@ -363,7 +364,7 @@
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .carrosselCursos */
 .carrosselCursos {
     display: flex;
-    gap: 28px;
+    gap: 20px;
     overflow-x: auto;
     padding: 4px 4px 18px;
     scrollbar-width: thin;
@@ -373,7 +374,33 @@
 /* Fim item 38 */
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .carrosselCursos .cardAula */
 .carrosselCursos .cardAula {
-    flex: 0 0 360px;
+    flex: 0 0 300px;
+    display: flex;
+}
+
+.carrosselCursos .cardAula .areaCardClicavel {
+    display: flex;
+    flex-direction: column;
+}
+
+.carrosselCursos .previewAula {
+    height: auto;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    flex-shrink: 0;
+}
+
+.carrosselCursos .infoAula {
+    flex: 1;
+    padding: 16px;
+}
+
+.carrosselCursos .infoAula h3,
+.carrosselCursos .infoAula p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
 }
 
 /* Fim item 38 */
@@ -538,6 +565,42 @@
     height: 100%;
     display: block;
     object-fit: cover;
+}
+
+.progressoVideo {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.progressoVideo > span {
+    display: block;
+    height: 100%;
+    background: #06a663;
+}
+
+.videoConcluido > span {
+    background: #06a663;
+}
+
+.seloAulaConcluida {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border-radius: 6px;
+    color: #ffffff;
+    background: #075132;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* Fim item 38 */
@@ -2099,3 +2162,47 @@
 }
 
 /* Fim item 38 */
+
+/* Cabeçalho compacto compartilhado pelo curso inscrito e pela prévia do curso. */
+.heroCurso {
+    grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
+    padding: 20px;
+}
+
+.heroCurso img {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+}
+
+.resumoCurso {
+    min-width: 0;
+    padding: 0;
+    gap: 10px;
+    background: transparent;
+}
+
+.resumoCurso h2 {
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+}
+
+.resumoCurso p {
+    margin: 0;
+}
+
+@media (max-width: 640px) {
+    .heroCurso {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        padding: 16px;
+    }
+}
+
+.camposAvaliacao { display: grid; gap: 14px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.camposAvaliacao:disabled { opacity: .6; }
+.avaliacaoAposProva > p { margin: 0; line-height: 1.5; }

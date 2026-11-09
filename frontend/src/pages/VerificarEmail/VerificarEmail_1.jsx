@@ -1,3 +1,4 @@
+import BotaoVoltar from '../../components/BotaoVoltar/BotaoVoltar.jsx';
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import css from "./VerificarEmail_38.module.css";
@@ -204,14 +205,14 @@ async function verificar(evento) {
                             />
                             {/* Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Valida e envia os dados para o cadastro e a confirmação do e-mail */}
                             <div className={css.acoesCorrecao}>
-                                <button
-                                    type="button"
-                                    className={css.botaoSecundario}
+                                <BotaoVoltar emLinha
+                                    
+                                    
                                     onClick={() => setCorrigindoEmail(false)}
                                     disabled={salvandoEmail}
                                 >
                                     Voltar
-                                </button>
+                                </BotaoVoltar>
                                 <button type="submit" disabled={salvandoEmail}>
                                     {salvandoEmail ? "Salvando..." : "Salvar novo e-mail"}
                                 </button>

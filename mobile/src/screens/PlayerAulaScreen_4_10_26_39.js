@@ -1,3 +1,4 @@
+import { fonteImagemAula } from '../imagens_padrao_39';
 import AppIcon from "../components/AppIcon_39";
 import { ResizeMode, Video } from "expo-av";
 import { useEffect, useRef, useState } from "react";
@@ -5,10 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import * as ScreenCapture from "expo-screen-capture";
 /* Fim item 26 */
 import { ActivityIndicator, AppState, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { getApiBaseUrl, resolverUrlMidia } from "../api/client_3_17";
+import { getApiBaseUrl } from "../api/client_3_17";
 import { colors, globalStyles } from "../styles_39";
 
-const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
 
 /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Formata a posição salva para exibir o ponto de retomada */
 function formatarPosicaoAula(milissegundos) {
@@ -332,8 +332,8 @@ function atualizarReproducao(status) {
               key={aula.id}
               ref={videoRef}
               source={{ uri: urlVideo, headers: { Authorization: `Bearer ${token}` } }}
-              posterSource={aula.thumb ? { uri: resolverUrlMidia(aula.thumb) } : undefined}
-              usePoster={Boolean(aula.thumb)}
+              posterSource={fonteImagemAula(aula.thumb)}
+              usePoster
               style={styles.player}
               useNativeControls={false}
               resizeMode={ResizeMode.CONTAIN}
@@ -408,14 +408,13 @@ function atualizarReproducao(status) {
             {proximas.map((proxima) => (
               <Pressable key={proxima.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(proxima)}>
                 <View style={styles.preview}>
-                  <Image source={{ uri: proxima.thumb ? resolverUrlMidia(proxima.thumb) : fallbackThumb }} style={styles.image} />
+                  <Image source={fonteImagemAula(proxima.thumb)} style={styles.image} />
                   <View style={styles.playBadge}>
                     <AppIcon name="play" size={40} color={colors.black} />
                   </View>
                 </View>
                 <View style={styles.info}>
                   <Text style={styles.lessonTitle} numberOfLines={1}>{proxima.titulo}</Text>
-                  <Text style={styles.description} numberOfLines={2}>{proxima.descricao}</Text>
                 </View>
               </Pressable>
             ))}

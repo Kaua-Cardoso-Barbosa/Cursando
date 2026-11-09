@@ -1,0 +1,15 @@
+.pagina { width: 100%; min-width: 0; color: #173e2c; }
+.filtros button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border: 1px solid #cbd9d0; border-radius: 8px; padding: 9px 14px; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.filtros { margin-bottom: 24px; }
+.filtros > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.filtros span { margin-right: 4px; color: #607468; font-size: .9rem; }
+.filtros button { background: #fff; color: #24533d; }
+.filtros button:hover { background: #eff8f2; border-color: #087044; }
+.filtros button[aria-pressed=true] { background: #087044; color: #fff; border-color: #087044; }
+.pagina button:focus-visible { outline: 3px solid #06a66360; outline-offset: 3px; }
+.grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.mensagem { color: #607468; margin: 0 0 20px; }
+.vazio { display: grid; justify-items: center; gap: 12px; padding: 40px 20px; background: #fff; border: 1px dashed #cbd9d0; border-radius: 12px; text-align: center; color: #607468; }
+.vazio svg { font-size: 32px; color: #087044; }
+@media (max-width: 1180px) { .grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .grade { grid-template-columns: minmax(0, 1fr); } .filtros span { width: 100%; } }

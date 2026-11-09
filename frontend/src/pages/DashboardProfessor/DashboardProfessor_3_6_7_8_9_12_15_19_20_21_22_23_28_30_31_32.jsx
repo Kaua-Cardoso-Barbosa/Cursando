@@ -1,3 +1,6 @@
+import BotaoVoltar from '../../components/BotaoVoltar/BotaoVoltar.jsx';
+import CabecalhoPagina from '../../components/CabecalhoPagina/CabecalhoPagina.jsx';
+import MeusCursos from '../../components/MeusCursos/MeusCursos.jsx';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import EtapaModulo, { ListaEtapasModulo } from "../../components/EtapaModulo/EtapaModulo.jsx";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -901,11 +904,6 @@ async function solicitarSaque() {
         && valorSaqueNumero <= Number(financeiro?.disponivel_saque || 0)
         && chavePix.trim().length >= 5;
     /* Fim item 32 */
-    const tituloCursos = useMemo(() => {
-        if (filtroCursos === "arquivados") return "Cursos Arquivados";
-        if (filtroCursos === "privados") return "Cursos Privados";
-        return "Cursos Publicados";
-    }, [filtroCursos]);
 
     return (
         <div className={css.painelProfessor}>
@@ -1037,49 +1035,24 @@ async function solicitarSaque() {
                     )}
 
                     {visao === "cursos" && (
-                        <section className={css.secaoCursos}>
-                                                                                                                                                                                             
-                            <div className={css.barraTitulo}>
-                                <div>
-                                    <h2>{tituloCursos}</h2>
-                                    <p className={css.subtituloSecao}>Organize cursos, acompanhe as matrículas e mantenha o conteúdo atualizado.</p>
-                                </div>
-                                <button className={css.botaoPrimario} onClick={() => setModal({ tipo: "curso", item: null })}>
-                                    <FaPlus /> Cadastrar Curso
-                                </button>
-                                <div className={css.filtros}>
-                                    <span>Filtrar por cursos:</span>
-                                    <button className={filtroCursos === "publicados" ? css.filtroAtivo : ""} onClick={() => setFiltroCursos("publicados")}>Publicados</button>
-                                    <button className={filtroCursos === "privados" ? css.filtroAtivo : ""} onClick={() => setFiltroCursos("privados")}>Privados</button>
-                                    <button className={filtroCursos === "arquivados" ? css.filtroAtivo : ""} onClick={() => setFiltroCursos("arquivados")}>Arquivados</button>
-                                </div>
-                            </div>
-
-                            {carregando && <p className={css.textoApoio}>Carregando cursos...</p>}
-                            {!carregando && cursos.length === 0 && <EstadoVazioProfessor texto="Nenhum curso encontrado nesse filtro." />}
-
-                            <div className={css.gridCursos}>
-                                {cursos.map((curso) => (
-                                    <ItemCardProfessor
-                                        key={curso.id}
-                                        tipo="curso"
-                                        item={curso}
-                                        api={api}
-                                        usuario={usuario}
-                                        onAbrir={abrirAulas}
-                                        onEditar={() => setModal({ tipo: "curso", item: curso })}
-                                        onExcluir={() => setConfirmacao({ tipo: "curso", item: curso })}
-                                        onAlunos={() => abrirAlunos(curso)}
-                                        onStatus={(status) => alterarStatusCurso(curso, status)}
-                                        gerenciavel
-                                    />
-                                ))}
-                            </div>
-                        </section>
+                        <MeusCursos descricao="Organize cursos, acompanhe as matrículas e mantenha o conteúdo atualizado."
+                            carregando={carregando} vazio={cursos.length === 0} mensagemVazia="Nenhum curso encontrado nesse filtro."
+                            acoes={<button type="button" onClick={() => setModal({ tipo: 'curso', item: null })}><FaPlus /> Cadastrar curso</button>}
+                            filtros={<div role="group" aria-label="Situação dos cursos">
+                                <span>Filtrar por cursos:</span>
+                                {[['publicados','Publicados'],['privados','Privados'],['arquivados','Arquivados']].map(([valor, rotulo]) =>
+                                    <button key={valor} type="button" aria-pressed={filtroCursos === valor} onClick={() => setFiltroCursos(valor)}>{rotulo}</button>)}
+                            </div>}>
+                            {cursos.map((curso) => <ItemCardProfessor key={curso.id} tipo="curso" item={curso} api={api} usuario={usuario}
+                                onAbrir={abrirAulas} onEditar={() => setModal({ tipo: 'curso', item: curso })}
+                                onExcluir={() => setConfirmacao({ tipo: 'curso', item: curso })}
+                                onAlunos={() => abrirAlunos(curso)} onStatus={(status) => alterarStatusCurso(curso, status)} gerenciavel />)}
+                        </MeusCursos>
                     )}
 
                     {visao === "aulas" && cursoSelecionado && (
                         <section className={css.secaoCursos}>
+                            <BotaoVoltar onClick={() => navigate("/DashboardProfessor/cursos")}>Voltar aos cursos</BotaoVoltar>
                             <div className={css.barraTitulo}>
                                 <div className={css.resumoCursoAlunos}>
                                     <img
@@ -1088,7 +1061,6 @@ async function solicitarSaque() {
                                         className={css.imagemResumoCurso}
                                     />
                                     <div>
-                                    <button className={css.linkVoltar} onClick={() => navigate("/DashboardProfessor/cursos")}>Voltar para cursos</button>
                                     <h2>{cursoSelecionado.titulo}</h2>
                                                                                          
                                                                           
@@ -1165,9 +1137,9 @@ async function solicitarSaque() {
 
                             {abaGestaoCurso === "modulos" && idModuloSelecionado && moduloSelecionado && (
                                 <>
+                                    <BotaoVoltar onClick={() => navigate(`/DashboardProfessor/cursos/${cursoSelecionado.id}/aulas`)}>Voltar aos módulos</BotaoVoltar>
                                     <div className={css.barraTitulo}>
                                         <div className={css.resumoModuloProfessor}>
-                                            <button className={css.linkVoltar} onClick={() => navigate(`/DashboardProfessor/cursos/${cursoSelecionado.id}/aulas`)}>Voltar aos módulos</button>
                                             <h2>Módulo {modulos.findIndex((item) => Number(item.id) === Number(moduloSelecionado.id)) + 1} · {moduloSelecionado.titulo}</h2>
                                             <p className={css.textoApoio}>{moduloSelecionado.descricao}</p>
                                         </div>
@@ -1201,6 +1173,7 @@ async function solicitarSaque() {
 
                     {visao === "alunos" && cursoSelecionado && (
                         <section className={css.secaoCursos}>
+                            <BotaoVoltar onClick={() => navigate("/DashboardProfessor/cursos")}>Voltar aos cursos</BotaoVoltar>
                             <div className={css.barraTitulo}>
                                 <div className={css.resumoCursoAlunos}>
                                     <img
@@ -1209,7 +1182,6 @@ async function solicitarSaque() {
                                         className={css.imagemResumoCurso}
                                     />
                                     <div>
-                                    <button className={css.linkVoltar} onClick={() => navigate("/DashboardProfessor/cursos")}>Voltar para cursos</button>
                                     <h2>Alunos de {cursoSelecionado.titulo}</h2>
                                                                                          
                                                                           
@@ -1263,21 +1235,13 @@ async function solicitarSaque() {
                     )}
 
                     {visao === "perfil" && (
-                        <section className={css.secaoPerfil}>
-                            <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
-                        </section>
+                        <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                     )}
 
                     {visao === "financeiro" && (
                         <section className={`${css.secaoCursos} ${css.paginaFinanceiro}`}>
                                                                                                                                                                                   
-                            <header className={css.cabecalhoPagina}>
-                                <div>
-                                    <span className={css.etiquetaPagina}>PAGAMENTOS</span>
-                                    <h2>Financeiro</h2>
-                                    <p>Consulte seus valores e solicite o pagamento ao administrador.</p>
-                                </div>
-                            </header>
+                            <CabecalhoPagina etiqueta="FINANCEIRO" titulo="Financeiro" descricao="Consulte seus valores e solicite pagamentos ao administrador." />
                                                                                           
                             <section className={css.secaoPainel}>
                                 <div className={css.cabecalhoBloco}>

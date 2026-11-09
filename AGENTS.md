@@ -5,4 +5,4 @@
 - No site, reutilize `frontend/src/components/Alerts/Alerts.jsx` para avisos e `frontend/src/components/ConfirmAlert/ConfirmAlert.jsx` para confirmações.
 - No aplicativo, reutilize `mostrarAlerta` e `confirmar` de `mobile/src/components/FeedbackProvider_39.js`.
 - Uma ação que exige confirmação só pode executar depois da confirmação explícita. Cancelar ou fechar o diálogo não deve executar a ação.
-- Toda confirmação de exclusão deve aguardar 3 segundos a partir de cada abertura antes de habilitar o botão de confirmar ou excluir. Mostre a contagem regressiva e mantenha o cancelamento disponível durante a espera.
+- Toda confirmação deve aguardar 1,5 segundo a partir de cada abertura antes de habilitar o botão de confirmar ou excluir. Não exiba contagem regressiva e mantenha o cancelamento disponível durante a espera.

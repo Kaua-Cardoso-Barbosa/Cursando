@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import BotaoVoltar from '../../components/BotaoVoltar/BotaoVoltar.jsx';
 import styles from "./Pagina404_38.module.css";
 
 export default function Pagina404() {
@@ -6,9 +6,9 @@ export default function Pagina404() {
     <main className={styles.page}>
       <h1>Erro 404</h1>
       <p>Pagina não encontrada.</p>
-      <Link className={styles.link} to="/">
+      <BotaoVoltar  to="/">
         Voltar para a home
-      </Link>
+      </BotaoVoltar>
     </main>
   );
 }

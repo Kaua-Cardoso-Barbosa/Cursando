@@ -61,7 +61,7 @@ export default function Header({ usuario, sair }) {
       <nav id="menu-principal" className={`${css.actions} ${menuAberto ? css.actionsAberto : ""}`}>
         {usuario ? (
           <>
-            <Button rota={dashboardPorTipo(usuario.tipo)} tamanho={"pequeno"} fundoCor={"verde"} borda={"redondo"} texto={"Dashboard"} onClick={fecharMenu} />
+            <Button className={css.botaoPrincipal} rota={dashboardPorTipo(usuario.tipo)} tamanho={"pequeno"} fundoCor={"verde"} borda={"redondo"} texto={"Dashboard"} onClick={fecharMenu} />
             <Link className={css.perfilLink} to={perfilPorTipo(usuario.tipo)} title="Perfil" aria-label="Perfil" onClick={fecharMenu}>
               <span className={css.nomePerfil}>{usuario.nome}</span>
               <span className={css.avatarPerfil}>
@@ -72,12 +72,12 @@ export default function Header({ usuario, sair }) {
                 )}
               </span>
             </Link>
-            <Button tamanho={"pequeno"} fundoCor={"vermelho"} borda={"redondo"} texto={"Sair"} onClick={sairComMenuFechado} />
+            <Button className={css.botaoSair} tamanho={"pequeno"} fundoCor={"vermelho"} borda={"redondo"} texto={"Sair"} onClick={sairComMenuFechado} />
           </>
         ) : (
           <>
-          <Button rota={"/cadastro"} tamanho={"pequeno"} fundoCor={"branco"} borda={"redondo"} texto={"Cadastro"} onClick={fecharMenu} />
-          <Button rota={"/login"} tamanho={"pequeno"} fundoCor={"verde"} borda={"redondo"} texto={"Login"} onClick={fecharMenu} />
+          <Button className={css.botaoPrincipal} rota={"/cadastro"} tamanho={"pequeno"} fundoCor={"branco"} borda={"redondo"} texto={"Cadastro"} onClick={fecharMenu} />
+          <Button className={css.botaoSecundario} rota={"/login"} tamanho={"pequeno"} fundoCor={"verde"} borda={"redondo"} texto={"Login"} onClick={fecharMenu} />
           </>
         )}
       </nav>

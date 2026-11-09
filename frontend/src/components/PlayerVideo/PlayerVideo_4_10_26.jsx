@@ -8,7 +8,12 @@ function navegadorMovel() {
         || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
-export default function PlayerVideo({
+export default function PlayerVideo(props) {
+    const chave = JSON.stringify([props.videoAula?.id, props.videoUrl, props.mobileUrl, props.posterUrl]);
+    return <InstanciaPlayer key={chave} {...props} />;
+}
+
+function InstanciaPlayer({
     videoAula,
     videoUrl,
     mobileUrl,
@@ -19,12 +24,14 @@ export default function PlayerVideo({
 }) {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
+    const aulaInicialRef = useRef(videoAula);
     const callbacksRef = useRef({});
+    const encerramentoRef = useRef(Promise.resolve());
     const [preparandoMobile, setPreparandoMobile] = useState(false);
     const [erroReproducao, setErroReproducao] = useState("");
     const [tentativa, setTentativa] = useState(0);
     const usarNativo = Boolean(mobileUrl && navegadorMovel());
-    callbacksRef.current = { videoAula, marcarAssistida, salvarProgresso };
+    callbacksRef.current = { marcarAssistida, salvarProgresso };
 
     useEffect(() => {
         const video = videoRef.current;
@@ -32,7 +39,9 @@ export default function PlayerVideo({
         if (!video || !container || (!videoUrl && !mobileUrl)) return;
 
         const controlador = new AbortController();
-        const posicaoInicial = Math.max(0, Number(videoAula?.progresso_segundos) || 0);
+        const encerramentoAnterior = encerramentoRef.current;
+        const aula = aulaInicialRef.current;
+        const posicaoInicial = Math.max(0, Number(aula?.progresso_segundos) || 0);
         let ultimaPosicaoSalva = posicaoInicial;
         let filaSalvamentos = Promise.resolve();
         let aulaConcluida = false;
@@ -49,7 +58,7 @@ export default function PlayerVideo({
             if (!Number.isFinite(posicao) || posicao < 0) return filaSalvamentos;
             if (!forcar && Math.abs(posicao - ultimaPosicaoSalva) < 1) return filaSalvamentos;
             ultimaPosicaoSalva = posicao;
-            const idAula = videoAula.id;
+            const idAula = aula.id;
             filaSalvamentos = filaSalvamentos
                 .then(() => callbacksRef.current.salvarProgresso?.(idAula, posicao))
                 .catch((erro) => console.error("Erro ao salvar progresso da aula:", erro));
@@ -60,7 +69,7 @@ export default function PlayerVideo({
             if (aulaConcluida) return;
             salvarPosicao(true);
             aulaConcluida = true;
-            filaSalvamentos.then(() => callbacksRef.current.marcarAssistida?.(callbacksRef.current.videoAula));
+            filaSalvamentos.then(() => callbacksRef.current.marcarAssistida?.(aula));
         }
 
         function quandoIniciar() {
@@ -89,9 +98,10 @@ export default function PlayerVideo({
             }
             retomadaPronta = true;
             setPreparandoMobile(false);
+            if (usarNativo) video.play().catch(() => {});
         };
         const aoFalharVideoNativo = () => {
-            if (!desmontado) {
+            if (!desmontado && usarNativo) {
                 setPreparandoMobile(false);
                 setErroReproducao("Não foi possível reproduzir este vídeo neste aparelho.");
             }
@@ -108,35 +118,41 @@ export default function PlayerVideo({
         window.addEventListener("pagehide", quandoPausar);
 
         // O DRM continua no desktop; no celular, o backend entrega um MP4 H.264/AAC autenticado.
-        const player = usarNativo ? null : new shaka.Player();
-        const ui = usarNativo ? null : new shaka.ui.Overlay(player, container, video);
-        if (player) {
-            player.configure({
-                drm: {
-                    clearKeys: {
-                        "00112233445566778899aabbccddeeff": "000102030405060708090a0b0c0d0e0f",
-                        "11112222333344445555666677778888": "101112131415161718191a1b1c1d1e1f",
-                    },
-                },
-            });
-            ui.configure({
-                controlPanelElements: [
-                    "play_pause", "rewind", "fast_forward", "time_and_duration",
-                    "mute", "volume", "spacer", "playback_rate", "overflow_menu", "fullscreen",
-                ],
-                overflowMenuButtons: ["quality", "language", "captions"],
-                playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
-                bigButtons: ["play_pause"],
-            });
-        }
+        let player = null;
+        let ui = null;
         const erroShaka = (evento) => {
+            if (desmontado) return;
             console.error("Erro no player:", evento.detail);
             setErroReproducao("Não foi possível carregar o vídeo. Tente novamente.");
         };
-        player?.addEventListener("error", erroShaka);
+
 
         async function carregarVideo() {
             try {
+                await encerramentoAnterior;
+                if (desmontado) return;
+                player = usarNativo ? null : new shaka.Player();
+                ui = usarNativo ? null : new shaka.ui.Overlay(player, container, video);
+                if (player) {
+                    player.configure({
+                        drm: {
+                            clearKeys: {
+                                "00112233445566778899aabbccddeeff": "000102030405060708090a0b0c0d0e0f",
+                                "11112222333344445555666677778888": "101112131415161718191a1b1c1d1e1f",
+                            },
+                        },
+                    });
+                    ui.configure({
+                        controlPanelElements: [
+                            "play_pause", "rewind", "fast_forward", "time_and_duration",
+                            "mute", "volume", "spacer", "playback_rate", "overflow_menu", "fullscreen",
+                        ],
+                        overflowMenuButtons: ["quality", "language", "captions"],
+                        playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
+                        bigButtons: ["play_pause"],
+                    });
+                }
+                player?.addEventListener("error", erroShaka);
                 if (usarNativo) {
                     // HEAD inicia a conversão de aulas antigas e informa quando o MP4 está pronto.
                     while (!desmontado) {
@@ -160,9 +176,11 @@ export default function PlayerVideo({
                 }
 
                 await player.attach(video);
+                if (desmontado) return;
                 await player.load(videoUrl, posicaoInicial > 0 ? posicaoInicial : null);
                 if (desmontado) return;
                 retomadaPronta = true;
+                video.play().catch(() => {});
                 if (!video.paused) quandoIniciar();
             } catch (erro) {
                 if (desmontado || erro.name === "AbortError") return;
@@ -200,21 +218,23 @@ export default function PlayerVideo({
             document.removeEventListener("visibilitychange", quandoOcultar);
             window.removeEventListener("pagehide", quandoPausar);
             player?.removeEventListener("error", erroShaka);
-            if (ui) {
-                Promise.resolve(ui.destroy()).then(() => player.destroy()).catch((erro) => {
-                    console.error("Erro ao fechar o player:", erro);
-                });
-            }
-            if (usarNativo) {
-                video.pause();
-                video.removeAttribute("src");
-                video.load();
-            }
+            encerramentoRef.current = encerramentoAnterior.catch(() => {}).then(async () => {
+                try {
+                    if (ui) await ui.destroy();
+                } finally {
+                    if (player) await player.destroy();
+                    if (usarNativo) {
+                        video.pause();
+                        video.removeAttribute("src");
+                        video.load();
+                    }
+                }
+            }).catch((erro) => console.error("Erro ao fechar o player:", erro));
             container.removeEventListener("contextmenu", bloquearEvento);
             container.removeEventListener("dragstart", bloquearEvento);
             document.removeEventListener("keydown", bloquearTeclas);
         };
-    }, [videoUrl, mobileUrl, posterUrl, videoAula?.id, usarNativo, tentativa]);
+    }, [videoUrl, mobileUrl, posterUrl, usarNativo, tentativa]);
 
     return (
         <div ref={containerRef} className={`${css.shakaVideoContainer} shaka-video-container`}>
@@ -223,6 +243,7 @@ export default function PlayerVideo({
                 className={css.shakaVideo}
                 poster={posterUrl}
                 playsInline
+                autoPlay
                 controls={usarNativo}
                 preload="metadata"
                 controlsList="nodownload noremoteplayback"

@@ -3,6 +3,7 @@ import Input from "../Input/Input.jsx";
 import Button from "../Button/Button.jsx";
 import css from "./PerfilUsuario_38.module.css";
 import validarNome from "../../utils/validarNome_1";
+import CabecalhoPagina from '../CabecalhoPagina/CabecalhoPagina.jsx';
 
 function resolverUrlMidia(api, caminho) {
     if (!caminho) return "";
@@ -190,8 +191,8 @@ function atualizarCampoPerfil(campo, valor) {
 
     return (
         <section className={css.perfil}>
+            <CabecalhoPagina etiqueta="CONTA" titulo="Editar perfil" descricao="Atualize seus dados, sua foto e a senha da conta." />
             <div className={css.formulario}>
-                <h1>Perfil</h1>
 
                 {carregando && <p className={css.textoApoio}>Carregando dados...</p>}
                 {erroLocal && <p className={css.erro}>{erroLocal}</p>}
@@ -276,6 +277,8 @@ function atualizarCampoPerfil(campo, valor) {
                                 texto={salvando ? "Salvando..." : "Salvar dados"}
                                 fundoCor="verde"
                                 tamanho="medio"
+                                className={css.botaoSalvar}
+                                disabled={salvando}
                             />
                         </div>
                     </form>

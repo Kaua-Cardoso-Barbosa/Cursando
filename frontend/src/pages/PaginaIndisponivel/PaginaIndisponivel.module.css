@@ -1,0 +1,38 @@
+.pagina {
+    min-height: 70vh;
+    display: grid;
+    place-items: center;
+    padding: 32px 20px;
+    box-sizing: border-box;
+    background: #f5f9f6;
+}
+.painel {
+    box-sizing: border-box;
+    width: min(100%, 540px);
+    padding: clamp(24px, 5vw, 40px);
+    border: 1px solid #dbe7df;
+    border-radius: 16px;
+    background: #ffffff;
+    text-align: center;
+    color: #173e2c;
+}
+.icone {
+    display: inline-grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 20px;
+    border-radius: 50%;
+    background: #eaf5ee;
+    color: #087044;
+    font-size: 28px;
+}
+.painel h1 { margin: 0 0 12px; font-size: clamp(1.4rem, 3vw, 1.8rem); line-height: 1.2; letter-spacing: normal; font-weight: 650; }
+.painel p { margin: 0; color: #607468; font-size: 1rem; line-height: 1.6; }
+.acoes { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; margin: 24px 0; }
+.acoes .botao { width: auto; min-height: 44px; height: auto; padding: 10px 18px; border-radius: 8px; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.botao:disabled { opacity: .65; cursor: wait; }
+.link { color: #087044; font-size: .9rem; font-weight: 600; }
+.link:hover { text-decoration: underline; }
+.botao:focus-visible, .link:focus-visible { outline: 3px solid #06a66380; outline-offset: 3px; }
+.painel small { display: block; color: #607468; font-size: .78rem; line-height: 1.5; }

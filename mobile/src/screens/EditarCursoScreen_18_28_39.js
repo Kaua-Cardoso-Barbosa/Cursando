@@ -95,7 +95,7 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
         </View>
         <View style={styles.card}>
           <Pressable style={styles.upload} onPress={escolherImagem}>
-            {preview ? <Image source={{ uri: preview }} style={styles.image} /> : null}
+            <Image source={preview ? { uri: preview } : imagemPadraoCurso} style={styles.image} />
             <View style={styles.uploadIcon}>
               <AppIcon name="cloud-upload-outline" size={42} color={colors.white} />
             </View>
@@ -239,3 +239,4 @@ const styles = StyleSheet.create({
   }
 });
 /* Fim item 39 */
+import { imagemPadraoCurso } from '../imagens_padrao_39';

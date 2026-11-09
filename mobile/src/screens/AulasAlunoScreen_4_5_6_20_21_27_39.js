@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { fonteImagemCurso, fonteImagemAula } from '../imagens_padrao_39';
+import { useEffect, useState } from "react";
 import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import { getApiBaseUrl, resolverUrlMidia } from "../api/client_3_17";
@@ -6,8 +7,6 @@ import AppIcon from "../components/AppIcon_39";
 import EtapaModulo from "../components/EtapaModulo_6_39";
 import { colors, globalStyles } from "../styles_39";
 
-const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900";
-const fallbackCourseImage = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900";
 
 function ImagemComplemento({ material, token }) {
   const [visivel, setVisivel] = useState(false);
@@ -74,9 +73,14 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
   /* Fim item 6 */
   const materiais = detalhe?.materiais || [];
   const prova = detalhe?.prova;
+  const podeAvaliar = Boolean(detalhe?.avaliacao?.pode_avaliar);
   const [avaliacao, setAvaliacao] = useState({ nota: 5, comentario: "" });
   const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
   const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
+  useEffect(() => {
+    setAvaliacao({ nota: 5, comentario: "" });
+    setAvaliacaoEnviada(false);
+  }, [curso?.id]);
   /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita ou apresenta o certificado de conclusão do curso */
   const [baixandoCertificado, setBaixandoCertificado] = useState(false);
   /* Fim item 5 */
@@ -97,7 +101,7 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
   /* Fim item 5 */
 
   async function enviarAvaliacao() {
-    if (enviandoAvaliacao || avaliacaoEnviada) return;
+    if (!podeAvaliar || enviandoAvaliacao || avaliacaoEnviada) return;
     setEnviandoAvaliacao(true);
     try {
       const enviada = await onReview?.({ nota: Number(avaliacao.nota), comentario: avaliacao.comentario });
@@ -119,7 +123,7 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
 
       <View style={styles.courseHero}>
         <Image
-          source={{ uri: curso?.imagem ? resolverUrlMidia(curso.imagem) : fallbackCourseImage }}
+          source={fonteImagemCurso(curso?.imagem)}
           style={styles.courseImage}
         />
         <View style={styles.courseInfo}>
@@ -153,14 +157,13 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
                 {(modulo.aulas || []).map((aula) => (
                   <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
                     <View style={styles.preview}>
-                      <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
+                      <Image source={fonteImagemAula(aula.thumb)} style={styles.image} />
                       <View style={styles.playBadge}><AppIcon name="play" size={42} color={colors.black} style={styles.play} /></View>
                       {aula.assistida ? <AppIcon name="checkmark-circle" size={30} color={colors.green} style={styles.check} /> : null}
                     </View>
                     {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
                     <View style={styles.info}>
                       <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
-                      <Text style={styles.description} numberOfLines={2}>{aula.descricao}</Text>
                       {Number(aula.progresso_segundos) > 0 ? <Text style={styles.resumeLabel}>Continuar de {formatarPosicaoAula(aula.progresso_segundos)}</Text> : null}
                     </View>
                     {/* Fim item 4 */}
@@ -174,14 +177,13 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
         {(modulos.length === 0 ? aulas : aulasSemModulo).map((aula) => (
           <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
             <View style={styles.preview}>
-              <Image source={{ uri: aula.thumb ? resolverUrlMidia(aula.thumb) : fallbackThumb }} style={styles.image} />
+              <Image source={fonteImagemAula(aula.thumb)} style={styles.image} />
               <View style={styles.playBadge}><AppIcon name="play" size={42} color={colors.black} style={styles.play} /></View>
               {aula.assistida ? <AppIcon name="checkmark-circle" size={30} color={colors.green} style={styles.check} /> : null}
             </View>
             {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
             <View style={styles.info}>
               <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
-              <Text style={styles.description} numberOfLines={2}>{aula.descricao}</Text>
               {Number(aula.progresso_segundos) > 0 ? <Text style={styles.resumeLabel}>Continuar de {formatarPosicaoAula(aula.progresso_segundos)}</Text> : null}
             </View>
             {/* Fim item 4 */}
@@ -235,19 +237,29 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
                 <Text style={globalStyles.buttonText}>{baixandoCertificado ? "Preparando certificado..." : "Baixar certificado PDF"}</Text>
               </Pressable>
               {/* Fim item 5 */}
-              <View style={[globalStyles.card, styles.materialCard]}>
+
+            </>
+          ) : null}
+        </View>
+      ) : null}
+
+                                                                                                                                                                  
+      {curso?.matriculado ? (
+              <View style={[globalStyles.card, styles.materialCard, styles.ratingCard]}>
                                                                                                                                                                                                  
                 {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
                 <Text style={styles.materialTitle}>Avaliar curso</Text>
+                <Text style={styles.description}>Assista e conclua pelo menos 75% das aulas para dar uma nota ao curso.</Text>
+                <Text style={styles.description}>{detalhe?.avaliacao?.mensagem || "Carregando seu progresso de aulas..."}</Text>
                 {/* Fim item 27 */}
                 <View style={styles.ratingOptions} accessibilityRole="radiogroup" accessibilityLabel="Nota de 0 a 5 estrelas">
                   {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
-                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === 0 }} accessibilityLabel="0 estrelas" onPress={() => { setAvaliacao({ ...avaliacao, nota: 0 }); setAvaliacaoEnviada(false); }} disabled={enviandoAvaliacao} style={[styles.ratingChoice, avaliacao.nota === 0 && styles.ratingZeroSelected]}>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === 0 }} accessibilityLabel="0 estrelas" onPress={() => { setAvaliacao({ ...avaliacao, nota: 0 }); setAvaliacaoEnviada(false); }} disabled={!podeAvaliar || enviandoAvaliacao} style={[styles.ratingChoice, avaliacao.nota === 0 && styles.ratingZeroSelected]}>
                     <Text style={[styles.ratingZero, avaliacao.nota === 0 && styles.ratingSelectedText]}>0</Text>
                   </Pressable>
                   {/* Fim item 27 */}
                   {[1, 2, 3, 4, 5].map((nota) => (
-                    /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */ <Pressable key={nota} accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === nota }} accessibilityLabel={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} onPress={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }} disabled={enviandoAvaliacao} style={styles.ratingChoice}>
+                    /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */ <Pressable key={nota} accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === nota }} accessibilityLabel={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} onPress={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }} disabled={!podeAvaliar || enviandoAvaliacao} style={styles.ratingChoice}>
                       <Text style={[styles.ratingStar, nota <= avaliacao.nota && styles.ratingStarSelected]}>★</Text>
                     </Pressable> /* Fim item 27 */
                   ))}
@@ -263,27 +275,23 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
                   style={globalStyles.input}
                   multiline
                   textAlignVertical="top"
-                  editable={!enviandoAvaliacao}
+                  editable={podeAvaliar && !enviandoAvaliacao}
                 />
                 {/* Fim item 27 */}
                 {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: enviandoAvaliacao || avaliacaoEnviada, busy: enviandoAvaliacao }}
+                  accessibilityState={{ disabled: !podeAvaliar || enviandoAvaliacao || avaliacaoEnviada, busy: enviandoAvaliacao }}
                   style={({ pressed }) => [globalStyles.primaryButton, pressed && styles.botaoAvaliacaoPressionado, avaliacaoEnviada && styles.botaoAvaliacaoEnviada]}
                   onPress={enviarAvaliacao}
-                  disabled={enviandoAvaliacao || avaliacaoEnviada}
+                  disabled={!podeAvaliar || enviandoAvaliacao || avaliacaoEnviada}
                 >
                   <Text style={globalStyles.buttonText}>{enviandoAvaliacao ? "Enviando avaliação..." : avaliacaoEnviada ? "✓ Avaliação salva" : "Enviar avaliação"}</Text>
                 </Pressable>
                 {/* Fim item 27 */}
               </View>
-            </>
-          ) : null}
-        </View>
       ) : null}
 
-                                                                                                                                                                  
       <View style={styles.reviewsSection}>
         <Text style={styles.sectionTitle}>Comentários</Text>
         {detalhe?.avaliacoes?.length ? detalhe.avaliacoes.map((avaliacao) => {
@@ -483,6 +491,7 @@ const styles = StyleSheet.create({
     marginTop: 26
   },
 
+  ratingCard: { marginTop: 24, gap: 12 },
   reviewsSection: { gap: 12, marginTop: 28 },
   reviewCard: { padding: 14, gap: 10 },
   reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10 },

@@ -7,7 +7,7 @@ import {
     FaUsers
 } from "react-icons/fa";
 import css from "../../pages/DashboardProfessor/DashboardProfessor_38.module.css";
-import CapaCurso from "../CapaCurso/CapaCurso.jsx";
+import CursoCardBase from "../CursoCard/CursoCard.jsx";
 
 const STATUS_PRIVADO = 0;
 const STATUS_PUBLICADO = 1;
@@ -52,35 +52,17 @@ function ItemCardProfessor({
         : (thumbDaAula ? resolverUrlMidia(api, thumbDaAula) : PLACEHOLDER_AULA);
 
     if (tipo === "curso") {
-        return (
-            <article className={css.cardCurso}>
-                <button className={css.areaCardClicavel} onClick={() => onAbrir?.(item)}>
-                    <CapaCurso imagem={imagem} titulo={item.titulo} />
-                        <div className={css.infoCurso}>
-                            <div>
-                                <h3>{item.titulo}</h3>
-                                <p>{item.descricao}</p>
-                                                                                                                                                                                   
-                                <span className={css.infoInscritos}>
-                                <FaUsers /> {item.total_inscritos || 0} {item.total_inscritos === 1 ? "inscrito" : "inscritos"}
-                            </span>
-                        </div>
-                        <span className={css.statusBadge}>{item.status_nome}</span>
-                    </div>
-                </button>
-
-                {(podeGerenciar && gerenciavel) && (
-                    <div className={css.acoesCard}>
-                        <button title="Editar curso" onClick={onEditar}><FaEdit /></button>
-                        {item.status !== STATUS_PUBLICADO && <button title="Publicar curso" onClick={() => onStatus?.(STATUS_PUBLICADO)}><FaEye /></button>}
-                        {item.status !== STATUS_PRIVADO && <button title="Privar curso" onClick={() => onStatus?.(STATUS_PRIVADO)}><FaLock /></button>}
-                        {item.status !== STATUS_ARQUIVADO && <button title="Arquivar curso" onClick={() => onStatus?.(STATUS_ARQUIVADO)}><FaArchive /></button>}
-                        <button title="Ver alunos do curso" onClick={onAlunos}><FaUsers /></button>
-                        <button title="Excluir curso" className={css.botaoExcluir} onClick={onExcluir}><FaTrash /></button>
-                    </div>
-                )}
-            </article>
-        );
+        return <CursoCardBase imagem={imagem} titulo={item.titulo} descricao={item.descricao}
+            onAbrir={() => onAbrir?.(item)} status={item.status_nome}
+            metadados={<span><FaUsers aria-hidden="true" /> {item.total_inscritos || 0} {Number(item.total_inscritos) === 1 ? 'inscrito' : 'inscritos'}</span>}
+            acoes={podeGerenciar && gerenciavel && <div>
+                <button type="button" title="Editar curso" onClick={onEditar}><FaEdit /></button>
+                {item.status !== STATUS_PUBLICADO && <button type="button" title="Publicar curso" onClick={() => onStatus?.(STATUS_PUBLICADO)}><FaEye /></button>}
+                {item.status !== STATUS_PRIVADO && <button type="button" title="Privar curso" onClick={() => onStatus?.(STATUS_PRIVADO)}><FaLock /></button>}
+                {item.status !== STATUS_ARQUIVADO && <button type="button" title="Arquivar curso" onClick={() => onStatus?.(STATUS_ARQUIVADO)}><FaArchive /></button>}
+                <button type="button" title="Ver alunos do curso" onClick={onAlunos}><FaUsers /></button>
+                <button type="button" title="Excluir curso" onClick={onExcluir}><FaTrash /></button>
+            </div>} />;
     }
 
     return (
@@ -91,7 +73,6 @@ function ItemCardProfessor({
             <div className={css.infoAula}>
                 <div>
                     <h3>{item.titulo}</h3>
-                    <p>{item.descricao}</p>
                     <span className={css.statusBadge}>{item.status_nome}</span>
                 </div>
                 {(podeGerenciar) && (

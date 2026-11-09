@@ -34,6 +34,8 @@ import curso_conteudo_6_11_20_21_28 as curso_conteudo
 import chat_cursos_11_19_20 as chat_cursos
 import provas_cursos_20 as provas_cursos
 import certificados_5_20 as certificados
+# Registra o envio de avaliações e o OPTIONS automático dessa rota.
+import avaliacoes_cursos_27 as avaliacoes_cursos
 # A importação registra as rotas administrativas de consulta aos logs.
 import gravacao_log_25 as gravacao_log
 import financeiro_12_13_14_15_16_30_31_32_33_34_35_36 as financeiro

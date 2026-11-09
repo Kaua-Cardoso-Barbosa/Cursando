@@ -149,17 +149,17 @@
 /* Fim item 38 */
 
 .perfil {
-    align-items: flex-start;
+    display: block;
 }
 
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formulario */
 .formulario {
-    width: min(640px, 100%);
-    padding: clamp(22px, 3vw, 34px);
+    width: min(760px, 100%);
+    padding: 24px;
     border: 1px solid #dfe9e3;
-    border-radius: 20px;
+    border-radius: 16px;
     background: #ffffff;
-    box-shadow: 0 10px 26px rgba(15, 63, 40, 0.06);
+    box-shadow: none;
 }
 
 /* Fim item 38 */
@@ -243,6 +243,10 @@
     justify-content: flex-start;
     margin-top: 24px;
 }
+
+.botoes .botaoSalvar { width: auto; height: auto; min-height: 44px; padding: 10px 18px; border-radius: 8px; background: #087044; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.botaoSalvar:disabled { opacity: .65; cursor: wait; }
+.botaoSalvar:focus-visible { outline: 3px solid #06a66380; outline-offset: 3px; }
 
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 600px) */
 @media (max-width: 600px) {

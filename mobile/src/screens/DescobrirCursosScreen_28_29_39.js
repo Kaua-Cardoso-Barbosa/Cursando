@@ -1,11 +1,11 @@
+import { fonteImagemCurso } from '../imagens_padrao_39';
 import { useEffect, useState } from "react";
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { apiRequest, resolverUrlMidia } from "../api/client_3_17";
+import { apiRequest } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
 import { colors, globalStyles } from "../styles_39";
 
-const fallbackImage = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900";
 
 export default
 function DescobrirCursosScreen({ token, carregando, onOpen }) {
@@ -142,10 +142,10 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
 
       <View style={styles.list}>
         {cursos.map((curso) => {
-          const imagem = curso.imagem ? resolverUrlMidia(curso.imagem) : fallbackImage;
+          const imagem = fonteImagemCurso(curso.imagem);
           return (
             <Pressable key={curso.id} style={[globalStyles.card, styles.card]} onPress={() => onOpen?.(curso)}>
-              <Image source={{ uri: imagem }} style={styles.image} />
+              <Image source={imagem} style={styles.image} />
               <View style={styles.info}>
                 <Text style={styles.title} numberOfLines={1}>{curso.titulo}</Text>
                 <Text style={styles.description} numberOfLines={2}>{curso.descricao}</Text>

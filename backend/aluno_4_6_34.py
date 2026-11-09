@@ -246,19 +246,29 @@ def aluno_dashboard():
         # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta ou grava a posição e a conclusão das aulas
         cursor.execute(
             """
-            SELECT FIRST 8 V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS, PA.ASSISTIDO_EM
-            FROM PROGRESSO_AULAS PA
-            JOIN VIDEOS V ON V.ID_VIDEO = PA.ID_VIDEO
+            SELECT FIRST 8 V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS,
+                   CASE WHEN PA.ID_VIDEO IS NULL THEN 0 ELSE 1 END,
+                   COALESCE(PR.POSICAO_SEGUNDOS, 0)
+            FROM VIDEOS V
             JOIN CURSOS C ON C.ID_CURSO = V.ID_CURSO
-            JOIN MATRICULAS M ON M.ID_CURSO = C.ID_CURSO AND M.ID_USUARIO = PA.ID_USUARIO
-            WHERE PA.ID_USUARIO = ? AND V.EXCLUIDO = 0 AND V.STATUS = 1 AND C.EXCLUIDO = 0 AND C.STATUS = 1
+            JOIN MATRICULAS M ON M.ID_CURSO = C.ID_CURSO AND M.ID_USUARIO = ?
+            LEFT JOIN PROGRESSO_REPRODUCAO PR ON PR.ID_VIDEO = V.ID_VIDEO AND PR.ID_USUARIO = M.ID_USUARIO
+            LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = M.ID_USUARIO
+            WHERE (PR.POSICAO_SEGUNDOS > 0 OR PA.ID_VIDEO IS NOT NULL)
+              AND V.EXCLUIDO = 0 AND V.STATUS = 1 AND C.EXCLUIDO = 0 AND C.STATUS = 1
               AND M.STATUS_MATRICULA = 1
-            ORDER BY PA.ASSISTIDO_EM DESC
+              AND (V.ID_MODULO IS NULL OR EXISTS (
+                  SELECT 1 FROM MODULOS_CURSO MC WHERE MC.ID_MODULO = V.ID_MODULO AND MC.STATUS = 1
+              ))
+            ORDER BY COALESCE(PR.ATUALIZADO_EM, PA.ASSISTIDO_EM) DESC, V.ID_VIDEO DESC
             """,
             (id_aluno,),
         )
         # Fim item 4
-        recentes = [aula_para_dict(row[:6]) for row in cursor.fetchall()]
+        recentes = [
+            {**aula_para_dict(row[:6]), "assistida": bool(row[6]), "progresso_segundos": float(row[7] or 0)}
+            for row in cursor.fetchall()
+        ]
 
         cursor.execute(
             """
@@ -271,12 +281,22 @@ def aluno_dashboard():
         )
         assinatura = cursor.fetchone()
 
+        # Uma aprovação histórica conclui o curso, inclusive se a prova foi arquivada.
+        cursor.execute("""
+            SELECT COUNT(DISTINCT M.ID_CURSO) FROM MATRICULAS M
+            JOIN CURSOS C ON C.ID_CURSO = M.ID_CURSO
+            WHERE M.ID_USUARIO = ? AND M.STATUS_MATRICULA = 1 AND C.EXCLUIDO = 0 AND C.STATUS = 1
+              AND EXISTS (SELECT 1 FROM RESPOSTAS_PROVA R WHERE R.ID_CURSO = M.ID_CURSO
+                          AND R.ID_USUARIO = M.ID_USUARIO AND R.STATUS = 1)
+        """, (id_aluno,))
+        finalizados = cursor.fetchone()[0]
+
         return jsonify(
             {
                 # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta ou grava a posição e a conclusão das aulas
                 "metricas": {
                     "inscritos": len(cursos),
-                    "finalizados": len([curso for curso in cursos if curso["progresso"] >= 100]),
+                    "finalizados": finalizados,
                 },
                 # Fim item 4
                 "recentes": recentes,
@@ -448,6 +468,8 @@ def detalhe_aula_aluno(id_aula):
         
         # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta ou grava a posição e a conclusão das aulas
         aula["progresso_segundos"] = float(row[13] or 0)
+        cursor.execute('SELECT 1 FROM PROGRESSO_AULAS WHERE ID_USUARIO = ? AND ID_VIDEO = ?', (id_aluno, id_aula))
+        aula["assistida"] = cursor.fetchone() is not None
         # Fim item 4
 
         curso = {

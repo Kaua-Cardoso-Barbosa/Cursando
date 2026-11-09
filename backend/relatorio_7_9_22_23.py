@@ -92,7 +92,7 @@ def relatorio_professor():
         params.extend(periodo_params)
 
         # Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Calcula as métricas de alunos e de consumo das aulas
-        # As métricas usam matrículas, aulas concluídas e tempo assistido registrado.
+        # Conclusões exigem aprovação em prova; módulos e horas usam o consumo das aulas.
         cursor.execute(
             f"""
             SELECT
@@ -107,16 +107,8 @@ def relatorio_professor():
                  FROM MATRICULAS MC
                  WHERE MC.ID_CURSO = C.ID_CURSO AND MC.STATUS_MATRICULA = 1
                    AND EXISTS (
-                       SELECT 1 FROM VIDEOS VC
-                       WHERE VC.ID_CURSO = C.ID_CURSO AND VC.EXCLUIDO = 0 AND VC.STATUS = 1
-                   )
-                   AND NOT EXISTS (
-                       SELECT 1 FROM VIDEOS VC
-                       WHERE VC.ID_CURSO = C.ID_CURSO AND VC.EXCLUIDO = 0 AND VC.STATUS = 1
-                         AND NOT EXISTS (
-                             SELECT 1 FROM PROGRESSO_AULAS PAC
-                             WHERE PAC.ID_VIDEO = VC.ID_VIDEO AND PAC.ID_USUARIO = MC.ID_USUARIO
-                         )
+                       SELECT 1 FROM RESPOSTAS_PROVA R
+                       WHERE R.ID_CURSO = C.ID_CURSO AND R.ID_USUARIO = MC.ID_USUARIO AND R.STATUS = 1
                    )),
                 (SELECT COUNT(DISTINCT CAST(MM.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(MO.ID_MODULO AS VARCHAR(20)))
                  FROM MATRICULAS MM
@@ -522,17 +514,8 @@ def professor_dashboard():
             JOIN PROFESSORES_CURSO PC ON PC.ID_CURSO = C.ID_CURSO
             WHERE PC.ID_USUARIO = ? AND C.EXCLUIDO = 0 AND M.STATUS_MATRICULA = 1
               AND EXISTS (
-                  SELECT 1 FROM VIDEOS V
-                  WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1
-              )
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM VIDEOS V
-                  WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1
-                    AND NOT EXISTS (
-                        SELECT 1 FROM PROGRESSO_AULAS PA
-                        WHERE PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = M.ID_USUARIO
-                    )
+                  SELECT 1 FROM RESPOSTAS_PROVA R
+                  WHERE R.ID_CURSO = C.ID_CURSO AND R.ID_USUARIO = M.ID_USUARIO AND R.STATUS = 1
               )
             """,
             (id_professor,),

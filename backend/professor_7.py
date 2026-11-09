@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 
 from app import app
 from banco_37 import get_db
+from servicos.duracao_video import duracao_video
 
 
 STATUS_PRIVADO = 0
@@ -168,6 +169,7 @@ def aula_para_dict(row):
         "descricao": de_blob_texto(row[3]),
         "video": row[4],
         "thumb": thumb_aula_por_id(id_aula),
+        "duracao_segundos": duracao_video(current_app.root_path, id_aula, row[4]),
         "status": row[5],
         "status_nome": STATUS_NOMES.get(row[5], "desconhecido"),
     }

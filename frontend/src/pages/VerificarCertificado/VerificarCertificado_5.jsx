@@ -1,5 +1,6 @@
+import BotaoVoltar from '../../components/BotaoVoltar/BotaoVoltar.jsx';
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FaCertificate, FaCheckCircle, FaExclamationCircle, FaSearch } from "react-icons/fa";
 import css from "./VerificarCertificado_38.module.css";
 
@@ -82,7 +83,7 @@ function VerificarCertificado({ api }) {
                         </dl>
                     </div>}
                 </div>
-                <Link className={css.voltar} to="/">Voltar para a página inicial</Link>
+                <BotaoVoltar  to="/">Voltar para a página inicial</BotaoVoltar>
             </section>
             {/* Fim item 5 */}
         </main>

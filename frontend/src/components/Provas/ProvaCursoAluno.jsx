@@ -1,3 +1,4 @@
+import AutoTextarea from '../AutoTextarea/AutoTextarea.jsx';
 import { useEffect, useState } from 'react';
 import HistoricoProvas, { resultadoProva } from './HistoricoProvas';
 import css from './Provas.module.css';
@@ -41,7 +42,7 @@ export default function ProvaCursoAluno({ api, idCurso, dados, onAtualizar }) {
                     <legend>Questão {i + 1}</legend><p>{q.enunciado}</p>
                     {q.tipo === 'objetiva' ? q.alternativas.map((a, j) => <label className={css.alternativa} key={j}>
                         <input type="radio" required name={`resposta-${q.id}`} value={a} checked={respostas[q.id] === a} onChange={() => setRespostas((r) => ({ ...r, [q.id]: a }))} />{a}
-                    </label>) : <textarea required aria-label={`Resposta da questão ${i + 1}`} value={respostas[q.id] || ''} onChange={(e) => setRespostas((r) => ({ ...r, [q.id]: e.target.value }))} />}
+                    </label>) : <AutoTextarea required aria-label={`Resposta da questão ${i + 1}`} value={respostas[q.id] || ''} onChange={(e) => setRespostas((r) => ({ ...r, [q.id]: e.target.value }))} />}
                 </fieldset>)}
                 <button className={css.primario} disabled={enviando || !dados.questoes.length || dados.questoes.some((q) => !String(respostas[q.id] || '').trim())}>{enviando ? 'Enviando...' : 'Enviar prova'}</button>
             </form>}

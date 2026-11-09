@@ -18,7 +18,7 @@ export default
 function FeedbackProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [confirmacao, setConfirmacao] = useState(null);
-  const [segundosRestantes, setSegundosRestantes] = useState(3);
+  const [confirmacaoLiberada, setConfirmacaoLiberada] = useState(false);
   const liberarConfirmacaoEm = useRef(0);
   const resolverConfirmacao = useRef(null);
 
@@ -29,8 +29,8 @@ function FeedbackProvider({ children }) {
   const confirmar = useCallback((opcoes) => new Promise((resolve) => {
     resolverConfirmacao.current?.(false);
     resolverConfirmacao.current = resolve;
-    liberarConfirmacaoEm.current = Date.now() + 3000;
-    setSegundosRestantes(3);
+    liberarConfirmacaoEm.current = Date.now() + 1500;
+    setConfirmacaoLiberada(false);
     setConfirmacao({ ...opcoes });
   }), []);
 
@@ -43,12 +43,8 @@ function FeedbackProvider({ children }) {
 
   useEffect(() => {
     if (!confirmacao) return undefined;
-    const timer = setInterval(() => {
-      const segundos = Math.max(0, Math.ceil((liberarConfirmacaoEm.current - Date.now()) / 1000));
-      setSegundosRestantes(segundos);
-      if (segundos === 0) clearInterval(timer);
-    }, 100);
-    return () => clearInterval(timer);
+    const timer = setTimeout(() => setConfirmacaoLiberada(true), Math.max(0, liberarConfirmacaoEm.current - Date.now()));
+    return () => clearTimeout(timer);
   }, [confirmacao]);
 
   useEffect(() => {
@@ -111,12 +107,12 @@ function FeedbackProvider({ children }) {
                 </Pressable>
                 <Pressable
                   onPress={() => concluirConfirmacao(true)}
-                  disabled={segundosRestantes > 0}
-                  accessibilityState={{ disabled: segundosRestantes > 0 }}
-                  style={[styles.actionButton, styles.confirmButton, segundosRestantes > 0 && styles.confirmButtonDisabled]}
+                  disabled={!confirmacaoLiberada}
+                  accessibilityState={{ disabled: !confirmacaoLiberada }}
+                  style={[styles.actionButton, styles.confirmButton, !confirmacaoLiberada && styles.confirmButtonDisabled]}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.confirmText}>{confirmacao?.textoConfirmar || "Confirmar"}{segundosRestantes > 0 ? ` (${segundosRestantes}s)` : ''}</Text>
+                  <Text style={styles.confirmText}>{confirmacao?.textoConfirmar || "Confirmar"}</Text>
                 </Pressable>
               </View>
             </View>

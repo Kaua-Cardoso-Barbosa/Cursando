@@ -24,12 +24,13 @@ const professorMetrics = [
 const alunoMetrics = [
   ["Iniciada em", "Data de inicio da assinatura", "data_inicio", "calendar-outline", "data"],
   ["Valida ate", "Data de termino da assinatura", "data_expiracao", "calendar-outline", "data"],
-  ["Cursos inscritos", "+1 nesse mes", "inscritos", "library-outline"],
-  ["Cursos finalizados", "+2 nesse mes", "finalizados", "albums-outline"]
+  ["Cursos inscritos", "Matrículas ativas", "inscritos", "library-outline"],
+  ["Cursos finalizados", "Conclusões registradas", "finalizados", "albums-outline"]
 ];
 
 export default
 function InicioScreen({ usuario, dashboard, carregando, onRefresh, tipoUsuario = 1 }) {
+  const aluno = Number(tipoUsuario) === 2;
   const metricas = dashboard?.metricas || {};
   /* Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Define as métricas do instrutor exibidas no início do aplicativo */
   const metrics = Number(tipoUsuario) === 2 ? alunoMetrics : professorMetrics;
@@ -58,15 +59,15 @@ function InicioScreen({ usuario, dashboard, carregando, onRefresh, tipoUsuario =
               : metricas[chave] || 0;
 
           return (
-            <View key={chave} style={[globalStyles.metricCard, styles.card]}>
+            <View key={chave} style={[aluno ? globalStyles.card : globalStyles.metricCard, styles.card, aluno && styles.cardAluno]}>
               <View style={styles.cardTop}>
-                <Text style={styles.cardTitle}>{titulo}</Text>
+                <Text style={[styles.cardTitle, aluno && styles.tituloAluno]}>{titulo}</Text>
                 <View style={styles.iconBadge}>
                   <AppIcon name={icon} size={20} color={colors.darkGreen} />
                 </View>
               </View>
-              <Text style={styles.cardDetail}>{detalhe}</Text>
-              <Text style={tipoValor === "data" ? styles.dateValue : styles.number}>{valor}</Text>
+              <Text style={[styles.cardDetail, aluno && styles.detalheAluno]}>{detalhe}</Text>
+              <Text style={[tipoValor === "data" ? styles.dateValue : styles.number, aluno && styles.valorAluno]}>{valor}</Text>
             </View>
           );
         })}
@@ -107,6 +108,10 @@ const styles = StyleSheet.create({
   card: {
     justifyContent: "space-between"
   },
+  cardAluno: { minHeight: 168, padding: 18, gap: 10 },
+  tituloAluno: { fontSize: 18, lineHeight: 24, fontWeight: "700" },
+  detalheAluno: { fontSize: 14, lineHeight: 20, fontWeight: "400", marginTop: 0 },
+  valorAluno: { fontSize: 28, lineHeight: 36, fontWeight: "700", marginTop: 0 },
   cardTop: {
     width: "100%",
     flexDirection: "row",

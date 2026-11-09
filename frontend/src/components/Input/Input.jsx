@@ -1,3 +1,4 @@
+import AutoTextarea from '../AutoTextarea/AutoTextarea.jsx';
 import css from "./Input.module.css"
 import {IMaskInput} from "react-imask";
 
@@ -66,7 +67,7 @@ export default function Input({tipoInp, label, htmlFor, placeholder, classe = ''
                         <span className={css.campoObrigatorio}>*</span>
                     )}
                 </div>
-                <textarea id={htmlFor} name={htmlFor} value={value} onChange={funcao} placeholder={placeholder} className={"d-block w-100 rounded px-2 py-1 " + css.input}/>
+                <AutoTextarea id={htmlFor} name={htmlFor} value={value} onChange={funcao} placeholder={placeholder} className={"d-block w-100 rounded px-2 py-1 " + css.input}/>
             </div>
         )
     }

@@ -1,0 +1,33 @@
+.container { display: inline-flex; max-width: 100%; margin: 0 0 16px; vertical-align: middle; }
+.container .botao, .container.botao {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: auto;
+    min-width: 0;
+    min-height: 36px;
+    height: auto;
+    margin: 0;
+    padding: 6px 4px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: none;
+    color: #087044;
+    font: inherit;
+    font-size: .875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+.container .botao:hover:not(:disabled), .container.botao:hover { background: #eaf5ee; color: #075132; text-decoration: none; }
+.container .botao:focus-visible, .container.botao:focus-visible { outline: 3px solid #06a66380; outline-offset: 3px; }
+.container .botao:disabled { opacity: .5; cursor: not-allowed; }
+.botao svg { flex-shrink: 0; width: 14px; height: 14px; }
+.container.botao { margin-bottom: 16px; }
+.container.emLinha { margin-bottom: 0; }

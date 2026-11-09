@@ -1,4 +1,5 @@
 
+from servicos.avaliacao_curso import calcular_liberacao
 import math
 from datetime import datetime
 from flask import jsonify, request
@@ -146,7 +147,8 @@ def detalhe_curso_aluno(id_curso):
 
         con.commit()
         # Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Consulta as avaliações e as notas atribuídas ao curso
-        return jsonify({"curso": curso, "modulos": modulos, "aulas": aulas, "avaliacoes": avaliacoes})
+        return jsonify({"curso": curso, "modulos": modulos, "aulas": aulas, "avaliacoes": avaliacoes, "avaliacao": calcular_liberacao(
+            len(aulas), sum(aula["assistida"] for aula in aulas), curso["matriculado"])})
         # Fim item 27
     except Exception as erro:
         return resposta(f"Erro ao carregar curso: {erro}", 500)

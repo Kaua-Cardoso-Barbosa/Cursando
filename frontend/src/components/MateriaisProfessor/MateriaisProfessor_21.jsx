@@ -1,3 +1,4 @@
+import AutoTextarea from '../AutoTextarea/AutoTextarea.jsx';
 import { useCallback, useEffect, useState } from "react";
 import { FaExternalLinkAlt, FaFileAlt, FaPlus, FaTrash } from "react-icons/fa";
 import css from "./MateriaisProfessor_38.module.css";
@@ -96,7 +97,7 @@ function MateriaisProfessor({ api, idCurso, avisar }) {
                 <div className={css.introFormulario}><h3>Adicionar material</h3><p>Escolha um arquivo ou informe um link. O aluno encontrará o material na aba Complementos do curso.</p></div>
                 <label>Título<input value={titulo} onChange={(event) => setTitulo(event.target.value)} /></label>
                 <label>Tipo<select value={tipo} onChange={(event) => alterarTipo(event.target.value)}>{tipos.map((opcao) => <option key={opcao} value={opcao}>{opcao === "codigo" ? "Código" : opcao[0].toUpperCase() + opcao.slice(1)}</option>)}</select></label>
-                <label>Descrição<textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} /></label>
+                <label>Descrição<AutoTextarea value={descricao} onChange={(event) => setDescricao(event.target.value)} /></label>
                 {tipo !== "imagem" && <label>Link externo (HTTP/HTTPS)<input type="text" value={url} onChange={(event) => setUrl(event.target.value)} disabled={Boolean(arquivo)} placeholder="https://..." /></label>}
                 <label>{tipo === "imagem" ? "Imagem" : "Ou envie um arquivo"}<input key={tipo === "imagem" ? "imagem" : "outro"} type="file" accept={tipo === "imagem" ? extensoesImagem.join(",") : ".pdf,.epub,.mobi,.doc,.docx,.odt,.txt,.rtf,.zip,.rar,.7z,.py,.js,.java,.html,.css,.csv,.xlsx,.pptx,.png,.jpg,.jpeg,.gif,.webp,.bmp"} onChange={(event) => setArquivo(event.target.files?.[0] || null)} /></label>
                 {arquivo && <p className={css.selecionado}>Arquivo selecionado: {arquivo.name}</p>}

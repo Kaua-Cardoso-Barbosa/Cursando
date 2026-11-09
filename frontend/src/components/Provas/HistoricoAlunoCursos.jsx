@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import HistoricoProvas from './HistoricoProvas';
 import css from './Provas.module.css';
+import CabecalhoPagina from '../CabecalhoPagina/CabecalhoPagina.jsx';
 
 export default function HistoricoAlunoCursos({ api }) {
     const [cursos, setCursos] = useState([]);
@@ -15,7 +16,8 @@ export default function HistoricoAlunoCursos({ api }) {
         return () => controle.abort();
     }, [api]);
     return <section className={css.pagina}>
-        <div className={css.cartao}><h2>Meu histórico de provas</h2><p>Consulte suas tentativas por curso, incluindo provas arquivadas. A consulta permanece disponível com a assinatura vencida.</p>
+        <CabecalhoPagina etiqueta="PROVAS" titulo="Meu histórico de provas" descricao="Consulte suas tentativas por curso, incluindo provas arquivadas. A consulta permanece disponível com a assinatura vencida." />
+        <div className={css.cartao}>
             {erro && <p role="alert" className={css.erro}>{erro}</p>}
             <label>Curso<select value={selecionado} onChange={(e) => setSelecionado(e.target.value)}>{cursos.map((c) => <option value={c.id} key={c.id}>{c.titulo}</option>)}</select></label>
             {!cursos.length && !erro && <p>Nenhum curso vinculado à sua conta.</p>}

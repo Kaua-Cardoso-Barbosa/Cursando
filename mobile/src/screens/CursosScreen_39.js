@@ -1,14 +1,10 @@
+import { fonteImagemCurso } from '../imagens_padrao_39';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { resolverUrlMidia } from "../api/client_3_17";
+
 import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
 import { colors, globalStyles } from "../styles_39";
 
-const placeholders = [
-  "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=900",
-  "https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=900",
-  "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=900"
-];
 
 export default
 function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onExams, onComplements, onStudents, onHistory, tipoUsuario = 1 }) {
@@ -42,12 +38,12 @@ function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen,
       <View style={styles.list}>
         {aluno && onHistory && <Pressable style={globalStyles.secondaryButton} onPress={onHistory}><Text style={globalStyles.secondaryText}>Meu histórico de provas</Text></Pressable>}
         {cursos.map(
-(curso, index) => {
-          const imagem = curso.imagem ? resolverUrlMidia(curso.imagem) : placeholders[index % placeholders.length];
+(curso) => {
+          const imagem = fonteImagemCurso(curso.imagem);
           return (
             <View key={curso.id} style={[globalStyles.card, styles.card]}>
               <Pressable disabled={!onOpen} onPress={() => onOpen?.(curso)}>
-                <Image source={{ uri: imagem }} style={styles.image} />
+                <Image source={imagem} style={styles.image} />
               </Pressable>
               <View style={styles.info}>
                 <Pressable style={styles.texts} disabled={!onOpen} onPress={() => onOpen?.(curso)}>

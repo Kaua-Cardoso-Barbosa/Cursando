@@ -1,3 +1,4 @@
+import AutoTextarea from '../AutoTextarea/AutoTextarea.jsx';
 import { useEffect, useState } from 'react';
 import css from './Provas.module.css';
 
@@ -82,7 +83,7 @@ export default function HistoricoProvas({ api, idCurso, professor = false, atual
                         {q.tipo === 'dissertativa' && <p>{detalhe.correcoes_dissertativas[String(q.id)] === undefined ? 'Aguardando correção' : detalhe.correcoes_dissertativas[String(q.id)] ? 'Resposta correta' : 'Resposta incorreta'}</p>}
                         {professor && detalhe.status === 0 && q.tipo === 'dissertativa' && <div className={css.acoes}><button disabled={corrigindo} onClick={() => corrigir(q, true)}>Correta</button><button disabled={corrigindo} onClick={() => corrigir(q, false)}>Incorreta</button></div>}
                     </div>)}
-                    {professor && detalhe.status === 0 ? <label>Feedback<textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Feedback enviado com a correção" /></label> : <p>Feedback: {detalhe.feedback || 'Não informado.'}</p>}
+                    {professor && detalhe.status === 0 ? <label>Feedback<AutoTextarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Feedback enviado com a correção" /></label> : <p>Feedback: {detalhe.feedback || 'Não informado.'}</p>}
                 </div>}
             </article>)}
             <div className={css.paginacao}><button disabled={pagina <= 1} onClick={() => setPagina((n) => n - 1)}>Anterior</button><span>Página {pagina} de {historico.paginas}</span><button disabled={pagina >= historico.paginas} onClick={() => setPagina((n) => n + 1)}>Próxima</button></div>

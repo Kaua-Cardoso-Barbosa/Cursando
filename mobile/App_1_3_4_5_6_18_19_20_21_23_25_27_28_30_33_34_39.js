@@ -531,6 +531,13 @@ async function avaliarCursoAluno(dados) {
         body: JSON.stringify(dados)
       }, token);
       mostrarAlerta("Avaliação", "Avaliação cadastrada com sucesso.", "sucesso");
+      try {
+        const atualizado = await apiRequest(`/aluno/cursos/${detalheCursoAluno.curso.id}`, {}, token);
+        setDetalheCursoAluno((anterior) => anterior?.curso?.id === atualizado.curso?.id
+          ? { ...anterior, ...atualizado } : anterior);
+      } catch {
+        // A nota já foi salva; uma falha ao atualizar a lista não desfaz o envio.
+      }
       return true;
     } catch (error) {
       mostrarAlerta("Avaliação", error.message || "Não foi possível cadastrar a avaliação.", "erro");

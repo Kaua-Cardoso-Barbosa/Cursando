@@ -1,3 +1,4 @@
+import CabecalhoPagina from '../../components/CabecalhoPagina/CabecalhoPagina.jsx';
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -665,18 +666,7 @@ function DashboardAdm({
                     )}
 
                                                                                                                                                                               
-                    <section className={css.cabecalhoPagina}>
-                        <div>
-                            {/* Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Apresenta os dados consolidados de alunos, cursos, módulos e horas */}
-                            <span className={css.etiquetaPagina}>
-                                {exibindoPerfil ? "CONTA" : exibindoFinanceiro ? "FINANCEIRO" : exibindoLogs ? "AUDITORIA" : exibindoRelatorios ? "RELATÓRIOS" : "ADMINISTRAÇÃO"}
-                            </span>
-                            {/* Fim item 23 */}
-                            {/* Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Apresenta os dados consolidados de alunos, cursos, módulos e horas */}
-                            <h2>{exibindoPerfil ? "Perfil do administrador" : exibindoFinanceiro ? "Visão financeira" : exibindoLogs ? "Atividade do sistema" : exibindoRelatorios ? "Relatórios da plataforma" : "Visão geral"}</h2>
-                            {/* Fim item 23 */}
-                            {/* Sprint item 23 - Exibir relatórios de alunos, cursos, módulos e horas assistidas - Apresenta os dados consolidados de alunos, cursos, módulos e horas */}
-                            <p>{exibindoPerfil
+                    {!exibindoPerfil && <CabecalhoPagina etiqueta={exibindoPerfil ? "CONTA" : exibindoFinanceiro ? "FINANCEIRO" : exibindoLogs ? "AUDITORIA" : exibindoRelatorios ? "RELATÓRIOS" : "ADMINISTRAÇÃO"} titulo={exibindoPerfil ? "Perfil do administrador" : exibindoFinanceiro ? "Visão financeira" : exibindoLogs ? "Atividade do sistema" : exibindoRelatorios ? "Relatórios da plataforma" : "Visão geral"} descricao={exibindoPerfil
                                 ? "Atualize seus dados e mantenha as informações da conta em dia."
                                 : exibindoFinanceiro
                                     ? "Acompanhe arrecadação, repasses, custos e saldo da plataforma."
@@ -684,10 +674,7 @@ function DashboardAdm({
                                         ? "Consulte eventos e filtre registros para acompanhar as operações da plataforma."
                                         : exibindoRelatorios
                                             ? "Analise matrículas, conclusões e atividade por período, instrutor e curso."
-                                        : "Acompanhe os principais indicadores de cursos e usuários da plataforma."}</p>
-                            {/* Fim item 23 */}
-                        </div>
-                    </section>
+                                        : "Acompanhe os principais indicadores de cursos e usuários da plataforma."} />}
 
                     {exibindoPerfil ? (
                         <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />

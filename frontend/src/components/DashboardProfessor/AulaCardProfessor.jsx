@@ -33,7 +33,6 @@ export default function AulaCardProfessor({ aula, api, onEditar, onExcluir, onSt
             <div className={css.infoAula}>
                 <div>
                     <h3>{aula.titulo}</h3>
-                    <p>{aula.descricao}</p>
                     <span className={css.statusBadge}>{aula.status_nome}</span>
                 </div>
                 <div className={css.acoesCard}>

@@ -17,16 +17,12 @@ function DialogoConfirmacao({
                                          aoCancelar,
                                          aoConfirmar
                                      }) {
-    const [segundosRestantes, setSegundosRestantes] = useState(3);
-    const liberarEm = useRef(Date.now() + 3000);
+    const [confirmacaoLiberada, setConfirmacaoLiberada] = useState(false);
+    const liberarEm = useRef(Date.now() + 1500);
 
     useEffect(() => {
-        const timer = setInterval(() => {
-            const segundos = Math.max(0, Math.ceil((liberarEm.current - Date.now()) / 1000));
-            setSegundosRestantes(segundos);
-            if (segundos === 0) clearInterval(timer);
-        }, 100);
-        return () => clearInterval(timer);
+        const timer = setTimeout(() => setConfirmacaoLiberada(true), Math.max(0, liberarEm.current - Date.now()));
+        return () => clearTimeout(timer);
     }, []);
 
     function confirmar() {
@@ -61,9 +57,9 @@ function DialogoConfirmacao({
                         type="button"
                         className={`${css.confirmar} ${css[variante]}`}
                         onClick={confirmar}
-                        disabled={carregando || segundosRestantes > 0}
+                        disabled={carregando || !confirmacaoLiberada}
                     >
-                        {carregando ? "Aguarde..." : segundosRestantes > 0 ? `${textoConfirmar} (${segundosRestantes}s)` : textoConfirmar}
+                        {carregando ? "Aguarde..." : textoConfirmar}
                     </button>
                 </div>
             </section>
