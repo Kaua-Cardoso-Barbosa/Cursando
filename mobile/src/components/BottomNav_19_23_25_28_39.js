@@ -5,14 +5,14 @@ import BrandLogo from './BrandLogo_39';
 import { colors, systemNavigationInset } from '../styles_39';
 
 const OPCOES = {
-  0: [['logs','Logs','document-text-outline'],['users','Usuários','people-outline'],['profile','Perfil','person-circle-outline']],
+  0: [['home','Início','home-outline'],['users','Gerenciar usuários','people-outline'],['finance','Financeiro','wallet-outline'],['reports','Relatórios','bar-chart-outline'],['logs','Histórico de atividades','document-text-outline'],['profile','Perfil','person-circle-outline']],
   1: [['home','Início','home-outline'],['courses','Meus cursos','videocam-outline'],['finance','Financeiro','wallet-outline'],['chat','Chat','chatbubble-ellipses-outline'],['reports','Relatórios','bar-chart-outline'],['profile','Perfil','person-circle-outline']],
   2: [['home','Início','home-outline'],['courses','Meus cursos','videocam-outline'],['discover','Descobrir','search-outline'],['history','Provas','document-text-outline'],['chat','Chat','chatbubble-ellipses-outline'],['finance','Financeiro','wallet-outline'],['profile','Perfil','person-circle-outline']]
 };
 export default function BottomNav({ active, onChange, tipoUsuario = 1 }) {
   const [aberto, setAberto] = useState(false);
   const itens = OPCOES[Number(tipoUsuario)] || OPCOES[2];
-  const principais = Number(tipoUsuario) === 0 ? itens : itens.filter(([id]) => ['home','courses', Number(tipoUsuario) === 2 ? 'discover' : 'chat'].includes(id));
+  const principais = Number(tipoUsuario) === 0 ? itens.filter(([id]) => ['home','users','finance'].includes(id)) : itens.filter(([id]) => ['home','courses', Number(tipoUsuario) === 2 ? 'discover' : 'chat'].includes(id));
   const secundarioAtivo = !principais.some(([id]) => id === active);
   useEffect(() => { setAberto(false); }, [active]);
   function navegar(id) { setAberto(false); onChange(id); }

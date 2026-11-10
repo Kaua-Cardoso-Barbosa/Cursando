@@ -1,0 +1,8 @@
+[
+  {"id":"S1","start":0,"end":2.0,"msg":"Gancho: problema em 5 palavras de tipografia enorme","sfx":[{"type":"thump"}]},
+  {"id":"S2","start":2.0,"end":6.0,"msg":"Produto aparece; a UI se monta peça por peça","sfx":[{"type":"whoosh","at":1.9},{"type":"pop"}]},
+  {"id":"S3","start":6.0,"end":10.0,"msg":"Funcionalidade 1 com clique real do cursor","sfx":[{"type":"click"}]},
+  {"id":"S4","start":10.0,"end":14.0,"msg":"Funcionalidade 2","sfx":[{"type":"click"}]},
+  {"id":"S5","start":14.0,"end":18.0,"msg":"Número que prova o resultado (dado real)","sfx":[{"type":"pop"}]},
+  {"id":"S6","start":18.0,"end":22.0,"msg":"Lockup do logo + CTA","sfx":[{"type":"thump"}]}
+]

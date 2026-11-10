@@ -1,0 +1,10 @@
+[
+  {"t":0.5,"type":"click"}, {"t":3,"type":"whoosh"},
+  {"t":5,"type":"thump"}, {"t":5.5,"type":"pop"},
+  {"t":6,"type":"pop"}, {"t":6.5,"type":"click"},
+  {"t":8,"type":"whoosh"}, {"t":10.5,"type":"pop"},
+  {"t":12,"type":"whoosh"}, {"t":13.5,"type":"click"},
+  {"t":15,"type":"click"}, {"t":17,"type":"whoosh"},
+  {"t":18.5,"type":"pop"}, {"t":21,"type":"whoosh"},
+  {"t":22.5,"type":"thump"}
+]

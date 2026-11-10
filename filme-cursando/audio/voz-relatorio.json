@@ -1,0 +1,82 @@
+[
+  {
+    "start": 0.35,
+    "end": 3,
+    "text": "E se você começasse hoje?",
+    "duration": 2.0446666666666666,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 3.25,
+    "end": 9,
+    "text": "Um novo assunto. Uma habilidade. Algo que você sempre quis aprender.",
+    "duration": 4.290583333333333,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 9.3,
+    "end": 15,
+    "text": "No Cursando, você encontra um caminho para dar o primeiro passo.",
+    "duration": 3.646,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 15.3,
+    "end": 23,
+    "text": "Escolha um curso, explore os módulos e avance de aula em aula, no seu ritmo.",
+    "duration": 4.414,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 23.3,
+    "end": 30,
+    "text": "Pelo site ou pelo aplicativo, acompanhe sua jornada e continue de onde parou.",
+    "duration": 4.987333333333333,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 30.3,
+    "end": 35.7,
+    "text": "O próximo passo está sempre ao seu alcance.",
+    "duration": 2.8026666666666666,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 36.2,
+    "end": 42,
+    "text": "Surgiu uma dúvida? Converse com seu professor e siga aprendendo.",
+    "duration": 4.023333333333333,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 42.3,
+    "end": 51.5,
+    "text": "Ao final, coloque seu conhecimento à prova. Conquiste sua aprovação e receba o certificado do curso.",
+    "duration": 6.158,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 51.7,
+    "end": 54.5,
+    "text": "Cada etapa abre uma nova possibilidade.",
+    "duration": 2.7586666666666666,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  },
+  {
+    "start": 54.7,
+    "end": 59.9,
+    "text": "Cursando. Dê caminho à sua curiosidade. Explore nossos cursos.",
+    "duration": 4.092,
+    "voice": "pf_dora",
+    "engine": "Kokoro ONNX local"
+  }
+]

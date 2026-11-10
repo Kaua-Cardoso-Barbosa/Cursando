@@ -1,0 +1,17 @@
+{
+  "targetLUFS": -14,
+  "targetDeliveryTruePeak": -1.5,
+  "internalHeadroomDBTP": -3.5,
+  "firstPass": {
+    "input_i": "-29.24",
+    "input_tp": "-11.70",
+    "input_lra": "3.90",
+    "input_thresh": "-39.29",
+    "output_i": "-17.62",
+    "output_tp": "-3.50",
+    "output_lra": "2.70",
+    "output_thresh": "-27.62",
+    "normalization_type": "dynamic",
+    "target_offset": "3.62"
+  }
+}

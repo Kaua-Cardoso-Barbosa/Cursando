@@ -46,3 +46,14 @@ O progresso do catálogo e do perfil agora considera apenas aulas disponíveis e
 - Arquivos temporários: armazenamento de foto, formatos aceitos e limite de 5 MB.
 
 Esta revisão não substitui um teste completo em aparelho. Galeria/permissões do sistema, teclado, aparência nativa, reprodução e comportamento do botão físico precisam de conferência no dispositivo. Reinicie a API para carregar as rotas alteradas e recarregue o Expo. O esquema `cursando://perfil/...` requer um novo build nativo para registro no sistema.
+
+## Administrador no aplicativo
+
+- Início com os quatro indicadores e gráfico da plataforma.
+- Financeiro com resumo, pool, análise manual de pagamentos, ticket por aluno, custos únicos/mensais, categorias e transações filtradas.
+- Relatórios por período, instrutor e curso, com totais e tabela detalhada.
+- Usuários em três listas, com pesquisa, cadastro de professor/administrador, edição, bloqueio com motivo e perfis privados.
+- Histórico de atividades com traduções de auditoria iguais ao site, valores antes/depois, dados técnicos e paginação.
+- Perfil administrativo usa o editor existente com foto.
+- A pedido do usuário, mantido o menu inferior padrão do app; o menu superior responsivo do site não é utilizado.
+- Exportação Android e fluxos administrativos com API simulada validados. A equivalência visual exata em aparelho ainda não foi verificada; seleção de arquivo, teclado, fontes e controles nativos mantêm o comportamento do aplicativo.

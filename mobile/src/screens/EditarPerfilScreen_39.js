@@ -1,3 +1,4 @@
+import { AdminCabecalho, AdminCampo } from '../components/Admin/AdminUI_39';
 import AppIcon from "../components/AppIcon_39";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
@@ -8,7 +9,7 @@ import Field from "../components/Field_39";
 import { colors, globalStyles } from "../styles_39";
 
 export default
-function EditarPerfilScreen({ perfil, onCancel, onSave, salvando, titulo = 'Editar perfil', permitirImagem = true }) {
+function EditarPerfilScreen({ perfil, onCancel, onSave, salvando, titulo = 'Editar perfil', permitirImagem = true, administrativo = false, semCancelar = false, onLogout }) {
   const [nome, setNome] = useState(perfil?.nome || "");
   const [email, setEmail] = useState(perfil?.email || "");
   const [cpf, setCpf] = useState(perfil?.cpf || "");
@@ -32,11 +33,12 @@ function EditarPerfilScreen({ perfil, onCancel, onSave, salvando, titulo = 'Edit
       }
     } catch (erro) { mostrarAlerta('Imagem de perfil', erro.message, 'erro'); }
   }
+  const Campo = administrativo ? AdminCampo : Field;
   const preview = imagem?.uri || (perfil?.imagem_perfil ? resolverUrlMidia(perfil.imagem_perfil) : null);
 
   return (
-    <ScrollView contentContainerStyle={[globalStyles.page, styles.page]}>
-      <View style={styles.header}>
+    <ScrollView contentContainerStyle={[globalStyles.page, styles.page, administrativo && { paddingHorizontal: 18, paddingTop: 22, gap: 20 }]}>
+      <View style={[styles.header, administrativo && { display: "none" }]}>
         {preview ? <Image source={{ uri: preview }} style={{ width: 84, height: 84, borderRadius: 42 }} /> : <AppIcon name="person-circle-outline" size={84} color={colors.black} style={styles.avatar} />}
         <View style={styles.headerText}>
           <Text style={globalStyles.title}>{titulo}</Text>
@@ -45,24 +47,26 @@ function EditarPerfilScreen({ perfil, onCancel, onSave, salvando, titulo = 'Edit
         </View>
       </View>
 
-      <View style={styles.card}>
+      {administrativo && <AdminCabecalho etiqueta="CONTA" titulo={titulo} descricao="Atualize seus dados, sua foto e a senha da conta." />}
+      <View style={[styles.card, administrativo && { padding: 20, gap: 16, borderRadius: 16 }]}>
+        {administrativo && (preview ? <Image source={{ uri: preview }} style={{ width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: "#e5f5ec" }} /> : <Text style={{ color: "#087044", fontSize: 40 }}>{(nome || "U").slice(0, 1).toUpperCase()}</Text>)}
         {permitirImagem && <Pressable style={[globalStyles.secondaryButton, { marginBottom: 16 }]} disabled={salvando} onPress={escolherImagem}><Text style={globalStyles.secondaryText}>Escolher imagem de perfil</Text></Pressable>}
-        <Field label="Nome" value={nome} onChangeText={setNome} />
+        <Campo label="Nome" value={nome} onChangeText={setNome} />
         {Number(perfil?.tipo) === 1 && <View>
-          <Field label="@ do perfil (opcional)" value={arroba} onChangeText={setArroba}
+          <Campo label="@ do perfil (opcional)" value={arroba} onChangeText={setArroba}
             autoCapitalize="none" autoCorrect={false} maxLength={41} placeholder="Ex.: mariana.duarte" />
           <Text style={styles.ajudaArroba}>Use de 3 a 40 caracteres: letras sem acento, números, ponto ou sublinhado. Comece com uma letra. Deixe vazio para usar o identificador aleatório.</Text>
         </View>}
-        <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-        <Field label="Cpf" value={cpf} onChangeText={setCpf} />
-        <Field label="Senha" value={senha} onChangeText={setSenha} secureTextEntry />
-        <Field label="Confirmar senha" value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry />
+        <Campo label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+        <Campo label="Cpf" value={cpf} onChangeText={setCpf} />
+        <Campo label="Senha" value={senha} onChangeText={setSenha} secureTextEntry />
+        <Campo label="Confirmar senha" value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry />
       </View>
 
-      <View style={styles.buttons}>
-        <Pressable style={globalStyles.secondaryButton} disabled={salvando} onPress={onCancel}>
+      <View style={[styles.buttons, administrativo && { flexDirection: "column", marginTop: 0 }]}>
+        {!semCancelar && <Pressable style={globalStyles.secondaryButton} disabled={salvando} onPress={onCancel}>
           <Text style={globalStyles.secondaryText}>Cancelar</Text>
-        </Pressable>
+        </Pressable>}
         <Pressable
           style={globalStyles.primaryButton}
           onPress={async () => { setErroSalvar(false); const salvo = await onSave({ nome, email, cpf, senha, confirmar_senha: confirmarSenha,
@@ -73,6 +77,7 @@ function EditarPerfilScreen({ perfil, onCancel, onSave, salvando, titulo = 'Edit
         </Pressable>
       </View>
       {erroSalvar && <Text accessibilityRole="alert" style={{ color: colors.red, marginTop: 16 }}>Não foi possível salvar. Confira os dados e tente novamente.</Text>}
+      {administrativo && onLogout && <Pressable style={globalStyles.dangerButton} onPress={onLogout}><Text style={globalStyles.buttonText}>Sair</Text></Pressable>}
     </ScrollView>
   );
 }

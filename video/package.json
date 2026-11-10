@@ -1,0 +1,30 @@
+{
+  "name": "cursando-motion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.tsx",
+    "assets": "node scripts/prepare.mjs",
+    "audio": "node scripts/audio.mjs",
+    "render": "node scripts/render.mjs",
+    "check": "tsc --noEmit",
+    "validate": "node scripts/validate.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.542",
+    "@remotion/renderer": "4.0.542",
+    "@remotion/bundler": "4.0.542",
+    "@remotion/transitions": "4.0.542",
+    "remotion": "4.0.542",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "playwright": "^1.56.0"
+  }
+}

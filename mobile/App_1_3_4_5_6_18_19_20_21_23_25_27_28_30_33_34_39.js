@@ -1,3 +1,6 @@
+import AdminInicioScreen from './src/screens/AdminInicioScreen_39';
+import AdminFinanceiroScreen from './src/screens/AdminFinanceiroScreen_39';
+import AdminRelatoriosScreen from './src/screens/AdminRelatoriosScreen_39';
 import { StatusBar } from "expo-status-bar";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -110,7 +113,7 @@ function AppContent() {
       if (managingCourse) { setManagingCourse(null); return true; }
       if (examCourse) { setExamCourse(null); return true; }
       if (materialsCourse) { setMaterialsCourse(null); return true; }
-      if (token && tab !== "chat" && tab !== (Number(usuario?.tipo) === 0 ? 'logs' : 'home')) { setTab(Number(usuario?.tipo) === 0 ? 'logs' : 'home'); return true; }
+      if (token && tab !== "chat" && tab !== 'home') { setTab('home'); return true; }
       return false;
     });
     return () => evento.remove();
@@ -127,7 +130,7 @@ async function carregarDados(authToken = token, authUser = usuario) {
     try {
       const tipo = Number(authUser?.tipo ?? usuario?.tipo ?? 1);
       if (tipo === 0) {
-        setTab(atual => ['logs', 'users', 'profile'].includes(atual) ? atual : 'logs');
+        setTab(atual => ['home', 'finance', 'reports', 'logs', 'users', 'profile'].includes(atual) ? atual : 'home');
         /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
         const [dashboardData, perfilData] = await Promise.all([
           apiRequest("/admin/dashboard", {}, authToken),
@@ -183,9 +186,9 @@ async function carregarDados(authToken = token, authUser = usuario) {
       await salvarSessao(authToken, usuarioAtualizado);
       /* Fim item 3 */
     } catch (error) {
-      mostrarAlerta("Erro", error.message, "erro");
+      if (sessaoTokenRef.current === authToken) mostrarAlerta("Erro", error.message, "erro");
     } finally {
-      setLoading(false);
+      if (sessaoTokenRef.current === authToken) setLoading(false);
     }
   }
 
@@ -371,7 +374,6 @@ async (estado) => {
     ultimaSincronizacaoRef.current = 0;
     setHistoricoProvasAberto(false);
     setToken("");
-    await limparSessao();
     setUsuario(null);
     setAssinaturaAtiva(null);
     setPerfil(null);
@@ -391,7 +393,15 @@ async (estado) => {
     setMaterialsCourse(null);
     setPreviaCurso(null);
     setRecuperacaoSenha(null);
+    setErroSincronizacao('');
+    setLoading(false);
+    setValidandoAssinatura(false);
+    setCadastroAberto(false);
+    setEmailPendente('');
+    setCodigoEmailEnviado(null);
     setTab("home");
+    try { await limparSessao(); }
+    catch (erro) { mostrarAlerta('Sair da conta', 'A sessão foi encerrada no aplicativo, mas não foi possível limpar os dados salvos. Tente novamente antes de fechar o app.', 'erro'); }
   }
   /* Fim item 3 */
 
@@ -898,6 +908,16 @@ async (novoToken, novoUsuario) => {
       </TelaApp>
     );
   }
+
+  if (tipoUsuario === 0) return <TelaApp ativo={tab} tipoUsuario={0} onChange={trocarAba}>
+    <StatusBar style="dark" />
+    {tab === 'home' && <AdminInicioScreen usuario={usuario} dashboard={dashboard} carregando={loading} onRefresh={carregarDados} />}
+    {tab === 'finance' && <AdminFinanceiroScreen token={token} />}
+    {tab === 'reports' && <AdminRelatoriosScreen token={token} />}
+    {tab === 'users' && <UsuariosAdminScreen token={token} usuarioAtual={usuario} onOpenProfile={abrirPerfilPublico} />}
+    {tab === 'logs' && <LogsAdminScreen token={token} onError={erro => mostrarAlerta('Logs', erro.message, 'erro')} />}
+    {tab === 'profile' && <EditarPerfilScreen key={perfil?.id_usuario || 'admin'} administrativo semCancelar perfil={perfil} titulo="Editar perfil" onLogout={sair} onSave={salvarPerfil} salvando={saving} onCancel={() => trocarAba('home')} />}
+  </TelaApp>;
 
   return (
     <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}>

@@ -1,0 +1,24 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>UI morph — conceito fictício</title>
+<style>html,body{margin:0;overflow:hidden}canvas{display:block;width:100vw;height:100vh}</style><canvas></canvas>
+<script type="module">
+import {track,loopTime,swapAlpha,clamp,progress} from '../../scripts/motion.mjs';
+const c=document.querySelector('canvas'),g=c.getContext('2d');let w=1920,h=1080;
+const states=[{t:0,w:500,h:150,r:75,label:'COMEÇAR'},{t:2,w:150,h:150,r:75,label:'◌'},
+{t:4,w:150,h:150,r:75,label:'✓'},{t:6,w:620,h:380,r:35,label:'SEU PAINEL'},
+{t:8,w:620,h:380,r:35,label:'EVOLUÇÃO'},{t:10,w:720,h:400,r:30,label:'BUSCAR AÇÃO'},
+{t:12,w:550,h:150,r:25,label:'TUDO PRONTO'},{t:14,w:500,h:150,r:75,label:'COMEÇAR'}];
+window.configure=({width=1920,height=1080}={})=>{w=width;h=height;c.width=w;c.height=h;};
+window.seek=time=>{
+ const t=loopTime(time,16), state=states.filter(s=>s.t<=t).at(-1);
+ // Hold final fecha a emenda com imagem e velocidade idênticas ao hold inicial.
+ const v=key=>t>=15?states[0][key]:track(t,states[0][key],states.slice(1).map(s=>({time:s.t,value:s[key]})),{damping:1,frequency:2.5});
+ const scale=Math.min(w/1152,h/900);g.setTransform(1,0,0,1,0,0);g.fillStyle='#f5f4ee';g.fillRect(0,0,w,h);
+ g.translate(w/2,h/2);g.scale(scale,scale);const rw=v('w'),rh=v('h');
+ g.fillStyle='#101714';g.beginPath();g.roundRect(-rw/2,-rh/2,rw,rh,v('r'));g.fill();
+ const alpha=t>=15?1:state.t===0?1:swapAlpha(t,state.t,state.t+2);
+ g.globalAlpha=alpha;g.fillStyle='white';g.font='bold 42px Arial';g.textAlign='center';g.fillText(state.label,0,-rh/2+80);
+ if(state.t===8){g.strokeStyle='#46d8a2';g.lineWidth=10;g.beginPath();const p=progress(t,8.25,1);for(let i=0;i<=40*p;i++){const x=-240+i*12,y=70-Math.sin(i*.13)*35-i*2;i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
+ if(state.t===6){g.fillStyle='#46d8a2';g.fillRect(-240,-20,480*clamp((t-6.25)*2),130);}
+ g.globalAlpha=1;
+};window.ready=Promise.resolve();window.configure({width:innerWidth,height:innerHeight});window.seek(0);
+</script></html>

@@ -1,0 +1,39 @@
+{
+  "name": "motion-video-studio-skill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Estúdio determinístico de motion design para Claude Code e Codex",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "doctor": "node scripts/doctor.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "render": "node scripts/render.mjs",
+    "stills": "node scripts/render.mjs --stills",
+    "audio": "node scripts/audio.mjs",
+    "sfx": "node scripts/sfx.mjs",
+    "mix": "node scripts/mix.mjs",
+    "mux": "node scripts/mux.mjs",
+    "review": "node scripts/review.mjs",
+    "docs:three": "node scripts/sync-three-docs.mjs",
+    "render:3d": "node scripts/render.mjs --page assets/three/index.html --duration 8",
+    "analyze": "node scripts/analyze.mjs",
+    "qa": "node scripts/qa.mjs",
+    "install:skills": "node scripts/install.mjs",
+    "lint": "node scripts/lint.mjs",
+    "shotlist": "node scripts/shotlist.mjs",
+    "new": "node scripts/new.mjs",
+    "gather": "node scripts/gather-assets.mjs"
+  },
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "1.64.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-native-web": "^0.21.4",
+    "three": "0.187.0"
+  },
+  "license": "MIT"
+}

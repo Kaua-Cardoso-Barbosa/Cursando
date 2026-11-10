@@ -1,0 +1,20 @@
+.venv/
+tools/
+models/
+# Versiona somente as entregas finais e os arquivos usados pela apresentacao.
+/out/*
+!/out/cursando-60s-horizontal-sem-locucao.mp4
+!/out/cursando-60s-vertical-sem-locucao.mp4
+!/out/cursando-15s-vertical-sem-locucao.mp4
+!/out/index.html
+!/out/poster-horizontal.jpg
+!/out/poster-vertical.jpg
+!/out/poster-curto.jpg
+!/out/qa-horizontal.json
+!/out/qa-vertical.json
+!/out/qa-curto.json
+engine/node_modules/
+engine/.cache/
+engine/.playwright/
+engine/assets/cursando/demo-private.json
+.env.elevenlabs

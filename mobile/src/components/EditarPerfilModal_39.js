@@ -2,11 +2,11 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, StyleSh
 import EditarPerfilScreen from '../screens/EditarPerfilScreen_39';
 import { colors } from '../styles_39';
 import FeedbackProvider from './FeedbackProvider_39';
-export default function EditarPerfilModal({ aberto, perfil, onClose, onSave, salvando, titulo, permitirImagem = true }) {
+export default function EditarPerfilModal({ aberto, perfil, onClose, onSave, salvando, titulo, permitirImagem = true, administrativo = false }) {
   return <Modal visible={aberto} transparent animationType="fade" onRequestClose={() => { if (!salvando) onClose(); }}>
     <SafeAreaView style={s.overlay}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.keyboard}>
       <View style={s.card}><FeedbackProvider><Pressable accessibilityLabel="Fechar edição do perfil" disabled={salvando} onPress={onClose} style={s.close}><Text style={{ fontSize: 28 }}>×</Text></Pressable>
-        {aberto && <EditarPerfilScreen perfil={perfil} onCancel={onClose} onSave={onSave} salvando={salvando} titulo={titulo} permitirImagem={permitirImagem} />}
+        {aberto && <EditarPerfilScreen perfil={perfil} onCancel={onClose} onSave={onSave} salvando={salvando} titulo={titulo} permitirImagem={permitirImagem} administrativo={administrativo} />}
       </FeedbackProvider></View>
     </KeyboardAvoidingView></SafeAreaView>
   </Modal>;

@@ -1,0 +1,182 @@
+[
+  {
+    "id": "01",
+    "start": 0,
+    "end": 3,
+    "msg": "“E SE VOCÊ COMEÇASSE HOJE?” surge por palavras; HOJE recebe um sublinhado verde.",
+    "continuity": "Plano tipográfico frontal. Gancho identificável antes de 2 s.",
+    "sound_direction": "Acento curto e entrada da voz.",
+    "sfx": []
+  },
+  {
+    "id": "02",
+    "start": 3,
+    "end": 6,
+    "msg": "O sublinhado se transforma em campo. Um assunto de curso é digitado.",
+    "continuity": "Mesma forma, posição e cor; câmera aproxima o campo.",
+    "sound_direction": "Digitação discreta.",
+    "sfx": []
+  },
+  {
+    "id": "03",
+    "start": 6,
+    "end": 9,
+    "msg": "Três interesses aparecem; um curso real assume o foco.",
+    "continuity": "Resultados entram por máscara; o escolhido amplia e os demais se retiram.",
+    "sound_direction": "Cliques leves, um acento no escolhido.",
+    "sfx": []
+  },
+  {
+    "id": "04",
+    "start": 9,
+    "end": 12,
+    "msg": "O verde do curso expande; o nome Cursando é revelado.",
+    "continuity": "Wipe de cor pela mesma geometria do card.",
+    "sound_direction": "Virada musical curta; marca na voz.",
+    "sfx": []
+  },
+  {
+    "id": "05",
+    "start": 12,
+    "end": 15,
+    "msg": "A cor contrai e revela o curso na interface real do site.",
+    "continuity": "Conteúdo aparece dentro do container que já existia.",
+    "sound_direction": "Whoosh curto.",
+    "sfx": []
+  },
+  {
+    "id": "06",
+    "start": 15,
+    "end": 18,
+    "msg": "O curso abre sua lista de módulos.",
+    "continuity": "Aproximação sobre a área real de módulos; título do curso vira âncora.",
+    "sound_direction": "Clique correspondente à interação.",
+    "sfx": []
+  },
+  {
+    "id": "07",
+    "start": 18,
+    "end": 21,
+    "msg": "Um módulo revela suas aulas, na ordem correta.",
+    "continuity": "Movimento vertical contido; etapa selecionada permanece destacada.",
+    "sound_direction": "Dois acentos sutis de sequência.",
+    "sfx": []
+  },
+  {
+    "id": "08",
+    "start": 21,
+    "end": 24,
+    "msg": "A aula selecionada ocupa o quadro e inicia.",
+    "continuity": "Miniatura amplia sob máscara até o player; trechos de vídeo autorizados.",
+    "sound_direction": "Clique de reprodução.",
+    "sfx": []
+  },
+  {
+    "id": "09",
+    "start": 24,
+    "end": 27,
+    "msg": "Destacar acompanhamento/retomada na aula.",
+    "continuity": "Aproximação na informação verdadeira de tempo assistido; evitar números inventados.",
+    "sound_direction": "Música respira sob a voz.",
+    "sfx": []
+  },
+  {
+    "id": "10",
+    "start": 27,
+    "end": 30,
+    "msg": "O enquadramento passa do site para a tela real do aplicativo.",
+    "continuity": "O container adapta a proporção e revela o telefone, sem esticar a tela.",
+    "sound_direction": "Passagem curta de movimento.",
+    "sfx": []
+  },
+  {
+    "id": "11",
+    "start": 30,
+    "end": 33,
+    "msg": "Últimas aulas assistidas e ação de continuar.",
+    "continuity": "Aparelho estável, foco na aula e no progresso reais.",
+    "sound_direction": "Clique/retomada.",
+    "sfx": []
+  },
+  {
+    "id": "12",
+    "start": 33,
+    "end": 36,
+    "msg": "A lista muda para a organização do curso no app.",
+    "continuity": "Navegação real sob máscara; preservar escala legível dos controles.",
+    "sound_direction": "Acento musical discreto.",
+    "sfx": []
+  },
+  {
+    "id": "13",
+    "start": 36,
+    "end": 39,
+    "msg": "Uma dúvida conduz ao chat com o professor.",
+    "continuity": "A palavra “dúvida” abre espaço para a região real do chat.",
+    "sound_direction": "Pequeno pop de mensagem.",
+    "sfx": []
+  },
+  {
+    "id": "14",
+    "start": 39,
+    "end": 42,
+    "msg": "A conversa reforça a troca com o professor.",
+    "continuity": "Destaque em um diálogo de demonstração real e autorizado; sem depoimento inventado.",
+    "sound_direction": "Pausa para leitura.",
+    "sfx": []
+  },
+  {
+    "id": "15",
+    "start": 42,
+    "end": 45,
+    "msg": "Retorno à jornada: etapa de avaliação do conhecimento.",
+    "continuity": "O telefone diminui; a etapa da prova assume o foco.",
+    "sound_direction": "Acento de mudança.",
+    "sfx": []
+  },
+  {
+    "id": "16",
+    "start": 45,
+    "end": 48,
+    "msg": "Prova final e resultado de aprovação, conforme fluxo real.",
+    "continuity": "Não simular nota nem aprovação instantânea. Usar estado previamente preparado para demonstração.",
+    "sound_direction": "Confirmação discreta.",
+    "sfx": []
+  },
+  {
+    "id": "17",
+    "start": 48,
+    "end": 51,
+    "msg": "A aprovação conduz ao certificado real do curso.",
+    "continuity": "Match shape entre resultado e documento; destacar “após aprovação”.",
+    "sound_direction": "Resolução harmônica.",
+    "sfx": []
+  },
+  {
+    "id": "18",
+    "start": 51,
+    "end": 54,
+    "msg": "Uma linha recompõe os passos: escolher, aprender, avançar.",
+    "continuity": "Objetos vistos retornam como pequenas âncoras e convergem para a marca.",
+    "sound_direction": "Três acentos espaçados.",
+    "sfx": []
+  },
+  {
+    "id": "19",
+    "start": 54,
+    "end": 57,
+    "msg": "“DÊ CAMINHO À SUA CURIOSIDADE.”",
+    "continuity": "Tipografia ocupa o quadro; verde prepara o fechamento.",
+    "sound_direction": "Frase final em destaque.",
+    "sfx": []
+  },
+  {
+    "id": "20",
+    "start": 57,
+    "end": 60,
+    "msg": "Logo + “Explore os cursos no Cursando.”",
+    "continuity": "Marca e CTA ficam estáveis; endereço apenas se confirmado. Não é loop.",
+    "sound_direction": "Cauda musical e término limpo.",
+    "sfx": []
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "errors": [],
+  "video": {
+    "width": 1080,
+    "height": 1920,
+    "fps": "60/1",
+    "frames": "900",
+    "duration": 15
+  },
+  "audio": {
+    "codec": "aac",
+    "rate": "48000",
+    "channels": 1,
+    "loudness": {
+      "integratedLUFS": -14.62,
+      "truePeakDBTP": -3.47,
+      "rangeLU": 1.5
+    }
+  },
+  "visualReview": "REQUIRES_HUMAN_OR_VISION_REVIEW"
+}

@@ -74,7 +74,7 @@ function InicioScreen({ usuario, dashboard, carregando, onRefresh, tipoUsuario =
           );
         })}
       </View>
-      {aluno && <View style={{ gap: 16, marginTop: 28 }}><Text style={globalStyles.title}>Últimas aulas assistidas</Text>{(dashboard?.recentes || []).map(aula => <AulaCard key={aula.id} aula={aula} onOpen={onOpenLesson} />)}{!dashboard?.recentes?.length && <Text>Comece um curso para acompanhar suas aulas aqui.</Text>}</View>}
+      {aluno && <View style={{ gap: 16, marginTop: 28 }}><Text style={globalStyles.title}>Últimas aulas assistidas</Text>{(dashboard?.recentes || []).map(aula => <AulaCard key={aula.id} aula={aula} variante="historico" onOpen={onOpenLesson} />)}{!dashboard?.recentes?.length && <Text>Comece um curso para acompanhar suas aulas aqui.</Text>}</View>}
       {!aluno && <View style={{ gap: 16, marginTop: 28 }}><Text style={globalStyles.title}>Cursos atualizados recentemente</Text><Text style={{ color: colors.textMuted }}>Continue organizando suas aulas e módulos.</Text>
         <ScrollView horizontal style={{ flexGrow: 0, flexShrink: 0 }} showsHorizontalScrollIndicator contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>{(dashboard?.recentes || []).map(c => <CursoCard key={c.id} curso={c} onOpen={onOpenCourse} style={{ width: 280 }} />)}</ScrollView>
         {!dashboard?.recentes?.length && <Text>Nenhum curso criado ainda.</Text>}
