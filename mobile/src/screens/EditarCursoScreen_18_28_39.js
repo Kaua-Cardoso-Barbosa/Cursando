@@ -1,9 +1,10 @@
+import Select from '../components/Select_39';
 import AppIcon from "../components/AppIcon_39";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest, resolverUrlMidia } from "../api/client_3_17";
-import BrandLogo from "../components/BrandLogo_39";
+import BotaoVoltar from "../components/BotaoVoltar_39";
 import Field from "../components/Field_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
 import { colors, globalStyles } from "../styles_39";
@@ -84,11 +85,9 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
   /* Fim item 18 */
 
   return (
-    <ImageBackground source={require("../../assets/bg.png")} resizeMode="cover" style={styles.bg}>
+    <View style={styles.bg}>
       <ScrollView contentContainerStyle={styles.page}>
-        <View style={styles.header}>
-          <BrandLogo compact />
-        </View>
+        <BotaoVoltar onPress={onCancel} disabled={salvando}>Voltar aos cursos</BotaoVoltar>
         <View style={styles.titleBlock}>
           <Text style={styles.heading}>Editar curso</Text>
           <Text style={styles.subheading}>Atualize as informacoes do curso</Text>
@@ -110,28 +109,14 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
           <Field label="Descricao:" value={descricao} onChangeText={setDescricao} multiline />
 
                                                                                                                                                                     
-          <Text style={styles.taxonomyLabel}>Categoria do curso</Text>
-          <View style={styles.taxonomyOptions}>
-            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
-            <Pressable style={[styles.taxonomyOption, !idCategoria && !novaCategoria && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(""); setNovaCategoria(false); }}><Text style={[styles.taxonomyOptionText, !idCategoria && !novaCategoria && styles.taxonomyOptionTextActive]}>Nenhuma</Text></Pressable>
-            {/* Fim item 28 */}
-            {categorias.map((item) => <Pressable key={item.id} style={[styles.taxonomyOption, idCategoria === String(item.id) && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(String(item.id)); setNovaCategoria(false); }}><Text style={[styles.taxonomyOptionText, idCategoria === String(item.id) && styles.taxonomyOptionTextActive]}>{item.nome}</Text></Pressable>)}
-            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
-            <Pressable style={[styles.taxonomyOption, novaCategoria && styles.taxonomyOptionActive]} onPress={() => { setIdCategoria(""); setNovaCategoria(true); }}><Text style={[styles.taxonomyOptionText, novaCategoria && styles.taxonomyOptionTextActive]}>Criar nova</Text></Pressable>
-            {/* Fim item 28 */}
-          </View>
+          <Select titulo="Categoria do curso" valor={novaCategoria ? '__novo__' : idCategoria} disabled={salvando || carregandoTaxonomias}
+            opcoes={[['', 'Nenhuma'], ...categorias.map(item => [String(item.id), item.nome]), ['__novo__', 'Criar nova']]}
+            onChange={v => { setIdCategoria(v === '__novo__' ? '' : v); setNovaCategoria(v === '__novo__'); }} />
           {novaCategoria && <TextInput style={styles.taxonomyInput} value={nomeNovaCategoria} onChangeText={setNomeNovaCategoria} placeholder="Nome da nova categoria" />}
 
-          <Text style={styles.taxonomyLabel}>Tema do curso</Text>
-          <View style={styles.taxonomyOptions}>
-            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
-            <Pressable style={[styles.taxonomyOption, !idTema && !novoTema && styles.taxonomyOptionActive]} onPress={() => { setIdTema(""); setNovoTema(false); }}><Text style={[styles.taxonomyOptionText, !idTema && !novoTema && styles.taxonomyOptionTextActive]}>Nenhum</Text></Pressable>
-            {/* Fim item 28 */}
-            {temas.map((item) => <Pressable key={item.id} style={[styles.taxonomyOption, idTema === String(item.id) && styles.taxonomyOptionActive]} onPress={() => { setIdTema(String(item.id)); setNovoTema(false); }}><Text style={[styles.taxonomyOptionText, idTema === String(item.id) && styles.taxonomyOptionTextActive]}>{item.nome}</Text></Pressable>)}
-            {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
-            <Pressable style={[styles.taxonomyOption, novoTema && styles.taxonomyOptionActive]} onPress={() => { setIdTema(""); setNovoTema(true); }}><Text style={[styles.taxonomyOptionText, novoTema && styles.taxonomyOptionTextActive]}>Criar novo</Text></Pressable>
-            {/* Fim item 28 */}
-          </View>
+          <Select titulo="Tema do curso" valor={novoTema ? '__novo__' : idTema} disabled={salvando || carregandoTaxonomias}
+            opcoes={[['', 'Nenhum'], ...temas.map(item => [String(item.id), item.nome]), ['__novo__', 'Criar novo']]}
+            onChange={v => { setIdTema(v === '__novo__' ? '' : v); setNovoTema(v === '__novo__'); }} />
           {novoTema && <TextInput style={styles.taxonomyInput} value={nomeNovoTema} onChangeText={setNomeNovoTema} placeholder="Nome do novo tema" />}
 
           {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
@@ -150,7 +135,7 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
           {/* Fim item 28 */}
         </View>
       </ScrollView>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -158,11 +143,13 @@ function EditarCursoScreen({ curso, token, onCancel, onSave, salvando }) {
 const styles = StyleSheet.create({
   bg: {
     flex: 1,
-    backgroundColor: colors.green
+    backgroundColor: colors.gray
   },
   page: {
     flexGrow: 1,
-    paddingBottom: 32
+    paddingBottom: 24,
+    paddingTop: 20,
+    paddingHorizontal: 20
   },
   header: {
     height: 92,
@@ -171,35 +158,33 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   titleBlock: {
-    paddingHorizontal: 24,
-    marginTop: 28,
+    marginTop: 8,
     marginBottom: 22
   },
   heading: {
-    color: colors.white,
-    fontSize: 36,
-    lineHeight: 42,
+    color: colors.ink,
+    fontSize: 26,
+    lineHeight: 34,
     fontWeight: "800",
     marginBottom: 3
   },
   subheading: {
-    color: colors.white,
+    color: colors.textMuted,
     fontSize: 15,
     lineHeight: 19
   },
   card: {
-    marginHorizontal: 18,
-    borderWidth: 1.5,
-    borderColor: colors.black,
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
     backgroundColor: colors.white,
     padding: 16
   },
   upload: {
     height: 152,
-    borderWidth: 1.5,
-    borderColor: colors.black,
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
     overflow: "hidden",
     backgroundColor: "#d6d6d6",
     alignItems: "center",
@@ -227,11 +212,11 @@ const styles = StyleSheet.create({
   cameraButtonText: { color: colors.white, fontWeight: "700" },
   taxonomyLabel: { color: colors.darkGreen, fontWeight: "700", marginTop: 16, marginBottom: 8 },
   taxonomyOptions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-  taxonomyOption: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  taxonomyOption: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 8 },
   taxonomyOptionActive: { backgroundColor: colors.darkGreen, borderColor: colors.darkGreen },
   taxonomyOptionText: { color: colors.darkGreen, fontWeight: "600" },
   taxonomyOptionTextActive: { color: colors.white },
-  taxonomyInput: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, marginBottom: 8, color: colors.black },
+  taxonomyInput: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 10, marginBottom: 8, color: colors.ink },
   buttons: {
     flexDirection: "row",
     justifyContent: "space-between",

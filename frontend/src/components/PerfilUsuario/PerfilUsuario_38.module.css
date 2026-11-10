@@ -151,6 +151,11 @@
 .perfil {
     display: block;
 }
+.emModal .formulario { width: 100%; padding: 0; border: 0; border-radius: 0; }
+.tituloModal { padding-right: 32px; margin-bottom: 22px; }
+.tituloModal h2 { margin: 0 0 8px; font-size: 1.5rem; color: #173e2c; }
+.tituloModal p { color: #607468; font-size: .9rem; line-height: 1.5; }
+.botoes .botaoCancelar { min-height: 44px; padding: 10px 18px; border: 1px solid #cbd9d0; border-radius: 8px; background: #fff; color: #355343; font-size: .9rem; cursor: pointer; }
 
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .formulario */
 .formulario {

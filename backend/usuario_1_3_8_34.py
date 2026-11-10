@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from funcao_1_3 import email_verificacao, validar_senha, verificar_codigo
 from app import app
 from banco_37 import get_db
+from perfis_identidade import preparar_identidades, identidade_publica, salvar_arroba, ErroArroba
 from auditoria_24_37 import definir_ator_auditoria, garantir_gatilhos_auditoria
 from functools import wraps
 import requests
@@ -69,6 +70,13 @@ def salvar_imagem_perfil(arquivo):
     extensao = arquivo.filename.rsplit(".", 1)[-1].lower() if "." in arquivo.filename else ""
     if extensao not in {"jpg", "jpeg", "png", "webp"}:
         raise ValueError("Imagem invalida. Use: jpg, jpeg, png ou webp.")
+
+    posicao = arquivo.stream.tell()
+    arquivo.stream.seek(0, 2)
+    tamanho = arquivo.stream.tell()
+    arquivo.stream.seek(posicao)
+    if tamanho > 5 * 1024 * 1024:
+        raise ValueError("A imagem de perfil deve ter até 5 MB.")
 
     pasta = os.path.join(current_app.root_path, "static", "uploads", "perfis")
     os.makedirs(pasta, exist_ok=True)
@@ -207,6 +215,8 @@ def usuario_para_dict(row):
         "cpf": row[3],
         "tipo": row[4],
         "bloqueado": row[5] == 1,
+        "motivo_bloqueio": row[8] if len(row) > 8 and row[5] == 1 else None,
+        "identificador": ('@'+row[7] if row[4] == 1 and row[7] else row[6]) if len(row) > 7 and row[4] in (1,2) else None,
     }
 
 
@@ -265,6 +275,7 @@ def assinatura_obrigatoria(func):
 @app.route("/usuarios", methods=["GET"])
 @jwt_required()
 def listar_usuarios():
+    preparar_identidades()
     negado = exigir_admin()
     if negado:
         return negado
@@ -275,7 +286,7 @@ def listar_usuarios():
     try:
         cursor.execute(
             """
-            SELECT ID_USUARIO, NOME, EMAIL, CPF, TIPO_USUARIO, SITUACAO
+            SELECT ID_USUARIO, NOME, EMAIL, CPF, TIPO_USUARIO, SITUACAO, ID_PUBLICO, ARROBA, MOTIVO_BLOQUEIO
             FROM USUARIOS
             ORDER BY TIPO_USUARIO, NOME
             """
@@ -374,7 +385,15 @@ def alterar_status_usuario(id_usuario):
         return negado
 
     dados = request.get_json() or {}
-    bloqueado = bool(dados.get("bloqueado"))
+    if not isinstance(dados, dict) or not isinstance(dados.get('bloqueado'), bool):
+        return resposta_mensagem("Informe se o usuário deve ser bloqueado.", 400)
+    bloqueado = dados['bloqueado']
+    motivo = dados.get('motivo', '')
+    if not isinstance(motivo, str):
+        return resposta_mensagem("O motivo deve ser um texto.", 400)
+    motivo = motivo.strip()
+    if bloqueado and (not motivo or len(motivo) > 500):
+        return resposta_mensagem("Informe o motivo do bloqueio, com até 500 caracteres.", 400)
     id_admin = int(get_jwt_identity())
 
     if id_usuario == id_admin:
@@ -389,8 +408,8 @@ def alterar_status_usuario(id_usuario):
             return resposta_mensagem("Usuario nao encontrado", 404)
 
         cursor.execute(
-            "UPDATE USUARIOS SET SITUACAO = ? WHERE ID_USUARIO = ?",
-            (1 if bloqueado else 0, id_usuario),
+            "UPDATE USUARIOS SET SITUACAO = ?, MOTIVO_BLOQUEIO = ?, TENTATIVAS = 0 WHERE ID_USUARIO = ?",
+            (1 if bloqueado else 0, motivo if bloqueado else None, id_usuario),
         )
         con.commit()
 
@@ -409,6 +428,7 @@ def alterar_status_usuario(id_usuario):
 @app.route("/usuarios/<int:id_usuario>", methods=["PUT"])
 @jwt_required()
 def editar_usuario_admin(id_usuario):
+    preparar_identidades()
     negado = exigir_admin()
     if negado:
         return negado
@@ -491,8 +511,13 @@ def editar_usuario_admin(id_usuario):
                 (nome, email, cpf, id_usuario),
             )
 
+        if "arroba" in dados:
+            salvar_arroba(cursor, id_usuario, dados.get("arroba"))
         con.commit()
         return resposta_mensagem("Usuario atualizado com sucesso", 200, "sucesso")
+    except ErroArroba as erro:
+        con.rollback()
+        return resposta_mensagem(str(erro), erro.status)
     except Exception as erro:
         con.rollback()
         return resposta_mensagem(f"Erro ao editar usuario: {erro}", 500)
@@ -552,7 +577,7 @@ def login():
 
             if nova_tentativa >= 3 and tipo != 0:
                 cursor.execute(
-                    "UPDATE USUARIOS SET SITUACAO = 1, TENTATIVAS = ? WHERE ID_USUARIO = ?",
+                    "UPDATE USUARIOS SET SITUACAO = 1, MOTIVO_BLOQUEIO = 'Excesso de tentativas de login inválidas.', TENTATIVAS = ? WHERE ID_USUARIO = ?",
                     (nova_tentativa, id_usuario),
                 )
                 con.commit()
@@ -626,6 +651,7 @@ def login():
 @app.route("/perfil", methods=["GET"])
 @jwt_required()
 def buscar_perfil():
+    preparar_identidades()
     id_usuario = get_jwt_identity()
     con = get_db()
     cursor = con.cursor()
@@ -655,6 +681,7 @@ def buscar_perfil():
                 "cpf": usuario[3],
                 "tipo": usuario[4],
                 "imagem_perfil": usuario[5],
+                **identidade_publica(cursor, id_usuario),
             }
         ), 200
     except Exception as erro:
@@ -667,6 +694,7 @@ def buscar_perfil():
 @app.route("/perfil", methods=["PUT"])
 @jwt_required()
 def editar_perfil():
+    preparar_identidades()
     id_usuario = get_jwt_identity()
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         dados = request.form
@@ -755,6 +783,9 @@ def editar_perfil():
                 (nome, email, cpf, imagem_perfil, id_usuario),
             )
 
+        if "arroba" in dados:
+            salvar_arroba(cursor, id_usuario, dados.get("arroba"))
+        identidade = identidade_publica(cursor, id_usuario)
         con.commit()
 
         return resposta_mensagem(
@@ -768,8 +799,12 @@ def editar_perfil():
                 "cpf": cpf,
                 "tipo": get_jwt().get("tipo"),
                 "imagem_perfil": imagem_perfil,
+                **identidade,
             },
         )
+    except ErroArroba as erro:
+        con.rollback()
+        return resposta_mensagem(str(erro), erro.status)
     except Exception as erro:
         con.rollback()
         return resposta_mensagem(f"Erro ao atualizar perfil: {erro}", 500)
@@ -782,6 +817,7 @@ def editar_perfil():
 @app.route("/cadastrar_colaborador", methods=["POST"])
 @jwt_required()
 def cadastrar_colaborador():
+    preparar_identidades()
     claims = get_jwt()
     if int(claims.get("tipo", -1)) != 0:
         return resposta_mensagem("Acesso negado. Apenas administradores podem cadastrar colaboradores.", 403)
@@ -832,10 +868,17 @@ def cadastrar_colaborador():
             (nome, email, cpf, generate_password_hash(senha), tipo),
         )
         id_usuario = cursor.fetchone()[0]
+        identidade = identidade_publica(cursor, id_usuario)
+        if "arroba" in dados and (tipo == 1 or dados.get("arroba")):
+            salvar_arroba(cursor, id_usuario, dados.get("arroba"))
+            identidade = identidade_publica(cursor, id_usuario)
         con.commit()
 
         cargo = "Administrador" if tipo == 0 else "Professor"
-        return resposta_mensagem(f"{cargo} cadastrado com sucesso", 201, "sucesso", id_usuario=id_usuario)
+        return resposta_mensagem(f"{cargo} cadastrado com sucesso", 201, "sucesso", id_usuario=id_usuario, **identidade)
+    except ErroArroba as erro:
+        con.rollback()
+        return resposta_mensagem(str(erro), erro.status)
     except Exception as erro:
         con.rollback()
         return resposta_mensagem(f"Erro ao cadastrar colaborador: {erro}", 500)
@@ -941,6 +984,7 @@ from pagamento_arkhe_2_32_33_34 import criar_pagamento_pix, criar_pix_assinatura
 # Sprint item 1 - Implementar cadastro de alunos pelo aplicativo - Valida os dados e cria o aluno pendente de confirmação do e-mail
 @app.route("/cadastrar", methods=["POST"])
 def cadastrar():
+    preparar_identidades()
     dados = request.get_json() or {}
     nome = (dados.get("nome") or "").strip()
     email = normalizar_email(dados.get("email"))
@@ -979,6 +1023,7 @@ def cadastrar():
             (nome, email, cpf, generate_password_hash(senha)),
         )
         id_usuario = cursor.fetchone()[0]
+        identidade = identidade_publica(cursor, id_usuario)
         con.commit()
 
         mensagem, tipo_envio = email_verificacao(
@@ -997,6 +1042,9 @@ def cadastrar():
             email=email,
             codigo_enviado=tipo_envio == "sucesso",
         )
+    except ErroArroba as erro:
+        con.rollback()
+        return resposta_mensagem(str(erro), erro.status)
     except Exception as erro:
         con.rollback()
         return resposta_mensagem(f"Erro ao cadastrar usuario: {erro}", 500)

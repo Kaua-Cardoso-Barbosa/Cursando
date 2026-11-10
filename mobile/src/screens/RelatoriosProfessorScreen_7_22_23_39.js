@@ -1,3 +1,4 @@
+import Select from '../components/Select_39';
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest, getApiBaseUrl } from "../api/client_3_17";
@@ -95,22 +96,13 @@ function RelatoriosProfessorScreen({ token, cursos = [], carregando }) {
       <View style={[globalStyles.card, styles.filters]}>
         <TextInput value={inicio} onChangeText={setInicio} placeholder="Inicio: AAAA-MM-DD" placeholderTextColor={colors.muted} style={globalStyles.input} />
         <TextInput value={fim} onChangeText={setFim} placeholder="Fim: AAAA-MM-DD" placeholderTextColor={colors.muted} style={globalStyles.input} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.courseFilters}>
-          <Pressable style={[styles.filterButton, !idCurso && styles.filterActive]} onPress={() => setIdCurso("")}>
-            <Text style={[styles.filterText, !idCurso && styles.filterTextActive]}>Todos</Text>
-          </Pressable>
-          {cursos.map((curso) => (
-            <Pressable key={curso.id} style={[styles.filterButton, String(curso.id) === idCurso && styles.filterActive]} onPress={() => setIdCurso(String(curso.id))}>
-              <Text style={[styles.filterText, String(curso.id) === idCurso && styles.filterTextActive]} numberOfLines={1}>{curso.titulo}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <Select titulo="Curso" valor={idCurso} onChange={setIdCurso} opcoes={[["", "Todos"], ...cursos.map(curso => [String(curso.id), curso.titulo])]} />
         <Pressable style={globalStyles.primaryButton} onPress={carregar}>
           <Text style={globalStyles.buttonText}>Filtrar</Text>
         </Pressable>
       </View>
 
-      <View style={styles.cards}>
+      <View style={globalStyles.metricGrid}>
         {[
           /* Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Prepara o indicador de matriculas para apresentação */ ["Matriculas", resumo.alunos] /* Fim item 7 */,
           /* Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Prepara o indicador de cursos para apresentação */ ["Cursos", resumo.cursos] /* Fim item 7 */,
@@ -120,8 +112,8 @@ function RelatoriosProfessorScreen({ token, cursos = [], carregando }) {
           /* Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Prepara o indicador de horas assistidas para apresentação */ ["Horas assistidas", `${numero(resumo.horas_assistidas).toFixed(2).replace(".", ",")}h`] /* Fim item 7 */
         ].map(([titulo, valor]) => (
           <View key={titulo} style={[globalStyles.metricCard, styles.metric]}>
-            <Text style={styles.metricTitle}>{titulo}</Text>
-            <Text style={styles.metricValue}>{valor}</Text>
+            <Text style={globalStyles.metricTitle}>{titulo}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65} style={globalStyles.metricValue}>{valor}</Text>
           </View>
         ))}
       </View>
@@ -170,14 +162,11 @@ const styles = StyleSheet.create({
   filterActive: { backgroundColor: colors.darkGreen, borderColor: colors.darkGreen },
   filterText: { color: colors.darkGreen, fontWeight: "700" },
   filterTextActive: { color: colors.white },
-  cards: { gap: 12 },
   metric: { minHeight: 110 },
-  metricTitle: { color: colors.textMuted, fontSize: 15, fontWeight: "700" },
-  metricValue: { color: colors.darkGreen, fontSize: 30, lineHeight: 36, fontWeight: "800", marginTop: 8 },
   table: { gap: 12, marginTop: 22 },
-  sectionTitle: { color: colors.black, fontSize: 22, fontWeight: "700" },
+  sectionTitle: { color: colors.ink, fontSize: 22, fontWeight: "700" },
   courseRow: { padding: 14 },
-  courseTitle: { color: colors.black, fontSize: 18, fontWeight: "700", marginBottom: 8 },
+  courseTitle: { color: colors.ink, fontSize: 18, fontWeight: "700", marginBottom: 8 },
   courseText: { color: colors.textMuted, fontSize: 14, lineHeight: 20 }
 });
 /* Fim item 39 */

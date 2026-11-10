@@ -1,0 +1,4 @@
+.dialogo { position: fixed; inset: 0; margin: auto; box-sizing: border-box; width: min(620px, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 32px); padding: 28px; border: 1px solid #dfe9e3; color: #173e2c; }
+.dialogo::backdrop { background: rgba(0, 0, 0, .5); }
+.dialogo button:disabled { cursor: wait; opacity: .6; }
+@media (max-width: 560px) { .dialogo { padding: 22px 18px; } }

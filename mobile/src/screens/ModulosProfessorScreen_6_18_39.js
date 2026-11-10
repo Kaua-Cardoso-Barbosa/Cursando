@@ -1,3 +1,5 @@
+import BotaoVoltar from '../components/BotaoVoltar_39';
+import AulaCard from '../components/AulaCard_39';
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -17,6 +19,7 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
   const [modulo, setModulo] = useState(null);
   /* Fim item 6 */
   const [aulas, setAulas] = useState([]);
+  const [formularioAulaAberto, setFormularioAulaAberto] = useState(false);
   /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
   const [tituloModulo, setTituloModulo] = useState("");
   const [descricaoModulo, setDescricaoModulo] = useState("");
@@ -145,10 +148,7 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
       contentContainerStyle={globalStyles.page}
       refreshControl={/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */ <RefreshControl refreshing={carregando} onRefresh={modulo ? () => carregarAulas(modulo.id) : carregarModulos} /> /* Fim item 6 */}
     >
-      <Pressable style={styles.back} onPress={modulo ? () => setModulo(null) : onBack}>
-        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
-        <Text style={styles.backText}>{modulo ? "Voltar aos módulos" : "Voltar aos cursos"}</Text>
-      </Pressable>
+      <BotaoVoltar onPress={modulo ? () => setModulo(null) : onBack}>{modulo ? "Voltar aos módulos" : "Voltar aos cursos"}</BotaoVoltar>
       {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
       <Text style={globalStyles.title}>{modulo ? `Módulo ${modulos.findIndex((item) => Number(item.id) === Number(modulo.id)) + 1} · ${modulo.titulo}` : `Módulos de ${curso.titulo}`}</Text>
       {/* Fim item 6 */}
@@ -183,7 +183,8 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
         </>
       ) : (
         <>
-          <View style={[globalStyles.card, styles.formCard]}>
+          <View style={{ gap: 10, marginBottom: 18 }}><Text style={styles.sectionTitle}>Aulas do módulo</Text><Text style={{ color: colors.textMuted }}>{aulas.length} aulas cadastradas</Text><Pressable style={globalStyles.secondaryButton} onPress={() => setFormularioAulaAberto(!formularioAulaAberto)}><Text style={globalStyles.secondaryText}>{formularioAulaAberto ? 'Fechar formulário' : 'Adicionar aula'}</Text></Pressable></View>
+          {formularioAulaAberto && (<View style={[globalStyles.card, styles.formCard]}>
             <Text style={styles.sectionTitle}>Adicionar aula a este módulo</Text>
             <Field label="Título da aula" value={tituloAula} onChangeText={setTituloAula} />
             <Field label="Descrição" value={descricaoAula} onChangeText={setDescricaoAula} multiline />
@@ -194,18 +195,9 @@ function ModulosProfessorScreen({ curso, token, onBack }) {
             <Pressable style={globalStyles.primaryButton} onPress={criarAula} disabled={salvando}>
               <Text style={globalStyles.buttonText}>{salvando ? "Enviando vídeo..." : "Adicionar aula"}</Text>
             </Pressable>
-          </View>
+          </View>)}
           <View style={styles.list}>
-            {aulas.map((aula) => (
-              <View key={aula.id} style={[globalStyles.card, styles.lessonCard]}>
-                <AppIcon name="play-circle-outline" size={22} color={colors.darkGreen} />
-                <View style={styles.moduleInfo}>
-                  <Text style={styles.moduleTitle}>{aula.titulo}</Text>
-                  <Text style={styles.moduleDescription}>{aula.descricao}</Text>
-                  <Text style={styles.actionText}>{aula.status_nome || "privada"}</Text>
-                </View>
-              </View>
-            ))}
+            {aulas.map((aula, indice) => <AulaCard key={aula.id} aula={aula} compacto numero={indice + 1} exibirStatus />)}
             {!carregando && aulas.length === 0 ? <Text style={globalStyles.message}>Nenhuma aula neste módulo.</Text> : null}
           </View>
         </>
@@ -219,7 +211,7 @@ const styles = StyleSheet.create({
   back: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
   backText: { color: colors.darkGreen, fontSize: 15, fontWeight: "700" },
   formCard: { gap: 12, marginBottom: 20 },
-  sectionTitle: { color: colors.black, fontSize: 20, fontWeight: "800" },
+  sectionTitle: { color: colors.ink, fontSize: 20, fontWeight: "800" },
   imagePicker: { minHeight: 48, borderWidth: 1, borderColor: colors.darkGreen, borderRadius: 8, padding: 10, flexDirection: "row", alignItems: "center", gap: 9, overflow: "hidden" },
   list: { gap: 20 },
   actionText: { color: colors.darkGreen, fontWeight: "700" },

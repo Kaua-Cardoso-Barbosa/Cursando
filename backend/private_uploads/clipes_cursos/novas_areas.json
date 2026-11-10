@@ -1,0 +1,86 @@
+{
+  "professor": 36,
+  "cursos": [
+    {
+      "curso": 22,
+      "titulo": "Cozinha do cotidiano: preparo de vegetais",
+      "aulas": [
+        64,
+        65
+      ],
+      "fonte": {
+        "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\6544256-720p.mp4",
+        "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\6544256.jpg",
+        "duracao": 20.0,
+        "autor": "Domenico M",
+        "fonte": "https://www.pexels.com/video/6544256/",
+        "download": "https://videos.pexels.com/video-files/6544256/6544256-hd_1920_1080_25fps.mp4",
+        "licenca": "https://www.pexels.com/license/",
+        "trechos": [
+          {
+            "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\culinaria-modulo-1.mp4",
+            "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\culinaria-modulo-1.jpg"
+          },
+          {
+            "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\culinaria-modulo-2.mp4",
+            "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\culinaria-modulo-2.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "curso": 23,
+      "titulo": "Marcenaria artesanal: acabamento de pequenas peças",
+      "aulas": [
+        66,
+        67
+      ],
+      "fonte": {
+        "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\6789910-720p.mp4",
+        "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\6789910.jpg",
+        "duracao": 20.0,
+        "autor": "Tima Miroshnichenko",
+        "fonte": "https://www.pexels.com/video/6789910/",
+        "download": "https://videos.pexels.com/video-files/6789910/6789910-hd_1920_1080_25fps.mp4",
+        "licenca": "https://www.pexels.com/license/",
+        "trechos": [
+          {
+            "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\marcenaria-modulo-1.mp4",
+            "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\marcenaria-modulo-1.jpg"
+          },
+          {
+            "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\marcenaria-modulo-2.mp4",
+            "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\marcenaria-modulo-2.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "curso": 24,
+      "titulo": "Primeiros movimentos no violão",
+      "aulas": [
+        68,
+        69
+      ],
+      "fonte": {
+        "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\4553937-720p.mp4",
+        "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\4553937.jpg",
+        "duracao": 14.52,
+        "autor": "Pavel Danilyuk",
+        "fonte": "https://www.pexels.com/video/4553937/",
+        "download": "https://videos.pexels.com/video-files/4553937/4553937-hd_1920_1080_30fps.mp4",
+        "licenca": "https://www.pexels.com/license/",
+        "trechos": [
+          {
+            "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\violao-modulo-1.mp4",
+            "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\violao-modulo-1.jpg"
+          },
+          {
+            "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\violao-modulo-2.mp4",
+            "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\violao-modulo-2.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}

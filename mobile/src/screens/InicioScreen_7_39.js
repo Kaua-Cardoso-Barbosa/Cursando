@@ -1,6 +1,8 @@
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import AppIcon from "../components/AppIcon_39";
 import { colors, globalStyles } from "../styles_39";
+import CursoCard from '../components/CursoCard_39';
+import AulaCard from '../components/AulaCard_39';
 
 function formatarData(data) {
   if (!data) return "Nao disponivel";
@@ -29,7 +31,7 @@ const alunoMetrics = [
 ];
 
 export default
-function InicioScreen({ usuario, dashboard, carregando, onRefresh, tipoUsuario = 1 }) {
+function InicioScreen({ usuario, dashboard, carregando, onRefresh, tipoUsuario = 1, onOpenCourse, onOpenLesson }) {
   const aluno = Number(tipoUsuario) === 2;
   const metricas = dashboard?.metricas || {};
   /* Sprint item 7 - Criar métricas para o instrutor: alunos, conclusões, módulos concluídos e horas assistidas - Define as métricas do instrutor exibidas no início do aplicativo */
@@ -50,7 +52,7 @@ function InicioScreen({ usuario, dashboard, carregando, onRefresh, tipoUsuario =
         </View>
       </View>
 
-      <View style={styles.cards}>
+      <View style={globalStyles.metricGrid}>
         {metrics.map(([titulo, detalhe, chave, icon, tipoValor]) => {
           const valor = tipoValor === "data"
             ? formatarData(dashboard?.assinatura?.[chave])
@@ -59,19 +61,24 @@ function InicioScreen({ usuario, dashboard, carregando, onRefresh, tipoUsuario =
               : metricas[chave] || 0;
 
           return (
-            <View key={chave} style={[aluno ? globalStyles.card : globalStyles.metricCard, styles.card, aluno && styles.cardAluno]}>
-              <View style={styles.cardTop}>
-                <Text style={[styles.cardTitle, aluno && styles.tituloAluno]}>{titulo}</Text>
-                <View style={styles.iconBadge}>
-                  <AppIcon name={icon} size={20} color={colors.darkGreen} />
+            <View key={chave} style={globalStyles.metricCard}>
+              <View style={globalStyles.metricTop}>
+                <Text style={globalStyles.metricTitle}>{titulo}</Text>
+                <View style={globalStyles.metricIcon}>
+                  <AppIcon name={icon} size={14} color={colors.darkGreen} />
                 </View>
               </View>
-              <Text style={[styles.cardDetail, aluno && styles.detalheAluno]}>{detalhe}</Text>
-              <Text style={[tipoValor === "data" ? styles.dateValue : styles.number, aluno && styles.valorAluno]}>{valor}</Text>
+              <Text style={globalStyles.metricDetail}>{detalhe}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65} style={tipoValor === "data" ? globalStyles.metricDate : globalStyles.metricValue}>{valor}</Text>
             </View>
           );
         })}
       </View>
+      {aluno && <View style={{ gap: 16, marginTop: 28 }}><Text style={globalStyles.title}>Últimas aulas assistidas</Text>{(dashboard?.recentes || []).map(aula => <AulaCard key={aula.id} aula={aula} onOpen={onOpenLesson} />)}{!dashboard?.recentes?.length && <Text>Comece um curso para acompanhar suas aulas aqui.</Text>}</View>}
+      {!aluno && <View style={{ gap: 16, marginTop: 28 }}><Text style={globalStyles.title}>Cursos atualizados recentemente</Text><Text style={{ color: colors.textMuted }}>Continue organizando suas aulas e módulos.</Text>
+        <ScrollView horizontal style={{ flexGrow: 0, flexShrink: 0 }} showsHorizontalScrollIndicator contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>{(dashboard?.recentes || []).map(c => <CursoCard key={c.id} curso={c} onOpen={onOpenCourse} style={{ width: 280 }} />)}</ScrollView>
+        {!dashboard?.recentes?.length && <Text>Nenhum curso criado ainda.</Text>}
+      </View>}
     </ScrollView>
   );
 }
@@ -92,7 +99,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.ink,
-    fontSize: 30,
+    fontSize: 26,
     lineHeight: 34,
     fontWeight: "700"
   },
@@ -102,57 +109,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 5
   },
-  cards: {
-    gap: 18
-  },
-  card: {
-    justifyContent: "space-between"
-  },
-  cardAluno: { minHeight: 168, padding: 18, gap: 10 },
-  tituloAluno: { fontSize: 18, lineHeight: 24, fontWeight: "700" },
-  detalheAluno: { fontSize: 14, lineHeight: 20, fontWeight: "400", marginTop: 0 },
-  valorAluno: { fontSize: 28, lineHeight: 36, fontWeight: "700", marginTop: 0 },
-  cardTop: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 14
-  },
-  cardTitle: {
-    color: colors.ink,
-    flex: 1,
-    fontSize: 22,
-    lineHeight: 27,
-    fontWeight: "800"
-  },
-  iconBadge: {
-    width: 48,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: colors.mint,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  cardDetail: {
-    color: colors.textMuted,
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 10
-  },
-  number: {
-    color: colors.darkGreen,
-    fontSize: 44,
-    lineHeight: 50,
-    fontWeight: "800",
-    marginTop: 10
-  },
-  dateValue: {
-    color: colors.darkGreen,
-    fontSize: 30,
-    lineHeight: 38,
-    fontWeight: "800",
-    marginTop: 10
-  }
+
 });
 /* Fim item 39 */

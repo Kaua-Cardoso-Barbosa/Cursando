@@ -5,8 +5,7 @@ import {
     FaLock,
     FaTrash
 } from "react-icons/fa";
-import css from "../../pages/DashboardProfessor/DashboardProfessor_38.module.css";
-import CapaCurso from "../CapaCurso/CapaCurso.jsx";
+import CursoCard from "../CursoCard/CursoCard.jsx";
 
 const STATUS_PRIVADO = 0;
 const STATUS_PUBLICADO = 1;
@@ -27,28 +26,14 @@ function resolverUrlMidia(api, caminho) {
 export default function CursoCardProfessor({ curso, api, onAbrir, onEditar, onExcluir, onStatus, gerenciavel = false }) {
     const imagem = curso.imagem ? resolverUrlMidia(api, curso.imagem) : "/imagens_banner_curso/Placholder.png";
 
-    return (
-        <article className={css.cardCurso}>
-            <button className={css.areaCardClicavel} onClick={() => onAbrir(curso)}>
-                <CapaCurso imagem={imagem} titulo={curso.titulo} />
-                <div className={css.infoCurso}>
-                    <div>
-                        <h3>{curso.titulo}</h3>
-                        <p>{curso.descricao}</p>
-                    </div>
-                    <span className={css.statusBadge}>{curso.status_nome}</span>
-                </div>
-            </button>
-
-            {gerenciavel && (
-                <div className={css.acoesCard}>
-                    <button title="Editar curso" onClick={onEditar}><FaEdit /></button>
-                    {curso.status !== STATUS_PUBLICADO && <button title="Publicar curso" onClick={() => onStatus(STATUS_PUBLICADO)}><FaEye /></button>}
-                    {curso.status !== STATUS_PRIVADO && <button title="Privar curso" onClick={() => onStatus(STATUS_PRIVADO)}><FaLock /></button>}
-                    {curso.status !== STATUS_ARQUIVADO && <button title="Arquivar curso" onClick={() => onStatus(STATUS_ARQUIVADO)}><FaArchive /></button>}
-                    <button title="Excluir curso" className={css.botaoExcluir} onClick={onExcluir}><FaTrash /></button>
-                </div>
-            )}
-        </article>
-    );
+    return <CursoCard imagem={imagem} titulo={curso.titulo} descricao={curso.descricao}
+        categoria={curso.categoria} avaliacao={curso.avaliacao_media} totalAulas={curso.aulas_publicadas}
+        status={curso.status_nome} onAbrir={() => onAbrir(curso)}
+        acoes={gerenciavel && <div>
+            <button type="button" title="Editar curso" onClick={onEditar}><FaEdit /></button>
+            {curso.status !== STATUS_PUBLICADO && <button type="button" title="Publicar curso" onClick={() => onStatus(STATUS_PUBLICADO)}><FaEye /></button>}
+            {curso.status !== STATUS_PRIVADO && <button type="button" title="Privar curso" onClick={() => onStatus(STATUS_PRIVADO)}><FaLock /></button>}
+            {curso.status !== STATUS_ARQUIVADO && <button type="button" title="Arquivar curso" onClick={() => onStatus(STATUS_ARQUIVADO)}><FaArchive /></button>}
+            <button type="button" title="Excluir curso" onClick={onExcluir}><FaTrash /></button>
+        </div>} />;
 }

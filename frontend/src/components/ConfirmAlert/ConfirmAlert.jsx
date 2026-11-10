@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { FaExclamationTriangle } from "react-icons/fa";
 import css from "./ConfirmAlert_38.module.css";
 
+const ESPERA_CONFIRMACAO_MS = 1500;
+
 export default function ConfirmAlert(props) {
     // Montar novamente reinicia a espera a cada abertura do diálogo.
     return props.aberto ? <DialogoConfirmacao {...props} /> : null;
@@ -14,11 +16,13 @@ function DialogoConfirmacao({
                                          textoConfirmar = "Confirmar",
                                          variante = "perigo",
                                          carregando = false,
+                                         confirmarDesabilitado = false,
+                                         children,
                                          aoCancelar,
                                          aoConfirmar
                                      }) {
     const [confirmacaoLiberada, setConfirmacaoLiberada] = useState(false);
-    const liberarEm = useRef(Date.now() + 1500);
+    const liberarEm = useRef(Date.now() + ESPERA_CONFIRMACAO_MS);
 
     useEffect(() => {
         const timer = setTimeout(() => setConfirmacaoLiberada(true), Math.max(0, liberarEm.current - Date.now()));
@@ -26,7 +30,7 @@ function DialogoConfirmacao({
     }, []);
 
     function confirmar() {
-        if (carregando || Date.now() < liberarEm.current) return;
+        if (carregando || confirmarDesabilitado || Date.now() < liberarEm.current) return;
         aoConfirmar?.();
     }
 
@@ -43,6 +47,7 @@ function DialogoConfirmacao({
 
                 <h2 id="confirm-alert-title">{titulo}</h2>
                 {descricao && <p>{descricao}</p>}
+                {children}
 
                 <div className={css.acoes}>
                     <button
@@ -55,11 +60,12 @@ function DialogoConfirmacao({
                     </button>
                     <button
                         type="button"
-                        className={`${css.confirmar} ${css[variante]}`}
+                        className={`${css.confirmar} ${css[variante]} ${confirmacaoLiberada ? css.liberada : css.esperando}`}
+                        style={{ '--espera-confirmacao': `${ESPERA_CONFIRMACAO_MS}ms` }}
                         onClick={confirmar}
-                        disabled={carregando || !confirmacaoLiberada}
+                        disabled={carregando || confirmarDesabilitado || !confirmacaoLiberada}
                     >
-                        {carregando ? "Aguarde..." : textoConfirmar}
+                        <span className={css.textoConfirmar}>{carregando ? "Aguarde..." : textoConfirmar}</span>
                     </button>
                 </div>
             </section>

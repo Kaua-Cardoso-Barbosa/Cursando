@@ -210,9 +210,6 @@ async function executarRequisicao(
     ...new Set(candidates)
   ];
 
-  const failedUrls = [];
-
-
   for (const apiUrl of uniqueCandidates) {
     try {
       const response = await fetchWithTimeout(
@@ -258,15 +255,10 @@ async function executarRequisicao(
         throw error;
       }
 
-      failedUrls.push(apiUrl);
     }
   }
 
-  throw new Error(
-      `Não foi possível conectar com a API.\n\n` +
-      `Endereços testados:\n` +
-      failedUrls.join("\n")
-  );
+  throw new Error("Não foi possível conectar com a API. Verifique sua conexão e tente novamente.");
 }
 /* Fim item 17 */
 

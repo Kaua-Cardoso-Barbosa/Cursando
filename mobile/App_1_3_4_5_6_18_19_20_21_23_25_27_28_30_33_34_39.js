@@ -4,9 +4,9 @@ import * as Sharing from "expo-sharing";
 import * as LocalAuthentication from "expo-local-authentication";
 import Constants from "expo-constants";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, AppState, Platform, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
+import { ActivityIndicator, AppState, BackHandler, Linking, Platform, Pressable, SafeAreaView, StyleSheet, Text, Vibration, View } from "react-native";
 import { apiRequest, definirAoInvalidarSessao, carregarSessao, getApiBaseUrl, limparSessao, salvarSessao } from "./src/api/client_3_17";
-import BottomNav from "./src/components/BottomNav_19_23_25_28_39";
+import TelaApp from "./src/components/TelaApp_39";
 import FeedbackProvider, { useFeedback } from "./src/components/FeedbackProvider_39";
 import AlunosCursoScreen from "./src/screens/AlunosCursoScreen_39";
 import AulasAlunoScreen from "./src/screens/AulasAlunoScreen_4_5_6_20_21_27_39";
@@ -21,6 +21,11 @@ import FinanceiroScreen from "./src/screens/FinanceiroScreen_2_3_12_15_30_31_32_
 import InicioScreen from "./src/screens/InicioScreen_7_39";
 import LoginScreen from "./src/screens/LoginScreen_3_39";
 import PerfilScreen from "./src/screens/PerfilScreen_39";
+import PerfilPublicoScreen from './src/screens/PerfilPublicoScreen_39';
+import CursoProfessorScreen from './src/screens/CursoProfessorScreen_39';
+import UsuariosAdminScreen from './src/screens/UsuariosAdminScreen_39';
+import { PreviaCurso } from './src/components/PreviaCurso_39';
+import RecuperarSenhaScreen from './src/screens/RecuperarSenhaScreen_39';
 import PlayerAulaScreen from "./src/screens/PlayerAulaScreen_4_10_26_39";
 import ProvasProfessorScreen from "./src/screens/ProvasProfessorScreen_20_39";
 import ProvaAlunoScreen from "./src/screens/ProvaAlunoScreen_20_39";
@@ -62,6 +67,8 @@ function AppContent() {
   const [cursos, setCursos] = useState([]);
   const [detalheCursoAluno, setDetalheCursoAluno] = useState(null);
   const [detalheAulaAluno, setDetalheAulaAluno] = useState(null);
+  const origemAulaRef = useRef('courses');
+  const [moduloAlunoSelecionado, setModuloAlunoSelecionado] = useState(null);
   const [tab, setTab] = useState("home");
   const [editingCourse, setEditingCourse] = useState(null);
   const [studentsCourse, setStudentsCourse] = useState(null);
@@ -77,10 +84,42 @@ function AppContent() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
+  const [perfisAbertos, setPerfisAbertos] = useState([]);
+  const [cursoProfessor, setCursoProfessor] = useState(null);
+  const [recuperacaoSenha, setRecuperacaoSenha] = useState(null);
+  const [previaCurso, setPreviaCurso] = useState(null);
+  const abrirPerfilPublico = id => { if (id) setPerfisAbertos(anteriores => [...anteriores, id]); };
+  useEffect(() => {
+    function abrirLink(url) {
+      try { const match = url?.match(/(?:\/perfil\/|:\/\/perfil\/)([^/?#]+)/); if (match) abrirPerfilPublico(decodeURIComponent(match[1])); } catch { /* Ignora links inválidos. */ }
+    }
+    Linking.getInitialURL().then(abrirLink);
+    const evento = Linking.addEventListener('url', e => abrirLink(e.url));
+    return () => evento.remove();
+  }, []);
+  useEffect(() => {
+    const evento = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (perfisAbertos.length) { setPerfisAbertos(p => p.slice(0, -1)); return true; }
+      if (editingCourse) { setEditingCourse(null); return true; }
+      if (cursoProfessor) { setCursoProfessor(null); return true; }
+      if (editingProfile) { if (!saving) setEditingProfile(false); return true; }
+      if (examAlunoAberto) { setExamAlunoAberto(false); return true; }
+      if (historicoProvasAberto) { setHistoricoProvasAberto(false); return true; }
+      if (detalheAulaAluno) { setDetalheAulaAluno(null); setTab(origemAulaRef.current); return true; }
+      if (detalheCursoAluno) { if (moduloAlunoSelecionado != null) setModuloAlunoSelecionado(null); else setDetalheCursoAluno(null); return true; }
+      if (managingCourse) { setManagingCourse(null); return true; }
+      if (examCourse) { setExamCourse(null); return true; }
+      if (materialsCourse) { setMaterialsCourse(null); return true; }
+      if (token && tab !== "chat" && tab !== (Number(usuario?.tipo) === 0 ? 'logs' : 'home')) { setTab(Number(usuario?.tipo) === 0 ? 'logs' : 'home'); return true; }
+      return false;
+    });
+    return () => evento.remove();
+  }, [perfisAbertos.length, cursoProfessor, editingCourse, editingProfile, saving, examAlunoAberto, historicoProvasAberto, detalheAulaAluno, detalheCursoAluno, moduloAlunoSelecionado, managingCourse, examCourse, materialsCourse, token, tab, usuario?.tipo]);
   const [cadastroAberto, setCadastroAberto] = useState(false);
   const [emailPendente, setEmailPendente] = useState("");
   const [codigoEmailEnviado, setCodigoEmailEnviado] = useState(null);
+  const tipoUsuario = Number(usuario?.tipo ?? perfil?.tipo ?? 1);
+  const navAtiva = historicoProvasAberto ? 'history' : perfisAbertos.length || editingProfile ? 'profile' : cursoProfessor || managingCourse || editingCourse || examCourse || materialsCourse || historicoProvasAberto ? 'courses' : tab;
 
 async function carregarDados(authToken = token, authUser = usuario) {
     if (!authToken || authToken !== sessaoTokenRef.current) return;
@@ -88,7 +127,7 @@ async function carregarDados(authToken = token, authUser = usuario) {
     try {
       const tipo = Number(authUser?.tipo ?? usuario?.tipo ?? 1);
       if (tipo === 0) {
-        setTab("logs");
+        setTab(atual => ['logs', 'users', 'profile'].includes(atual) ? atual : 'logs');
         /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Atualiza os dados da sessão compartilhados entre o site e o aplicativo */
         const [dashboardData, perfilData] = await Promise.all([
           apiRequest("/admin/dashboard", {}, authToken),
@@ -343,6 +382,15 @@ async (estado) => {
     setDetalheAulaAluno(null);
     setExamAlunoAberto(false);
     setChatInicial(null);
+    setPerfisAbertos([]);
+    setCursoProfessor(null);
+    setEditingCourse(null);
+    setEditingProfile(false);
+    setManagingCourse(null);
+    setExamCourse(null);
+    setMaterialsCourse(null);
+    setPreviaCurso(null);
+    setRecuperacaoSenha(null);
     setTab("home");
   }
   /* Fim item 3 */
@@ -369,6 +417,7 @@ async function abrirCursoAluno(curso, destino = "courses") {
     setLoading(true);
     try {
       setExamAlunoAberto(false);
+      if (Number(curso.id) !== Number(detalheCursoAluno?.curso?.id)) setModuloAlunoSelecionado(null);
       setDetalheCursoAluno(await buscarDetalheCursoAluno(curso.id));
       setDetalheAulaAluno(null);
       setTab(destino);
@@ -414,8 +463,9 @@ async function abrirCursoAluno(curso, destino = "courses") {
     setLoading(true);
     try {
       const detalhe = await apiRequest(`/aluno/aulas/${aula.id}`, {}, token);
+      if (!detalheAulaAluno) origemAulaRef.current = tab;
       setDetalheAulaAluno(detalhe);
-      setTab("courses");
+      setTab(tab === 'discover' ? 'discover' : 'courses');
     } catch (error) {
       if (error.status === 402) {
         mostrarAlerta("Fatura em aberto", error.message, "erro");
@@ -547,8 +597,10 @@ async function avaliarCursoAluno(dados) {
 /* Fim item 27 */
 
   function trocarAba(key) {
-    setHistoricoProvasAberto(false);
-    setTab(key);
+    setPerfisAbertos([]); setCursoProfessor(null); setEditingCourse(null); setEditingProfile(false);
+    setManagingCourse(null); setExamCourse(null); setMaterialsCourse(null);
+    setHistoricoProvasAberto(key === "history");
+    setTab(key === "history" ? "courses" : key);
     if (key !== "chat") setChatInicial(null);
     setExamAlunoAberto(false);
     setStudentsCourse(null);
@@ -627,10 +679,17 @@ async function salvarCurso({ titulo, descricao, imagem, idCategoria, idTema, nov
 async function salvarPerfil(dados) {
     setSaving(true);
     try {
+      const formulario = new FormData();
+      for (const [campo, valor] of Object.entries(dados)) {
+        if (campo === 'imagem_perfil') {
+          if (Platform.OS === 'web') { const blob = await (await fetch(valor.uri)).blob(); formulario.append(campo, blob, valor.name); }
+          else formulario.append(campo, valor);
+        } else formulario.append(campo, String(valor ?? ''));
+      }
       const atualizado = await apiRequest("/perfil", {
         method: "PUT",
-        body: JSON.stringify(dados)
-      }, token);
+        body: formulario
+      }, token, 30000);
       const novoPerfil = atualizado.usuario || dados;
       setPerfil(novoPerfil);
       const usuarioAtualizado = { ...(usuario || {}), ...novoPerfil };
@@ -638,15 +697,29 @@ async function salvarPerfil(dados) {
 
       await salvarSessao(token, usuarioAtualizado);
       setEditingProfile(false);
+      setPerfisAbertos(ids => ids.map(id => id === perfil?.identificador ? novoPerfil.identificador : id));
+      mostrarAlerta('Perfil', 'Perfil atualizado com sucesso.', 'sucesso');
+      return true;
     } catch (error) {
       mostrarAlerta("Erro", error.message, "erro");
+      return false;
     } finally {
       setSaving(false);
     }
   }
 /* Fim item 3 */
 
+  function abrirCursoDoPerfil(curso) {
+    if (Number(usuario?.tipo) === 2) { setPerfisAbertos([]); abrirCursoAluno(curso, 'discover'); setTab('discover'); }
+    else if (Number(usuario?.tipo) === 1 && cursos.some(c => Number(c.id) === Number(curso.id))) { setPerfisAbertos([]); setCursoProfessor(curso); }
+    else setPreviaCurso(curso);
+  }
+  if (perfisAbertos.length) return <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}>
+    <PerfilPublicoScreen key={perfisAbertos[perfisAbertos.length - 1]} identificador={perfisAbertos[perfisAbertos.length - 1]} token={token} perfil={perfil} onBack={() => setPerfisAbertos(p => p.slice(0, -1))} onOpenCourse={abrirCursoDoPerfil} onSave={token ? salvarPerfil : null} salvando={saving} />
+    <PreviaCurso curso={previaCurso} onClose={() => setPreviaCurso(null)} onEntrar={!token ? () => { setPreviaCurso(null); setPerfisAbertos([]); setRecuperacaoSenha(null); } : undefined} />
+  </TelaApp>;
   if (!token) {
+    if (recuperacaoSenha) return <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}><RecuperarSenhaScreen emailInicial={recuperacaoSenha.email} onBack={() => setRecuperacaoSenha(null)} /></TelaApp>;
 
     if (emailPendente) {
       return (
@@ -718,6 +791,7 @@ async (novoToken, novoUsuario) => {
             setCadastroAberto(true);
           }
 }
+          onForgotPassword={email => setRecuperacaoSenha({ email })}
           onVerifyEmail={(email) => {
             setCodigoEmailEnviado(null);
             setEmailPendente(email);
@@ -743,9 +817,9 @@ async (novoToken, novoUsuario) => {
     );
   }
 
-  const tipoUsuario = Number(usuario?.tipo ?? perfil?.tipo ?? 1);
+
   if (tipoUsuario === 2 && historicoProvasAberto) {
-    return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><HistoricoProvasAlunoScreen token={token} onBack={() => setHistoricoProvasAberto(false)} /></SafeAreaView>;
+    return <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}><StatusBar style="dark" /><HistoricoProvasAlunoScreen token={token} onBack={() => setHistoricoProvasAberto(false)} /></TelaApp>;
   }
 
   /* Sprint item 34 - Exibir faturas em aberto - Identifica as faturas pendentes e a situação do acesso ao conteúdo */
@@ -760,20 +834,22 @@ async (novoToken, novoUsuario) => {
 
   if (editingCourse) {
     return (
-      <SafeAreaView style={globalStyles.app}>
+      <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}>
         <StatusBar style="light" />
         <EditarCursoScreen curso={editingCourse} token={token} onCancel={() => setEditingCourse(null)} onSave={salvarCurso} salvando={saving} />
-      </SafeAreaView>
+      </TelaApp>
     );
   }
+
+  if (cursoProfessor && tipoUsuario === 1) return <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}><CursoProfessorScreen key={`${cursoProfessor.id}:${cursos.find(c => Number(c.id) === Number(cursoProfessor.id))?.titulo || ''}`} curso={cursos.find(c => Number(c.id) === Number(cursoProfessor.id)) || cursoProfessor} token={token} onBack={() => setCursoProfessor(null)} onEdit={setEditingCourse} onOpenProfile={abrirPerfilPublico} onOpenChat={aluno => { setChatInicial({ id_curso: cursoProfessor.id, id_aluno: aluno.id_usuario, nome: aluno.nome, curso: cursoProfessor.titulo }); setCursoProfessor(null); setTab('chat'); }} /></TelaApp>;
 
   /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */
   if (managingCourse) {
     return (
-      <SafeAreaView style={globalStyles.app}>
+      <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}>
         <StatusBar style="dark" />
         <ModulosProfessorScreen curso={managingCourse} token={token} onBack={() => setManagingCourse(null)} />
-      </SafeAreaView>
+      </TelaApp>
     );
   }
   /* Fim item 6 */
@@ -794,41 +870,37 @@ async (novoToken, novoUsuario) => {
   /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
   if (examCourse) {
     return (
-      <SafeAreaView style={globalStyles.app}>
+      <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}>
         <StatusBar style="dark" />
         <ProvasProfessorScreen curso={examCourse} cursos={cursos} token={token} onBack={() => setExamCourse(null)} />
-      </SafeAreaView>
+      </TelaApp>
     );
   }
   /* Fim item 20 */
 
   /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */
   if (examAlunoAberto && detalheCursoAluno?.prova) {
-    return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><ProvaAlunoScreen token={token} curso={detalheCursoAluno.curso} prova={detalheCursoAluno.prova} onBack={() => setExamAlunoAberto(false)} onSubmit={enviarProvaAluno} /></SafeAreaView>;
+    return <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}><StatusBar style="dark" /><ProvaAlunoScreen token={token} curso={detalheCursoAluno.curso} prova={detalheCursoAluno.prova} onBack={() => setExamAlunoAberto(false)} onSubmit={enviarProvaAluno} /></TelaApp>;
   }
   /* Fim item 20 */
 
   /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */
   if (materialsCourse) {
-    return <SafeAreaView style={globalStyles.app}><StatusBar style="dark" /><MateriaisProfessorScreen curso={materialsCourse} token={token} onBack={() => setMaterialsCourse(null)} /></SafeAreaView>;
+    return <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}><StatusBar style="dark" /><MateriaisProfessorScreen curso={materialsCourse} token={token} onBack={() => setMaterialsCourse(null)} /></TelaApp>;
   }
   /* Fim item 21 */
 
   if (editingProfile) {
     return (
-      <SafeAreaView style={globalStyles.app}>
+      <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}>
         <StatusBar style="dark" />
         <EditarPerfilScreen perfil={perfil} onCancel={() => setEditingProfile(false)} onSave={salvarPerfil} salvando={saving} />
-        <BottomNav active="profile" tipoUsuario={tipoUsuario} onChange={(key) => {
-          setEditingProfile(false);
-          trocarAba(key);
-        }} />
-      </SafeAreaView>
+      </TelaApp>
     );
   }
 
   return (
-    <SafeAreaView style={globalStyles.app}>
+    <TelaApp mostrarMenu={!!token} ativo={navAtiva} tipoUsuario={tipoUsuario} onChange={trocarAba}>
       <StatusBar style="dark" />
       <View style={styles.content}>
         {tab === "home" && (
@@ -838,6 +910,8 @@ async (novoToken, novoUsuario) => {
             carregando={loading}
             onRefresh={carregarDados}
             tipoUsuario={tipoUsuario}
+            onOpenCourse={tipoUsuario === 1 ? setCursoProfessor : abrirCursoAluno}
+            onOpenLesson={abrirAulaAluno}
           />
         )}
         {tab === "courses" && tipoUsuario === 1 && !studentsCourse && (
@@ -846,6 +920,7 @@ async (novoToken, novoUsuario) => {
             carregando={loading}
             onRefresh={carregarDados}
             onEdit={setEditingCourse}
+            onOpen={setCursoProfessor}
             onDelete={excluirCurso}
             onManage={setManagingCourse}
             onExams={setExamCourse}
@@ -897,6 +972,8 @@ async (novoToken, novoUsuario) => {
             onOpenExam={() => setExamAlunoAberto(true)}
             onDownloadCertificate={baixarCertificadoAluno}
             onReview={avaliarCursoAluno}
+            onOpenProfile={abrirPerfilPublico}
+            moduloSelecionado={moduloAlunoSelecionado} onModuloChange={setModuloAlunoSelecionado}
             onOpenMaterial={abrirMaterialCurso}
           /> /* Fim item 5 */
         )}
@@ -904,7 +981,7 @@ async (novoToken, novoUsuario) => {
           /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */ <PlayerAulaScreen
             detalhe={detalheAulaAluno}
             token={token}
-            onBack={() => setDetalheAulaAluno(null)}
+            onBack={() => { setDetalheAulaAluno(null); setTab(origemAulaRef.current); }}
             onOpenLesson={abrirAulaAluno}
             onFinish={marcarAulaAssistida}
             onSaveProgress={salvarProgressoAula}
@@ -929,6 +1006,8 @@ async (novoToken, novoUsuario) => {
             onOpenExam={() => setExamAlunoAberto(true)}
             onDownloadCertificate={baixarCertificadoAluno}
             onReview={avaliarCursoAluno}
+            onOpenProfile={abrirPerfilPublico}
+            moduloSelecionado={moduloAlunoSelecionado} onModuloChange={setModuloAlunoSelecionado}
             onOpenMaterial={abrirMaterialCurso}
           /> /* Fim item 5 */
         )}
@@ -936,13 +1015,15 @@ async (novoToken, novoUsuario) => {
           /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */ <PlayerAulaScreen
             detalhe={detalheAulaAluno}
             token={token}
-            onBack={() => setDetalheAulaAluno(null)}
+            onBack={() => { setDetalheAulaAluno(null); setTab(origemAulaRef.current); }}
             onOpenLesson={abrirAulaAluno}
             onFinish={marcarAulaAssistida}
             onSaveProgress={salvarProgressoAula}
           /> /* Fim item 4 */
         )}
-        {tab === "profile" && <PerfilScreen perfil={perfil} onEdit={() => setEditingProfile(true)} onLogout={sair} />}
+        {tab === 'profile' && (tipoUsuario === 0 ? <PerfilScreen perfil={perfil} onEdit={() => setEditingProfile(true)} onLogout={sair} /> : <PerfilPublicoScreen identificador={perfil?.identificador || usuario?.identificador} token={token} perfil={perfil} onOpenCourse={abrirCursoDoPerfil} onSave={salvarPerfil} salvando={saving} onLogout={sair} />)}
+        {tab === 'users' && tipoUsuario === 0 && <UsuariosAdminScreen token={token} onOpenProfile={abrirPerfilPublico} />}
+        <PreviaCurso curso={previaCurso} onClose={() => setPreviaCurso(null)} />
                                                                                                                                                                                        
         {tab === "chat" && (
           /* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */ <ChatScreen
@@ -950,6 +1031,7 @@ async (novoToken, novoUsuario) => {
             tipoUsuario={tipoUsuario}
             cursos={cursos}
             conversaInicial={chatInicial}
+            onBack={() => trocarAba("home")}
             carregando={loading}
             onRefresh={carregarDados}
           /> /* Fim item 19 */
@@ -975,8 +1057,7 @@ async (novoToken, novoUsuario) => {
           /* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe a consulta dos logs ao administrador e aplica os filtros */ <LogsAdminScreen token={token} onError={(error) => mostrarAlerta("Logs", error.message, "erro")} /> /* Fim item 25 */
         )}
       </View>
-      <BottomNav active={tab} onChange={trocarAba} tipoUsuario={tipoUsuario} />
-    </SafeAreaView>
+    </TelaApp>
   );
 }
 

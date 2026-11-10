@@ -1,16 +1,9 @@
 import React from 'react';
-import css from '../../pages/Home/Home_38.module.css';
-import CapaCurso from '../CapaCurso/CapaCurso.jsx';
+import CursoCard from '../CursoCard/CursoCard.jsx';
 
 const CartaoCurso = ({ imagem, alt, titulo, descricao }) => {
     return (
-        <div className={css['cartao-curso']}>
-            <CapaCurso imagem={imagem} titulo={alt || titulo} />
-            <div className={css['conteudo-cartao']}>
-                <h4>{titulo}</h4>
-                <p>{descricao}</p>
-            </div>
-        </div>
+        <CursoCard imagem={imagem} alt={alt} titulo={titulo} descricao={descricao} />
     );
 };
 

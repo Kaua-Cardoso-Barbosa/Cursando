@@ -1,5 +1,6 @@
-import { fonteImagemCurso } from '../imagens_padrao_39';
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import CursoCard from '../components/CursoCard_39';
+import { useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
@@ -9,6 +10,7 @@ import { colors, globalStyles } from "../styles_39";
 export default
 function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen, onManage, onExams, onComplements, onStudents, onHistory, tipoUsuario = 1 }) {
 
+  const [filtro, setFiltro] = useState(1);
   const aluno = Number(tipoUsuario) === 2;
   const { confirmar } = useFeedback();
 
@@ -37,27 +39,8 @@ function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen,
 
       <View style={styles.list}>
         {aluno && onHistory && <Pressable style={globalStyles.secondaryButton} onPress={onHistory}><Text style={globalStyles.secondaryText}>Meu histórico de provas</Text></Pressable>}
-        {cursos.map(
-(curso) => {
-          const imagem = fonteImagemCurso(curso.imagem);
-          return (
-            <View key={curso.id} style={[globalStyles.card, styles.card]}>
-              <Pressable disabled={!onOpen} onPress={() => onOpen?.(curso)}>
-                <Image source={imagem} style={styles.image} />
-              </Pressable>
-              <View style={styles.info}>
-                <Pressable style={styles.texts} disabled={!onOpen} onPress={() => onOpen?.(curso)}>
-                  <Text style={styles.courseTitle} numberOfLines={1}>{curso.titulo}</Text>
-                  <Text style={styles.description} numberOfLines={2}>{curso.descricao}</Text>
-                </Pressable>
-                {aluno ? (
-                  <View style={styles.progressBox}>
-                    <Text style={styles.progressLabel}>{Number(curso.progresso || 0)}%</Text>
-                    <View style={styles.progressTrack}>
-                      <View style={[styles.progressFill, { width: `${Number(curso.progresso || 0)}%` }]} />
-                    </View>
-                  </View>
-                ) : (
+        {!aluno && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{[[1, 'Publicados'], [0, 'Privados'], [2, 'Arquivados']].map(([id, titulo]) => <Pressable key={id} accessibilityState={{ selected: filtro === id }} style={filtro === id ? globalStyles.primaryButton : globalStyles.secondaryButton} onPress={() => setFiltro(id)}><Text style={filtro === id ? globalStyles.buttonText : globalStyles.secondaryText}>{titulo}</Text></Pressable>)}</View>}
+        {cursos.filter(c => aluno || Number(c.status) === filtro).map(curso => <CursoCard key={curso.id} curso={curso} onOpen={onOpen || onManage} progresso={aluno} acoes={!aluno && (
                   <View style={styles.actions}>
                     {onExams ? (
                       <Pressable style={styles.iconButton} onPress={() => onExams(curso)} hitSlop={10} accessibilityLabel="Gerenciar prova do curso">
@@ -86,14 +69,8 @@ function CursosScreen({ cursos, carregando, onRefresh, onEdit, onDelete, onOpen,
                     <Pressable style={styles.iconButton} onPress={() => confirmarExclusao(curso)} hitSlop={10}>
                       <AppIcon name="trash-outline" size={20} color={colors.red} />
                     </Pressable>
-                  </View>
-                )}
-              </View>
-            </View>
-          );
-        }
-)}
-        {!carregando && cursos.length === 0 ? <Text style={globalStyles.message}>Nenhum curso encontrado.</Text> : null}
+                  </View>        )} />)}
+        {!carregando && !cursos.some(c => aluno || Number(c.status) === filtro) ? <Text style={globalStyles.message}>Nenhum curso encontrado.</Text> : null}
       </View>
     </ScrollView>
   );
@@ -133,7 +110,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   courseTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 21,
     lineHeight: 25
   },
@@ -147,6 +124,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    flexWrap: "wrap",
     paddingTop: 4
   },
   iconButton: {
@@ -164,7 +142,7 @@ const styles = StyleSheet.create({
     marginBottom: 2
   },
   progressLabel: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 12,
     marginBottom: 3
   },

@@ -1,5 +1,6 @@
 import { SessaoProvider } from "./context/Sessao.jsx";
 import { API, useSessao } from "./context/useSessao.js";
+import { urlPerfil } from './utils/perfil.js';
 import { BrowserRouter, Navigate, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Header from "./components/Header/Header_3.jsx";
 import Home from "./pages/Home/Home.jsx";
@@ -16,6 +17,7 @@ import {lazy, Suspense, useEffect, useState} from "react";
 import RotaRestrita from "./components/RotaRestrita/RotaRestrita_3_34.jsx";
 import VerificarEmail from "./pages/VerificarEmail/VerificarEmail_1.jsx";
 const VerificarCertificado = lazy(() => import("./pages/VerificarCertificado/VerificarCertificado_5.jsx"));
+const Perfil = lazy(() => import("./pages/Perfil/Perfil.jsx"));
 
 export default function App() {
     return (
@@ -33,7 +35,7 @@ function AppConteudo() {
 
     const [mensagem, setMensagem] = useState('');
     const [confirmarLogout, setConfirmarLogout] = useState(false);
-    const { usuario, erro: erroSessao, atualizarSessao, atualizarUsuario, limparSessao } = useSessao();
+    const { usuario, carregando: carregandoSessao, erro: erroSessao, atualizarSessao, atualizarUsuario, limparSessao } = useSessao();
 
     /* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Solicita a confirmação de saída da sessão */
     function sair() {
@@ -112,6 +114,7 @@ function AppConteudo() {
         }
         /* Fim item 5 */
 
+        if (location.pathname.startsWith('/perfil')) titulo = 'Perfil - Cursando';
         document.title = titulo || "Cursando";
     }
 , [location.pathname]);
@@ -132,6 +135,11 @@ function AppConteudo() {
             <Routes>
                 <Route path="/" element={<Home/>}/>
                 <Route path="/home" element={<Navigate to="/" replace />}/>
+                <Route path="/perfil/:idUsuario" element={<Perfil api={api} setMensagem={setMensagem} />} />
+                <Route path="/perfil" element={carregandoSessao ? <p role="status">Carregando perfil...</p>
+                    : <Navigate to={usuario ? Number(usuario.tipo) === 0 ? '/DashboardAdm/perfil'
+                        : usuario.identificador ? urlPerfil(usuario.identificador)
+                        : Number(usuario.tipo) === 1 ? '/DashboardProfessor/perfil' : '/DashboardAluno/perfil' : '/login'} replace />} />
                 {/* Sprint item 3 - Sincronizar dados entre aplicativo e sistema web - Conecta a navegação ao componente responsável por este item */}
                 <Route path="/login" element={<Login api={api} setMensagem={setMensagem} atualizarSessao={atualizarSessao}/>}/>
                 {/* Fim item 3 */}

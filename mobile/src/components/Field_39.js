@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
+import { useState } from 'react';
 import { globalStyles } from "../styles_39";
 
 export default
@@ -10,12 +11,16 @@ function Field({
   keyboardType,
   multiline,
   editable = true,
+  containerStyle,
+  labelStyle,
   ...props
 }) {
+  const [altura, setAltura] = useState(88);
   return (
-    <View style={globalStyles.field}>
-      <Text style={globalStyles.label}>{label}</Text>
+    <View style={[globalStyles.field, containerStyle]}>
+      <Text style={[globalStyles.label, labelStyle]}>{label}</Text>
       <TextInput
+        accessibilityLabel={label}
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry}
@@ -24,10 +29,13 @@ function Field({
         editable={editable}
         placeholderTextColor="#777777"
         {...props}
+        onContentSizeChange={evento => { if (multiline) setAltura(Math.max(88, Math.ceil(evento.nativeEvent.contentSize.height))); props.onContentSizeChange?.(evento); }}
         style={[
           globalStyles.input,
           !editable && styles.disabled,
-          multiline && styles.multiline
+          multiline && styles.multiline,
+          multiline && { height: altura },
+          props.style
         ]}
       />
     </View>

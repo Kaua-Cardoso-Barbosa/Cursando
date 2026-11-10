@@ -17,11 +17,11 @@ const CartaoPlano =
                 <p className={css['preco-atual']}>{precoAtual}</p>
             </div>
             <p className={css['descricao-plano']}>{descricao}</p>
-            <div className={css['lista-beneficios']}>
+            <ul className={css['lista-beneficios']}>
                 {beneficios.map((beneficio, index) => (
                     <li key={index}>{beneficio}</li>
                 ))}
-            </div>
+            </ul>
             <div style={{ textAlign: 'center' }}>
                                                                                                                       
                 <button

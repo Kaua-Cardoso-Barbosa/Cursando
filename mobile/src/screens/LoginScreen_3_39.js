@@ -16,7 +16,7 @@ import Field from "../components/Field_39";
 import { colors, globalStyles } from "../styles_39";
 
 export default
-function LoginScreen({ onLogin, onSignup, onVerifyEmail }) {
+function LoginScreen({ onLogin, onSignup, onVerifyEmail, onForgotPassword }) {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -63,8 +63,8 @@ function LoginScreen({ onLogin, onSignup, onVerifyEmail }) {
         payload?.tipo
       );
 
-      if (![1, 2].includes(tipo)) {
-        throw new Error("Este aplicativo \u00e9 exclusivo para professores e alunos.");
+      if (![0, 1, 2].includes(tipo)) {
+        throw new Error("Tipo de conta inválido.");
       }
 
       const usuario = {
@@ -156,15 +156,8 @@ function LoginScreen({ onLogin, onSignup, onVerifyEmail }) {
             >
               <Text style={styles.signupText}>Não tem cadastro? Cadastre-se já</Text>
             </Pressable>
-            <Pressable style={styles.verifyEmailButton} onPress={() => {
-              const emailTratado = email.trim().toLowerCase();
-              if (!emailTratado) {
-                setErro("Informe seu e-mail para verificar o cadastro.");
-                return;
-              }
-              onVerifyEmail(emailTratado);
-            }}>
-              <Text style={styles.verifyEmailText}>Verificar e-mail do cadastro</Text>
+            <Pressable style={styles.verifyEmailButton} disabled={carregando} onPress={() => onForgotPassword(email.trim())}>
+              <Text style={styles.verifyEmailText}>Esqueci minha senha</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -253,8 +246,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.white,
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 28,
+    lineHeight: 36,
     fontWeight: "800",
     textAlign: "center"
   },
@@ -263,14 +256,14 @@ const styles = StyleSheet.create({
     maxWidth: 440,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.45)",
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: colors.white,
     paddingHorizontal: 22,
     paddingTop: 24,
     paddingBottom: 22,
     alignItems: "stretch",
     shadowColor: colors.black,
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.08,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 12 },
     elevation: 4
@@ -283,7 +276,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: colors.softGray
   },
   signupText: {

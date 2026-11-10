@@ -1,0 +1,24 @@
+.conquista { min-width: 0; }
+.conteudo { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; padding: 18px 10px; border: 0; border-radius: 12px; background: transparent; color: #173e2c; font: inherit; text-align: center; }
+button.conteudo { cursor: pointer; }
+button.conteudo:hover { background: #f0f7f2; }
+.conteudo:focus-visible { outline: 3px solid #06a66380; outline-offset: 3px; }
+.medalha { --cor-nivel: #9aa9a1; display: block; position: relative; isolation: isolate; width: 120px; height: 120px; padding: 6px; margin: 12px 0 18px; border-radius: 50%; background: conic-gradient(var(--cor-nivel) var(--progresso), #dce8df 0); }
+.medalha::before { content: ''; position: absolute; inset: -5px; z-index: -1; border: 2px solid var(--cor-nivel); border-radius: 50%; }
+.medalha img { display: block; width: 100%; height: 100%; object-fit: cover; border: 4px solid #fff; border-radius: 50%; }
+.naoIniciado::before { border-style: dashed; opacity: .45; }
+.iniciante { --cor-nivel: #ad754c; }
+.iniciante::before { border-style: dashed; background: #fbf1e9; }
+.intermediario { --cor-nivel: #6d8394; }
+.intermediario::before { border: 5px double #8196a6; background: #eef3f6; }
+.avancado { --cor-nivel: #16804e; }
+.avancado::before { inset: -4px; border-radius: 22px; transform: rotate(45deg); background: #e9f5ed; }
+.concluido { --cor-nivel: #bc8d20; background: #d2a642; }
+.concluido::before { inset: -11px; border: 0; border-radius: 0; background: #e7c76c; clip-path: polygon(50% 0%,61% 8%,75% 7%,81% 20%,94% 25%,92% 40%,100% 50%,92% 61%,94% 75%,81% 81%,75% 94%,61% 92%,50% 100%,39% 92%,25% 94%,19% 81%,6% 75%,8% 61%,0% 50%,8% 40%,6% 25%,19% 20%,25% 7%,39% 8%); }
+.concluido::after { content: ''; position: absolute; z-index: -2; width: 68px; height: 40px; bottom: -23px; left: 26px; background: #b48620; clip-path: polygon(5% 0,95% 0,100% 100%,72% 82%,50% 100%,28% 82%,0 100%); }
+.selo { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); display: grid; place-items: center; width: 32px; height: 32px; border: 3px solid #fff; border-radius: 50%; background: #e7f2ea; color: #087044; font-size: 16px; }
+.selo { background: var(--cor-nivel); color: #fff; }
+.nome { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: 2.8em; max-width: 230px; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+.estado { color: #446452; font-size: 12px; line-height: 1.5; }
+.percentual { color: #6a7b70; font-size: 12px; }
+.pendente { color: #7d693c; font-size: 11px; line-height: 1.5; }

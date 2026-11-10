@@ -1,15 +1,18 @@
 import BotaoVoltar from '../../components/BotaoVoltar/BotaoVoltar.jsx';
+import { urlPerfil } from '../../utils/perfil.js';
+import { corAvaliacao } from '../../utils/avaliacao.js';
 import CabecalhoPagina from '../../components/CabecalhoPagina/CabecalhoPagina.jsx';
 import videoCss from './PaginaVideo.module.css';
 import MeusCursos from '../../components/MeusCursos/MeusCursos.jsx';
 import CursoCardBase from '../../components/CursoCard/CursoCard.jsx';
+import AvaliacoesCurso from '../../components/AvaliacoesCurso/AvaliacoesCurso.jsx';
 import AutoTextarea from '../../components/AutoTextarea/AutoTextarea.jsx';
 import PaginaIndisponivel from '../PaginaIndisponivel/PaginaIndisponivel.jsx';
 import ProvaCursoAluno from '../../components/Provas/ProvaCursoAluno.jsx';
 import HistoricoAlunoCursos from '../../components/Provas/HistoricoAlunoCursos.jsx';
 import EtapaModulo, { ListaEtapasModulo } from '../../components/EtapaModulo/EtapaModulo.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
     FaCheck,
     FaCalendarAlt,
@@ -20,12 +23,11 @@ import {
     FaFileInvoiceDollar,
     FaPlay,
     FaSearch,
-    FaShieldAlt,
-    FaUserCircle
+    FaShieldAlt
 } from "react-icons/fa";
 import MenuLateralAluno from "../../components/MenuLateral/MenuLateralAluno_3.jsx";
 import Alerts from "../../components/Alerts/Alerts.jsx";
-import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario_3.jsx";
+import Perfil from "../Perfil/Perfil.jsx";
 import css from "./DashboardAluno_38.module.css";
 import PlayerVideo from "../../components/PlayerVideo/PlayerVideo_4_10_26.jsx";
 import ChatCurso from "../../components/ChatCurso/ChatCurso_19.jsx";
@@ -173,13 +175,15 @@ function CursoCard({ curso, api, onAbrir, mostrarProgresso = false }) {
     const imagem = curso.imagem ? resolverUrlMidia(api, curso.imagem) : PLACEHOLDER_CURSO;
     const progresso = Number(curso.progresso || 0);
     return <CursoCardBase imagem={imagem} titulo={curso.titulo} descricao={curso.descricao}
+        categoria={curso.categoria} avaliacao={curso.avaliacao_media} professor={curso.professor}
+        totalAulas={curso.aulas_publicadas}
         onAbrir={() => onAbrir?.(curso)}
         capaExtra={mostrarProgresso && <div className={css.progressoCurso} aria-label={progresso + '% concluido'}>
             <span>{progresso}%</span><div className={css.barraProgresso} aria-hidden="true"><i style={{ width: progresso + '%' }} /></div>
         </div>} />;
 }
 
-function AulaCard({ aula, api, onAbrir, compacto = false }) {
+function AulaCard({ aula, api, onAbrir, compacto = false, atual = false }) {
     const imagem = aula.thumb ? resolverUrlMidia(api, aula.thumb) : PLACEHOLDER_AULA;
     const duracao = Number(aula.duracao_segundos);
     const posicao = Number(aula.progresso_segundos) || 0;
@@ -187,9 +191,9 @@ function AulaCard({ aula, api, onAbrir, compacto = false }) {
         ? Math.min(100, Math.max(0, posicao / duracao * 100)) : null;
 
     return (
-        <article className={`${css.cardAula} ${compacto ? videoCss.aulaLateral : ''}`}>
+        <article className={`${css.cardAula} ${compacto ? videoCss.aulaLateral : ''} ${atual ? videoCss.aulaAtual : ''}`}>
             {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
-            <button className={css.areaCardClicavel} onClick={() => onAbrir?.(aula)} disabled={!onAbrir}>
+            <button className={css.areaCardClicavel} onClick={() => onAbrir?.(aula)} disabled={!onAbrir} aria-current={atual ? 'true' : undefined}>
                 <div className={css.previewAula}>
                     <img src={imagem} alt={aula.titulo} />
                     <span className={css.playBadge}><FaPlay /></span>
@@ -205,6 +209,7 @@ function AulaCard({ aula, api, onAbrir, compacto = false }) {
                 <div className={css.infoAula}>
                     <div>
                         <h3>{aula.titulo}</h3>
+                        {atual && <span className={videoCss.indicadorAtual}>Assistindo agora</span>}
                         {Number(aula.progresso_segundos) > 0 && (
                             <small className={css.retomadaAula}>
                                 Continuar de {formatarPosicaoAula(aula.progresso_segundos)}
@@ -912,7 +917,8 @@ async function baixarCertificado(curso) {
     /* Fim item 6 */
     const idAulaNaRota = location.pathname.match(/\/DashboardAluno\/aulas\/(\d+)$/)?.[1];
     const videoAula = Number(aulaAtual?.aula?.id) === Number(idAulaNaRota) ? aulaAtual.aula : null;
-    const proximas = aulaAtual?.proximas || [];
+    const playlist = aulaAtual?.playlist || [];
+    const totalAulasPlaylist = playlist.reduce((total, grupo) => total + grupo.aulas.length, 0);
     const origemCurso = location.state?.origemCurso;
     const retornoCurso = origemCurso && /^\/DashboardAluno\/(cursos|descobrir)\/\d+(\?|$)/.test(origemCurso)
         ? origemCurso : videoAula ? `/DashboardAluno/cursos/${videoAula.id_curso}` : '/DashboardAluno/cursos';
@@ -1092,7 +1098,10 @@ async function baixarCertificado(curso) {
                                 <img src={cursoDetalhe.imagem ? resolverUrlMidia(api, cursoDetalhe.imagem) : PLACEHOLDER_CURSO} alt={cursoDetalhe.titulo} />
                                 <div className={css.resumoCurso}>
                                     <h2>{cursoDetalhe.titulo}</h2>
-                                    <p><strong>Professor(a):</strong> {cursoDetalhe.professor}</p>
+                                    <p><strong>Professor(a):</strong> {cursoDetalhe.professores?.length
+                                        ? cursoDetalhe.professores.map((professor, indice) => <span key={professor.id}>
+                                            {indice > 0 && ', '}{professor.identificador ? <Link className={css.linkPerfilProfessor} to={urlPerfil(professor.identificador)}>{professor.nome}</Link> : professor.nome}
+                                        </span>) : cursoDetalhe.professor}</p>
                                     <p className={css.descricaoCurso}>{cursoDetalhe.descricao}</p>
                                     {!cursoDetalhe.matriculado && (
                                         <button className={css.botaoInscrever} onClick={() => inscrever(cursoDetalhe)}>
@@ -1127,7 +1136,9 @@ async function baixarCertificado(curso) {
                             </div>
 
                             {abaCurso === "modulos" && moduloAberto && (
-                                <BotaoVoltar onClick={() => setIdModuloAberto(null)}>Voltar aos módulos</BotaoVoltar>
+                                <div className={css.retornoModulos}>
+                                    <BotaoVoltar emLinha onClick={() => setIdModuloAberto(null)}>Voltar aos módulos</BotaoVoltar>
+                                </div>
                             )}
                             {abaCurso === "modulos" && (
                                 <div className={css.conteudoCurso}>
@@ -1136,7 +1147,7 @@ async function baixarCertificado(curso) {
                                         <section className={css.detalheModuloAluno}>
                                             <h3>Módulo {modulosDetalhe.findIndex((item) => Number(item.id) === Number(moduloAberto.id)) + 1} · {moduloAberto.titulo}</h3>
                                             {moduloAberto.descricao && <p>{moduloAberto.descricao}</p>}
-                                            <h4>Aulas deste módulo</h4>
+                                            <div className={css.cabecalhoAulasModulo}><h4>Aulas deste módulo</h4><span>{moduloAberto.aulas?.length || 0} aulas · {(moduloAberto.aulas || []).filter(aula => aula.assistida).length} concluídas</span></div>
                                             {!moduloAberto.aulas?.length && <EstadoVazio texto="Nenhuma aula publicada neste módulo." />}
                                             <div className={css.gridAulas}>
                                                 {(moduloAberto.aulas || []).map((aula) => (
@@ -1237,7 +1248,7 @@ async function baixarCertificado(curso) {
                                         <div className={css.seletorEstrelas} role="radiogroup" aria-label="Nota de 0 a 5 estrelas">
                                             <button type="button" className={avaliacao.nota === 0 ? css.estrelasZeroAtivo : css.estrelasZero} aria-label="0 estrelas" aria-pressed={avaliacao.nota === 0} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota: 0 }); setAvaliacaoEnviada(false); }}>0</button>
                                             {[1, 2, 3, 4, 5].map((nota) => (
-                                                <button key={nota} type="button" className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }}>★</button>
+                                                <button key={nota} type="button" style={nota <= avaliacao.nota ? { color: corAvaliacao(avaliacao.nota) } : undefined} className={nota <= avaliacao.nota ? css.estrelaAtiva : css.estrela} aria-label={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} aria-pressed={avaliacao.nota === nota} disabled={enviandoAvaliacao} onClick={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }}>★</button>
                                             ))}
                                             <span>{avaliacao.nota} de 5</span>
                                         </div>
@@ -1249,36 +1260,7 @@ async function baixarCertificado(curso) {
                                 </div>
                             )}
 
-                            <section className={css.comentariosCurso}>
-                                <h2>Comentários</h2>
-                                {detalheCurso?.avaliacoes?.length ? (
-                                    <div className={css.listaComentariosCurso}>
-                                        {detalheCurso.avaliacoes.map((avaliacao) => {
-                                            /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */
-                                            const nota = Math.min(5, Math.max(0, Number(avaliacao.nota) || 0));
-                                            /* Fim item 27 */
-                                            return (
-                                                <article className={css.comentarioCurso} key={avaliacao.id}>
-                                                    <div className={css.cabecalhoComentarioCurso}>
-                                                        {avaliacao.imagem_perfil ? (
-                                                            <img className={css.fotoComentarioCurso} src={resolverUrlMidia(api, avaliacao.imagem_perfil)} alt={`Foto de ${avaliacao.nome}`} />
-                                                        ) : (
-                                                            <FaUserCircle className={css.fotoComentarioVazia} aria-hidden="true" />
-                                                        )}
-                                                        <strong>{avaliacao.nome || "Aluno"}</strong>
-                                                        <span className={css.notaComentarioCurso} aria-label={`${nota} de 5 estrelas`}>
-                                                            {"★".repeat(nota)}{"☆".repeat(5 - nota)} <small>{nota}/5</small>
-                                                        </span>
-                                                    </div>
-                                                    {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
-                                                    <p>{avaliacao.comentario || "Sem comentário escrito."}</p>
-                                                    {/* Fim item 27 */}
-                                                </article>
-                                            );
-                                        })}
-                                    </div>
-                                ) : <EstadoVazio texto="Este curso ainda não recebeu comentários." />}
-                            </section>
+                            <AvaliacoesCurso api={api} avaliacoes={detalheCurso?.avaliacoes || []} />
                         </section>
                     )}
 
@@ -1331,16 +1313,25 @@ async function baixarCertificado(curso) {
                                     </div>
                                 </div>
                                 <aside className={videoCss.listaLateralVideo} aria-label="Aulas do curso">
-                                    <div className={videoCss.tituloListaVideo}><h2>Aulas do curso</h2><span>{proximas.length} aulas</span></div>
-                                    {proximas.map((aula) => <AulaCard key={aula.id} aula={aula} api={api} compacto onAbrir={() => abrirVideo(aula)} />)}
-                                    {proximas.length === 0 && <p className={css.textoApoio}>Nenhuma outra aula disponível neste curso.</p>}
+                                    <div className={videoCss.tituloListaVideo}><h2>Aulas do curso</h2><span>{totalAulasPlaylist} aulas</span></div>
+                                    {playlist.map((grupo) => (
+                                        <section key={grupo.id ?? 'sem-modulo'} className={videoCss.grupoModulo}>
+                                            <h3 className={videoCss.tituloModulo}>{grupo.numero ? `Módulo ${grupo.numero} · ${grupo.titulo}` : grupo.titulo}</h3>
+                                            {grupo.aulas.map((aula) => {
+                                                const atual = Number(aula.id) === Number(videoAula.id);
+                                                return <AulaCard key={aula.id} aula={aula} api={api} compacto atual={atual}
+                                                    onAbrir={() => { if (!atual) abrirVideo(aula); }} />;
+                                            })}
+                                        </section>
+                                    ))}
+                                    {totalAulasPlaylist === 0 && <p className={css.textoApoio}>Nenhuma aula disponível neste curso.</p>}
                                 </aside>
                             </div>}
                         </section>
                     )}
 
                     {visao === "perfil" && (
-                        <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
+                        <Perfil api={api} embutido setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                     )}
 
                     {visao === "financeiro" && (

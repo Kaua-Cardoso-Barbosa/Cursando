@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FaBars, FaTimes, FaUser } from "react-icons/fa";
 import Button from "../Button/Button.jsx";
+import { urlPerfil } from '../../utils/perfil.js';
 
 function dashboardPorTipo(tipo) {
     if (Number(tipo) === 0) return "/DashboardAdm";
@@ -62,7 +63,7 @@ export default function Header({ usuario, sair }) {
         {usuario ? (
           <>
             <Button className={css.botaoPrincipal} rota={dashboardPorTipo(usuario.tipo)} tamanho={"pequeno"} fundoCor={"verde"} borda={"redondo"} texto={"Dashboard"} onClick={fecharMenu} />
-            <Link className={css.perfilLink} to={perfilPorTipo(usuario.tipo)} title="Perfil" aria-label="Perfil" onClick={fecharMenu}>
+            <Link className={css.perfilLink} to={Number(usuario.tipo) === 0 ? perfilPorTipo(usuario.tipo) : usuario.identificador ? urlPerfil(usuario.identificador) : '/perfil'} title="Perfil" aria-label="Perfil" onClick={fecharMenu}>
               <span className={css.nomePerfil}>{usuario.nome}</span>
               <span className={css.avatarPerfil}>
                 {imagemPerfil ? (

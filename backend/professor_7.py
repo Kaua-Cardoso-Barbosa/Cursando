@@ -357,6 +357,53 @@ def criar_curso_professor():
         con.close()
 
 
+@app.route("/professor/cursos/<int:id_curso>", methods=["GET"])
+@jwt_required()
+def detalhe_curso_professor(id_curso):
+    negado = exigir_professor()
+    if negado:
+        return negado
+
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        # A consulta fica restrita aos cursos vinculados ao professor autenticado.
+        cursor.execute("""
+            SELECT C.ID_CURSO, C.TITULO, C.DESCRICAO, C.IMAGEM_URL, C.STATUS,
+                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO=C.ID_CURSO AND V.EXCLUIDO=0),
+                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO=C.ID_CURSO AND V.EXCLUIDO=0 AND V.STATUS=1),
+                (SELECT COUNT(DISTINCT M.ID_USUARIO) FROM MATRICULAS M WHERE M.ID_CURSO=C.ID_CURSO AND M.STATUS_MATRICULA=1),
+                CAT.NOME, T.NOME,
+                (SELECT COUNT(*) FROM MODULOS_CURSO MC WHERE MC.ID_CURSO=C.ID_CURSO),
+                (SELECT COUNT(*) FROM MODULOS_CURSO MC WHERE MC.ID_CURSO=C.ID_CURSO AND MC.STATUS=1),
+                COALESCE((SELECT AVG(CAST(A.NOTA AS DOUBLE PRECISION)) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO=C.ID_CURSO),0),
+                (SELECT COUNT(*) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO=C.ID_CURSO)
+            FROM CURSOS C
+            LEFT JOIN CURSO_TAXONOMIA CT ON CT.ID_CURSO=C.ID_CURSO
+            LEFT JOIN CATEGORIAS_CURSO CAT ON CAT.ID_CATEGORIA=CT.ID_CATEGORIA
+            LEFT JOIN TEMAS_CURSO T ON T.ID_TEMA=CT.ID_TEMA
+            WHERE C.ID_CURSO=? AND C.EXCLUIDO=0 AND EXISTS (
+                SELECT 1 FROM PROFESSORES_CURSO PC WHERE PC.ID_CURSO=C.ID_CURSO AND PC.ID_USUARIO=?)
+        """, (id_curso, get_jwt_identity()))
+        row = cursor.fetchone()
+        if not row:
+            return resposta("Curso não encontrado para este instrutor.", 404)
+        curso = curso_para_dict(row[:8])
+        curso.update(categoria=row[8] or "", tema=row[9] or "",
+                     total_modulos=row[10], modulos_publicados=row[11],
+                     avaliacao_media=round(float(row[12]), 2), total_avaliacoes=row[13])
+        cursor.execute("""SELECT U.NOME FROM PROFESSORES_CURSO PC
+            JOIN USUARIOS U ON U.ID_USUARIO=PC.ID_USUARIO
+            WHERE PC.ID_CURSO=? ORDER BY U.NOME""", (id_curso,))
+        curso['professores'] = [r[0] for r in cursor.fetchall()]
+        return jsonify(curso)
+    except Exception as erro:
+        return resposta(f"Erro ao carregar informações do curso: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
+
+
 @app.route("/professor/cursos/<int:id_curso>", methods=["PUT"])
 @jwt_required()
 def editar_curso_professor(id_curso):

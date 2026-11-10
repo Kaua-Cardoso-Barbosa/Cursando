@@ -3,22 +3,17 @@ import css from '../../pages/Home/Home_38.module.css';
 
 const SecaoSobre = () => {
     return (
-        <section className={css['secao-sobre']}>
+        <section className={css['secao-sobre']} aria-labelledby="sobre-home">
             <div className={css['sobre-texto']}>
-                <h2>Por que escolher a Cursando?</h2>
-                <p>
-                    Na Cursando, aprender é simples, prático e acessível.
-                    Oferecemos cursos online de qualidade para quem deseja
-                    desenvolver novas habilidades, crescer profissionalmente
-                    ou conquistar novos objetivos. Com conteúdos
-                    atualizados, professores qualificados e uma plataforma
-                    intuitiva, você tem a liberdade de estudar no seu ritmo, de
-                    onde estiver e quando quiser.
-                </p>
+                <span className={css.span}>DO SEU JEITO</span>
+                <h2 id="sobre-home">Aprender pode fazer parte do seu dia.</h2>
+                <p>Você escolhe o que quer descobrir. A Cursando organiza o caminho para você continuar, uma aula de cada vez.</p>
             </div>
-            <div className={css['sobre-imagem']}>
-                <img src="/imagens_assets/vale-a-pena-fazer-um-curso-online%201.png" alt="Aluna estudando" />
-            </div>
+            <ol className={css.etapas}>
+                <li><span>01</span><div><h3>Encontre seu próximo interesse</h3><p>Explore os cursos e escolha o que faz sentido para seus objetivos.</p></div></li>
+                <li><span>02</span><div><h3>Estude no seu ritmo</h3><p>Acompanhe as aulas e retome de onde parou, pelo site ou aplicativo.</p></div></li>
+                <li><span>03</span><div><h3>Transforme estudo em conquista</h3><p>Pratique o que aprendeu e conquiste seu certificado após a aprovação na prova.</p></div></li>
+            </ol>
         </section>
     );
 };

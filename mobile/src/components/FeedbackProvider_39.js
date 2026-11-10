@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Modal, Platform, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
 import AppIcon from "./AppIcon_39";
 import { colors } from "../styles_39";
+import Field from './Field_39';
 
 const FeedbackContext = createContext(null);
+const ESPERA_CONFIRMACAO_MS = 1500;
 
 export
 function useFeedback() {
@@ -19,7 +21,9 @@ function FeedbackProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [confirmacao, setConfirmacao] = useState(null);
   const [confirmacaoLiberada, setConfirmacaoLiberada] = useState(false);
+  const [textoConfirmacao, setTextoConfirmacao] = useState('');
   const liberarConfirmacaoEm = useRef(0);
+  const progressoConfirmacao = useRef(new Animated.Value(0)).current;
   const resolverConfirmacao = useRef(null);
 
   const mostrarAlerta = useCallback((titulo, descricao, tipo = "info") => {
@@ -29,23 +33,40 @@ function FeedbackProvider({ children }) {
   const confirmar = useCallback((opcoes) => new Promise((resolve) => {
     resolverConfirmacao.current?.(false);
     resolverConfirmacao.current = resolve;
-    liberarConfirmacaoEm.current = Date.now() + 1500;
+    liberarConfirmacaoEm.current = Date.now() + ESPERA_CONFIRMACAO_MS;
+    progressoConfirmacao.setValue(0);
     setConfirmacaoLiberada(false);
+    setTextoConfirmacao('');
     setConfirmacao({ ...opcoes });
-  }), []);
+  }), [progressoConfirmacao]);
 
   const concluirConfirmacao = useCallback((resultado) => {
     if (resultado && (!resolverConfirmacao.current || Date.now() < liberarConfirmacaoEm.current)) return;
-    resolverConfirmacao.current?.(resultado);
+    if (resultado && confirmacao?.campoTexto && !textoConfirmacao.trim()) return;
+    resolverConfirmacao.current?.(resultado && confirmacao?.campoTexto ? { confirmado: true, texto: textoConfirmacao.trim() } : resultado);
     resolverConfirmacao.current = null;
     setConfirmacao(null);
-  }, []);
+  }, [confirmacao?.campoTexto, textoConfirmacao]);
 
   useEffect(() => {
     if (!confirmacao) return undefined;
-    const timer = setTimeout(() => setConfirmacaoLiberada(true), Math.max(0, liberarConfirmacaoEm.current - Date.now()));
-    return () => clearTimeout(timer);
-  }, [confirmacao]);
+    const restante = Math.max(0, liberarConfirmacaoEm.current - Date.now());
+    const animacao = Animated.timing(progressoConfirmacao, {
+      toValue: 1,
+      duration: restante,
+      easing: Easing.linear,
+      useNativeDriver: false
+    });
+    animacao.start();
+    const timer = setTimeout(() => {
+      progressoConfirmacao.setValue(1);
+      setConfirmacaoLiberada(true);
+    }, restante);
+    return () => {
+      clearTimeout(timer);
+      animacao.stop();
+    };
+  }, [confirmacao, progressoConfirmacao]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -90,13 +111,14 @@ function FeedbackProvider({ children }) {
           statusBarTranslucent
           onRequestClose={() => concluirConfirmacao(false)}
         >
-          <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <View style={styles.confirmCard} accessibilityRole="alert">
               <AppIcon name="warning" size={64} color={colors.black} style={styles.warningIcon} />
               <Text style={styles.confirmTitle}>{confirmacao?.titulo || "Confirmar ação"}</Text>
               {confirmacao?.descricao ? (
                 <Text style={styles.confirmDescription}>{confirmacao.descricao}</Text>
               ) : null}
+              {confirmacao?.campoTexto && <View style={{ width: '100%', marginTop: 16 }}><Field label={confirmacao.campoTexto} value={textoConfirmacao} onChangeText={setTextoConfirmacao} multiline maxLength={500} style={{ maxHeight: 120 }} placeholder="Descreva o motivo" /></View>}
               <View style={styles.actions}>
                 <Pressable
                   onPress={() => concluirConfirmacao(false)}
@@ -107,16 +129,20 @@ function FeedbackProvider({ children }) {
                 </Pressable>
                 <Pressable
                   onPress={() => concluirConfirmacao(true)}
-                  disabled={!confirmacaoLiberada}
-                  accessibilityState={{ disabled: !confirmacaoLiberada }}
-                  style={[styles.actionButton, styles.confirmButton, !confirmacaoLiberada && styles.confirmButtonDisabled]}
+                  disabled={!confirmacaoLiberada || (!!confirmacao?.campoTexto && !textoConfirmacao.trim())}
+                  accessibilityState={{ disabled: !confirmacaoLiberada || (!!confirmacao?.campoTexto && !textoConfirmacao.trim()) }}
+                  style={[styles.actionButton, styles.confirmButton]}
                   accessibilityRole="button"
                 >
+                  <Animated.View pointerEvents="none" style={[styles.confirmFill, {
+                    backgroundColor: confirmacao?.variante === "primario" ? "#06a663" : "#b90000",
+                    width: progressoConfirmacao.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] })
+                  }]} />
                   <Text style={styles.confirmText}>{confirmacao?.textoConfirmar || "Confirmar"}</Text>
                 </Pressable>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
       </View>
     </FeedbackContext.Provider>
@@ -184,9 +210,9 @@ const styles = StyleSheet.create({
   actions: { width: "100%", flexDirection: "row", justifyContent: "center", gap: 12, marginTop: 26 },
   actionButton: { flex: 1, minHeight: 44, alignItems: "center", justifyContent: "center", paddingHorizontal: 12, borderRadius: 7, borderWidth: 1.5 },
   cancelButton: { backgroundColor: colors.white, borderColor: colors.black },
-  confirmButton: { backgroundColor: "#b90000", borderColor: "#b90000" },
-  confirmButtonDisabled: { opacity: 0.5 },
+  confirmButton: { backgroundColor: "#66716c", borderColor: "transparent", overflow: "hidden" },
+  confirmFill: { position: "absolute", left: 0, top: 0, bottom: 0 },
   cancelText: { color: colors.black, fontSize: 16, fontWeight: "600" },
-  confirmText: { color: colors.white, fontSize: 16, fontWeight: "600" }
+  confirmText: { color: colors.white, fontSize: 16, fontWeight: "600", zIndex: 1 }
 });
 /* Fim item 39 */

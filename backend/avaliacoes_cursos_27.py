@@ -1,15 +1,54 @@
 
-from flask import request
+from flask import jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app import app
 from banco_37 import get_db
 from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
-from professor_7 import para_blob_texto
+from professor_7 import de_blob_texto, para_blob_texto
 from servicos.avaliacao_curso import consultar_liberacao
-from utilitarios_backend_5_9_12_15_20_24_28_34 import _bloqueio_assinatura_aluno, exigir_tipo, proximo_id, resposta
+from utilitarios_backend_5_9_12_15_20_24_28_34 import _bloqueio_assinatura_aluno, _curso_do_professor, exigir_tipo, proximo_id, resposta
 
 
+
+
+@app.route("/professor/cursos/<int:id_curso>/avaliacoes", methods=["GET"])
+@jwt_required()
+def avaliacoes_curso_professor(id_curso):
+    negado = exigir_tipo(1)
+    if negado:
+        return negado
+    try:
+        pagina = max(1, int(request.args.get('pagina', 1)))
+    except (TypeError, ValueError):
+        return resposta("Página inválida.", 400)
+    con = get_db()
+    cursor = con.cursor()
+    try:
+        if not _curso_do_professor(cursor, id_curso, int(get_jwt_identity())):
+            return resposta("Curso não encontrado para este instrutor.", 404)
+        cursor.execute("""SELECT COUNT(*), AVG(CAST(NOTA AS DOUBLE PRECISION))
+            FROM AVALIACOES_CURSO WHERE ID_CURSO=?""", (id_curso,))
+        total, media = cursor.fetchone()
+        paginas = max(1, (total + 19) // 20)
+        pagina = min(pagina, paginas)
+        cursor.execute("""
+            SELECT FIRST 20 SKIP ? A.ID_AVALIACAO,U.NOME,U.IMAGEM_PERFIL,A.NOTA,A.COMENTARIO,A.CRIADO_EM,U.ID_PUBLICO,U.ARROBA,U.TIPO_USUARIO
+            FROM AVALIACOES_CURSO A JOIN USUARIOS U ON U.ID_USUARIO=A.ID_USUARIO
+            WHERE A.ID_CURSO=? ORDER BY A.CRIADO_EM DESC,A.ID_AVALIACAO DESC
+        """, ((pagina - 1) * 20, id_curso))
+        itens = [dict(id=r[0], nome=r[1] or 'Aluno', imagem_perfil=r[2], nota=int(r[3] or 0),
+                      comentario=de_blob_texto(r[4]) or '', data=r[5].isoformat() if r[5] else None,
+                      identificador=('@' + r[7] if r[8] == 1 and r[7] else r[6]) if r[8] in (1,2) else None)
+                 for r in cursor.fetchall()]
+        retorno = jsonify(itens=itens, total=total, media=round(float(media or 0), 2), pagina=pagina, paginas=paginas)
+        retorno.headers['Cache-Control'] = 'private, no-store'
+        return retorno
+    except Exception as erro:
+        return resposta(f"Erro ao consultar avaliações: {erro}", 500)
+    finally:
+        cursor.close()
+        con.close()
 
 
 # A nota do curso é liberada após 75% das aulas, sem exigir aprovação em prova.

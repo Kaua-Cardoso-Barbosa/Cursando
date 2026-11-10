@@ -323,7 +323,7 @@ def financeiro_aluno_admin(id_aluno):
 
     try:
         cursor.execute(
-            "SELECT ID_USUARIO, NOME, EMAIL, CPF, SITUACAO, EMAIL_VERIFICADO, CRIADO_EM "
+            "SELECT ID_USUARIO, NOME, EMAIL, CPF, SITUACAO, EMAIL_VERIFICADO, CRIADO_EM, MOTIVO_BLOQUEIO "
             "FROM USUARIOS WHERE ID_USUARIO = ? AND TIPO_USUARIO = 2",
             (id_aluno,),
         )
@@ -407,6 +407,7 @@ def financeiro_aluno_admin(id_aluno):
             "aluno": {
                 "id": aluno[0], "nome": aluno[1], "email": aluno[2], "cpf": aluno[3],
                 "bloqueado": aluno[4] == 1,
+                "motivo_bloqueio": aluno[7] if aluno[4] == 1 else None,
                 "email_verificado": None if aluno[5] is None else aluno[5] == 1,
                 "criado_em": aluno[6].isoformat() if aluno[6] else None,
             },

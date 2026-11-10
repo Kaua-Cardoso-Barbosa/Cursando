@@ -1,3 +1,4 @@
+import Select from './Select_39';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiRequest } from '../api/client_3_17';
@@ -5,8 +6,8 @@ import { colors, globalStyles } from '../styles_39';
 
 export const resultadoProva = (s) => ['Aguardando correção', 'Aprovado', 'Reprovado'][s] || 'Indisponível';
 export const corResultado = (s) => s === 1 ? '#076438' : s === 2 ? '#ac2027' : '#68501c';
-export function OpcoesProva({ titulo, valor, opcoes, onChange }) {
-    return <View style={styles.grupo}><Text style={styles.label}>{titulo}</Text><View style={styles.linha}>{opcoes.map(([v, texto]) => <Pressable key={v} onPress={() => onChange(v)} style={[styles.opcao, valor === v && styles.selecionada]}><Text style={valor === v ? styles.textoSelecionado : styles.label}>{texto}</Text></Pressable>)}</View></View>;
+export function OpcoesProva(props) {
+    return <Select {...props} />;
 }
 export default function HistoricoProvas({ token, idCurso, professor = false, atualizar = 0 }) {
     const perfil = professor ? 'professor' : 'aluno';

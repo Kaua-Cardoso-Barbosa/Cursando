@@ -324,6 +324,7 @@ def _garantir_estrutura_banco():
         
         
         # Sprint item 33 - Exibir total gasto e histórico de faturas do aluno - Consulta o histórico e os valores das faturas do aluno
+        _garantir_coluna(cursor, "USUARIOS", "MOTIVO_BLOQUEIO", "MOTIVO_BLOQUEIO VARCHAR(500)")
         _garantir_coluna(cursor, "ASSINATURAS", "VALOR", "VALOR NUMERIC(15,2)")
         _garantir_coluna(cursor, "ASSINATURAS", "DATA_VENCIMENTO", "DATA_VENCIMENTO TIMESTAMP")
         _garantir_coluna(cursor, "ASSINATURAS", "DATA_PAGAMENTO", "DATA_PAGAMENTO TIMESTAMP")

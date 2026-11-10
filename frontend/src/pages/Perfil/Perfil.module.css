@@ -1,0 +1,69 @@
+.pagina { max-width: 1240px; margin: auto; padding: 28px 24px 56px; color: #173e2c; }
+.pagina.embutido { max-width: none; margin: 0; padding: 0 0 24px; }
+.apresentacao.apresentacaoProfessor { background: #f0f7f2; border-color: #d2e5d8; }
+.apresentacaoProfessor .avatar, .apresentacaoProfessor .avatarVazio { border: 4px solid #fff; box-shadow: 0 0 0 1px #d2e5d8; }
+.areas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 18px 0 0; color: #607468; font-size: 13px; }
+.areas .area { padding: 5px 10px; background: #eff6f1; border-radius: 6px; color: #386149; }
+.navegacao { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; padding-bottom: 16px; border-bottom: 1px solid #dfe9e3; }
+.navegacao a { display: inline-flex; padding: 9px 14px; border: 1px solid #dfe9e3; border-radius: 8px; background: #fff; color: #087044; font-size: 14px; font-weight: 650; }
+.navegacao a:hover { background: #eff8f2; }
+.gradeAulas { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+.playAula { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.08); color: #fff; font-size: 42px; pointer-events: none; }
+.playAula svg { filter: drop-shadow(0 2px 5px rgba(0,0,0,.5)); }
+.metadadosAula { display: grid; gap: 5px; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.metadadosAula strong { color: #355343; font-weight: 600; }
+.metadadosAula time { color: #7b8a80; font-size: 12px; }
+.maisAulas { display: flex; justify-content: center; margin-top: 22px; }
+.maisAulas button { padding: 10px 18px; border-radius: 8px; min-height: 42px; font-size: 14px; cursor: pointer; }
+.filtros[hidden] { display: none; }
+@media (min-width: 651px) and (max-width: 900px) { .gradeAulas { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+.gradeConquistas { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 20px; }
+.secao { scroll-margin-top: 90px; }
+.editar { font: inherit; cursor: pointer; background: #fff; }
+@media (max-width: 650px) { .gradeAulas { grid-template-columns: minmax(0,1fr); } .gradeConquistas { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; } }
+@media (max-width: 380px) { .gradeConquistas { grid-template-columns: minmax(0,1fr); } }
+.pagina *, .pagina *::before, .pagina *::after { box-sizing: border-box; }
+.apresentacao { display: flex; align-items: center; gap: 24px; padding: 28px; border: 1px solid #dfe9e3; border-radius: 14px; background: #fff; }
+.avatar, .avatarVazio { width: 104px; height: 104px; border-radius: 50%; flex-shrink: 0; object-fit: cover; color: #809b8b; }
+.identidade { flex: 1; min-width: 0; }
+.identidade h1 { margin: 6px 0 10px; color: #173e2c; font-size: clamp(25px,3vw,36px); font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.etiqueta { font-size: 12px; font-weight: 750; letter-spacing: .1em; color: #087044; }
+.identidade .arroba { color: #087044; font-weight: 650; margin-bottom: 8px; }
+.identidade p, .nota { font-size: 15px; color: #5a7063; line-height: 1.6; }
+.resumo { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 16px; font-size: 14px; color: #5a7063; }
+.resumo strong { color: #173e2c; }
+.editar, .link { display: inline-flex; flex-shrink: 0; border: 1px solid #cbd9d0; border-radius: 8px; color: #087044; padding: 10px 16px; font-size: 14px; font-weight: 650; }
+.editar:hover, .link:hover { background: #eff8f2; }
+.nota { padding: 16px 0 0; margin: 0; }
+.secao { margin-top: 36px; }
+.grade { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+.filtros { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; align-items: end; padding: 20px; margin-bottom: 18px; border: 1px solid #dfe9e3; border-radius: 12px; background: #f5f9f6; }
+.filtros label { display: grid; gap: 7px; font-size: 14px; color: #355343; }
+.filtros > div { min-width: 0; margin: 0; }
+.filtros input, .filtros select { width: 100%; min-width: 0; min-height: 42px; padding: 8px 10px; border: 1px solid #cbd9d0; border-radius: 8px; font: inherit; font-size: 14px; color: #173e2c; background: #fff; }
+.acoesFiltros, .paginacao { display: flex; align-items: center; gap: 12px; }
+.acoesFiltros button, .paginacao button { min-height: 42px; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+.acoesFiltros .limpar { border: 1px solid #cbd9d0; background: #fff; color: #355343; }
+.paginacao { justify-content: center; margin-top: 24px; font-size: 14px; }
+.pagina button:disabled { cursor: not-allowed; opacity: .55; }
+.pagina button:focus-visible, .pagina a:focus-visible, .pagina select:focus-visible, .pagina input:focus-visible { outline: 3px solid #06a66380; outline-offset: 3px; }
+.contagem { font-size: 14px; color: #5a7063; margin-bottom: 16px; }
+.metadados { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; line-height: 1.5; color: #5a7063; }
+.metadados span { overflow-wrap: anywhere; }
+.metadados svg { color: #9a6b00; }
+.pagina .progresso { display: grid; gap: 6px; width: 100%; font-size: 14px; color: #087044; }
+.progresso progress { width: 100%; height: 8px; border: 0; border-radius: 6px; overflow: hidden; background: #e4eee7; accent-color: #087044; }
+.progresso progress::-webkit-progress-bar { background: #e4eee7; }
+.progresso progress::-webkit-progress-value { background: #087044; border-radius: 6px; }
+.progresso small { color: #5a7063; }
+.vazio { padding: 28px 20px; margin: 16px 0 0; border: 1px dashed #cbd9d0; border-radius: 12px; background: #f5f9f6; text-align: center; color: #5a7063; line-height: 1.6; }
+.vazio h1 { font-size: 28px; }
+.vazio .link { margin-top: 16px; }
+.avaliacoes { display: grid; gap: 16px; }
+.avaliacao { padding: 20px; border: 1px solid #dfe9e3; border-radius: 12px; background: #fff; }
+.avaliacao > div { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.avaliacao h3 { margin: 0 0 10px; font-size: 17px; line-height: 1.5; color: #173e2c; }
+.avaliacao time { flex-shrink: 0; font-size: 12px; color: #5a7063; }
+.avaliacao p { margin-top: 10px; font-size: 15px; line-height: 1.6; color: #4d6457; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 900px) { .grade { grid-template-columns: repeat(2,minmax(0,1fr)); } .filtros { grid-template-columns: repeat(2,minmax(0,1fr)); } .apresentacao { flex-wrap: wrap; } }
+@media (max-width: 560px) { .pagina { padding: 20px 16px 36px; } .grade, .filtros { grid-template-columns: minmax(0,1fr); } .apresentacao { padding: 20px; gap: 18px; } .avatar, .avatarVazio { width: 76px; height: 76px; } .identidade { flex-basis: calc(100% - 94px); } .editar { width: 100%; justify-content: center; } .avaliacao > div { flex-direction: column; gap: 0; } .paginacao { gap: 8px; } }

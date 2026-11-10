@@ -1,10 +1,14 @@
-import { fonteImagemCurso, fonteImagemAula } from '../imagens_padrao_39';
+import Abas from '../components/Abas_39';
+import BotaoVoltar from '../components/BotaoVoltar_39';
+import AulaCard from '../components/AulaCard_39';
+import { fonteImagemCurso } from '../imagens_padrao_39';
 import { useEffect, useState } from "react";
 import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
-import { getApiBaseUrl, resolverUrlMidia } from "../api/client_3_17";
-import AppIcon from "../components/AppIcon_39";
+import { getApiBaseUrl } from "../api/client_3_17";
 import EtapaModulo from "../components/EtapaModulo_6_39";
+import AvaliacoesCurso from '../components/AvaliacoesCurso_39';
+import { corAvaliacao } from '../components/CursoCard_39';
 import { colors, globalStyles } from "../styles_39";
 
 
@@ -50,19 +54,10 @@ function ImagemComplemento({ material, token }) {
 }
 
 /* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Formata a posição salva para exibir o ponto de retomada */
-function formatarPosicaoAula(segundos) {
-  const total = Math.max(0, Math.floor(Number(segundos) || 0));
-  const horas = Math.floor(total / 3600);
-  const minutos = Math.floor((total % 3600) / 60);
-  const restante = total % 60;
-  return horas > 0
-    ? `${horas}:${String(minutos).padStart(2, "0")}:${String(restante).padStart(2, "0")}`
-    : `${minutos}:${String(restante).padStart(2, "0")}`;
-}
 /* Fim item 4 */
 
 export default
-function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpenLesson, onOpenMaterial, onEnroll, onOpenExam, onDownloadCertificate, onReview }) {
+function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpenLesson, onOpenMaterial, onEnroll, onOpenExam, onDownloadCertificate, onReview, onOpenProfile, moduloSelecionado, onModuloChange }) {
 
   const curso = detalhe?.curso;
   const aulas = detalhe?.aulas || [];
@@ -85,9 +80,12 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
   const [baixandoCertificado, setBaixandoCertificado] = useState(false);
   /* Fim item 5 */
   /* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Mantém os dados do módulo e sua seleção */
-  const [moduloAberto, setModuloAberto] = useState(null);
+  const [moduloLocal, setModuloLocal] = useState(null);
+  const moduloAberto = onModuloChange ? moduloSelecionado : moduloLocal;
+  const setModuloAberto = onModuloChange || setModuloLocal;
   /* Fim item 6 */
   const [abaCurso, setAbaCurso] = useState("modulos");
+  const moduloAtual = modulos.find(m => Number(m.id) === Number(moduloAberto));
 
   /* Sprint item 5 - Gerar certificado ao concluir o curso - Solicita o PDF e inicia o download do certificado */
   async function baixarCertificado() {
@@ -116,12 +114,9 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
       contentContainerStyle={globalStyles.page}
       refreshControl={<RefreshControl refreshing={carregando} onRefresh={onRefresh} />}
     >
-      <Pressable style={styles.back} onPress={onBack}>
-        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
-        <Text style={styles.backText}>Voltar</Text>
-      </Pressable>
+      <BotaoVoltar onPress={moduloAtual && abaCurso === "modulos" ? () => setModuloAberto(null) : onBack}>{moduloAtual && abaCurso === "modulos" ? "Voltar aos módulos" : "Voltar aos cursos"}</BotaoVoltar>
 
-      <View style={styles.courseHero}>
+      {(!moduloAtual || abaCurso !== "modulos") && <View style={styles.courseHero}>
         <Image
           source={fonteImagemCurso(curso?.imagem)}
           style={styles.courseImage}
@@ -129,7 +124,7 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
         <View style={styles.courseInfo}>
           <Text style={styles.courseKicker}>{modulos.length ? "Modulos do curso" : "Video-aulas"}</Text>
           <Text style={styles.courseTitle}>{curso?.titulo || "Curso"}</Text>
-          {curso?.professor ? <Text style={styles.courseDescription}>Professor(a): {curso.professor}</Text> : null}
+          {curso?.professores?.length ? curso.professores.map(p => <Pressable key={p.id} onPress={() => onOpenProfile?.(p.identificador)} disabled={!p.identificador}><Text style={[styles.courseDescription, { color: colors.darkGreen, textDecorationLine: 'underline' }]}>Professor(a): {p.nome}</Text></Pressable>) : curso?.professor ? <Text style={styles.courseDescription}>Professor(a): {curso.professor}</Text> : null}
           {curso?.descricao ? <Text style={styles.courseDescription}>{curso.descricao}</Text> : null}
           {curso && !curso.matriculado ? (
             <Pressable style={styles.enrollButton} onPress={() => onEnroll?.(curso)} disabled={carregando}>
@@ -137,59 +132,23 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
             </Pressable>
           ) : null}
         </View>
-      </View>
+      </View>}
 
       {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
-        {[["modulos", "Módulos"], ["complementos", "Complementos"], ...(curso?.matriculado && prova ? [["prova", "Provas e histórico"]] : [])].map(([chave, rotulo]) => <Pressable key={chave} onPress={() => setAbaCurso(chave)} style={[styles.tab, abaCurso === chave && styles.tabActive]}><Text style={[styles.tabText, abaCurso === chave && styles.tabTextActive]}>{rotulo}</Text></Pressable>)}
-      </ScrollView>
+      <Abas valor={abaCurso} onChange={setAbaCurso} rotulo="Seções do curso" opcoes={[["modulos", "Módulos"], ["complementos", "Complementos"], ...(curso?.matriculado && prova ? [["prova", "Provas e histórico"]] : [])]} />
       {/* Fim item 20 */}
 
       {abaCurso === "modulos" && <View style={styles.list}>
-        {modulos.map((modulo, indice) => (
-          <EtapaModulo key={modulo.id} modulo={modulo} numero={indice + 1} ultima={indice === modulos.length - 1}
-            expandido={Number(moduloAberto) === Number(modulo.id)}
-            onAbrir={() => setModuloAberto(Number(moduloAberto) === Number(modulo.id) ? null : Number(modulo.id))}>
-            {/* Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e as aulas vinculadas ao curso */}
-            {/* Fim item 6 */}
-            {Number(moduloAberto) === Number(modulo.id) ? (
-              <View style={styles.moduleLessons}>
-                {(modulo.aulas || []).map((aula) => (
-                  <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
-                    <View style={styles.preview}>
-                      <Image source={fonteImagemAula(aula.thumb)} style={styles.image} />
-                      <View style={styles.playBadge}><AppIcon name="play" size={42} color={colors.black} style={styles.play} /></View>
-                      {aula.assistida ? <AppIcon name="checkmark-circle" size={30} color={colors.green} style={styles.check} /> : null}
-                    </View>
-                    {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
-                    <View style={styles.info}>
-                      <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
-                      {Number(aula.progresso_segundos) > 0 ? <Text style={styles.resumeLabel}>Continuar de {formatarPosicaoAula(aula.progresso_segundos)}</Text> : null}
-                    </View>
-                    {/* Fim item 4 */}
-                  </Pressable>
-                ))}
-                {!modulo.aulas?.length ? <Text style={globalStyles.message}>Nenhuma aula publicada neste módulo.</Text> : null}
-              </View>
-            ) : null}
-          </EtapaModulo>
-        ))}
-        {(modulos.length === 0 ? aulas : aulasSemModulo).map((aula) => (
-          <Pressable key={aula.id} style={[globalStyles.card, styles.card]} onPress={() => curso?.matriculado && onOpenLesson(aula)} disabled={!curso?.matriculado}>
-            <View style={styles.preview}>
-              <Image source={fonteImagemAula(aula.thumb)} style={styles.image} />
-              <View style={styles.playBadge}><AppIcon name="play" size={42} color={colors.black} style={styles.play} /></View>
-              {aula.assistida ? <AppIcon name="checkmark-circle" size={30} color={colors.green} style={styles.check} /> : null}
-            </View>
-            {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
-            <View style={styles.info}>
-              <Text style={styles.lessonTitle} numberOfLines={1}>{aula.titulo}</Text>
-              {Number(aula.progresso_segundos) > 0 ? <Text style={styles.resumeLabel}>Continuar de {formatarPosicaoAula(aula.progresso_segundos)}</Text> : null}
-            </View>
-            {/* Fim item 4 */}
-          </Pressable>
-        ))}
-        {!carregando && aulas.length === 0 && modulos.length === 0 ? <Text style={globalStyles.message}>Nenhuma aula publicada neste curso.</Text> : null}
+        {moduloAtual ? <>
+          <View style={{ gap: 8 }}><Text style={globalStyles.title}>Módulo {modulos.indexOf(moduloAtual) + 1} · {moduloAtual.titulo}</Text>{!!moduloAtual.descricao && <Text style={styles.courseDescription}>{moduloAtual.descricao}</Text>}<Text style={styles.courseDescription}>{moduloAtual.aulas?.length || 0} aulas · {(moduloAtual.aulas || []).filter(a => a.assistida).length} concluídas</Text></View>
+          {(moduloAtual.aulas || []).map((aula, indice) => <AulaCard key={aula.id} aula={aula} compacto numero={indice + 1} onOpen={curso?.matriculado ? onOpenLesson : undefined} />)}
+          {!moduloAtual.aulas?.length && <Text style={globalStyles.message}>Nenhuma aula publicada neste módulo.</Text>}
+        </> : <>
+          {modulos.map((modulo, indice) => <EtapaModulo key={modulo.id} modulo={modulo} numero={indice + 1} ultima={indice === modulos.length - 1} onAbrir={() => setModuloAberto(Number(modulo.id))} />)}
+          {!!modulos.length && !!aulasSemModulo.length && <Text style={styles.sectionTitle}>Aulas sem módulo</Text>}
+          {(modulos.length === 0 ? aulas : aulasSemModulo).map((aula, indice) => <AulaCard key={aula.id} aula={aula} compacto numero={indice + 1} onOpen={curso?.matriculado ? onOpenLesson : undefined} />)}
+          {!carregando && !aulas.length && !modulos.length && <Text style={globalStyles.message}>Nenhuma aula publicada neste curso.</Text>}
+        </>}
       </View>}
 
       {abaCurso === "complementos" && <View style={styles.materials}>
@@ -260,7 +219,7 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
                   {/* Fim item 27 */}
                   {[1, 2, 3, 4, 5].map((nota) => (
                     /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */ <Pressable key={nota} accessibilityRole="radio" accessibilityState={{ selected: avaliacao.nota === nota }} accessibilityLabel={`${nota} ${nota === 1 ? "estrela" : "estrelas"}`} onPress={() => { setAvaliacao({ ...avaliacao, nota }); setAvaliacaoEnviada(false); }} disabled={!podeAvaliar || enviandoAvaliacao} style={styles.ratingChoice}>
-                      <Text style={[styles.ratingStar, nota <= avaliacao.nota && styles.ratingStarSelected]}>★</Text>
+                      <Text style={[styles.ratingStar, nota <= avaliacao.nota && { color: corAvaliacao(avaliacao.nota) }]}>★</Text>
                     </Pressable> /* Fim item 27 */
                   ))}
                   {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
@@ -292,36 +251,7 @@ function AulasAlunoScreen({ detalhe, token, carregando, onRefresh, onBack, onOpe
               </View>
       ) : null}
 
-      <View style={styles.reviewsSection}>
-        <Text style={styles.sectionTitle}>Comentários</Text>
-        {detalhe?.avaliacoes?.length ? detalhe.avaliacoes.map((avaliacao) => {
-          /* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */
-          const nota = Math.min(5, Math.max(0, Number(avaliacao.nota) || 0));
-          /* Fim item 27 */
-          return (
-            <View key={avaliacao.id} style={[globalStyles.card, styles.reviewCard]}>
-              <View style={styles.reviewHeader}>
-                {avaliacao.imagem_perfil ? (
-                  <Image source={{ uri: resolverUrlMidia(avaliacao.imagem_perfil) }} style={styles.reviewAvatar} />
-                ) : (
-                  <View style={styles.reviewAvatarFallback}><AppIcon name="person-outline" size={22} color={colors.darkGreen} /></View>
-                )}
-                <View style={styles.reviewAuthor}>
-                  <Text style={styles.reviewName}>{avaliacao.nome || "Aluno"}</Text>
-                  <Text accessibilityLabel={`${nota} de 5 estrelas`}>
-                    <Text style={styles.reviewStars}>{"★".repeat(nota)}</Text>
-                    <Text style={styles.reviewEmptyStars}>{"☆".repeat(5 - nota)}</Text>
-                    <Text style={styles.reviewScore}> {nota}/5</Text>
-                  </Text>
-                </View>
-              </View>
-              {/* Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Envia ou apresenta a nota e o comentário da avaliação do aluno */}
-              <Text style={styles.reviewComment}>{avaliacao.comentario || "Sem comentário escrito."}</Text>
-              {/* Fim item 27 */}
-            </View>
-          );
-        }) : <Text style={globalStyles.message}>Este curso ainda não recebeu comentários.</Text>}
-      </View>
+      <View style={styles.reviewsSection}><AvaliacoesCurso itens={detalhe?.avaliacoes || []} onOpenProfile={onOpenProfile} /></View>
     </ScrollView>
   );
 }
@@ -361,7 +291,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase"
   },
   courseTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 25,
     lineHeight: 30,
     fontWeight: "700"
@@ -453,7 +383,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10
   },
   lessonTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 21,
     lineHeight: 25
   },
@@ -498,13 +428,13 @@ const styles = StyleSheet.create({
   reviewAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.softGray },
   reviewAvatarFallback: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.softGray, alignItems: "center", justifyContent: "center" },
   reviewAuthor: { flex: 1, gap: 2 },
-  reviewName: { color: colors.black, fontSize: 15, fontWeight: "800" },
+  reviewName: { color: colors.ink, fontSize: 15, fontWeight: "800" },
   reviewStars: { color: "#e5a400", fontSize: 17 },
   reviewEmptyStars: { color: colors.border, fontSize: 17 },
   reviewScore: { color: colors.textMuted, fontSize: 12 },
-  reviewComment: { color: colors.black, fontSize: 14, lineHeight: 20 },
+  reviewComment: { color: colors.ink, fontSize: 14, lineHeight: 20 },
   sectionTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 24,
     lineHeight: 30
   },
@@ -521,7 +451,7 @@ const styles = StyleSheet.create({
   ratingStarSelected: { color: "#e5a400" },
   ratingCount: { color: colors.textMuted, fontSize: 13, marginLeft: 5 },
   materialTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 18,
     fontWeight: "700"
   },

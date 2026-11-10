@@ -1,5 +1,6 @@
 import React from 'react';
 import css from './Rodape_38.module.css'
+import { Link } from 'react-router-dom';
 
 const Rodape = () => {
     return (
@@ -22,16 +23,15 @@ const Rodape = () => {
 
             <div className={css['coluna-rodape']}>
                 <h4>Navegação</h4>
-                <a href="#">Home</a>
-                <a href="#">Login</a>
-                <a href="#">Cadastro</a>
+                <Link to="/">Home</Link>
+                <Link to="/login">Login</Link>
+                <Link to="/cadastro">Cadastro</Link>
             </div>
 
             <div className={css['coluna-rodape']}>
-                <h4>Baixe nosso aplicativo</h4>
-                <a href="#">Playstore</a>
-                <a href="#">Linux</a>
-                <a href="#">Windows</a>
+                <h4>Aprenda com a Cursando</h4>
+                <p>Conhecimento para seus próximos passos.</p>
+                <a href="#cursos">Explore os cursos</a>
             </div>
         </footer>
     );

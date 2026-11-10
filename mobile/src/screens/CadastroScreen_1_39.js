@@ -1,3 +1,4 @@
+import BotaoVoltar from '../components/BotaoVoltar_39';
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -147,9 +148,7 @@ async function cadastrar() {
               {carregando ? <ActivityIndicator color={colors.white} /> : <Text style={globalStyles.buttonText}>Cadastrar</Text>}
             </Pressable>
 
-            <Pressable style={styles.backButton} onPress={onBack} disabled={carregando}>
-              <Text style={styles.backText}>Ja tenho cadastro</Text>
-            </Pressable>
+            <BotaoVoltar onPress={onBack} disabled={carregando}>Voltar ao login</BotaoVoltar>
           </View>
           {/* Fim item 1 */}
         </ScrollView>
@@ -176,18 +175,18 @@ const styles = StyleSheet.create({
     gap: 18
   },
   title: {
-    color: colors.black,
-    fontSize: 34,
-    lineHeight: 40,
+    color: colors.ink,
+    fontSize: 28,
+    lineHeight: 36,
     fontWeight: "700",
     textAlign: "center"
   },
   card: {
     width: "100%",
     maxWidth: 440,
-    borderWidth: 1.5,
-    borderColor: colors.black,
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
     backgroundColor: colors.white,
     paddingHorizontal: 22,
     paddingTop: 24,

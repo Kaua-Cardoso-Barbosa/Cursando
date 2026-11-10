@@ -4,6 +4,7 @@ import jwt
 import datetime
 from app import app
 from banco_37 import get_db
+from perfis_identidade import preparar_identidades, identidade_publica
 from auditoria_24_37 import garantir_gatilhos_auditoria
 from flask import request, render_template, jsonify
 import random
@@ -104,6 +105,7 @@ def garantir_coluna_imagem_perfil(cursor, con):
 
 @app.route('/verificar_token', methods=['GET'])
 def verificar_token():
+    preparar_identidades()
     # A assinatura e a expiração são verificadas pelo JWT; perfil não altera sua validade.
     from flask_jwt_extended.exceptions import JWTExtendedException
     from jwt.exceptions import PyJWTError
@@ -123,7 +125,8 @@ def verificar_token():
             return jsonify(autenticado=False), 401
         retorno = jsonify(autenticado=True, id_usuario=get_jwt_identity(),
                           nome=usuario[0], imagem_perfil=usuario[1], tipo=usuario[2],
-                          expira_em=get_jwt()['exp'], redirecionar=None)
+                          expira_em=get_jwt()['exp'], redirecionar=None,
+                          **identidade_publica(cursor, get_jwt_identity()))
         retorno.headers['Cache-Control'] = 'no-store'
         return retorno
     except Exception:

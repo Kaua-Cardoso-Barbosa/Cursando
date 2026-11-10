@@ -1,3 +1,4 @@
+import BotaoVoltar from '../components/BotaoVoltar_39';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiRequest } from '../api/client_3_17';
@@ -47,20 +48,20 @@ export default function ProvasProfessorScreen({ curso, cursos = [], token, onBac
         if (sim) executar(async () => { await apiRequest(`/professor/provas/${prova.id}/${tipo}`, { method: 'PATCH' }, token); await carregar(prova.id); });
     }
     return <ScrollView contentContainerStyle={globalStyles.page}>
-        <Pressable style={globalStyles.secondaryButton} onPress={onBack}><Text style={globalStyles.secondaryText}>Voltar aos cursos</Text></Pressable>
+        <BotaoVoltar onPress={onBack}>Voltar aos cursos</BotaoVoltar>
         <Text style={globalStyles.title}>Provas do curso</Text>
-        <OpcoesProva titulo="Curso" valor={idCurso} opcoes={cursos.map((c) => [String(c.id), c.titulo])} onChange={(v) => { if (!ocupado) setIdCurso(v); }} />
+        <OpcoesProva titulo="Curso" valor={idCurso} disabled={ocupado} opcoes={cursos.map((c) => [String(c.id), c.titulo])} onChange={setIdCurso} />
         <View style={[globalStyles.card, styles.card]}>
             <Text>Provas publicadas são permanentes. Crie outra versão para alterar questões ou percentual de aprovação.</Text>
             <Pressable disabled={ocupado} style={globalStyles.secondaryButton} onPress={novo}><Text style={globalStyles.secondaryText}>Novo rascunho</Text></Pressable>
-            {provas.map((p) => <Pressable key={p.id} disabled={ocupado} style={styles.prova} onPress={() => executar(() => abrir(p.id))}><Text style={styles.label}>{p.titulo} · v{p.versao}</Text><Text>{p.estado} · mínimo {p.nota_minima}%</Text></Pressable>)}
+            <OpcoesProva titulo="Prova" valor={String(prova?.id || '')} disabled={ocupado} opcoes={[["", "Novo rascunho"], ...provas.map(p => [String(p.id), `${p.titulo} · v${p.versao} · ${p.estado}`])]} onChange={id => executar(() => abrir(id))} />
             <Text style={styles.label}>{prova ? `Versão ${prova.versao} · ${prova.estado}` : 'Novo rascunho'}</Text>
             <Text style={styles.label}>Título</Text><TextInput style={globalStyles.input} editable={editavel && !ocupado} maxLength={150} value={titulo} onChangeText={setTitulo} />
             <Text style={styles.label}>Percentual mínimo para aprovação (50% a 100%)</Text><TextInput style={globalStyles.input} editable={editavel && !ocupado} keyboardType="number-pad" value={minimo} onChangeText={setMinimo} />
             {questoes.map((q, i) => <View key={i} style={styles.questao}>
                 <Text style={styles.label}>Questão {i + 1}</Text>
                 <TextInput style={globalStyles.input} multiline editable={editavel && !ocupado} placeholder="Enunciado" value={q.enunciado} onChangeText={(v) => alterar(i, 'enunciado', v)} />
-                {editavel ? <OpcoesProva titulo="Tipo" valor={q.tipo} opcoes={[["objetiva", "Objetiva"], ["dissertativa", "Dissertativa"]]} onChange={(v) => alterar(i, 'tipo', v)} /> : <Text>{q.tipo}</Text>}
+                {editavel ? <OpcoesProva titulo="Tipo" valor={q.tipo} disabled={ocupado} opcoes={[["objetiva", "Objetiva"], ["dissertativa", "Dissertativa"]]} onChange={(v) => alterar(i, 'tipo', v)} /> : <Text>{q.tipo}</Text>}
                 {q.tipo === 'objetiva' && <>
                     <TextInput style={globalStyles.input} multiline editable={editavel && !ocupado} placeholder="Alternativas, uma por linha" value={q.alternativas} onChangeText={(v) => { alterar(i, 'alternativas', v); alterar(i, 'resposta_esperada', ''); }} />
                     <Text>Alternativa correta:</Text>

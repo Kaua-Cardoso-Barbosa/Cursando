@@ -2,6 +2,7 @@
   "expo": {
     "name": "Cursando",
     "slug": "cursando-mobile",
+    "scheme": "cursando",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -30,7 +31,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "O Cursando acessa suas fotos para adicionar imagens a cursos e módulos.",
+          "photosPermission": "O Cursando acessa suas fotos para escolher sua imagem de perfil e as capas dos cursos.",
           "cameraPermission": "O Cursando usa a câmera para fotografar capas de cursos e módulos.",
           "microphonePermission": false
         }

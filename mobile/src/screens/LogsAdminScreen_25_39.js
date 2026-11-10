@@ -1,3 +1,4 @@
+import Select from '../components/Select_39';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest } from "../api/client_3_17";
@@ -75,13 +76,7 @@ async (offset = 0, anexar = false) => {
       <Text style={styles.title}>Atividade do sistema</Text>
       <Text style={styles.subtitle}>Consulte as acoes registradas por perfil.</Text>
       {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe a consulta dos logs ao administrador e aplica os filtros */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choices}>
-        {perfis.map((item) => (
-          <Pressable key={item.id} onPress={() => { setPerfil(item.id); setEvento(""); setAberto(null); }} style={[styles.choice, perfil === item.id && styles.choiceActive]}>
-            <Text style={[styles.choiceText, perfil === item.id && styles.choiceTextActive]}>{item.nome}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <Select titulo="Perfil" valor={perfil} opcoes={perfis.map(item => [item.id, item.nome])} onChange={id => { setPerfil(id); setEvento(""); setAberto(null); }} />
       {/* Fim item 25 */}
                                                                                                                                                                                        
       <TextInput value={busca} onChangeText={setBusca} placeholder="Buscar nome, email ou acao" placeholderTextColor={colors.textMuted} style={styles.search} />
@@ -93,13 +88,7 @@ async (offset = 0, anexar = false) => {
       </View>
       {/* Fim item 25 */}
       {/* Sprint item 25 - Permitir acesso e relatórios dos logs somente para o administrador por data e usuário - Restringe a consulta dos logs ao administrador e aplica os filtros */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choices}>
-        {(eventosPorPerfil[perfil] || eventosPorPerfil["0"]).map(([id, nome]) => (
-          <Pressable key={id || "todos"} onPress={() => setEvento(id)} style={[styles.choice, evento === id && styles.choiceActive]}>
-            <Text style={[styles.choiceText, evento === id && styles.choiceTextActive]}>{nome}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <Select titulo="Ação" valor={evento} opcoes={eventosPorPerfil[perfil] || eventosPorPerfil["0"]} onChange={setEvento} />
       {/* Fim item 25 */}
       {carregando && !logs.length ? <ActivityIndicator color={colors.green} style={styles.loading} /> : null}
       {!carregando && !logs.length ? <Text style={styles.empty}>Nenhum registro encontrado para esses filtros.</Text> : null}
@@ -142,15 +131,15 @@ async (offset = 0, anexar = false) => {
 /* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.gray },
-  content: { padding: 20, paddingBottom: 112, gap: 12 },
-  title: { color: colors.black, fontSize: 24, fontWeight: "800" },
+  content: { padding: 20, paddingBottom: 24, gap: 12 },
+  title: { color: colors.ink, fontSize: 24, fontWeight: "800" },
   subtitle: { color: colors.textMuted, fontSize: 14 },
   choices: { gap: 8, paddingVertical: 4 },
   choice: { borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: colors.white },
   choiceActive: { borderColor: colors.darkGreen, backgroundColor: colors.darkGreen },
-  choiceText: { color: colors.black, fontSize: 12, fontWeight: "700" },
+  choiceText: { color: colors.ink, fontSize: 12, fontWeight: "700" },
   choiceTextActive: { color: colors.white },
-  search: { backgroundColor: colors.white, color: colors.black, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  search: { backgroundColor: colors.white, color: colors.ink, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
   dateFilters: { flexDirection: "row", gap: 8 },
   dateInput: { flex: 1, minWidth: 0, fontSize: 12 },
   loading: { padding: 20 },
@@ -159,12 +148,12 @@ const styles = StyleSheet.create({
   cardTop: { gap: 5 },
   action: { color: colors.darkGreen, fontSize: 14, fontWeight: "800" },
   date: { color: colors.textMuted, fontSize: 11 },
-  actor: { color: colors.black, fontSize: 15, fontWeight: "700" },
+  actor: { color: colors.ink, fontSize: 15, fontWeight: "700" },
   email: { color: colors.textMuted, fontSize: 12 },
-  summary: { color: colors.black, fontSize: 13, marginTop: 3 },
+  summary: { color: colors.ink, fontSize: 13, marginTop: 3 },
   tap: { color: colors.darkGreen, fontSize: 11, fontWeight: "700", marginTop: 4 },
   detail: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 10, gap: 5 },
   detailLabel: { color: colors.textMuted, fontSize: 11, fontWeight: "700", marginTop: 4 },
-  json: { color: colors.black, fontSize: 11, fontFamily: "monospace" }
+  json: { color: colors.ink, fontSize: 11, fontFamily: "monospace" }
 });
 /* Fim item 39 */

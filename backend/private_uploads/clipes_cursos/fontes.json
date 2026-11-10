@@ -1,0 +1,74 @@
+{
+  "abaco": {
+    "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\33747498-720p.mp4",
+    "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\33747498.jpg",
+    "duracao": 11.04,
+    "autor": "Gokuldham Nar",
+    "fonte": "https://www.pexels.com/video/33747498/",
+    "download": "https://videos.pexels.com/video-files/33747498/14327783_3840_2160_25fps.mp4",
+    "licenca": "https://www.pexels.com/license/"
+  },
+  "equacoes": {
+    "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\9365666-720p.mp4",
+    "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\9365666.jpg",
+    "duracao": 18.28,
+    "autor": "Mikhail Nilov",
+    "fonte": "https://www.pexels.com/video/9365666/",
+    "download": "https://videos.pexels.com/video-files/9365666/9365666-hd_1920_1080_25fps.mp4",
+    "licenca": "https://www.pexels.com/license/"
+  },
+  "calculadora": {
+    "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\6963484-720p.mp4",
+    "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\6963484.jpg",
+    "duracao": 16.0,
+    "autor": "Mikhail Nilov",
+    "fonte": "https://www.pexels.com/video/6963484/",
+    "download": "https://videos.pexels.com/video-files/6963484/6963484-hd_1920_1080_25fps.mp4",
+    "licenca": "https://www.pexels.com/license/"
+  },
+  "planejamento": {
+    "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\7660015-720p.mp4",
+    "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\7660015.jpg",
+    "duracao": 10.28,
+    "autor": "Alena Darmel",
+    "fonte": "https://www.pexels.com/video/7660015/",
+    "download": "https://videos.pexels.com/video-files/7660015/7660015-hd_1920_1080_25fps.mp4",
+    "licenca": "https://www.pexels.com/license/"
+  },
+  "metricas": {
+    "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\8141798-720p.mp4",
+    "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\8141798.jpg",
+    "duracao": 10.88,
+    "autor": "Alena Darmel",
+    "fonte": "https://www.pexels.com/video/8141798/",
+    "download": "https://videos.pexels.com/video-files/8141798/8141798-hd_1920_1080_25fps.mp4",
+    "licenca": "https://www.pexels.com/license/"
+  },
+  "aves": {
+    "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\5324494-720p.mp4",
+    "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\5324494.jpg",
+    "duracao": 20.0,
+    "autor": "Biplab Sau",
+    "fonte": "https://www.pexels.com/video/5324494/",
+    "download": "https://videos.pexels.com/video-files/5324494/5324494-hd_1920_1080_25fps.mp4",
+    "licenca": "https://www.pexels.com/license/"
+  },
+  "rua": {
+    "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\3772428-720p.mp4",
+    "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\3772428.jpg",
+    "duracao": 7.44,
+    "autor": "Taryn Elliott",
+    "fonte": "https://www.pexels.com/video/3772428/",
+    "download": "https://videos.pexels.com/video-files/3772428/3772428-hd_1920_1080_25fps.mp4",
+    "licenca": "https://www.pexels.com/license/"
+  },
+  "estudio": {
+    "arquivo": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\33607026-720p.mp4",
+    "thumb": "C:\\Users\\Aluno\\Documents\\GitHub\\Cursando\\backend\\private_uploads\\clipes_cursos\\33607026.jpg",
+    "duracao": 10.32,
+    "autor": "ZEEL DIGITAL",
+    "fonte": "https://www.pexels.com/video/33607026/",
+    "download": "https://videos.pexels.com/video-files/33607026/14285050_1920_1080_25fps.mp4",
+    "licenca": "https://www.pexels.com/license/"
+  }
+}

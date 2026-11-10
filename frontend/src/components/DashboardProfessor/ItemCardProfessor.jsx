@@ -53,6 +53,7 @@ function ItemCardProfessor({
 
     if (tipo === "curso") {
         return <CursoCardBase imagem={imagem} titulo={item.titulo} descricao={item.descricao}
+            categoria={item.categoria} avaliacao={item.avaliacao_media} totalAulas={item.aulas_publicadas}
             onAbrir={() => onAbrir?.(item)} status={item.status_nome}
             metadados={<span><FaUsers aria-hidden="true" /> {item.total_inscritos || 0} {Number(item.total_inscritos) === 1 ? 'inscrito' : 'inscritos'}</span>}
             acoes={podeGerenciar && gerenciavel && <div>

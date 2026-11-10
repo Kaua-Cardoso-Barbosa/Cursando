@@ -1,3 +1,4 @@
+import BotaoVoltar from '../components/BotaoVoltar_39';
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { apiRequest } from "../api/client_3_17";
@@ -34,10 +35,7 @@ function AlunosCursoScreen({ curso, token, onBack, onOpenChat }) {
       contentContainerStyle={globalStyles.page}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={carregar} />}
     >
-      <Pressable style={styles.back} onPress={onBack}>
-        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
-        <Text style={styles.backText}>Voltar</Text>
-      </Pressable>
+      <BotaoVoltar onPress={onBack}>Voltar</BotaoVoltar>
       <View style={styles.header}>
         <Text style={globalStyles.title}>Alunos</Text>
         <Text style={globalStyles.eyebrow} numberOfLines={2}>{curso?.titulo || "Curso"}</Text>
@@ -79,7 +77,7 @@ const styles = StyleSheet.create({
   row: { padding: 14, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 },
   avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.softGray, alignItems: "center", justifyContent: "center" },
   info: { flex: 1 },
-  name: { color: colors.black, fontSize: 17, fontWeight: "700" },
+  name: { color: colors.ink, fontSize: 17, fontWeight: "700" },
   email: { color: colors.textMuted, fontSize: 14, marginTop: 2 },
   chatButton: { minHeight: 38, paddingHorizontal: 12, borderRadius: 9, backgroundColor: colors.darkGreen, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   chatButtonText: { color: colors.white, fontWeight: "700" }

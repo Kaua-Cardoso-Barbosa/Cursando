@@ -14,6 +14,8 @@
 /* Fim item 38 */
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Organiza as dimensões e a distribuição de .alerta */
 .alerta {
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
     width: min(530px, 100%);
     background: #ffffff;
     border: 2px solid #000000;
@@ -88,17 +90,46 @@
 }
 
 .confirmar {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: #66716c;
+    --cor-confirmacao: #b90000;
     color: #ffffff;
     border: 1.5px solid transparent;
 }
 
+.confirmar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--cor-confirmacao);
+    transform: scaleX(0);
+    transform-origin: left center;
+    pointer-events: none;
+}
+
+.textoConfirmar { position: relative; z-index: 1; }
+.acoes .confirmar:disabled { opacity: 1; }
+.acoes .confirmar.liberada:disabled { opacity: .7; }
+.esperando::before { animation: liberarConfirmacao var(--espera-confirmacao) linear forwards; }
+.liberada::before { transform: scaleX(1); }
+
+@keyframes liberarConfirmacao {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
 .perigo {
-    background: #b90000;
+    --cor-confirmacao: #b90000;
 }
 
 .primario {
-    background: #06a663;
+    --cor-confirmacao: #06a663;
 }
+
+/* O preenchimento comunica a espera obrigatória; deve continuar visível
+   mesmo quando o sistema desativa animações decorativas. */
 
 /* Sprint item 38 - Tornar todas as telas do sistema web responsivas - Ajusta o layout para (max-width: 560px) */
 @media (max-width: 560px) {

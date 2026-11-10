@@ -2,16 +2,16 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../styles_39";
 
 export default
-function BrandLogo({ compact = false }) {
+function BrandLogo({ compact = false, pequeno = false }) {
   return (
     <View style={[styles.logo, compact && styles.logoCompact]}>
       <Image
         source={require("../../assets/logo.png")}
         resizeMode="contain"
-        style={[styles.mark, compact && styles.markCompact]}
+        style={[styles.mark, compact && styles.markCompact, pequeno && { width: 36, height: 28 }]}
         accessibilityLabel="Logo Cursando"
       />
-      <Text style={[styles.text, compact && styles.textCompact]}>Cursando</Text>
+      <Text style={[styles.text, compact && styles.textCompact, pequeno && { fontSize: 21 }]}>Cursando</Text>
     </View>
   );
 }

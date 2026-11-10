@@ -34,10 +34,12 @@ import ItemCardProfessor from "../../components/DashboardProfessor/ItemCardProfe
 import FormularioModalProfessor from "../../components/DashboardProfessor/FormularioModalProfessor_6_28.jsx";
 import EstadoVazioProfessor from "../../components/DashboardProfessor/EstadoVazioProfessor.jsx";
 import RodapeProfessor from "../../components/DashboardProfessor/RodapeProfessor.jsx";
-import PerfilUsuario from "../../components/PerfilUsuario/PerfilUsuario_3.jsx";
+import Perfil from "../Perfil/Perfil.jsx";
 import ChatCurso from "../../components/ChatCurso/ChatCurso_19.jsx";
 import ProvasProfessor from "../../components/ProvasProfessor/ProvasProfessor_5_20.jsx";
 import MateriaisProfessor from "../../components/MateriaisProfessor/MateriaisProfessor_21.jsx";
+import AvaliacoesProfessor from "../../components/DashboardProfessor/AvaliacoesProfessor.jsx";
+import ResumoCursoProfessor from "../../components/DashboardProfessor/ResumoCursoProfessor.jsx";
 import GoogleChart from "../../components/GoogleChart/GoogleChart_8.jsx";
 import css from "./DashboardProfessor_38.module.css";
 
@@ -176,7 +178,9 @@ function DashboardProfessor({
                 credentials: "include"
             });
             const dados = await lerResposta(resposta);
-            setCursos(Array.isArray(dados) ? dados : []);
+            const lista = Array.isArray(dados) ? dados : [];
+            setCursos(lista);
+            setCursoSelecionado((atual) => atual ? lista.find((curso) => Number(curso.id) === Number(atual.id)) || atual : atual);
         } catch (erro) {
             console.error("Erro ao carregar cursos:", erro);
             setCursos([]);
@@ -1073,14 +1077,18 @@ async function solicitarSaque() {
                             </div>
 
                                                                                                                                                                                                         
+                            <ResumoCursoProfessor key={cursoSelecionado.id} api={api} curso={cursoSelecionado}
+                                onAlunos={() => abrirAlunos(cursoSelecionado)} onEditar={() => setModal({ tipo: 'curso', item: cursoSelecionado })} />
                             <nav className={css.navegacaoGestaoCurso} aria-label="Seções do curso">
                                 <button type="button" aria-pressed={abaGestaoCurso === "modulos"} className={abaGestaoCurso === "modulos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("modulos"); setIdModuloSelecionado(null); }}>Módulos</button>
                                 <button type="button" aria-pressed={abaGestaoCurso === "complementos"} className={abaGestaoCurso === "complementos" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("complementos"); setIdModuloSelecionado(null); }}>Complementos</button>
                                 <button type="button" aria-pressed={abaGestaoCurso === "provas"} className={abaGestaoCurso === "provas" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("provas"); setIdModuloSelecionado(null); }}>Provas</button>
+                                <button type="button" aria-pressed={abaGestaoCurso === "avaliacoes"} className={abaGestaoCurso === "avaliacoes" ? css.botaoPrimario : css.botaoSecundario} onClick={() => { setAbaGestaoCurso("avaliacoes"); setIdModuloSelecionado(null); }}>Avaliações</button>
                             </nav>
 
                             {abaGestaoCurso === "complementos" && /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */ <MateriaisProfessor api={api} idCurso={cursoSelecionado.id} avisar={avisar} /> /* Fim item 21 */}
                             {abaGestaoCurso === "provas" && /* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */ <ProvasProfessor key={cursoSelecionado.id} api={api} idCurso={cursoSelecionado.id} setMensagem={setMensagem} /> /* Fim item 20 */}
+                            {abaGestaoCurso === "avaliacoes" && <AvaliacoesProfessor key={cursoSelecionado.id} api={api} idCurso={cursoSelecionado.id} />}
                             {abaGestaoCurso === "modulos" && !idModuloSelecionado && (
                                 <>
                                     <div className={css.barraTitulo}>
@@ -1235,7 +1243,7 @@ async function solicitarSaque() {
                     )}
 
                     {visao === "perfil" && (
-                        <PerfilUsuario api={api} setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
+                        <Perfil api={api} embutido setMensagem={setMensagem} onPerfilAtualizado={onPerfilAtualizado} />
                     )}
 
                     {visao === "financeiro" && (

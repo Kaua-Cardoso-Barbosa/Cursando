@@ -914,3 +914,10 @@
 }
 
 /* Fim item 38 */
+.linkPerfilPublico { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px; margin-top: 14px; border: 1px solid #087044; border-radius: 8px; color: #087044; background: #eff8f2; font-size: .9rem; font-weight: 650; text-decoration: none; }
+.linkPerfilPublico:hover { background: #deefe4; }
+.linkPerfilPublico:focus-visible { outline: 3px solid #06a66380; outline-offset: 3px; }
+.campoMotivoBloqueio { display: grid; gap: 8px; width: 100%; margin: 16px 0; text-align: left; font-size: .9rem; color: #173e2c; }
+.campoMotivoBloqueio textarea { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #cbd9d0; border-radius: 8px; font: inherit; }
+.motivoBloqueio { margin: 16px 0; padding: 14px; border: 1px solid #ecc9c9; border-radius: 10px; background: #fff6f6; color: #842b2b; }
+.motivoBloqueio p { white-space: pre-wrap; overflow-wrap: anywhere; }

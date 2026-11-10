@@ -1,3 +1,6 @@
+import BotaoVoltar from '../components/BotaoVoltar_39';
+import Select from '../components/Select_39';
+import { useFeedback } from '../components/FeedbackProvider_39';
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
@@ -10,6 +13,7 @@ const extensoesImagem = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp"]);
 
 export default
 function MateriaisProfessorScreen({ curso, token, onBack }) {
+  const { confirmar } = useFeedback();
   const [materiais, setMateriais] = useState([]);
   const [titulo, setTitulo] = useState("");
   const [tipo, setTipo] = useState("link");
@@ -58,6 +62,8 @@ function MateriaisProfessorScreen({ curso, token, onBack }) {
   /* Fim item 21 */
 
   async function excluir(item) {
+    const confirmado = await confirmar({ titulo: 'Excluir complemento', descricao: `Deseja excluir “${item.titulo}”?`, textoConfirmar: 'Excluir' });
+    if (!confirmado) return;
     try { /* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */
     await apiRequest(`/professor/cursos/${curso.id}/materiais/${item.id}`, { method: "DELETE" }, token);
     /* Fim item 21 */ await carregar(); }
@@ -65,15 +71,12 @@ function MateriaisProfessorScreen({ curso, token, onBack }) {
   }
 
   return <ScrollView contentContainerStyle={globalStyles.page}>
-    <Pressable style={styles.back} onPress={onBack}><Text style={styles.backText}>‹  Voltar aos cursos</Text></Pressable>
+    <BotaoVoltar onPress={onBack}>Voltar aos cursos</BotaoVoltar>
     <Text style={globalStyles.title}>Complementos</Text><Text style={globalStyles.eyebrow}>{curso.titulo}</Text>
     {/* Sprint item 21 - Permitir que o instrutor publique materiais do curso, como livros, apostilas e códigos - Publica, lista ou permite baixar os materiais complementares */}
     <View style={[globalStyles.card, styles.form]}>
       <TextInput style={styles.input} placeholder="Título" value={titulo} onChangeText={setTitulo} />
-      <Text style={styles.meta}>Tipo</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipos}>
-        {tiposComplemento.map((opcao) => <Pressable key={opcao} style={[styles.tipo, tipo === opcao && styles.tipoAtivo]} onPress={() => { setTipo(opcao); setArquivo(null); if (opcao === "imagem") setUrl(""); }}><Text style={[styles.tipoTexto, tipo === opcao && styles.tipoTextoAtivo]}>{opcao === "codigo" ? "Código" : opcao[0].toUpperCase() + opcao.slice(1)}</Text></Pressable>)}
-      </ScrollView>
+      <Select titulo="Tipo" valor={tipo} opcoes={tiposComplemento.map(opcao => [opcao, opcao === 'codigo' ? 'Código' : opcao[0].toUpperCase() + opcao.slice(1)])} onChange={opcao => { setTipo(opcao); setArquivo(null); if (opcao === 'imagem') setUrl(''); }} />
       <TextInput style={[styles.input, styles.multiline]} placeholder="Descrição e instruções para os alunos" value={descricao} onChangeText={setDescricao} multiline />
       {tipo !== "imagem" ? <TextInput style={styles.input} placeholder="Link externo https://..." value={url} onChangeText={setUrl} editable={!arquivo} autoCapitalize="none" /> : null}
       <Pressable style={styles.secondary} onPress={escolherArquivo}><AppIcon name="attach-outline" size={18} color={colors.darkGreen} /><Text style={styles.secondaryText}>{arquivo?.name || "Escolher arquivo"}</Text></Pressable>

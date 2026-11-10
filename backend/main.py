@@ -41,6 +41,7 @@ import gravacao_log_25 as gravacao_log
 import financeiro_12_13_14_15_16_30_31_32_33_34_35_36 as financeiro
 import pagamento_arkhe_2_32_33_34 as pagamento_arkhe
 import relatorio_7_9_22_23 as relatorio
+import perfis_usuarios
 from utilitarios_backend_5_9_12_15_20_24_28_34 import exigir_tipo
 from servicos.arkhe_2 import ArkheError, consultar_conta
 
@@ -48,6 +49,8 @@ from servicos.arkhe_2 import ArkheError, consultar_conta
 from estrutura_banco_1_5_6_9_15_19_20_21_27_28_32_33_36_37 import garantir_estrutura_banco
 with app.app_context():
     garantir_estrutura_banco()
+    from perfis_identidade import preparar_identidades
+    preparar_identidades()
 
 print("\nROTAS REGISTRADAS ANTES DA ROTA ARKHÉ:")
 for regra in app.url_map.iter_rules():

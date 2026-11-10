@@ -1,6 +1,6 @@
+import BotaoVoltar from '../components/BotaoVoltar_39';
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
 import { colors, globalStyles } from "../styles_39";
 import HistoricoProvas, { corResultado } from '../components/HistoricoProvas_20_39';
@@ -40,7 +40,7 @@ function ProvaAlunoScreen({ curso, prova, token, onBack, onSubmit }) {
   }
 
   return <ScrollView contentContainerStyle={globalStyles.page}>
-    <Pressable style={styles.back} onPress={onBack}><AppIcon name="arrow-back" size={19} color={colors.darkGreen} /><Text style={styles.backText}>Voltar ao curso</Text></Pressable>
+    <BotaoVoltar onPress={onBack}>Voltar ao curso</BotaoVoltar>
     {/* Sprint item 20 - Permitir que o instrutor cadastre provas para validar a conclusão do curso - Prepara as questões, as respostas e a correção da prova */}
     <View style={styles.hero}>
       <Text style={styles.eyebrow}>AVALIAÇÃO FINAL · {curso?.titulo || "Curso"}</Text>
@@ -88,13 +88,13 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.white, fontSize: 14 }, progress: { color: "#CDE7D8", fontWeight: "700", marginTop: 4 },
   result: { padding: 18, borderRadius: 14, backgroundColor: colors.softGray, borderWidth: 1, borderColor: colors.border, gap: 7, marginBottom: 16 },
   resultTitle: { color: colors.darkGreen, fontSize: 18, fontWeight: "800" }, score: { color: colors.darkGreen, fontSize: 32, fontWeight: "800" },
-  scoreUnit: { fontSize: 14, fontWeight: "600" }, resultDetail: { color: colors.black }, feedback: { color: colors.textMuted, lineHeight: 20 },
+  scoreUnit: { fontSize: 14, fontWeight: "600" }, resultDetail: { color: colors.ink }, feedback: { color: colors.textMuted, lineHeight: 20 },
   question: { backgroundColor: colors.white, borderColor: colors.border, borderWidth: 1, borderRadius: 14, padding: 16, gap: 12, marginBottom: 14 },
-  number: { color: colors.green, fontSize: 12, fontWeight: "800" }, statement: { color: colors.black, fontSize: 17, lineHeight: 24, fontWeight: "700" },
+  number: { color: colors.green, fontSize: 12, fontWeight: "800" }, statement: { color: colors.ink, fontSize: 17, lineHeight: 24, fontWeight: "700" },
   option: { flexDirection: "row", alignItems: "center", gap: 10, padding: 13, borderWidth: 1, borderColor: colors.border, borderRadius: 10 },
-  optionSelected: { backgroundColor: colors.softGray, borderColor: colors.darkGreen }, optionText: { flex: 1, color: colors.black, lineHeight: 20 }, optionTextSelected: { color: colors.darkGreen, fontWeight: "700" },
+  optionSelected: { backgroundColor: colors.softGray, borderColor: colors.darkGreen }, optionText: { flex: 1, color: colors.ink, lineHeight: 20 }, optionTextSelected: { color: colors.darkGreen, fontWeight: "700" },
   radio: { width: 18, height: 18, borderWidth: 2, borderColor: colors.border, borderRadius: 9 }, radioSelected: { borderColor: colors.darkGreen, backgroundColor: colors.darkGreen },
-  essay: { minHeight: 130, padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 10, color: colors.black },
+  essay: { minHeight: 130, padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 10, color: colors.ink },
   disabled: { opacity: 0.5 }, hint: { color: colors.textMuted, textAlign: "center", marginTop: 10, marginBottom: 20 }
 });
 /* Fim item 39 */

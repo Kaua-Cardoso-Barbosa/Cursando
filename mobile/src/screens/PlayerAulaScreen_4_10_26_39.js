@@ -1,3 +1,5 @@
+import BotaoVoltar from '../components/BotaoVoltar_39';
+import AulaCard from '../components/AulaCard_39';
 import { fonteImagemAula } from '../imagens_padrao_39';
 import AppIcon from "../components/AppIcon_39";
 import { ResizeMode, Video } from "expo-av";
@@ -5,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 /* Sprint item 26 - Bloquear gravação de tela durante o curso - Carrega o recurso nativo usado também para proteger contra gravação da tela */
 import * as ScreenCapture from "expo-screen-capture";
 /* Fim item 26 */
-import { ActivityIndicator, AppState, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { getApiBaseUrl } from "../api/client_3_17";
 import { colors, globalStyles } from "../styles_39";
 
@@ -36,7 +38,7 @@ function PlayerAulaScreen({ detalhe, token, onBack, onOpenLesson, onFinish, onSa
   /* Fim item 10 */
 
   const aula = detalhe?.aula;
-  const proximas = detalhe?.proximas || [];
+  const playlist = detalhe?.playlist || [];
   const videoRef = useRef(null);
   const larguraBarraRef = useRef(0);
   const [videoProntoId, setVideoProntoId] = useState(null);
@@ -313,10 +315,7 @@ function atualizarReproducao(status) {
 
   return (
     <ScrollView contentContainerStyle={[globalStyles.page, expandido && styles.paginaExpandida]} scrollEnabled={!expandido}>
-      <Pressable style={[styles.back, expandido && styles.oculto]} onPress={onBack}>
-        <AppIcon name="arrow-back" size={18} color={colors.darkGreen} />
-        <Text style={styles.backText}>Voltar</Text>
-      </Pressable>
+      {!expandido && <BotaoVoltar onPress={onBack}>Voltar</BotaoVoltar>}
 
       {aula ? (
         <>
@@ -399,24 +398,20 @@ function atualizarReproducao(status) {
 
           {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
           <View style={[styles.sectionHeader, expandido && styles.oculto]}>
-            <Text style={styles.nextTitle}>Proximas video-aulas</Text>
+            <Text style={styles.nextTitle}>Aulas do curso</Text>
             <View style={globalStyles.divider} />
           </View>
           {/* Fim item 4 */}
           {/* Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta, salva ou retoma a posição e a conclusão da aula */}
           <View style={[styles.list, expandido && styles.oculto]}>
-            {proximas.map((proxima) => (
-              <Pressable key={proxima.id} style={[globalStyles.card, styles.card]} onPress={() => onOpenLesson(proxima)}>
-                <View style={styles.preview}>
-                  <Image source={fonteImagemAula(proxima.thumb)} style={styles.image} />
-                  <View style={styles.playBadge}>
-                    <AppIcon name="play" size={40} color={colors.black} />
-                  </View>
-                </View>
-                <View style={styles.info}>
-                  <Text style={styles.lessonTitle} numberOfLines={1}>{proxima.titulo}</Text>
-                </View>
-              </Pressable>
+            {playlist.map((grupo) => (
+              <View key={grupo.id ?? 'sem-modulo'} style={styles.moduloPlaylist}>
+                <Text style={styles.tituloModuloPlaylist}>{grupo.numero ? `Módulo ${grupo.numero} · ${grupo.titulo}` : grupo.titulo}</Text>
+                {grupo.aulas.map((proxima) => {
+                  const atual = Number(proxima.id) === Number(aula?.id);
+                  return <AulaCard key={proxima.id} aula={proxima} atual={atual} onOpen={atual ? undefined : onOpenLesson} />;
+                })}
+              </View>
             ))}
           </View>
           {/* Fim item 4 */}
@@ -430,6 +425,10 @@ function atualizarReproducao(status) {
 
 /* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
+  moduloPlaylist: { gap: 12 },
+  tituloModuloPlaylist: { color: colors.darkGreen, fontSize: 16, fontWeight: "700", lineHeight: 23, paddingVertical: 10 },
+  aulaAtual: { backgroundColor: "#def2e4", borderWidth: 1, borderColor: "#8dc6a1" },
+  indicadorAtual: { color: "#075132", fontSize: 13, fontWeight: "700", marginTop: 6 },
   back: {
     alignSelf: "flex-start",
     flexDirection: "row",
@@ -545,7 +544,7 @@ const styles = StyleSheet.create({
     marginBottom: 22
   },
   nextTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 25,
     lineHeight: 30
   },
@@ -584,7 +583,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10
   },
   lessonTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 21,
     lineHeight: 25
   },

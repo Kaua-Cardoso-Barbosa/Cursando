@@ -3,9 +3,10 @@
 .rodape-container {
     background-color: #0b452e;
     color: white;
-    padding: 40px 30px;
-    display: flex;
-    justify-content: space-between;
+    padding: 40px max(20px, calc((100vw - 1296px) / 2));
+    display: grid;
+    grid-template-columns: 1.1fr 1fr .7fr 1fr;
+    gap: 32px;
 }
 
 /* Fim item 38 */
@@ -14,7 +15,7 @@
 }
 
 .logoRodapeTexto {
-    font-size: 40px;
+    font-size: 26px;
 }
 
 .coluna-rodape h4 {
@@ -37,6 +38,15 @@
     gap: 10px;
     font-size: 20px;
     font-weight: bold;
+    align-self: start;
 }
+
+.coluna-rodape { min-width: 0; }
+.coluna-rodape h4 { margin: 0 0 16px; font-size: 15px; }
+.coluna-rodape p, .coluna-rodape a { overflow-wrap: anywhere; line-height: 1.6; }
+.coluna-rodape a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.coluna-rodape a:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+@media (max-width: 900px) { .rodape-container { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .rodape-container { grid-template-columns: 1fr; gap: 26px; padding-block: 32px; } }
 
 /* Fim item 38 */

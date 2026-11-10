@@ -15,9 +15,12 @@ import {
 import Button from "../../components/Button/Button.jsx";
 import CadastroColaborador from "../../components/CadastroColaborador/CadastroColaborador.jsx";
 import ConfirmAlert from "../../components/ConfirmAlert/ConfirmAlert.jsx";
+import AutoTextarea from '../../components/AutoTextarea/AutoTextarea.jsx';
 import Input from "../../components/Input/Input.jsx";
 import MenuLateralAdm from "../../components/MenuLateral/MenuLateralAdm_3_23_25.jsx";
 import css from "./GerenciamentoUsuarios_38.module.css";
+import { Link } from 'react-router-dom';
+import { urlPerfil } from '../../utils/perfil.js';
 
 const TIPOS = {
     ALUNO: 2,
@@ -71,6 +74,8 @@ function GerenciamentoUsuarios({
     });
     const [salvandoEdicao, setSalvandoEdicao] = useState(false);
     const [confirmacao, setConfirmacao] = useState(null);
+    const [motivoBloqueio, setMotivoBloqueio] = useState('');
+    const [alterandoStatus, setAlterandoStatus] = useState(false);
     /* Sprint item 35 - Calcular ticket médio por aluno - Apresenta os totais pagos e o ticket médio por aluno */
     const [perfilFinanceiroAluno, setPerfilFinanceiroAluno] = useState(null);
     /* Fim item 35 */
@@ -136,6 +141,8 @@ function GerenciamentoUsuarios({
 
 
     async function alternarStatus(item) {
+        if (alterandoStatus || (!item.bloqueado && !motivoBloqueio.trim())) return;
+        setAlterandoStatus(true);
         try {
             const resposta = await fetch(`${api}/usuarios/${item.id}/status`, {
                 method: "PATCH",
@@ -144,15 +151,19 @@ function GerenciamentoUsuarios({
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    bloqueado: !item.bloqueado
+                    bloqueado: !item.bloqueado,
+                    motivo: item.bloqueado ? '' : motivoBloqueio.trim()
                 })
             });
 
             await lerResposta(resposta);
+            setConfirmacao(null);
             await carregarUsuarios();
         } catch (err) {
             console.error("Erro ao atualizar status:", err);
             avisar({ tipo: "erro", descricao: err.message });
+        } finally {
+            setAlterandoStatus(false);
         }
     }
 
@@ -170,12 +181,12 @@ function GerenciamentoUsuarios({
 
     /* Sprint item 35 - Calcular ticket médio por aluno - Consulta os totais e o ticket médio do aluno selecionado */
     async function abrirPerfilFinanceiroAluno(item) {
-        setPerfilFinanceiroAluno({ carregando: true, aluno: { nome: item.nome, email: item.email } });
+        setPerfilFinanceiroAluno({ carregando: true, identificador: item.identificador, aluno: { nome: item.nome, email: item.email } });
         try {
             const resposta = await fetch(`${api}/admin/alunos/${item.id}/financeiro`, { credentials: "include", cache: "no-store" });
-            setPerfilFinanceiroAluno(await lerResposta(resposta));
+            setPerfilFinanceiroAluno({ ...await lerResposta(resposta), identificador: item.identificador });
         } catch (error) {
-            setPerfilFinanceiroAluno({ erro: error.message, aluno: { nome: item.nome, email: item.email } });
+            setPerfilFinanceiroAluno({ erro: error.message, identificador: item.identificador, aluno: { nome: item.nome, email: item.email } });
         }
     }
     /* Fim item 35 */
@@ -273,14 +284,16 @@ function GerenciamentoUsuarios({
                                 <span className={css.avisoPropriaConta}>Use o Perfil para editar sua conta</span>
                             ) : (
                                 <div className={css.grupoBotoes}>
-                                    {chave === "alunos" && (
-                                        <button type="button" className={css.btnPerfilAluno} onClick={() => abrirPerfilFinanceiroAluno(item)}>
+                                    {(chave === "alunos" || chave === "professores") && (
+                                        <button type="button" className={css.btnPerfilAluno} onClick={() => chave === 'alunos'
+                                            ? abrirPerfilFinanceiroAluno(item)
+                                            : setPerfilFinanceiroAluno({ professor: true, identificador: item.identificador, aluno: item })}>
                                             Ver perfil
                                         </button>
                                     )}
                                     <button
                                         type="button"
-                                        onClick={() => alternarStatus(item)}
+                                        onClick={() => { setMotivoBloqueio(''); setConfirmacao(item); }}
                                         className={item.bloqueado ? css.btnDesbloquear : css.btnBloquear}
                                     >
                                         {item.bloqueado ? "Desbloquear" : "Bloquear"}
@@ -310,13 +323,25 @@ function GerenciamentoUsuarios({
                         {/* Sprint item 35 - Calcular ticket médio por aluno - Apresenta os totais pagos e o ticket médio por aluno */}
                         <header className={css.cabecalhoPerfilAluno}>
                             <span className={css.sobretituloPerfilAluno}>Visão administrativa</span>
-                            <h2 id="titulo-perfil-aluno">Perfil do aluno</h2>
+                            <h2 id="titulo-perfil-aluno">{perfilFinanceiroAluno.professor ? 'Perfil do professor' : 'Perfil do aluno'}</h2>
                             <p className={css.identificacaoAluno}>{perfilFinanceiroAluno.aluno?.nome} · {perfilFinanceiroAluno.aluno?.email}</p>
+                            {perfilFinanceiroAluno.identificador && <Link className={css.linkPerfilPublico}
+                                to={urlPerfil(perfilFinanceiroAluno.identificador)}>Ver Perfil Público</Link>}
                         </header>
                         {/* Fim item 35 */}
                         {perfilFinanceiroAluno.carregando ? <p>Carregando dados do aluno...</p> : null}
+                        {perfilFinanceiroAluno.aluno?.bloqueado && <section className={css.motivoBloqueio}><h3>Motivo do bloqueio</h3><p>{perfilFinanceiroAluno.aluno.motivo_bloqueio || 'Motivo não informado (bloqueio anterior).'}</p></section>}
                         {perfilFinanceiroAluno.erro ? /* Sprint item 35 - Calcular ticket médio por aluno - Apresenta os totais pagos e o ticket médio por aluno */ <p className={css.erro}>{perfilFinanceiroAluno.erro}</p> /* Fim item 35 */ : null}
-                        {!perfilFinanceiroAluno.carregando && !perfilFinanceiroAluno.erro && (
+                        {perfilFinanceiroAluno.professor && <section className={css.secaoPerfilAluno}>
+                            <h3>Dados da conta</h3>
+                            <dl className={css.dadosContaAluno}>
+                                <div><dt>Nome</dt><dd>{perfilFinanceiroAluno.aluno.nome}</dd></div>
+                                <div><dt>E-mail</dt><dd>{perfilFinanceiroAluno.aluno.email}</dd></div>
+                                <div><dt>CPF</dt><dd>{perfilFinanceiroAluno.aluno.cpf}</dd></div>
+                                <div><dt>Situação</dt><dd>{perfilFinanceiroAluno.aluno.bloqueado ? 'Bloqueado' : 'Ativo'}</dd></div>
+                            </dl>
+                        </section>}
+                        {!perfilFinanceiroAluno.professor && !perfilFinanceiroAluno.carregando && !perfilFinanceiroAluno.erro && (
                             <>
                                 {/* Sprint item 35 - Calcular ticket médio por aluno - Apresenta os totais pagos e o ticket médio por aluno */}
                                 <div className={css.estadosPerfilAluno}>
@@ -517,6 +542,15 @@ function GerenciamentoUsuarios({
                 </main>
             </div>
 
+            <ConfirmAlert aberto={!!confirmacao} titulo={confirmacao?.bloqueado ? 'Desbloquear usuário' : 'Bloquear usuário'}
+                descricao={confirmacao ? `${confirmacao.bloqueado ? 'Desbloquear' : 'Bloquear'} ${confirmacao.nome}?` : ''}
+                textoConfirmar={confirmacao?.bloqueado ? 'Desbloquear' : 'Bloquear'} carregando={alterandoStatus}
+                confirmarDesabilitado={!confirmacao?.bloqueado && !motivoBloqueio.trim()}
+                aoCancelar={() => { if (!alterandoStatus) setConfirmacao(null); }} aoConfirmar={() => alternarStatus(confirmacao)}>
+                {!confirmacao?.bloqueado && <label className={css.campoMotivoBloqueio}>Motivo do bloqueio
+                    <AutoTextarea rows={3} value={motivoBloqueio} onChange={e => setMotivoBloqueio(e.target.value)} maxLength={500} placeholder="Descreva o motivo do bloqueio" disabled={alterandoStatus} />
+                </label>}
+            </ConfirmAlert>
             <footer className={css.rodapePagina}>
                 <div className={css.colunaRodape}>
                     <h4>Contato</h4>

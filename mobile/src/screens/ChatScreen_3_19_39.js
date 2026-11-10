@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
+  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   Image,
@@ -16,11 +17,12 @@ import {
   View
 } from "react-native";
 import { apiRequest, resolverUrlMidia } from "../api/client_3_17";
+import BotaoVoltar from '../components/BotaoVoltar_39';
 import AppIcon from "../components/AppIcon_39";
 import { colors, globalStyles } from "../styles_39";
 
 export default
-function ChatScreen({ token, tipoUsuario, conversaInicial = null, carregando }) {
+function ChatScreen({ token, tipoUsuario, conversaInicial = null, carregando, onBack }) {
   const aluno = Number(tipoUsuario) === 2;
   const [texto, setTexto] = useState("");
   const [tecladoAberto, setTecladoAberto] = useState(false);
@@ -70,220 +72,56 @@ function ChatScreen({ token, tipoUsuario, conversaInicial = null, carregando }) 
     };
   }, []);
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.keyboardArea}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        ref={scrollRef}
-        scrollEventThrottle={100}
-        onScroll={({ nativeEvent }) => {
-          const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
-          noFim.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 80;
-          if (noFim.current) confirmarLeitura();
-        }}
-        onContentSizeChange={() => { if (noFim.current) scrollRef.current?.scrollToEnd({ animated: false }); }}
-        style={styles.scroll}
-        contentContainerStyle={[globalStyles.page, styles.page, tecladoAberto && styles.keyboardPage]}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={carregando || loading} onRefresh={atualizarChat} />}
-      >
-        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
-        <View style={styles.header}>
-          <Text style={globalStyles.title}>Chat</Text>
-          <Text style={globalStyles.eyebrow}>{aluno ? "Tire duvidas com o instrutor" : "Converse com os alunos dos seus cursos"}</Text>
-          <View style={globalStyles.divider} />
-        </View>
-        {/* Fim item 19 */}
+  function voltarContatos() { Keyboard.dismiss(); setSelecionada(null); setTexto(''); }
+  useEffect(() => {
+    const evento = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (selecionada) { Keyboard.dismiss(); setSelecionada(null); return true; }
+      if (onBack) { onBack(); return true; }
+      return false;
+    });
+    return () => evento.remove();
+  }, [selecionada, onBack]);
+  const horario = data => data && !Number.isNaN(new Date(data).getTime()) ? new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
 
-        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
-        {erro ? <Text accessibilityRole="alert" style={styles.empty}>{erro}</Text> : null}
-        <View style={styles.conversations}>
-          {loading ? <ActivityIndicator color={colors.green} /> : null}
-          {!loading && conversasVisiveis.length === 0 ? <Text style={globalStyles.message}>{aluno ? "Nenhuma conversa disponivel." : "Nenhuma conversa ainda. Abra os alunos de um curso para iniciar."}</Text> : null}
-          {conversasVisiveis.map((conversa) => {
-            const active = selecionada?.id_curso === conversa.id_curso && selecionada?.id_aluno === conversa.id_aluno;
-            return (
-              <Pressable
-                key={`${conversa.id_curso}-${conversa.id_aluno || "aluno"}`}
-                style={[styles.conversation, active && styles.conversationActive]}
-                onPress={() => setSelecionada(conversa)}
-              >
-                <Avatar imagem={conversa.imagem_perfil} tamanho={38} />
-                <View style={styles.conversationText}>
-                  <Text style={styles.name}>{conversa.nome}</Text>
-                  <Text style={styles.course}>{conversa.curso}</Text>
-                </View>
-                {conversa.nao_lidas > 0 ? <Text style={styles.badge}>{conversa.nao_lidas}</Text> : null}
-              </Pressable>
-            );
-          })}
-        </View>
-        {/* Fim item 19 */}
+  if (!selecionada) return <ScrollView contentContainerStyle={[globalStyles.page, styles.contatos]} refreshControl={<RefreshControl refreshing={Boolean(carregando || loading)} onRefresh={atualizarChat} />}>
+    <Text style={globalStyles.title}>Chat</Text>
+    {!!erro && <Text accessibilityRole="alert" style={globalStyles.error}>{erro}</Text>}
+    {loading && !conversasVisiveis.length && <ActivityIndicator color={colors.darkGreen} />}
+    {!loading && !conversasVisiveis.length && <Text style={styles.empty}>{aluno ? 'Nenhuma conversa disponível.' : 'Nenhuma conversa ainda. Abra os alunos de um curso para iniciar.'}</Text>}
+    <View style={styles.listaContatos}>{conversasVisiveis.map(conversa => <Pressable key={`${conversa.id_curso}-${conversa.id_aluno || 'aluno'}`} accessibilityRole="button" accessibilityLabel={`Conversar com ${conversa.nome}, ${conversa.curso}`} style={styles.contato} onPress={() => setSelecionada(conversa)}>
+      <Avatar imagem={conversa.imagem_perfil} tamanho={46} />
+      <View style={styles.contatoInfo}><Text style={styles.name} numberOfLines={1}>{conversa.nome}</Text><Text style={styles.course} numberOfLines={2}>{conversa.curso}</Text></View>
+      <View style={styles.contatoResumo}><Text style={styles.horario}>{horario(conversa.ultima_mensagem_em)}</Text>{conversa.nao_lidas > 0 && <Text style={styles.badge}>{conversa.nao_lidas}</Text>}</View>
+    </Pressable>)}</View>
+  </ScrollView>;
 
-        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
-        <View style={[styles.messages, tecladoAberto && styles.keyboardMessages]}>
-          {selecionada ? (
-            <View style={styles.chatIdentity}>
-              <Avatar imagem={selecionada.imagem_perfil} tamanho={32} />
-              <View>
-                <Text style={styles.name}>{selecionada.nome}</Text>
-                <Text style={styles.course}>{selecionada.curso}</Text>
-              </View>
-            </View>
-          ) : null}
-          {!selecionada ? <Text style={styles.empty}>Selecione uma conversa.</Text> : null}
-          {selecionada && mensagens.length === 0 ? <Text style={styles.empty}>Nenhuma mensagem enviada ainda.</Text> : null}
-          {temAnteriores ? <Pressable disabled={carregandoAnteriores} onPress={() => { noFim.current = false; carregarAnteriores(); }}><Text style={styles.empty}>{carregandoAnteriores ? "Carregando..." : "Carregar mensagens anteriores"}</Text></Pressable> : null}
-          {mensagens.map((mensagem) => (
-            <View key={mensagem.id} style={[styles.bubble, mensagem.minha && styles.mine]}>
-              <View style={styles.senderRow}>
-                <Avatar imagem={mensagem.imagem_perfil} tamanho={24} />
-                <Text style={styles.sender}>{mensagem.nome}</Text>
-              </View>
-              <Text style={styles.messageText}>{mensagem.texto}</Text>
-            </View>
-          ))}
-        </View>
-        {/* Fim item 19 */}
-
-        {/* Sprint item 19 - Implementar chat entre instrutor e aluno no aplicativo e no sistema web - Carrega, envia e apresenta as mensagens da conversa do curso */}
-        <View style={styles.composer}>
-          <TextInput
-            maxLength={10000}
-            value={texto}
-            onChangeText={setTexto}
-            editable={Boolean(selecionada) && !enviando}
-            placeholder={selecionada ? "Digite sua mensagem" : "Selecione uma conversa"}
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-          />
-          <Pressable style={styles.send} onPress={enviarMensagem} disabled={!selecionada || !texto.trim() || enviando}>
-            <AppIcon name="send-outline" size={20} color={colors.white} />
-          </Pressable>
-        </View>
-        {/* Fim item 19 */}
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+  return <KeyboardAvoidingView style={styles.keyboardArea} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View style={styles.cabecalhoConversa}><BotaoVoltar emLinha onPress={voltarContatos}>Voltar</BotaoVoltar><Avatar imagem={selecionada.imagem_perfil} tamanho={40} /><View style={styles.contatoInfo}><Text style={styles.name} numberOfLines={1}>{selecionada.nome}</Text><Text style={styles.course} numberOfLines={1}>{selecionada.curso}</Text></View></View>
+    {!!erro && <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text>}
+    <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.messages} keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
+      refreshControl={<RefreshControl refreshing={Boolean(carregando || loading)} onRefresh={atualizarChat} />}
+      onScroll={({ nativeEvent }) => { const { contentOffset, layoutMeasurement, contentSize } = nativeEvent; noFim.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 80; if (noFim.current) confirmarLeitura(); }}
+      onContentSizeChange={() => { if (noFim.current) scrollRef.current?.scrollToEnd({ animated: false }); }}>
+      {temAnteriores && <Pressable disabled={carregandoAnteriores} style={styles.anteriores} onPress={() => { noFim.current = false; carregarAnteriores(); }}><Text style={styles.course}>{carregandoAnteriores ? 'Carregando...' : 'Carregar mensagens anteriores'}</Text></Pressable>}
+      {!mensagens.length && <Text style={styles.empty}>{loading ? 'Carregando mensagens...' : 'Nenhuma mensagem enviada ainda.'}</Text>}
+      {mensagens.map(mensagem => <View key={mensagem.id} style={[styles.bubble, mensagem.minha && styles.mine]}>
+        {!mensagem.minha && <Text style={styles.sender}>{mensagem.nome}</Text>}
+        <Text style={styles.messageText}>{mensagem.texto}</Text>
+        {!!mensagem.criado_em && <Text style={styles.horarioMensagem}>{horario(mensagem.criado_em)}</Text>}
+      </View>)}
+    </ScrollView>
+    <View style={[styles.composer, tecladoAberto && { paddingBottom: 8 }]}>
+      <TextInput accessibilityLabel="Mensagem" maxLength={10000} value={texto} onChangeText={setTexto} editable={!enviando} placeholder="Digite sua mensagem" placeholderTextColor={colors.muted} style={styles.input} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Enviar mensagem" style={[styles.send, (!texto.trim() || enviando) && { opacity: .5 }]} onPress={enviarMensagem} disabled={!texto.trim() || enviando}>{enviando ? <ActivityIndicator color="#fff" /> : <AppIcon name="send-outline" size={18} color="#fff" />}</Pressable>
+    </View>
+  </KeyboardAvoidingView>;
 }
-
-/* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os estilos dos componentes nativos desta tela */
 const styles = StyleSheet.create({
-  keyboardArea: { flex: 1 },
-  scroll: { flex: 1 },
-  page: { flexGrow: 1, paddingBottom: 112 },
-  keyboardPage: { paddingBottom: 20 },
-  header: {
-    marginBottom: 24
-  },
-  conversations: {
-    gap: 10,
-    marginBottom: 18
-  },
-  conversation: {
-    minHeight: 66,
-    borderWidth: 1.4,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.white,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10
-  },
-  conversationActive: {
-    backgroundColor: "#e8f7ef",
-    borderColor: colors.green
-  },
-  conversationText: {
-    flex: 1
-  },
-  name: {
-    color: colors.black,
-    fontSize: 16,
-    fontWeight: "700"
-  },
-  course: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginTop: 2
-  },
-  badge: {
-    minWidth: 24,
-    minHeight: 24,
-    borderRadius: 12,
-    backgroundColor: colors.green,
-    color: colors.white,
-    textAlign: "center",
-    paddingTop: 2
-  },
-  messages: {
-    flex: 1,
-    minHeight: 180,
-    borderWidth: 1.4,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.gray,
-    padding: 12,
-    gap: 10
-  },
-  keyboardMessages: { minHeight: 100 },
-  empty: {
-    color: colors.textMuted,
-    textAlign: "center",
-    marginTop: 20
-  },
-  bubble: {
-    maxWidth: "82%",
-    alignSelf: "flex-start",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#dddddd",
-    backgroundColor: colors.white,
-    padding: 10
-  },
-  mine: {
-    alignSelf: "flex-end",
-    borderColor: colors.green,
-    backgroundColor: "#e8f7ef"
-  },
-  sender: {
-    color: colors.darkGreen,
-    fontSize: 13,
-    fontWeight: "700",
-    marginBottom: 4
-  },
-  chatIdentity: { flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-  senderRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
-  messageText: {
-    color: colors.black,
-    fontSize: 15,
-    lineHeight: 20
-  },
-  composer: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 12
-  },
-  input: {
-    flex: 1,
-    minHeight: 46,
-    borderWidth: 1.4,
-    borderColor: colors.green,
-    borderRadius: 8,
-    backgroundColor: colors.white,
-    color: colors.black,
-    paddingHorizontal: 12
-  },
-  send: {
-    width: 48,
-    height: 46,
-    borderRadius: 8,
-    backgroundColor: colors.green,
-    alignItems: "center",
-    justifyContent: "center"
-  }
+  keyboardArea: { flex: 1, backgroundColor: '#edf2ee' }, contatos: { gap: 20 }, listaContatos: { backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, borderRadius: 14, overflow: 'hidden' },
+  contato: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, minHeight: 86, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, contatoInfo: { flex: 1, minWidth: 0, gap: 4 }, contatoResumo: { alignItems: 'flex-end', gap: 8 },
+  name: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '700' }, course: { color: colors.textMuted, fontSize: 12, lineHeight: 18 }, horario: { color: colors.textMuted, fontSize: 11 }, badge: { minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, backgroundColor: colors.darkGreen, color: '#fff', textAlign: 'center', lineHeight: 22, overflow: 'hidden', fontSize: 11, fontWeight: '700' },
+  cabecalhoConversa: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: colors.border },
+  scroll: { flex: 1 }, messages: { flexGrow: 1, padding: 16, gap: 10 }, empty: { color: colors.textMuted, textAlign: 'center', paddingVertical: 24, fontSize: 14, lineHeight: 21 }, erro: { color: colors.red, padding: 12, backgroundColor: '#fff6f6' }, anteriores: { alignSelf: 'center', padding: 10, backgroundColor: '#fff', borderRadius: 16, marginBottom: 8 },
+  bubble: { maxWidth: '85%', alignSelf: 'flex-start', borderRadius: 14, borderBottomLeftRadius: 3, backgroundColor: '#fff', padding: 12, gap: 4, borderWidth: 1, borderColor: '#e0e8e2' }, mine: { alignSelf: 'flex-end', borderBottomLeftRadius: 14, borderBottomRightRadius: 3, backgroundColor: '#dcf4e5', borderColor: '#cee7d7' }, sender: { color: colors.darkGreen, fontSize: 12, fontWeight: '700' }, messageText: { color: colors.ink, fontSize: 15, lineHeight: 22 }, horarioMensagem: { color: colors.textMuted, fontSize: 10, textAlign: 'right' },
+  composer: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, backgroundColor: '#f5f8f6', borderTopWidth: 1, borderTopColor: colors.border }, input: { flex: 1, minHeight: 46, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border, borderRadius: 24, backgroundColor: '#fff', color: colors.ink, fontSize: 15 }, send: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.darkGreen, alignItems: 'center', justifyContent: 'center' }
 });
-/* Fim item 39 */

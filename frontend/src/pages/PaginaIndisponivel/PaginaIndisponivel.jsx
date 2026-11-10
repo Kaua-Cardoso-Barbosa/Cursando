@@ -4,7 +4,7 @@ import { FaPlug } from 'react-icons/fa';
 import Button from '../../components/Button/Button.jsx';
 import css from './PaginaIndisponivel.module.css';
 
-export default function PaginaIndisponivel({ aoTentarNovamente }) {
+export default function PaginaIndisponivel({ aoTentarNovamente, aoVoltar }) {
     const [tentando, setTentando] = useState(false);
 
     async function reconectar() {
@@ -24,7 +24,7 @@ export default function PaginaIndisponivel({ aoTentarNovamente }) {
                 <Button tipo="button" tamanho="medio" fundoCor="verde_escuro"
                     className={css.botao} disabled={tentando} onClick={reconectar}
                     texto={tentando ? 'Reconectando...' : 'Tentar reconectar'} />
-                <BotaoVoltar emLinha to="/" >Voltar ao início</BotaoVoltar>
+                <BotaoVoltar emLinha to={aoVoltar ? undefined : '/'} onClick={aoVoltar}>{aoVoltar ? 'Voltar' : 'Voltar ao início'}</BotaoVoltar>
             </div>
             <small role="status">{tentando ? 'Verificando a conexão com o serviço.' : 'Ao reconectar, você poderá continuar nesta página.'}</small>
         </section>

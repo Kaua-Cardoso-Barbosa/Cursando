@@ -1,6 +1,7 @@
-import { fonteImagemCurso } from '../imagens_padrao_39';
+import CursoCard from '../components/CursoCard_39';
+import Select from '../components/Select_39';
 import { useEffect, useState } from "react";
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiRequest } from "../api/client_3_17";
 import AppIcon from "../components/AppIcon_39";
 import { useFeedback } from "../components/FeedbackProvider_39";
@@ -96,64 +97,20 @@ function DescobrirCursosScreen({ token, carregando, onOpen }) {
             returnKeyType="search"
           />
         </View>
-        <Text style={styles.filterLabel}>Ordenar por</Text>
         {/* Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno - Apresenta a ordenação de cursos recomendados pela API */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          <Pressable style={[styles.filterButton, ordem === "recentes" && styles.filterActive]} onPress={() => setOrdem("recentes")}>
-            <Text style={[styles.filterText, ordem === "recentes" && styles.filterTextActive]}>Recentes</Text>
-          </Pressable>
-          <Pressable style={[styles.filterButton, ordem === "populares" && styles.filterActive]} onPress={() => setOrdem("populares")}>
-            <Text style={[styles.filterText, ordem === "populares" && styles.filterTextActive]}>Populares</Text>
-          </Pressable>
-          <Pressable style={[styles.filterButton, ordem === "recomendados" && styles.filterActive]} onPress={() => setOrdem("recomendados")}>
-            <Text style={[styles.filterText, ordem === "recomendados" && styles.filterTextActive]}>Recomendados</Text>
-          </Pressable>
-        </ScrollView>
+        <Select titulo="Ordenar por" valor={ordem} onChange={setOrdem} opcoes={[["recentes", "Recentes"], ["populares", "Populares"], ["recomendados", "Recomendados"]]} />
         {/* Fim item 29 */}
         <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: apenasNovos }} style={[styles.filterButton, styles.newFilter, apenasNovos && styles.filterActive]} onPress={() => setApenasNovos(!apenasNovos)}><Text style={[styles.filterText, apenasNovos && styles.filterTextActive]}>{apenasNovos ? "✓ " : "□ "}Somente não inscritos</Text></Pressable>
                                                                                                                                                               
-        <Text style={styles.filterLabel}>Categoria</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          <Pressable style={[styles.filterButton, !categoria && styles.filterActive]} onPress={() => setCategoria("")}>
-            <Text style={[styles.filterText, !categoria && styles.filterTextActive]}>Todas</Text>
-          </Pressable>
-          {categorias.map((item) => <Pressable key={item.id} style={[styles.filterButton, categoria === item.nome && styles.filterActive]} onPress={() => setCategoria(item.nome)}>
-            <Text style={[styles.filterText, categoria === item.nome && styles.filterTextActive]}>{item.nome}</Text>
-          </Pressable>)}
-        </ScrollView>
-        <Text style={styles.filterLabel}>Tema</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          <Pressable style={[styles.filterButton, !tema && styles.filterActive]} onPress={() => setTema("")}>
-            <Text style={[styles.filterText, !tema && styles.filterTextActive]}>Todos</Text>
-          </Pressable>
-          {temas.map((item) => <Pressable key={item.id} style={[styles.filterButton, tema === item.nome && styles.filterActive]} onPress={() => setTema(item.nome)}>
-            <Text style={[styles.filterText, tema === item.nome && styles.filterTextActive]}>{item.nome}</Text>
-          </Pressable>)}
-        </ScrollView>
-        <Text style={styles.filterLabel}>Avaliação mínima</Text>
+        <Select titulo="Categoria" valor={categoria} onChange={setCategoria} opcoes={[["", "Todas"], ...categorias.map((item) => [item.nome, item.nome])]} />
+        <Select titulo="Tema" valor={tema} onChange={setTema} opcoes={[["", "Todos"], ...temas.map((item) => [item.nome, item.nome])]} />
         {/* Sprint item 28 - Permitir filtro de cursos por tema, categoria e avaliação - Aplica os filtros de busca, tema, categoria e avaliação */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          {["", "1", "2", "3", "4", "5"].map((nota) => <Pressable key={nota || "todas"} style={[styles.filterButton, avaliacaoMinima === nota && styles.filterActive]} onPress={() => setAvaliacaoMinima(nota)}>
-            <Text style={[styles.filterText, avaliacaoMinima === nota && styles.filterTextActive]}>{nota ? `${nota} ★` : "Todas"}</Text>
-          </Pressable>)}
-        </ScrollView>
+        <Select titulo="Avaliação mínima" valor={avaliacaoMinima} onChange={setAvaliacaoMinima} opcoes={[["", "Todas"], ...["1", "2", "3", "4", "5"].map((nota) => [nota, `${nota} ★ ou mais`])]} />
         {/* Fim item 28 */}
       </View>
 
       <View style={styles.list}>
-        {cursos.map((curso) => {
-          const imagem = fonteImagemCurso(curso.imagem);
-          return (
-            <Pressable key={curso.id} style={[globalStyles.card, styles.card]} onPress={() => onOpen?.(curso)}>
-              <Image source={imagem} style={styles.image} />
-              <View style={styles.info}>
-                <Text style={styles.title} numberOfLines={1}>{curso.titulo}</Text>
-                <Text style={styles.description} numberOfLines={2}>{curso.descricao}</Text>
-                <Text style={styles.meta}>{curso.professor || "Professor(a)"}</Text>
-              </View>
-            </Pressable>
-          );
-        })}
+        {cursos.map(curso => <CursoCard key={curso.id} curso={curso} onOpen={onOpen} />)}
         {!loading && cursos.length === 0 ? /* Sprint item 29 - Criar recomendação inteligente de cursos com base nas buscas e compras recentes do aluno - Apresenta a ordenação de cursos recomendados pela API */ <Text style={globalStyles.message}>{ordem === "recomendados" ? "Ainda não há cursos relacionados às suas inscrições. Escolha outra ordenação." : "Nenhum curso público encontrado."}</Text> /* Fim item 29 */ : null}
       </View>
     </ScrollView>
@@ -177,7 +134,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 8
   },
-  searchInput: { flex: 1, color: colors.black, fontSize: 16 },
+  searchInput: { flex: 1, color: colors.ink, fontSize: 16 },
   filterRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingRight: 8 },
   filterLabel: { color: colors.darkGreen, fontSize: 13, fontWeight: "700", marginTop: 2 },
   filterButton: {
@@ -196,7 +153,7 @@ const styles = StyleSheet.create({
   card: { padding: 0 },
   image: { width: "100%", aspectRatio: 16 / 9, backgroundColor: "#dddddd" },
   info: { padding: 14, gap: 5 },
-  title: { color: colors.black, fontSize: 21, lineHeight: 25, fontWeight: "700" },
+  title: { color: colors.ink, fontSize: 21, lineHeight: 25, fontWeight: "700" },
   description: { color: colors.textMuted, fontSize: 14, lineHeight: 19 },
   meta: { color: colors.darkGreen, fontSize: 13, fontWeight: "700", marginTop: 4 }
 });

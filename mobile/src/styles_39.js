@@ -1,19 +1,19 @@
 import { Platform, StyleSheet } from "react-native";
 
 export const colors = {
-  green: "#2fbf83",
-  darkGreen: "#0c4d36",
-  deepGreen: "#073525",
-  tabGreen: "#159b66",
+  green: "#06a663",
+  darkGreen: "#087044",
+  deepGreen: "#075132",
+  tabGreen: "#087044",
   black: "#090909",
-  ink: "#123126",
+  ink: "#173e2c",
   white: "#ffffff",
   gray: "#f5f8f6",
   softGray: "#eef5f1",
-  border: "#cfe0d7",
+  border: "#dfe9e3",
   muted: "#6c7f76",
-  textMuted: "#53645c",
-  red: "#e21d0b",
+  textMuted: "#607468",
+  red: "#b90000",
   amber: "#f6b72f",
   mint: "#c7f0df"
 };
@@ -24,21 +24,21 @@ export /* Sprint item 39 - Desenvolver todas as telas do aplicativo - Define os 
 const globalStyles = StyleSheet.create({
   app: {
     flex: 1,
-    backgroundColor: colors.gray,
+    backgroundColor: colors.white,
     paddingBottom: systemNavigationInset
   },
   page: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 26,
-    paddingBottom: 112,
+    paddingTop: 24,
+    paddingBottom: 24,
     backgroundColor: colors.gray
   },
   title: {
     color: colors.ink,
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: "800"
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: "700"
   },
   eyebrow: {
     color: colors.darkGreen,
@@ -56,29 +56,44 @@ const globalStyles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: colors.white,
     overflow: "hidden",
     shadowColor: colors.black,
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.045,
     shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2
+  },
+  metricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 12
   },
   metricCard: {
-    minHeight: 150,
+    width: "48%",
+    minHeight: 138,
+    padding: 12,
+    gap: 6,
+    justifyContent: "space-between",
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: colors.white,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
     shadowColor: colors.black,
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.045,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2
   },
+  metricTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 6 },
+  metricTitle: { flex: 1, color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: "700" },
+  metricDetail: { color: colors.textMuted, fontSize: 12, lineHeight: 16, fontWeight: "400" },
+  metricValue: { color: colors.darkGreen, fontSize: 28, lineHeight: 34, fontWeight: "700" },
+  metricMoney: { color: colors.darkGreen, fontSize: 20, lineHeight: 26, fontWeight: "700" },
+  metricDate: { color: colors.darkGreen, fontSize: 18, lineHeight: 24, fontWeight: "700" },
+  metricIcon: { width: 28, height: 28, flexShrink: 0, borderRadius: 8, backgroundColor: colors.mint, alignItems: "center", justifyContent: "center" },
   label: {
     color: colors.muted,
     fontSize: 16,
@@ -88,12 +103,12 @@ const globalStyles = StyleSheet.create({
   input: {
     width: "100%",
     minHeight: 46,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 7,
+    borderRadius: 8,
     backgroundColor: colors.white,
-    color: colors.black,
-    fontSize: 17,
+    color: colors.ink,
+    fontSize: 15,
     paddingHorizontal: 12,
     paddingVertical: 8
   },
@@ -103,24 +118,23 @@ const globalStyles = StyleSheet.create({
   },
   primaryButton: {
     minHeight: 44,
-    minWidth: 124,
-    borderRadius: 7,
-    borderWidth: 1.4,
-    borderColor: colors.green,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.darkGreen,
     backgroundColor: colors.darkGreen,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
     shadowColor: colors.black,
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2
   },
   secondaryButton: {
     minHeight: 42,
-    borderRadius: 7,
-    borderWidth: 1.4,
+    borderRadius: 8,
+    borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.white,
     alignItems: "center",
@@ -129,9 +143,8 @@ const globalStyles = StyleSheet.create({
   },
   dangerButton: {
     minHeight: 44,
-    minWidth: 124,
-    borderRadius: 7,
-    borderWidth: 1.4,
+    borderRadius: 8,
+    borderWidth: 1,
     borderColor: colors.red,
     backgroundColor: colors.red,
     alignItems: "center",
@@ -140,13 +153,15 @@ const globalStyles = StyleSheet.create({
   },
   buttonText: {
     color: colors.white,
-    fontSize: 20,
-    lineHeight: 24
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: "600"
   },
   secondaryText: {
-    color: colors.black,
-    fontSize: 18,
-    lineHeight: 22
+    color: colors.darkGreen,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: "600"
   },
   message: {
     color: colors.darkGreen,

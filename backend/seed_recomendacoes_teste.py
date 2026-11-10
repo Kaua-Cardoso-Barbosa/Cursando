@@ -6,6 +6,7 @@ import unicodedata
 from flask_bcrypt import generate_password_hash
 from app import app
 from banco_37 import get_db
+from revisar_catalogo_recomendacoes import CATALOGO, PASTA, caminho_capa
 
 EMAIL = 'professor.recomendacoes@cursando.test'
 
@@ -40,7 +41,7 @@ def cadastrar():
             cur.execute('''INSERT INTO USUARIOS (NOME, EMAIL, CPF, SENHA, TIPO_USUARIO,
                 SITUACAO, TENTATIVAS, EMAIL_VERIFICADO, CRIADO_EM)
                 VALUES (?, ?, ?, ?, 1, 0, 0, 1, CURRENT_TIMESTAMP) RETURNING ID_USUARIO''',
-                ('Professor Recomendações (Teste)', EMAIL, cpf, generate_password_hash(senha)))
+                ('Lucas Almeida', EMAIL, cpf, generate_password_hash(senha)))
             professor = cur.fetchone()[0]
 
         def taxonomia(tabela, coluna, nome):
@@ -92,10 +93,14 @@ def cadastrar():
             ('Fotografia: enquadramento criativo', (foto, composicao, None), 'Segundo curso de controle para comparar o filtro de recomendações.'),
         ]
         criados = []
+        revisoes = {item[0]: item[1:] for item in CATALOGO}
         for titulo, (categoria, tema, imagem), resumo in catalogo:
-            titulo += ' [Teste]'
+            titulo_original = titulo + ' [Teste]'
+            titulo, resumo, foto_capa, _ = revisoes[titulo]
+            if (PASTA / f'pexels-{foto_capa}.jpg').exists():
+                imagem = caminho_capa(foto_capa)
             cur.execute('''SELECT C.ID_CURSO FROM CURSOS C JOIN PROFESSORES_CURSO P ON P.ID_CURSO=C.ID_CURSO
-                WHERE P.ID_USUARIO=? AND C.TITULO=? AND C.EXCLUIDO=0''', (professor, titulo))
+                WHERE P.ID_USUARIO=? AND C.TITULO IN (?, ?) AND C.EXCLUIDO=0''', (professor, titulo, titulo_original))
             if cur.fetchone():
                 continue
             cur.execute('SELECT COALESCE(MAX(ID_CURSO),0) FROM CURSOS')
@@ -105,7 +110,7 @@ def cadastrar():
                 curso = cur.fetchone()[0]
                 if curso > maior:
                     break
-            descricao = f'{resumo}\n\nCurso de demonstração para testar o catálogo e as recomendações. Sem aulas cadastradas.'
+            descricao = resumo
             cur.execute('''INSERT INTO CURSOS (ID_CURSO,TITULO,DESCRICAO,IMAGEM_URL,STATUS,EXCLUIDO,CRIADO_EM,ATUALIZADO_EM)
                 VALUES (?,?,?,?,1,0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)''', (curso, titulo, descricao.encode('utf-8'), imagem))
             cur.execute('INSERT INTO PROFESSORES_CURSO (ID_CURSO,ID_USUARIO) VALUES (?,?)', (curso, professor))

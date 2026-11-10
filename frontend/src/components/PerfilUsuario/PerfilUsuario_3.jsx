@@ -4,6 +4,9 @@ import Button from "../Button/Button.jsx";
 import css from "./PerfilUsuario_38.module.css";
 import validarNome from "../../utils/validarNome_1";
 import CabecalhoPagina from '../CabecalhoPagina/CabecalhoPagina.jsx';
+import { Link } from 'react-router-dom';
+import { useSessao } from '../../context/useSessao.js';
+import { urlPerfil } from '../../utils/perfil.js';
 
 function resolverUrlMidia(api, caminho) {
     if (!caminho) return "";
@@ -13,22 +16,27 @@ function resolverUrlMidia(api, caminho) {
     return `${api}${caminho}`;
 }
 
-export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado }) {
+export default function PerfilUsuario({ api, setMensagem, onPerfilAtualizado, emModal = false, onCancelar, onSalvando }) {
+    const { usuario } = useSessao();
     const [perfil, setPerfil] = useState({
         nome: "",
         email: "",
         cpf: "",
         imagem_perfil: "",
+        arroba: "",
         senha: "",
         confirmar_senha: ""
     });
     const [imagemArquivo, setImagemArquivo] = useState(null);
     const [previewImagem, setPreviewImagem] = useState("");
+    const previewLocal = useRef(null);
+    useEffect(() => () => { if (previewLocal.current) URL.revokeObjectURL(previewLocal.current); }, []);
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
     const [alteradoLocalmente, setAlteradoLocalmente] = useState(false);
     const alteradoLocalmenteRef = useRef(false);
     const [erroLocal, setErroLocal] = useState("");
+    useEffect(() => { onSalvando?.(salvando); }, [salvando, onSalvando]);
 
     const avisar = useCallback((mensagem) => {
         if (mensagem && setMensagem) {
@@ -76,6 +84,8 @@ async () => {
                 email: dados.email || "",
                 cpf: dados.cpf || "",
                 imagem_perfil: dados.imagem_perfil || "",
+                arroba: dados.arroba || "",
+                identificador: dados.identificador,
                 senha: "",
                 confirmar_senha: ""
             });
@@ -111,12 +121,19 @@ function sincronizarPerfil() {
 
     function selecionarImagem(evento) {
         const arquivo = evento.target.files?.[0];
+        if (arquivo && (!['image/jpeg', 'image/png', 'image/webp'].includes(arquivo.type) || arquivo.size > 5 * 1024 * 1024)) {
+            avisar({ tipo: 'erro', descricao: 'Escolha uma imagem JPG, PNG ou WebP de até 5 MB.' });
+            evento.target.value = '';
+            return;
+        }
+        if (previewLocal.current) URL.revokeObjectURL(previewLocal.current);
+        previewLocal.current = arquivo ? URL.createObjectURL(arquivo) : null;
         setImagemArquivo(arquivo || null);
         alteradoLocalmenteRef.current = true;
         setAlteradoLocalmente(true);
 
         if (arquivo) {
-            setPreviewImagem(URL.createObjectURL(arquivo));
+            setPreviewImagem(previewLocal.current);
         } else {
             setPreviewImagem(perfil.imagem_perfil ? resolverUrlMidia(api, perfil.imagem_perfil) : "");
         }
@@ -151,6 +168,7 @@ function atualizarCampoPerfil(campo, valor) {
             formulario.append("cpf", perfil.cpf);
             formulario.append("senha", perfil.senha);
             formulario.append("confirmar_senha", perfil.confirmar_senha);
+            if (Number(usuario?.tipo) === 1) formulario.append("arroba", perfil.arroba);
 
             if (imagemArquivo) {
                 formulario.append("imagem_perfil", imagemArquivo);
@@ -169,6 +187,8 @@ function atualizarCampoPerfil(campo, valor) {
                 email: usuarioAtualizado.email || perfil.email,
                 cpf: usuarioAtualizado.cpf || perfil.cpf,
                 imagem_perfil: usuarioAtualizado.imagem_perfil || perfil.imagem_perfil,
+                arroba: usuarioAtualizado.arroba || "",
+                identificador: usuarioAtualizado.identificador,
                 senha: "",
                 confirmar_senha: ""
             });
@@ -190,8 +210,9 @@ function atualizarCampoPerfil(campo, valor) {
     /* Fim item 3 */
 
     return (
-        <section className={css.perfil}>
-            <CabecalhoPagina etiqueta="CONTA" titulo="Editar perfil" descricao="Atualize seus dados, sua foto e a senha da conta." />
+        <section className={`${css.perfil} ${emModal ? css.emModal : ''}`}>
+            {emModal ? <header className={css.tituloModal}><h2 id="editar-perfil-titulo">Editar perfil</h2><p>Atualize seus dados, sua foto e a senha da conta.</p></header> : <CabecalhoPagina etiqueta="CONTA" titulo="Editar perfil" descricao="Atualize seus dados, sua foto e a senha da conta."
+                acoes={usuario && Number(usuario.tipo) !== 0 && <Link to={perfil.identificador ? urlPerfil(perfil.identificador) : '/perfil'}>Ver meu perfil</Link>} />}
             <div className={css.formulario}>
 
                 {carregando && <p className={css.textoApoio}>Carregando dados...</p>}
@@ -235,6 +256,13 @@ function atualizarCampoPerfil(campo, valor) {
                             funcao={(evento) => atualizarCampoPerfil("email", evento.target.value)}
                         />
 
+                        {Number(usuario?.tipo) === 1 && <div>
+                            <Input tipoInp="text" label="@ do perfil (opcional):" htmlFor="perfil_arroba"
+                                placeholder="Ex.: mariana.duarte" maxlength={41} value={perfil.arroba}
+                                funcao={(evento) => atualizarCampoPerfil("arroba", evento.target.value)} />
+                            <small>Use de 3 a 40 caracteres: letras sem acento, números, ponto ou sublinhado. Comece com uma letra. Deixe vazio para usar o identificador aleatório.</small>
+                        </div>}
+
                         <Input
                             tipoInp="text"
                             label="CPF:"
@@ -272,6 +300,7 @@ function atualizarCampoPerfil(campo, valor) {
                         )}
 
                         <div className={css.botoes}>
+                            {emModal && <Button tipo="button" texto="Cancelar" className={css.botaoCancelar} onClick={onCancelar} disabled={salvando} />}
                             <Button
                                 tipo="submit"
                                 texto={salvando ? "Salvando..." : "Salvar dados"}

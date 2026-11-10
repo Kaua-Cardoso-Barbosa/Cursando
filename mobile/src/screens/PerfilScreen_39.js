@@ -53,9 +53,9 @@ const styles = StyleSheet.create({
     alignSelf: "center"
   },
   card: {
-    borderWidth: 1.5,
-    borderColor: colors.black,
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
     backgroundColor: colors.white,
     paddingHorizontal: 16,
     paddingTop: 18,

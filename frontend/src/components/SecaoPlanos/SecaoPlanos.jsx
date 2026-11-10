@@ -9,8 +9,10 @@ const SecaoPlanos = () => {
     ] ;
 
     return (
-        <section className={css['secao-planos']}>
-            <h2>Experimente o Plus gratuitamente por 1 mês</h2>
+        <section className={css['secao-planos']} aria-labelledby="planos-home">
+            <div className={css.introPlano}><span className={css.span}>CONTINUE EVOLUINDO</span>
+            <h2 id="planos-home">Mais espaço para o que você quer aprender.</h2>
+            <p>Conheça a assinatura e encontre seu próximo curso. Seu desenvolvimento começa com o primeiro passo.</p></div>
             <div className={css['grid-planos']}>
                 <CartaoPlano
                     titulo="Plano Mensal"

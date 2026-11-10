@@ -59,6 +59,11 @@ def detalhe_curso_aluno(id_curso):
 
         curso = curso_publico_para_dict(row)
 
+        cursor.execute('''SELECT U.ID_USUARIO,U.NOME,U.ID_PUBLICO,U.ARROBA FROM PROFESSORES_CURSO PC
+            JOIN USUARIOS U ON U.ID_USUARIO=PC.ID_USUARIO
+            WHERE PC.ID_CURSO=? ORDER BY U.NOME''', (id_curso,))
+        curso['professores'] = [dict(id=r[0],nome=r[1],identificador='@'+r[3] if r[3] else r[2]) for r in cursor.fetchall()]
+
         # Sprint item 6 - Permitir que o instrutor divida o curso em módulos - Organiza os módulos e os vínculos das aulas do curso
         cursor.execute(
             """
@@ -125,7 +130,7 @@ def detalhe_curso_aluno(id_curso):
         # Sprint item 27 - Permitir que o aluno avalie o curso após a conclusão - Consulta as avaliações e as notas atribuídas ao curso
         cursor.execute(
             """
-            SELECT A.ID_AVALIACAO, U.NOME, U.IMAGEM_PERFIL, A.NOTA, A.COMENTARIO
+            SELECT A.ID_AVALIACAO, U.NOME, U.IMAGEM_PERFIL, A.NOTA, A.COMENTARIO, A.CRIADO_EM, U.ID_PUBLICO, U.ARROBA, U.TIPO_USUARIO
             FROM AVALIACOES_CURSO A
             JOIN USUARIOS U ON U.ID_USUARIO = A.ID_USUARIO
             WHERE A.ID_CURSO = ?
@@ -141,6 +146,8 @@ def detalhe_curso_aluno(id_curso):
                 "imagem_perfil": avaliacao_row[2],
                 "nota": int(avaliacao_row[3] or 0),
                 "comentario": de_blob_texto(avaliacao_row[4]) or "",
+                "data": avaliacao_row[5].isoformat() if avaliacao_row[5] else None,
+                "identificador": ('@' + avaliacao_row[7] if avaliacao_row[8] == 1 and avaliacao_row[7] else avaliacao_row[6]) if avaliacao_row[8] in (1, 2) else None,
             }
             for avaliacao_row in cursor.fetchall()
         ]
@@ -278,7 +285,7 @@ def descobrir_cursos():
         parametros.append(tema)
 
     if avaliacao_min is not None:
-        filtros.append("AND COALESCE((SELECT AVG(A.NOTA) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0) >= ?")
+        filtros.append("AND COALESCE((SELECT AVG(CAST(A.NOTA AS DOUBLE PRECISION)) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0) >= ?")
         parametros.append(avaliacao_min)
     # Fim item 28
 
@@ -347,7 +354,7 @@ def descobrir_cursos():
                     WHERE MR.ID_USUARIO = ? AND MR.STATUS_MATRICULA = 1
                       AND CTR.ID_TEMA = CT.ID_TEMA), 0)
             ) DESC,
-            COALESCE((SELECT AVG(A.NOTA) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0) DESC,
+            COALESCE((SELECT AVG(CAST(A.NOTA AS DOUBLE PRECISION)) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0) DESC,
             (SELECT COUNT(*) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1) DESC,
             C.CRIADO_EM DESC, C.ID_CURSO DESC
         """

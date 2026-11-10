@@ -123,25 +123,9 @@ def cursos_home():
     cursor = con.cursor()
 
     try:
-        cursor.execute(
-            """
-            SELECT FIRST 3
-                C.ID_CURSO,
-                C.TITULO,
-                C.DESCRICAO,
-                C.IMAGEM_URL,
-                C.STATUS,
-                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0),
-                (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1)
-            FROM CURSOS C
-            WHERE C.EXCLUIDO = 0 AND C.STATUS = 1
-            ORDER BY C.CRIADO_EM DESC, C.ID_CURSO DESC
-            """
-        )
-        destaques = [curso_para_dict(row) for row in cursor.fetchall()]
-
-        cursor.execute(
-            """
+        # Catálogo público, sem exigir sessão ou assinatura. Os oito primeiros
+        # campos atendem curso_para_dict; o nono informa as inscrições recentes.
+        consulta = """
             SELECT FIRST 3
                 C.ID_CURSO,
                 C.TITULO,
@@ -150,13 +134,25 @@ def cursos_home():
                 C.STATUS,
                 (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0),
                 (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1),
-                (SELECT COUNT(*) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO AND M.STATUS_MATRICULA = 1)
+                (SELECT COUNT(DISTINCT M.ID_USUARIO) FROM MATRICULAS M WHERE M.ID_CURSO = C.ID_CURSO),
+                (SELECT COUNT(DISTINCT E.ID_USUARIO) FROM EVENTOS_CURSOS E
+                 WHERE E.ID_CURSO = C.ID_CURSO AND E.TIPO_EVENTO = 'INSCRICAO'
+                   AND E.CRIADO_EM >= DATEADD(-7 DAY TO CURRENT_TIMESTAMP)
+                   AND E.CRIADO_EM <= CURRENT_TIMESTAMP)
             FROM CURSOS C
             WHERE C.EXCLUIDO = 0 AND C.STATUS = 1
-            ORDER BY 8 DESC, C.CRIADO_EM DESC, C.ID_CURSO DESC
-            """
-        )
-        mais_assinados = [curso_para_dict(row[:7]) for row in cursor.fetchall()]
+        """
+        # Destaques: inscrições nos últimos 7 dias; total histórico desempata.
+        cursor.execute(consulta + " ORDER BY 9 DESC, 8 DESC, C.CRIADO_EM DESC, C.ID_CURSO DESC")
+        destaques = []
+        for row in cursor.fetchall():
+            curso = curso_para_dict(row[:8])
+            curso["inscritos_recentes"] = row[8] or 0
+            destaques.append(curso)
+
+        # O total histórico inclui alunos cuja matrícula está inativa atualmente.
+        cursor.execute(consulta + " ORDER BY 8 DESC, C.CRIADO_EM DESC, C.ID_CURSO DESC")
+        mais_assinados = [curso_para_dict(row[:8]) for row in cursor.fetchall()]
 
         return jsonify({"destaques": destaques, "mais_assinados": mais_assinados})
     except Exception as erro:
@@ -175,7 +171,8 @@ def query_cursos_base(filtro_extra=""):
             C.IMAGEM_URL,
             C.STATUS,
             (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0),
-            (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1),
+            (SELECT COUNT(*) FROM VIDEOS V WHERE V.ID_CURSO = C.ID_CURSO AND V.EXCLUIDO = 0 AND V.STATUS = 1
+             AND (V.ID_MODULO IS NULL OR EXISTS (SELECT 1 FROM MODULOS_CURSO MO WHERE MO.ID_MODULO=V.ID_MODULO AND MO.STATUS=1))),
             COALESCE((SELECT LIST(U.NOME, ', ') FROM PROFESSORES_CURSO PC JOIN USUARIOS U ON U.ID_USUARIO = PC.ID_USUARIO WHERE PC.ID_CURSO = C.ID_CURSO), ''),
             CASE WHEN EXISTS (
                 SELECT 1 FROM MATRICULAS M
@@ -184,10 +181,11 @@ def query_cursos_base(filtro_extra=""):
             (SELECT COUNT(*)
              FROM PROGRESSO_AULAS PA
              JOIN VIDEOS V2 ON V2.ID_VIDEO = PA.ID_VIDEO
-             WHERE PA.ID_USUARIO = ? AND V2.ID_CURSO = C.ID_CURSO AND V2.EXCLUIDO = 0 AND V2.STATUS = 1),
+             WHERE PA.ID_USUARIO = ? AND V2.ID_CURSO = C.ID_CURSO AND V2.EXCLUIDO = 0 AND V2.STATUS = 1
+             AND (V2.ID_MODULO IS NULL OR EXISTS (SELECT 1 FROM MODULOS_CURSO MO WHERE MO.ID_MODULO=V2.ID_MODULO AND MO.STATUS=1))),
             COALESCE(CAT.NOME, ''),
             COALESCE(TEMA.NOME, ''),
-            COALESCE((SELECT AVG(A.NOTA) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0)
+            COALESCE((SELECT AVG(CAST(A.NOTA AS DOUBLE PRECISION)) FROM AVALIACOES_CURSO A WHERE A.ID_CURSO = C.ID_CURSO), 0)
         FROM CURSOS C
         LEFT JOIN CURSO_TAXONOMIA CT ON CT.ID_CURSO = C.ID_CURSO
         LEFT JOIN CATEGORIAS_CURSO CAT ON CAT.ID_CATEGORIA = CT.ID_CATEGORIA
@@ -488,28 +486,41 @@ def detalhe_aula_aluno(id_aula):
             """
             SELECT V.ID_VIDEO, V.ID_CURSO, V.TITULO, V.DESCRICAO, V.VIDEO_URL, V.STATUS,
                    CASE WHEN PA.ID_VIDEO IS NULL THEN 0 ELSE 1 END,
-                   COALESCE(PR.POSICAO_SEGUNDOS, 0)
+                   COALESCE(PR.POSICAO_SEGUNDOS, 0), V.ID_MODULO
             FROM VIDEOS V
+            LEFT JOIN MODULOS_CURSO MO ON MO.ID_MODULO = V.ID_MODULO
             LEFT JOIN PROGRESSO_AULAS PA ON PA.ID_VIDEO = V.ID_VIDEO AND PA.ID_USUARIO = ?
             LEFT JOIN PROGRESSO_REPRODUCAO PR ON PR.ID_VIDEO = V.ID_VIDEO AND PR.ID_USUARIO = ?
-            WHERE V.ID_CURSO = ? AND V.EXCLUIDO = 0 AND V.STATUS = 1 AND V.ID_VIDEO <> ?
-            ORDER BY V.POSICAO_PLAYLIST, V.DATA_UPLOAD, V.ID_VIDEO
+            WHERE V.ID_CURSO = ? AND V.EXCLUIDO = 0 AND V.STATUS = 1
+              AND (V.ID_MODULO IS NULL OR MO.STATUS = 1)
+            ORDER BY CASE WHEN V.ID_MODULO IS NULL THEN 1 ELSE 0 END,
+                     MO.ORDEM, MO.ID_MODULO, V.POSICAO_PLAYLIST, V.DATA_UPLOAD, V.ID_VIDEO
             """,
-            (id_aluno, id_aluno, aula["id_curso"], id_aula),
+            (id_aluno, id_aluno, aula["id_curso"]),
         )
         # Fim item 4
         proximas = []
+        aulas_playlist = cursor.fetchall()
+        cursor.execute('''SELECT ID_MODULO, TITULO FROM MODULOS_CURSO
+            WHERE ID_CURSO = ? AND STATUS = 1 ORDER BY ORDEM, ID_MODULO''', (aula["id_curso"],))
+        grupos = {modulo[0]: dict(id=modulo[0], numero=indice + 1, titulo=modulo[1], aulas=[])
+                  for indice, modulo in enumerate(cursor.fetchall())}
+        grupos[None] = dict(id=None, numero=None, titulo="Aulas sem módulo", aulas=[])
         
         
         # Sprint item 4 - Salvar o progresso das aulas para que o aluno continue de onde parou - Consulta ou grava a posição e a conclusão das aulas
-        for prox_row in cursor.fetchall():
+        for prox_row in aulas_playlist:
             proxima = aula_para_dict(prox_row[:6])
             proxima["assistida"] = bool(prox_row[6])
             proxima["progresso_segundos"] = float(prox_row[7] or 0)
-            proximas.append(proxima)
+            proxima["id_modulo"] = prox_row[8]
+            grupos[prox_row[8]]["aulas"].append(proxima)
+            if proxima["id"] != id_aula:
+                proximas.append(proxima)
         # Fim item 4
 
-        return jsonify({"aula": aula, "curso": curso, "proximas": proximas})
+        return jsonify({"aula": aula, "curso": curso, "proximas": proximas,
+                        "playlist": [grupo for grupo in grupos.values() if grupo["aulas"]]})
     except Exception as erro:
         return resposta(f"Erro ao carregar aula: {erro}", 500)
     finally:

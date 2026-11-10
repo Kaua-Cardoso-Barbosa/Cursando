@@ -15,6 +15,7 @@ export default function CadastroColaborador({
     const [senha, setSenha] = useState("");
     const [confirmar_Senha, setConfirmar_Senha] = useState("");
     const [cpf, setCpf] = useState("");
+    const [arroba, setArroba] = useState("");
     const [carregando, setCarregando] = useState(false);
 
     const nomeTipo = tipo === 1 ? "Professor" : "Administrador";
@@ -24,15 +25,6 @@ export default function CadastroColaborador({
 
         try {
             setCarregando(true);
-
-            console.log("nome:", nome);
-            console.log("email:", email);
-            console.log("senha:", senha);
-            console.log("confirmar_senha:", confirmar_Senha);
-            console.log("cpf:", cpf);
-            console.log("tipo:", tipo);
-
-            console.log("Cookies:", document.cookie);
 
             const retorno = await fetch(`${api}/cadastrar_colaborador`, {
                 method: "POST",
@@ -46,7 +38,8 @@ export default function CadastroColaborador({
                     senha: senha,
                     confirmar_senha: confirmar_Senha,
                     cpf: cpf,
-                    tipo: tipo
+                    tipo: tipo,
+                    ...(Number(tipo) === 1 ? { arroba } : {})
                 })
             });
 
@@ -69,6 +62,7 @@ export default function CadastroColaborador({
             setSenha("");
             setConfirmar_Senha("");
             setCpf("");
+            setArroba("");
 
             fechar();
 
@@ -104,6 +98,13 @@ export default function CadastroColaborador({
                 <h2>Cadastrar {nomeTipo}</h2>
 
                 <form onSubmit={cadastrar}>
+
+                    {Number(tipo) === 1 && <div>
+                        <Input tipoInp="text" label="@ do perfil (opcional):" htmlFor="cadastro_professor_arroba"
+                            placeholder="Ex.: rafael.moreira" maxlength={41} value={arroba}
+                            funcao={(evento) => setArroba(evento.target.value)} />
+                        <small>De 3 a 40 caracteres: letras sem acento, números, ponto ou sublinhado. Comece com uma letra. Se deixar vazio, será usado um identificador aleatório.</small>
+                    </div>}
 
                     <Input
                         tipoInp="text"

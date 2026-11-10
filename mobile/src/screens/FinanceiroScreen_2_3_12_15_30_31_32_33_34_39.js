@@ -192,17 +192,17 @@ async function solicitarSaque() {
         <View style={globalStyles.divider} />
       </View>
 
-      <View style={styles.cards}>
+      <View style={globalStyles.metricGrid}>
         {cardsAtivos.map(([titulo, detalhe, chave, icon, tipo]) => (
-          <View key={chave} style={[globalStyles.metricCard, styles.card]}>
-            <View style={styles.cardTop}>
-              <Text style={styles.cardTitle}>{titulo}</Text>
-              <View style={styles.iconBadge}>
-                <AppIcon name={icon} size={20} color={colors.black} />
+          <View key={chave} style={globalStyles.metricCard}>
+            <View style={globalStyles.metricTop}>
+              <Text style={globalStyles.metricTitle}>{titulo}</Text>
+              <View style={globalStyles.metricIcon}>
+                <AppIcon name={icon} size={14} color={colors.darkGreen} />
               </View>
             </View>
-            <Text style={styles.cardDetail}>{detalhe}</Text>
-            <Text style={styles.number}>
+            <Text style={globalStyles.metricDetail}>{detalhe}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65} style={tipo === "money" ? globalStyles.metricMoney : globalStyles.metricValue}>
               {tipo === "money" ? moeda(financeiro?.[chave]) : Number(financeiro?.[chave] || 0)}
             </Text>
           </View>
@@ -324,47 +324,6 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 28
   },
-  cards: {
-    gap: 18
-  },
-  card: {
-    justifyContent: "space-between"
-  },
-  cardTop: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    gap: 14
-  },
-  cardTitle: {
-    color: colors.black,
-    flex: 1,
-    fontSize: 23,
-    lineHeight: 28,
-    textAlign: "center"
-  },
-  iconBadge: {
-    width: 48,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: colors.mint,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  cardDetail: {
-    color: "#56c991",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center"
-  },
-  number: {
-    color: colors.black,
-    fontSize: 34,
-    lineHeight: 40,
-    textAlign: "center",
-    marginTop: 10
-  },
   poolText: {
     color: colors.textMuted,
     fontSize: 15,
@@ -387,14 +346,14 @@ const styles = StyleSheet.create({
     paddingTop: 16
   },
   sectionTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 21,
     lineHeight: 26,
     fontWeight: "700"
   },
   payButton: {
     minHeight: 48,
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: colors.darkGreen,
     alignItems: "center",
     justifyContent: "center",
@@ -406,14 +365,14 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   },
   invoiceCard: {
-    borderWidth: 1.5,
-    borderColor: colors.black,
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
     padding: 14,
     backgroundColor: colors.white
   },
   invoiceTitle: {
-    color: colors.black,
+    color: colors.ink,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 4
@@ -425,7 +384,7 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     minHeight: 42,
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: colors.darkGreen,
     alignItems: "center",
     justifyContent: "center",

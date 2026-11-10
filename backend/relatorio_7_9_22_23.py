@@ -102,7 +102,7 @@ def relatorio_professor():
                 COUNT(DISTINCT M.ID_USUARIO),
                 COUNT(DISTINCT V.ID_VIDEO),
                 COUNT(DISTINCT CAST(PA.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(PA.ID_VIDEO AS VARCHAR(20))),
-                COALESCE(AVG(A.NOTA), 0),
+                COALESCE(AVG(CAST(A.NOTA AS DOUBLE PRECISION)), 0),
                 (SELECT COUNT(DISTINCT CAST(MC.ID_USUARIO AS VARCHAR(20)) || '-' || CAST(C.ID_CURSO AS VARCHAR(20)))
                  FROM MATRICULAS MC
                  WHERE MC.ID_CURSO = C.ID_CURSO AND MC.STATUS_MATRICULA = 1

@@ -5,6 +5,7 @@ import SecaoSobre from '../../components/SecaoSobre/SecaoSobre';
 import SecaoPlanos from "../../components/SecaoPlanos/SecaoPlanos";
 import Rodape from '../../components/Rodape/Rodape';
 import css from './Home_38.module.css';
+import { FiBookOpen, FiPlayCircle, FiAward } from 'react-icons/fi';
 
 const Home = () => {
     const api = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5000`;
@@ -24,8 +25,8 @@ const Home = () => {
                 const prepararCurso = (curso) => ({
                     ...curso,
                     imagem: curso.imagem
-                        ? `${api.replace(/\/$/, '')}${curso.imagem}`
-                        : '/imagens_assets/vale-a-pena-fazer-um-curso-online 1.png',
+                        ? (/^https?:\/\//i.test(curso.imagem) ? curso.imagem : `${api.replace(/\/$/, '')}/${curso.imagem.replace(/^\//, '')}`)
+                        : '/imagens_banner_curso/Placholder.png',
                     alt: curso.titulo,
                 });
 
@@ -52,23 +53,31 @@ const Home = () => {
 
     return (
         <div className={css['container-principal']}>
-            <Hero />
             <main className={css['conteudo-principal']}>
+                <Hero />
+                <div className={css.beneficios} aria-label="Como você aprende na Cursando">
+                    <div><FiBookOpen aria-hidden="true" /><span><strong>Conhecimento para explorar</strong><small>Cursos para seus próximos objetivos</small></span></div>
+                    <div><FiPlayCircle aria-hidden="true" /><span><strong>Sua rotina, seu ritmo</strong><small>Continue de onde parou</small></span></div>
+                    <div><FiAward aria-hidden="true" /><span><strong>Aprendizado que se reconhece</strong><small>Certificado após aprovação na prova</small></span></div>
+                </div>
                 <SecaoCursos
-                    tituloPrincipal="Os Cursos que Estão Transformando Carreiras"
-                    subtitulo="Destaques"
+                    id="cursos"
+                    tituloPrincipal="O que você quer aprender hoje?"
+                    subtitulo="CURSOS EM DESTAQUE"
+                    descricao="Os cursos com mais inscrições nos últimos 7 dias."
                     cursos={cursos.destaques}
                     mensagemVazia={mensagemCursos}
                 />
                 <SecaoSobre />
                 <SecaoCursos
-                    tituloPrincipal="Seu futuro começa agora. Assine!"
-                    subtitulo="Mais Assinados"
+                    tituloPrincipal="Encontre seu próximo passo"
+                    subtitulo="MAIS ASSINADOS"
+                    descricao="Os cursos com mais alunos inscritos de todos os tempos."
                     cursos={cursos.maisAssinados}
                     mensagemVazia={mensagemCursos}
                 />
+                <SecaoPlanos />
             </main>
-            <SecaoPlanos />
             <Rodape />
         </div>
     );
