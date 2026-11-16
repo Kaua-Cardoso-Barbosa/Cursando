@@ -1,0 +1,122 @@
+[
+  {
+    "titulo": "Interface e organização do projeto",
+    "slug": "interface-overview",
+    "duracao": 672.541667,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/interface-overview/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Navegação no espaço 3D",
+    "slug": "viewport-navigation",
+    "duracao": 221.833333,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/viewport-navigation/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Mover, girar e dimensionar objetos",
+    "slug": "select-transform",
+    "duracao": 666.0,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/select-transform/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Organização de objetos e coleções",
+    "slug": "collections",
+    "duracao": 439.5,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/collections/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Modo Objeto e Modo de Edição",
+    "slug": "object-and-edit-mode",
+    "duracao": 187.625,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/object-and-edit-mode/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Vértices, arestas e faces",
+    "slug": "mesh-selection-mode",
+    "duracao": 134.166667,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/mesh-selection-mode/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Extrusão e criação de volumes",
+    "slug": "extrude",
+    "duracao": 286.875,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/extrude/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Cortes para refinar a malha",
+    "slug": "loop-cut",
+    "duracao": 190.291667,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/loop-cut/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Materiais e editor de sombreamento",
+    "slug": "shading-editor",
+    "duracao": 434.583333,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/shading-editor/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Tipos de luz e iluminação",
+    "slug": "light-types",
+    "duracao": 89.833333,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/light-types/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Configurações de renderização",
+    "slug": "render-settings-introduction",
+    "duracao": 509.333333,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/render-settings-introduction/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  },
+  {
+    "titulo": "Exportação da imagem final",
+    "slug": "render-output-settings",
+    "duracao": 270.291667,
+    "fonte": "https://studio.blender.org/training/blender-2-8-fundamentals/render-output-settings/",
+    "autor": "Blender Foundation / Blender Studio — Blender 2.8 Fundamentals",
+    "licenca": "https://creativecommons.org/licenses/by/4.0/",
+    "idioma": "Inglês",
+    "versao": "Blender 2.8"
+  }
+]

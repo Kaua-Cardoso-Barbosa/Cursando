@@ -5,8 +5,9 @@ import { createRequire } from 'node:module';
 const require = createRequire(path.resolve('engine/package.json'));
 const { build } = require('esbuild');
 const { chromium } = require('playwright');
-const root = path.resolve('..'), assets = path.resolve('engine/assets/cursando');
+const root = path.resolve('..'), assets = path.resolve(process.env.CURSANDO_CAPTURE_ASSETS||'engine/assets/cursando');
 const data = JSON.parse(await fs.readFile(path.join(assets,'demo-private.json'),'utf8'));
+if(process.env.CURSANDO_CAPTURE_EXAM_SNAPSHOT)data.exam=JSON.parse(await fs.readFile(path.join(assets,process.env.CURSANDO_CAPTURE_EXAM_SNAPSHOT),'utf8'));
 const stub = `export const resolverUrlMidia=p=>p?.startsWith('http')?p:'http://127.0.0.1:5000'+p;export const getApiBaseUrl=()=> 'http://127.0.0.1:5000';export const apiRequest=async p=> p==='/chat/conversas'?${JSON.stringify((data.course.curso.professores || []).slice(0,1).map(p=>({id_curso:11,id_aluno:0,nome:p.nome||'Professor do curso',curso:data.course.curso.titulo})))}:p.includes('/historico')?{itens:[],total:0,paginas:1}:p.includes('/mensagens')?{mensagens:[],tem_mais:false}:[];`;
 await build({ entryPoints:['scripts/mobile-entry.jsx'], outfile:'out/mobile-ui.js', bundle:true, loader:{'.js':'jsx','.png':'file'}, jsx:'automatic', platform:'browser', define:{'process.env.NODE_ENV':'"production"','__DEV__':'false'}, alias:{'react-native':'react-native-web','react':path.resolve('engine/node_modules/react'),'react-dom':path.resolve('engine/node_modules/react-dom')}, nodePaths:[path.resolve('engine/node_modules')], plugins:[{name:'capture-adapters',setup(b){
   b.onResolve({filter:/AppIcon_39$/},()=>({path:'icon',namespace:'stub'}));
@@ -37,11 +38,11 @@ try{
    else json=[];
    return route.fulfill({json});
  }return route.continue();});
- for(const [name,url] of [['web-home','/'],['web-courses','/DashboardAluno/descobrir'],['web-course','/DashboardAluno/cursos/11']]){
+ for(const [name,url] of (process.env.CURSANDO_CAPTURE_MOBILE_ONLY?[]:[['web-home','/'],['web-courses','/DashboardAluno/descobrir'],['web-course','/DashboardAluno/cursos/11']])){
    await page.goto('http://127.0.0.1:5199'+url,{waitUntil:'networkidle'});await page.evaluate(()=>document.fonts.ready);await page.screenshot({path:path.join(assets,name+'.png')});
  }
  await page.setViewportSize({width:390,height:844});
- for(const screen of ['home','course','exam','chat']){
+ for(const screen of (process.env.CURSANDO_CAPTURE_SCREEN?[process.env.CURSANDO_CAPTURE_SCREEN]:['home','course','exam','chat'])){
    const errors=[];const handler=e=>errors.push(e.message);page.on('pageerror',handler);
    await page.goto(`http://127.0.0.1:${port}/?screen=${screen}`,{waitUntil:'networkidle'});await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
    if(errors.length)throw Error(screen+': '+errors.join(';'));

@@ -1,0 +1,19 @@
+Como tornar o aprendizado mais organizado e acessível?
+
+Essa é a proposta do Cursando: conectar alunos, professores e conhecimento em uma experiência pelo site e pelo aplicativo.
+
+No catálogo, você encontra os cursos e escolhe o que quer aprender.
+
+Vamos acompanhar um exemplo de modelagem três D. O conteúdo aparece organizado em módulos, com aulas e materiais de apoio.
+
+Na página da aula, o aluno assiste à explicação e encontra os próximos passos em uma lista organizada.
+
+O progresso fica registrado para continuar de onde parou, inclusive pelo aplicativo.
+
+Se surgir uma dúvida, o chat aproxima aluno e professor.
+
+As provas permitem avaliar o conhecimento. Com a aprovação, o sistema disponibiliza o certificado do curso.
+
+Cursando. Um projeto que reúne organização, acompanhamento e comunicação para apoiar o aprendizado.
+
+Conheça o projeto.

@@ -1,0 +1,750 @@
+[
+  {
+    "start": 0.65,
+    "end": 3.89,
+    "text": "Como tornaram aprendizado mais organizado e acessível?",
+    "words": [
+      {
+        "start": 0.65,
+        "end": 0.91,
+        "text": "Como"
+      },
+      {
+        "start": 0.91,
+        "end": 1.33,
+        "text": "tornaram"
+      },
+      {
+        "start": 1.33,
+        "end": 1.9100000000000001,
+        "text": "aprendizado"
+      },
+      {
+        "start": 1.9100000000000001,
+        "end": 2.29,
+        "text": "mais"
+      },
+      {
+        "start": 2.29,
+        "end": 3.07,
+        "text": "organizado"
+      },
+      {
+        "start": 3.07,
+        "end": 3.25,
+        "text": "e"
+      },
+      {
+        "start": 3.25,
+        "end": 3.89,
+        "text": "acessível?"
+      }
+    ]
+  },
+  {
+    "start": 4.43,
+    "end": 9.63,
+    "text": "Essa é a proposta do cursando, conectar alunos, professores e conhecimento em uma experiência",
+    "words": [
+      {
+        "start": 4.43,
+        "end": 4.69,
+        "text": "Essa"
+      },
+      {
+        "start": 4.69,
+        "end": 4.83,
+        "text": "é"
+      },
+      {
+        "start": 4.83,
+        "end": 4.890000000000001,
+        "text": "a"
+      },
+      {
+        "start": 4.890000000000001,
+        "end": 5.3500000000000005,
+        "text": "proposta"
+      },
+      {
+        "start": 5.3500000000000005,
+        "end": 5.53,
+        "text": "do"
+      },
+      {
+        "start": 5.53,
+        "end": 6.090000000000001,
+        "text": "cursando,"
+      },
+      {
+        "start": 6.430000000000001,
+        "end": 6.87,
+        "text": "conectar"
+      },
+      {
+        "start": 6.87,
+        "end": 7.430000000000001,
+        "text": "alunos,"
+      },
+      {
+        "start": 7.550000000000001,
+        "end": 8.11,
+        "text": "professores"
+      },
+      {
+        "start": 8.11,
+        "end": 8.29,
+        "text": "e"
+      },
+      {
+        "start": 8.29,
+        "end": 8.89,
+        "text": "conhecimento"
+      },
+      {
+        "start": 8.89,
+        "end": 9.05,
+        "text": "em"
+      },
+      {
+        "start": 9.05,
+        "end": 9.17,
+        "text": "uma"
+      },
+      {
+        "start": 9.17,
+        "end": 9.63,
+        "text": "experiência"
+      }
+    ]
+  },
+  {
+    "start": 9.63,
+    "end": 11.65,
+    "text": "pelo site e pelo aplicativo.",
+    "words": [
+      {
+        "start": 9.63,
+        "end": 9.99,
+        "text": "pelo"
+      },
+      {
+        "start": 9.99,
+        "end": 10.33,
+        "text": "site"
+      },
+      {
+        "start": 10.33,
+        "end": 10.67,
+        "text": "e"
+      },
+      {
+        "start": 10.67,
+        "end": 10.91,
+        "text": "pelo"
+      },
+      {
+        "start": 10.91,
+        "end": 11.65,
+        "text": "aplicativo."
+      }
+    ]
+  },
+  {
+    "start": 12.110000000000001,
+    "end": 15.93,
+    "text": "No catálogo, você encontra os cursos e escolhe o que quer aprender.",
+    "words": [
+      {
+        "start": 12.110000000000001,
+        "end": 12.33,
+        "text": "No"
+      },
+      {
+        "start": 12.33,
+        "end": 12.93,
+        "text": "catálogo,"
+      },
+      {
+        "start": 13.23,
+        "end": 13.450000000000001,
+        "text": "você"
+      },
+      {
+        "start": 13.450000000000001,
+        "end": 13.790000000000001,
+        "text": "encontra"
+      },
+      {
+        "start": 13.790000000000001,
+        "end": 14.030000000000001,
+        "text": "os"
+      },
+      {
+        "start": 14.030000000000001,
+        "end": 14.47,
+        "text": "cursos"
+      },
+      {
+        "start": 14.47,
+        "end": 14.610000000000001,
+        "text": "e"
+      },
+      {
+        "start": 14.610000000000001,
+        "end": 15.030000000000001,
+        "text": "escolhe"
+      },
+      {
+        "start": 15.030000000000001,
+        "end": 15.110000000000001,
+        "text": "o"
+      },
+      {
+        "start": 15.110000000000001,
+        "end": 15.290000000000001,
+        "text": "que"
+      },
+      {
+        "start": 15.290000000000001,
+        "end": 15.530000000000001,
+        "text": "quer"
+      },
+      {
+        "start": 15.530000000000001,
+        "end": 15.93,
+        "text": "aprender."
+      }
+    ]
+  },
+  {
+    "start": 16.509999999999998,
+    "end": 19.25,
+    "text": "Vamos acompanhar um exemplo de modelagem 3D.",
+    "words": [
+      {
+        "start": 16.509999999999998,
+        "end": 16.689999999999998,
+        "text": "Vamos"
+      },
+      {
+        "start": 16.689999999999998,
+        "end": 17.229999999999997,
+        "text": "acompanhar"
+      },
+      {
+        "start": 17.229999999999997,
+        "end": 17.41,
+        "text": "um"
+      },
+      {
+        "start": 17.41,
+        "end": 17.77,
+        "text": "exemplo"
+      },
+      {
+        "start": 17.77,
+        "end": 17.95,
+        "text": "de"
+      },
+      {
+        "start": 17.95,
+        "end": 18.529999999999998,
+        "text": "modelagem"
+      },
+      {
+        "start": 18.529999999999998,
+        "end": 19.25,
+        "text": "3D."
+      }
+    ]
+  },
+  {
+    "start": 19.849999999999998,
+    "end": 24.45,
+    "text": "O conteúdo aparece organizado em módulos, com aulas e materiais de apoio.",
+    "words": [
+      {
+        "start": 19.849999999999998,
+        "end": 19.99,
+        "text": "O"
+      },
+      {
+        "start": 19.99,
+        "end": 20.389999999999997,
+        "text": "conteúdo"
+      },
+      {
+        "start": 20.389999999999997,
+        "end": 20.81,
+        "text": "aparece"
+      },
+      {
+        "start": 20.81,
+        "end": 21.549999999999997,
+        "text": "organizado"
+      },
+      {
+        "start": 21.549999999999997,
+        "end": 21.689999999999998,
+        "text": "em"
+      },
+      {
+        "start": 21.689999999999998,
+        "end": 22.25,
+        "text": "módulos,"
+      },
+      {
+        "start": 22.549999999999997,
+        "end": 22.75,
+        "text": "com"
+      },
+      {
+        "start": 22.75,
+        "end": 23.11,
+        "text": "aulas"
+      },
+      {
+        "start": 23.11,
+        "end": 23.31,
+        "text": "e"
+      },
+      {
+        "start": 23.31,
+        "end": 23.869999999999997,
+        "text": "materiais"
+      },
+      {
+        "start": 23.869999999999997,
+        "end": 23.97,
+        "text": "de"
+      },
+      {
+        "start": 23.97,
+        "end": 24.45,
+        "text": "apoio."
+      }
+    ]
+  },
+  {
+    "start": 25.137687999999997,
+    "end": 31.097687999999998,
+    "text": "Na página da aula, o aluno assiste a explicação e encontra os próximos passos em uma lista organizada.",
+    "words": [
+      {
+        "start": 25.137687999999997,
+        "end": 25.317687999999997,
+        "text": "Na"
+      },
+      {
+        "start": 25.317687999999997,
+        "end": 25.657687999999997,
+        "text": "página"
+      },
+      {
+        "start": 25.657687999999997,
+        "end": 25.897688,
+        "text": "da"
+      },
+      {
+        "start": 25.897688,
+        "end": 26.177687999999996,
+        "text": "aula,"
+      },
+      {
+        "start": 26.477687999999997,
+        "end": 26.557688,
+        "text": "o"
+      },
+      {
+        "start": 26.557688,
+        "end": 26.757687999999998,
+        "text": "aluno"
+      },
+      {
+        "start": 26.757687999999998,
+        "end": 27.257687999999998,
+        "text": "assiste"
+      },
+      {
+        "start": 27.257687999999998,
+        "end": 27.317687999999997,
+        "text": "a"
+      },
+      {
+        "start": 27.317687999999997,
+        "end": 27.837687999999996,
+        "text": "explicação"
+      },
+      {
+        "start": 27.837687999999996,
+        "end": 28.237688,
+        "text": "e"
+      },
+      {
+        "start": 28.237688,
+        "end": 28.617687999999998,
+        "text": "encontra"
+      },
+      {
+        "start": 28.617687999999998,
+        "end": 28.837687999999996,
+        "text": "os"
+      },
+      {
+        "start": 28.837687999999996,
+        "end": 29.357687999999996,
+        "text": "próximos"
+      },
+      {
+        "start": 29.357687999999996,
+        "end": 29.737688,
+        "text": "passos"
+      },
+      {
+        "start": 29.737688,
+        "end": 29.877688,
+        "text": "em"
+      },
+      {
+        "start": 29.877688,
+        "end": 30.057688,
+        "text": "uma"
+      },
+      {
+        "start": 30.057688,
+        "end": 30.317687999999997,
+        "text": "lista"
+      },
+      {
+        "start": 30.317687999999997,
+        "end": 31.097687999999998,
+        "text": "organizada."
+      }
+    ]
+  },
+  {
+    "start": 31.437687999999998,
+    "end": 36.877688,
+    "text": "O progresso fica registrado para continuar de onde parou, inclusive pelo aplicativo.",
+    "words": [
+      {
+        "start": 31.437687999999998,
+        "end": 31.957687999999997,
+        "text": "O"
+      },
+      {
+        "start": 31.957687999999997,
+        "end": 32.417688,
+        "text": "progresso"
+      },
+      {
+        "start": 32.417688,
+        "end": 32.717687999999995,
+        "text": "fica"
+      },
+      {
+        "start": 32.717687999999995,
+        "end": 33.277688,
+        "text": "registrado"
+      },
+      {
+        "start": 33.277688,
+        "end": 33.517688,
+        "text": "para"
+      },
+      {
+        "start": 33.517688,
+        "end": 33.977688,
+        "text": "continuar"
+      },
+      {
+        "start": 33.977688,
+        "end": 34.217687999999995,
+        "text": "de"
+      },
+      {
+        "start": 34.217687999999995,
+        "end": 34.417688,
+        "text": "onde"
+      },
+      {
+        "start": 34.417688,
+        "end": 34.777688,
+        "text": "parou,"
+      },
+      {
+        "start": 35.177687999999996,
+        "end": 35.737688,
+        "text": "inclusive"
+      },
+      {
+        "start": 35.737688,
+        "end": 36.097688,
+        "text": "pelo"
+      },
+      {
+        "start": 36.097688,
+        "end": 36.877688,
+        "text": "aplicativo."
+      }
+    ]
+  },
+  {
+    "start": 37.297687999999994,
+    "end": 40.65768799999999,
+    "text": "Se surgir uma dúvida, o chat aproxima aluno e professor.",
+    "words": [
+      {
+        "start": 37.297687999999994,
+        "end": 37.497688,
+        "text": "Se"
+      },
+      {
+        "start": 37.497688,
+        "end": 37.897687999999995,
+        "text": "surgir"
+      },
+      {
+        "start": 37.897687999999995,
+        "end": 38.037687999999996,
+        "text": "uma"
+      },
+      {
+        "start": 38.037687999999996,
+        "end": 38.477688,
+        "text": "dúvida,"
+      },
+      {
+        "start": 38.757687999999995,
+        "end": 38.857687999999996,
+        "text": "o"
+      },
+      {
+        "start": 38.857687999999996,
+        "end": 39.077687999999995,
+        "text": "chat"
+      },
+      {
+        "start": 39.077687999999995,
+        "end": 39.697688,
+        "text": "aproxima"
+      },
+      {
+        "start": 39.697688,
+        "end": 40.017688,
+        "text": "aluno"
+      },
+      {
+        "start": 40.017688,
+        "end": 40.217687999999995,
+        "text": "e"
+      },
+      {
+        "start": 40.217687999999995,
+        "end": 40.65768799999999,
+        "text": "professor."
+      }
+    ]
+  },
+  {
+    "start": 41.37768799999999,
+    "end": 43.817688,
+    "text": "As provas permitem avaliar o conhecimento.",
+    "words": [
+      {
+        "start": 41.37768799999999,
+        "end": 41.617688,
+        "text": "As"
+      },
+      {
+        "start": 41.617688,
+        "end": 42.037687999999996,
+        "text": "provas"
+      },
+      {
+        "start": 42.037687999999996,
+        "end": 42.557688,
+        "text": "permitem"
+      },
+      {
+        "start": 42.557688,
+        "end": 43.037687999999996,
+        "text": "avaliar"
+      },
+      {
+        "start": 43.037687999999996,
+        "end": 43.177687999999996,
+        "text": "o"
+      },
+      {
+        "start": 43.177687999999996,
+        "end": 43.817688,
+        "text": "conhecimento."
+      }
+    ]
+  },
+  {
+    "start": 44.277688,
+    "end": 48.137688,
+    "text": "Com a aprovação, o sistema disponibiliza o certificado do curso.",
+    "words": [
+      {
+        "start": 44.277688,
+        "end": 44.457688,
+        "text": "Com"
+      },
+      {
+        "start": 44.457688,
+        "end": 44.597688,
+        "text": "a"
+      },
+      {
+        "start": 44.597688,
+        "end": 45.237688,
+        "text": "aprovação,"
+      },
+      {
+        "start": 45.497688,
+        "end": 45.577687999999995,
+        "text": "o"
+      },
+      {
+        "start": 45.577687999999995,
+        "end": 45.917688,
+        "text": "sistema"
+      },
+      {
+        "start": 45.917688,
+        "end": 46.777688,
+        "text": "disponibiliza"
+      },
+      {
+        "start": 46.777688,
+        "end": 46.897688,
+        "text": "o"
+      },
+      {
+        "start": 46.897688,
+        "end": 47.617688,
+        "text": "certificado"
+      },
+      {
+        "start": 47.617688,
+        "end": 47.757688,
+        "text": "do"
+      },
+      {
+        "start": 47.757688,
+        "end": 48.137688,
+        "text": "curso."
+      }
+    ]
+  },
+  {
+    "start": 48.737688,
+    "end": 51.737688,
+    "text": "Curçando, um projeto que reúne a organização,",
+    "words": [
+      {
+        "start": 48.737688,
+        "end": 49.417688,
+        "text": "Curçando,"
+      },
+      {
+        "start": 49.737688,
+        "end": 49.937687999999994,
+        "text": "um"
+      },
+      {
+        "start": 49.937687999999994,
+        "end": 50.277688,
+        "text": "projeto"
+      },
+      {
+        "start": 50.277688,
+        "end": 50.577687999999995,
+        "text": "que"
+      },
+      {
+        "start": 50.577687999999995,
+        "end": 50.897688,
+        "text": "reúne"
+      },
+      {
+        "start": 50.897688,
+        "end": 51.01768799999999,
+        "text": "a"
+      },
+      {
+        "start": 51.01768799999999,
+        "end": 51.737688,
+        "text": "organização,"
+      }
+    ]
+  },
+  {
+    "start": 51.737688,
+    "end": 55.337688,
+    "text": "acompanhamento e comunicação para apoiar o aprendizado.",
+    "words": [
+      {
+        "start": 51.737688,
+        "end": 52.817688,
+        "text": "acompanhamento"
+      },
+      {
+        "start": 52.817688,
+        "end": 52.977688,
+        "text": "e"
+      },
+      {
+        "start": 52.977688,
+        "end": 53.65768799999999,
+        "text": "comunicação"
+      },
+      {
+        "start": 53.65768799999999,
+        "end": 53.977688,
+        "text": "para"
+      },
+      {
+        "start": 53.977688,
+        "end": 54.537687999999996,
+        "text": "apoiar"
+      },
+      {
+        "start": 54.537687999999996,
+        "end": 54.617688,
+        "text": "o"
+      },
+      {
+        "start": 54.617688,
+        "end": 55.337688,
+        "text": "aprendizado."
+      }
+    ]
+  },
+  {
+    "start": 55.857687999999996,
+    "end": 56.897688,
+    "text": "Conheça o projeto.",
+    "words": [
+      {
+        "start": 55.857687999999996,
+        "end": 56.437687999999994,
+        "text": "Conheça"
+      },
+      {
+        "start": 56.437687999999994,
+        "end": 56.537687999999996,
+        "text": "o"
+      },
+      {
+        "start": 56.537687999999996,
+        "end": 56.897688,
+        "text": "projeto."
+      }
+    ]
+  }
+]

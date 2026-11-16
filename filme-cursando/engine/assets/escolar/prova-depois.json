@@ -1,0 +1,65 @@
+{
+  "aprovado_curso": true,
+  "envio": {
+    "acertos": 3,
+    "aluno": "Diogo Lopes",
+    "corrigido_em": "2026-11-16T16:42:40.721000",
+    "criado_em": "2026-11-16T16:42:40.721000",
+    "estado_prova": "vigente",
+    "feedback": "",
+    "id": 102,
+    "id_aluno": 8,
+    "id_curso": 25,
+    "id_prova": 75,
+    "nota": 100.0,
+    "nota_minima": 70,
+    "prova": "Fundamentos de criação 3D",
+    "status": 1,
+    "tentativa": 1,
+    "total_questoes": 3,
+    "versao": 1
+  },
+  "motivo": "Você já foi aprovado neste curso. A aprovação foi preservada.",
+  "pode_responder": false,
+  "prova": {
+    "estado": "vigente",
+    "id": 75,
+    "id_curso": 25,
+    "nota_minima": 70,
+    "publicada": true,
+    "titulo": "Fundamentos de criação 3D",
+    "versao": 1
+  },
+  "questoes": [
+    {
+      "alternativas": [
+        "Extrusão",
+        "Zoom da viewport",
+        "Salvar arquivo"
+      ],
+      "enunciado": "Qual ferramenta cria volume a partir de uma face?",
+      "id": 264,
+      "tipo": "objetiva"
+    },
+    {
+      "alternativas": [
+        "Modo de Edição",
+        "Modo Objeto",
+        "Visualização da câmera"
+      ],
+      "enunciado": "Qual modo permite editar vértices, arestas e faces?",
+      "id": 265,
+      "tipo": "objetiva"
+    },
+    {
+      "alternativas": [
+        "Formato e destino do arquivo",
+        "Nome da coleção apenas",
+        "Cor do tema da interface"
+      ],
+      "enunciado": "Qual configuração está relacionada à saída da imagem renderizada?",
+      "id": 266,
+      "tipo": "objetiva"
+    }
+  ]
+}

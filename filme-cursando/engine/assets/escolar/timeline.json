@@ -1,0 +1,336 @@
+{
+  "duration": 60,
+  "shots": [
+    {
+      "id": "pergunta",
+      "start": 0,
+      "end": 3.7,
+      "msg": "Aprendizado mais organizado",
+      "sfx": [
+        {
+          "type": "whoosh",
+          "at": 0.12,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "marca",
+      "start": 3.7,
+      "end": 7.1,
+      "msg": "Alunos, professores e conhecimento",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 3.8200000000000003,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "start": 7.1,
+      "end": 12.110000000000001,
+      "msg": "Site e aplicativo",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 7.22,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "catalogo",
+      "start": 12.110000000000001,
+      "end": 16.509999999999998,
+      "msg": "Escolha um curso",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 12.23,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "curso",
+      "start": 16.509999999999998,
+      "end": 19.509999999999998,
+      "msg": "Um percurso de criacao 3D",
+      "sfx": [
+        {
+          "type": "whoosh",
+          "at": 16.63,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "modulos",
+      "start": 19.509999999999998,
+      "end": 22.637687999999997,
+      "msg": "Tres modulos, quatro aulas em cada",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 19.63,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "aulas",
+      "start": 22.637687999999997,
+      "end": 25.137687999999997,
+      "msg": "Aulas na ordem certa",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 22.757687999999998,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "player",
+      "start": 25.137687999999997,
+      "end": 31.437687999999998,
+      "msg": "Uma explicacao de verdade",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 25.257687999999998,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "progresso",
+      "start": 31.437687999999998,
+      "end": 34.237688,
+      "msg": "Continue de onde parou",
+      "sfx": [
+        {
+          "type": "whoosh",
+          "at": 31.557688,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "mobile",
+      "start": 34.237688,
+      "end": 37.297687999999994,
+      "msg": "A mesma jornada no aplicativo",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 34.357687999999996,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "chat",
+      "start": 37.297687999999994,
+      "end": 41.37768799999999,
+      "msg": "Aluno e professor, mais perto",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 37.41768799999999,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "prova",
+      "start": 41.37768799999999,
+      "end": 44.277688,
+      "msg": "Conhecimento colocado a prova",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 41.49768799999999,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "resultado",
+      "start": 44.277688,
+      "end": 46.777688,
+      "msg": "Aprovacao registrada",
+      "sfx": [
+        {
+          "type": "whoosh",
+          "at": 44.397687999999995,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "certificado",
+      "start": 46.777688,
+      "end": 49.737688,
+      "msg": "Uma etapa reconhecida",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 46.897687999999995,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "jornada",
+      "start": 49.737688,
+      "end": 55.86,
+      "msg": "Organizacao, acompanhamento e comunicacao",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 49.857687999999996,
+          "snap": false
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "start": 55.86,
+      "end": 60,
+      "msg": "Conheca o projeto",
+      "sfx": [
+        {
+          "type": "pop",
+          "at": 55.98,
+          "snap": false
+        }
+      ]
+    }
+  ],
+  "subtitles": [
+    {
+      "start": 0.65,
+      "end": 3.95,
+      "text": "Como tornar o aprendizado mais organizado e acessível?"
+    },
+    {
+      "start": 4.43,
+      "end": 7.49,
+      "text": "Essa é a proposta do Cursando. conectar alunos,"
+    },
+    {
+      "start": 7.550000000000001,
+      "end": 9.690000000000001,
+      "text": "professores e conhecimento em uma experiência"
+    },
+    {
+      "start": 9.63,
+      "end": 11.71,
+      "text": "pelo site e pelo aplicativo."
+    },
+    {
+      "start": 12.110000000000001,
+      "end": 15.090000000000002,
+      "text": "No catálogo, você encontra os cursos e escolhe"
+    },
+    {
+      "start": 15.030000000000001,
+      "end": 15.99,
+      "text": "o que quer aprender."
+    },
+    {
+      "start": 16.509999999999998,
+      "end": 19.31,
+      "text": "Vamos acompanhar um exemplo de modelagem 3D."
+    },
+    {
+      "start": 19.849999999999998,
+      "end": 23.169999999999998,
+      "text": "O conteúdo aparece organizado em módulos, com aulas"
+    },
+    {
+      "start": 23.11,
+      "end": 24.509999999999998,
+      "text": "e materiais de apoio."
+    },
+    {
+      "start": 25.137687999999997,
+      "end": 27.377687999999996,
+      "text": "Na página da aula, o aluno assiste a"
+    },
+    {
+      "start": 27.317687999999997,
+      "end": 30.117687999999998,
+      "text": "explicação e encontra os próximos passos em uma"
+    },
+    {
+      "start": 30.057688,
+      "end": 31.157687999999997,
+      "text": "lista organizada."
+    },
+    {
+      "start": 31.437687999999998,
+      "end": 34.477688,
+      "text": "O progresso fica registrado para continuar de onde"
+    },
+    {
+      "start": 34.417688,
+      "end": 36.937688,
+      "text": "parou, inclusive pelo aplicativo."
+    },
+    {
+      "start": 37.297687999999994,
+      "end": 40.077688,
+      "text": "Se surgir uma dúvida, o chat aproxima aluno"
+    },
+    {
+      "start": 40.017688,
+      "end": 40.717687999999995,
+      "text": "e professor."
+    },
+    {
+      "start": 41.37768799999999,
+      "end": 43.877688,
+      "text": "As provas permitem avaliar o conhecimento."
+    },
+    {
+      "start": 44.277688,
+      "end": 47.677688,
+      "text": "Com a aprovação, o sistema disponibiliza o certificado"
+    },
+    {
+      "start": 47.617688,
+      "end": 48.197688,
+      "text": "do curso."
+    },
+    {
+      "start": 48.737688,
+      "end": 51.797688,
+      "text": "Cursando. um projeto que reúne a organização,"
+    },
+    {
+      "start": 51.737688,
+      "end": 55.397688,
+      "text": "acompanhamento e comunicação para apoiar o aprendizado."
+    },
+    {
+      "start": 55.857687999999996,
+      "end": 56.957688000000005,
+      "text": "Conheça o projeto."
+    }
+  ],
+  "marker": {
+    "catalog": 12.110000000000001,
+    "example": 16.509999999999998,
+    "lesson": 25.137687999999997,
+    "progress": 31.437687999999998,
+    "chat": 37.297687999999994,
+    "exam": 41.37768799999999,
+    "approved": 44.277688,
+    "ending": 49.737688,
+    "cta": 55.86
+  }
+}

@@ -10,10 +10,10 @@ const {chromium}=require('playwright');
 const server=await serve(path.join(root,'engine')),browser=await chromium.launch({headless:true});
 const results=[];
 try{
- for(const [width,height,short] of [[960,540,false],[540,960,false],[540,960,true]]){
+ for(const [width,height,short] of (process.env.CURSANDO_COMPOSITION==='escolar'?[[960,540,false],[540,960,false]]:[[960,540,false],[540,960,false],[540,960,true]])){
   const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(server.url+'/assets/cursando/index.html');
+  await page.goto(server.url+'/assets/'+(process.env.CURSANDO_COMPOSITION||'cursando')+'/index.html');
   await page.waitForFunction(()=>typeof window.seek==='function');
   await page.evaluate(async c=>{await window.ready;await window.configure(c);},{width,height,short});
   const capture=t=>page.evaluate(t=>{window.seek(t);return document.querySelector('canvas').toDataURL();},t);
@@ -27,6 +27,6 @@ try{
   results.push(row);console.log(JSON.stringify(row));
   await page.close();
  }
- await fs.writeFile(path.join(root,'out/composition-check.json'),JSON.stringify(results,null,2));
+ await fs.writeFile(path.join(root,'out/'+(process.env.CURSANDO_COMPOSITION==='escolar'?'escolar/composition-check.json':'composition-check.json')),JSON.stringify(results,null,2));
  if(results.some(r=>!r.deterministic||r.invalidHolds.length||r.errors.length))process.exitCode=1;
 }finally{await browser.close();await server.close();}

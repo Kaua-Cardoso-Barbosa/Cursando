@@ -1,0 +1,210 @@
+[
+  {
+    "id": "pergunta",
+    "start": 0,
+    "end": 3.7,
+    "msg": "Aprendizado mais organizado",
+    "sfx": [
+      {
+        "type": "whoosh",
+        "at": 0.12,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "marca",
+    "start": 3.7,
+    "end": 7.1,
+    "msg": "Alunos, professores e conhecimento",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 3.8200000000000003,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "home",
+    "start": 7.1,
+    "end": 12.110000000000001,
+    "msg": "Site e aplicativo",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 7.22,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "catalogo",
+    "start": 12.110000000000001,
+    "end": 16.509999999999998,
+    "msg": "Escolha um curso",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 12.23,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "curso",
+    "start": 16.509999999999998,
+    "end": 19.509999999999998,
+    "msg": "Um percurso de criacao 3D",
+    "sfx": [
+      {
+        "type": "whoosh",
+        "at": 16.63,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "modulos",
+    "start": 19.509999999999998,
+    "end": 22.637687999999997,
+    "msg": "Tres modulos, quatro aulas em cada",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 19.63,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "aulas",
+    "start": 22.637687999999997,
+    "end": 25.137687999999997,
+    "msg": "Aulas na ordem certa",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 22.757687999999998,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "player",
+    "start": 25.137687999999997,
+    "end": 31.437687999999998,
+    "msg": "Uma explicacao de verdade",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 25.257687999999998,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "progresso",
+    "start": 31.437687999999998,
+    "end": 34.237688,
+    "msg": "Continue de onde parou",
+    "sfx": [
+      {
+        "type": "whoosh",
+        "at": 31.557688,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "mobile",
+    "start": 34.237688,
+    "end": 37.297687999999994,
+    "msg": "A mesma jornada no aplicativo",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 34.357687999999996,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "chat",
+    "start": 37.297687999999994,
+    "end": 41.37768799999999,
+    "msg": "Aluno e professor, mais perto",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 37.41768799999999,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "prova",
+    "start": 41.37768799999999,
+    "end": 44.277688,
+    "msg": "Conhecimento colocado a prova",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 41.49768799999999,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "resultado",
+    "start": 44.277688,
+    "end": 46.777688,
+    "msg": "Aprovacao registrada",
+    "sfx": [
+      {
+        "type": "whoosh",
+        "at": 44.397687999999995,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "certificado",
+    "start": 46.777688,
+    "end": 49.737688,
+    "msg": "Uma etapa reconhecida",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 46.897687999999995,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "jornada",
+    "start": 49.737688,
+    "end": 55.86,
+    "msg": "Organizacao, acompanhamento e comunicacao",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 49.857687999999996,
+        "snap": false
+      }
+    ]
+  },
+  {
+    "id": "final",
+    "start": 55.86,
+    "end": 60,
+    "msg": "Conheca o projeto",
+    "sfx": [
+      {
+        "type": "pop",
+        "at": 55.98,
+        "snap": false
+      }
+    ]
+  }
+]

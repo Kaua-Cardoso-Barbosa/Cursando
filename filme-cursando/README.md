@@ -1,5 +1,7 @@
 # Cursando — Dê caminho à sua curiosidade
 
+**Versão escolar atual, com a narração enviada pelo usuário:** [abrir apresentação](out/escolar/index.html). Detalhes e créditos em [docs/escolar/PRODUCAO.md](docs/escolar/PRODUCAO.md). As versões sem locução listadas abaixo são a entrega anterior, preservada.
+
 Produção nova baseada na skill [Motion Video Studio](https://github.com/igorcacerez/motion-video-studio-skill) e na identidade atual do site. O vídeo anterior em `../video/` foi preservado e não foi usado como base.
 
 ## Entregas

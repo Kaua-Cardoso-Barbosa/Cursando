@@ -1,0 +1,47 @@
+{
+  "aprovado_curso": false,
+  "envio": null,
+  "motivo": "",
+  "pode_responder": true,
+  "prova": {
+    "estado": "vigente",
+    "id": 75,
+    "id_curso": 25,
+    "nota_minima": 70,
+    "publicada": true,
+    "titulo": "Fundamentos de criação 3D",
+    "versao": 1
+  },
+  "questoes": [
+    {
+      "alternativas": [
+        "Extrusão",
+        "Zoom da viewport",
+        "Salvar arquivo"
+      ],
+      "enunciado": "Qual ferramenta cria volume a partir de uma face?",
+      "id": 264,
+      "tipo": "objetiva"
+    },
+    {
+      "alternativas": [
+        "Modo de Edição",
+        "Modo Objeto",
+        "Visualização da câmera"
+      ],
+      "enunciado": "Qual modo permite editar vértices, arestas e faces?",
+      "id": 265,
+      "tipo": "objetiva"
+    },
+    {
+      "alternativas": [
+        "Formato e destino do arquivo",
+        "Nome da coleção apenas",
+        "Cor do tema da interface"
+      ],
+      "enunciado": "Qual configuração está relacionada à saída da imagem renderizada?",
+      "id": 266,
+      "tipo": "objetiva"
+    }
+  ]
+}

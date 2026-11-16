@@ -1,0 +1,29 @@
+[
+  {
+    "id": 25,
+    "key": "blender",
+    "titulo": "Blender: primeiros passos na criação 3D",
+    "categoria": "Design e criação",
+    "tema": "Modelagem 3D",
+    "descricao": "Explore o espaço 3D, transforme objetos e construa suas primeiras formas. Conheça materiais, iluminação e renderização em uma trilha de 3 módulos. Curadoria didática para demonstração do projeto escolar Cursando. Vídeos originais: Blender Foundation / Blender Studio, Blender 2.8 Fundamentals, em inglês, com descrições e atividades em português. Licença CC-BY 4.0; créditos em cada aula.",
+    "asset": "capa-blender.png"
+  },
+  {
+    "id": 26,
+    "key": "python",
+    "titulo": "Python: lógica e primeiros programas",
+    "categoria": "Tecnologia",
+    "tema": "Programação",
+    "descricao": "Conheça variáveis, decisões e repetições para organizar ideias e construir pequenos programas. Curso de demonstração do projeto escolar Cursando; apresentação de catálogo, com conteúdo em preparação.",
+    "asset": "capa-python.png"
+  },
+  {
+    "id": 27,
+    "key": "fotografia",
+    "titulo": "Fotografia: luz e composição",
+    "categoria": "Fotografia",
+    "tema": "Luz e composição",
+    "descricao": "Explore enquadramento, direção da luz e escolha do fundo para criar imagens mais intencionais com câmera ou celular. Curso de demonstração do projeto escolar Cursando; apresentação de catálogo, com conteúdo em preparação.",
+    "asset": "capa-fotografia.png"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "player": {
+    "x": 302,
+    "y": 170,
+    "width": 752,
+    "height": 423
+  },
+  "before": 45.201215,
+  "after": 46.293073,
+  "passed": true
+}

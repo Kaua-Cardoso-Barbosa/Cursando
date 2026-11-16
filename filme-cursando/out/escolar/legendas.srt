@@ -1,0 +1,87 @@
+1
+00:00:00,650 --> 00:00:03,950
+Como tornar o aprendizado mais organizado e acessível?
+
+2
+00:00:04,430 --> 00:00:07,490
+Essa é a proposta do Cursando. conectar alunos,
+
+3
+00:00:07,550 --> 00:00:09,690
+professores e conhecimento em uma experiência
+
+4
+00:00:09,630 --> 00:00:11,710
+pelo site e pelo aplicativo.
+
+5
+00:00:12,110 --> 00:00:15,090
+No catálogo, você encontra os cursos e escolhe
+
+6
+00:00:15,030 --> 00:00:15,990
+o que quer aprender.
+
+7
+00:00:16,510 --> 00:00:19,310
+Vamos acompanhar um exemplo de modelagem 3D.
+
+8
+00:00:19,850 --> 00:00:23,170
+O conteúdo aparece organizado em módulos, com aulas
+
+9
+00:00:23,110 --> 00:00:24,510
+e materiais de apoio.
+
+10
+00:00:25,138 --> 00:00:27,378
+Na página da aula, o aluno assiste a
+
+11
+00:00:27,318 --> 00:00:30,118
+explicação e encontra os próximos passos em uma
+
+12
+00:00:30,058 --> 00:00:31,158
+lista organizada.
+
+13
+00:00:31,438 --> 00:00:34,478
+O progresso fica registrado para continuar de onde
+
+14
+00:00:34,418 --> 00:00:36,938
+parou, inclusive pelo aplicativo.
+
+15
+00:00:37,298 --> 00:00:40,078
+Se surgir uma dúvida, o chat aproxima aluno
+
+16
+00:00:40,018 --> 00:00:40,718
+e professor.
+
+17
+00:00:41,378 --> 00:00:43,878
+As provas permitem avaliar o conhecimento.
+
+18
+00:00:44,278 --> 00:00:47,678
+Com a aprovação, o sistema disponibiliza o certificado
+
+19
+00:00:47,618 --> 00:00:48,198
+do curso.
+
+20
+00:00:48,738 --> 00:00:51,798
+Cursando. um projeto que reúne a organização,
+
+21
+00:00:51,738 --> 00:00:55,398
+acompanhamento e comunicação para apoiar o aprendizado.
+
+22
+00:00:55,858 --> 00:00:56,958
+Conheça o projeto.
